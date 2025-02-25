@@ -1,4 +1,9 @@
 
+.onLoad <- function(libname, pkgname) {
+  Rcpp::loadModule("wspc", TRUE)
+  loadNamespace("colorspace")
+}
+
 # Main function for generating WSPmm model #############################################################################
 
 # Function for fitting model to raw count data list 
@@ -17,7 +22,17 @@ wisp <- function(
     batch.size = 10,
     dim.bounds = NULL, 
     verbose = TRUE,
-    print.child.summaries = TRUE
+    print.child.summaries = TRUE,
+    model.settings = list(
+      struc_values = c(5.0, 5.0, 5.0, 1.0, 1.0, 1.0, 1.0),  # values of structural parameters to test
+      buffer_factor = 0.05,                                 # buffer factor for penalizing distance from structural parameter values
+      ctol = 1e-4,                                          # convergence tolerance
+      max_penalty_at_distance_factor = 0.01,                # maximum penalty at distance from structural parameter values
+      LROcutoff = 2.0,                                      # cutoff for LROcp
+      tslope_initial = 1.0,                                 # initial value for tslope
+      wf_initial = 0.5,                                     # initial value for wfactor
+      max_evals = 200                                       # maximum number of evaluations for optimization
+    )
   ) {
    
     # Relabel and rearrange data columns 
@@ -38,6 +53,7 @@ wisp <- function(
     cpp_model <- new(
       wspc, 
       data, # should be tokenized
+      model.settings,
       verbose
     )
     
@@ -665,7 +681,7 @@ plot.ratecount <- function(
     # Make color palettes
     num_of_colors <- length(wisp.results$grouping.variables$child.lvls)
     colors_hues <- seq(0,360,length.out = num_of_colors + 1)[2:num_of_colors]
-    child_colors <- qualitative_hcl(
+    child_colors <- colorspace::qualitative_hcl(
       n = num_of_colors,
       h = c(colors_hues[1], colors_hues[num_of_colors]),
       c = 80,
@@ -679,7 +695,7 @@ plot.ratecount <- function(
     
     num_of_colors <- length(wisp.results$treatment$names) - 1
     colors_hues <- seq(0,360,length.out = num_of_colors + 1)[2:num_of_colors]
-    treatment_colors <- qualitative_hcl(
+    treatment_colors <- colorspace::qualitative_hcl(
       n = num_of_colors,
       h = c(colors_hues[1], colors_hues[num_of_colors]),
       c = 80,

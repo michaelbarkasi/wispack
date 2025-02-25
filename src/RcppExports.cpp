@@ -55,14 +55,14 @@ BEGIN_RCPP
 END_RCPP
 }
 
-RcppExport SEXP _rcpp_module_boot_wspc_module();
+RcppExport SEXP _rcpp_module_boot_wspc();
 
 static const R_CallMethodDef CallEntries[] = {
     {"_wispack_rcppeigen_hello_world", (DL_FUNC) &_wispack_rcppeigen_hello_world, 0},
     {"_wispack_rcppeigen_outerproduct", (DL_FUNC) &_wispack_rcppeigen_outerproduct, 1},
     {"_wispack_rcppeigen_innerproduct", (DL_FUNC) &_wispack_rcppeigen_innerproduct, 1},
     {"_wispack_rcppeigen_bothproducts", (DL_FUNC) &_wispack_rcppeigen_bothproducts, 1},
-    {"_rcpp_module_boot_wspc_module", (DL_FUNC) &_rcpp_module_boot_wspc_module, 0},
+    {"_rcpp_module_boot_wspc", (DL_FUNC) &_rcpp_module_boot_wspc, 0},
     {NULL, NULL, 0}
 };
 

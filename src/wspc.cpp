@@ -4,6 +4,7 @@
 
 // WSPmm class and methods *********************************************************************************************
 
+// Class
 class wspc {
     
     /*
@@ -60,7 +61,7 @@ class wspc {
     IntegerMatrix degMat;                   // matrix of degrees for each parent (column) - child (rows) pair
     NumericVector fitted_parameters;        // vector holding the model parameters
     List param_names;                       // list holding the names of the model parameters as they appear in fitted_parameters
-    IntegerVector param_wfactor_point_idx; // ... indexes in parameter vector for different kinds of model parameters
+    IntegerVector param_wfactor_point_idx;  // ... indexes in parameter vector for different kinds of model parameters
     IntegerVector param_wfactor_rate_idx;
     IntegerVector param_beta_Rt_idx;
     IntegerVector param_beta_Rt_idx_no_ref;
@@ -84,12 +85,18 @@ class wspc {
       "gamma_rate_slope",
       "gamma_rate_rate"
       };
-    sdouble buffer_factor = 0.05;          // scaling factor for buffer value, the minimum distance between transition points 
-    sdouble tpoint_buffer;                 // min number of bins between transition points (immutable structural parameter)
+    sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
+    sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
+    double LROcutoff = 2.0;                 // cutoff (x sd) for likelihood ratio outlier detection
+    double tslope_initial = 1.0;            // initial value for transition slope
+    double wf_initial = 0.5;               // initial value for warping factor ... any sensible magnitude > 0.1 and < 0.75 should do? 
     
     // Optimization settings
     int max_evals = 200;  // max number of evaluations
     double ctol = 5e-4;   // convergence tolerance
+    
+    // Other settings 
+    List model_settings;
     
     /*
      * Basic idea: there will be a number of relevant distances to a boundary. Want to transform
@@ -109,6 +116,7 @@ class wspc {
     // Constructor
     wspc(
         const DataFrame& count_data,
+        const List& settings,
         bool verbose
       ) { 
         
@@ -129,6 +137,25 @@ class wspc {
          *  can have the same independent variables values. Practically speaking, only the rate data frame is relevant for 
          *  predicting rates, but the count data frame is the one relevant to computing measures of model fit, like likelihood. 
          */
+        
+        // Extract and save settings
+        NumericVector struc_values_settings = settings["struc_values"];
+        double buffer_factor_settings = settings["buffer_factor"];
+        double ctol_settings = settings["ctol"];
+        double max_penalty_at_distance_factor_settings = settings["max_penalty_at_distance_factor"];
+        double LROcutoff_settings = settings["LROcutoff"];
+        double tslope_initial_settings = settings["tslope_initial"];
+        double wf_initial_settings = settings["wf_initial"];
+        int max_evals_settings = settings["max_evals"];
+        for (int i = 0; i < 7; i++) {struc_values[i] = struc_values_settings[i];}
+        buffer_factor = sdouble(buffer_factor_settings);
+        ctol = ctol_settings;
+        max_penalty_at_distance_factor = sdouble(max_penalty_at_distance_factor_settings);
+        LROcutoff = LROcutoff_settings;
+        tslope_initial = tslope_initial_settings;
+        wf_initial = wf_initial_settings;
+        max_evals = max_evals_settings;
+        model_settings = Rcpp::clone(settings);
         
         // Check structure of input data
         CharacterVector col_names = count_data.names();
@@ -376,23 +403,23 @@ class wspc {
             IntegerVector found_cp(0);
             for (int t = 0; t < treatment_num; t++) {
               String trt = treatment_lvls[t];
-
+             
               // Make mask for treatment rows of this parent-child pair
               LogicalVector trt_mask = eq_left_broadcast(treatment, trt);
               LogicalVector mask = count_not_na_mask & parent_mask & trt_mask & eq_left_broadcast(child, child_lvls[c]);
-
+             
               // Make masked copies of count_log and bin
               sVec count_masked = masked_vec(count_log, mask);  
               sVec bin_masked = masked_vec(bin, mask);
               dVec count_avg(bin_num_i); 
-
+             
               // Compute average count for each bin
               for (int b = 0; b < bin_num_i; b++) {
                 LogicalVector mask_b = eq_left_broadcast(to_NumVec(bin_masked), (double)b + 1.0);
                 sVec count_b = masked_vec(count_masked, mask_b);
                 count_avg[b] = vmean(count_b).val();
               }
-
+             
               // Estimate change points from averaged count series
               int ws = std::round(static_cast<int>(2.0 * bin_num_i * buffer_factor.val()));
               int filter_ws = std::round(ws/2);
@@ -400,7 +427,7 @@ class wspc {
                 count_avg,  // series to scan
                 ws,         // running window size 
                 filter_ws,  // size of window for taking rolling mean
-                2.0         // points more than this times sd considered outliers
+                LROcutoff   // points more than this times sd considered outliers
               );
               
               // Merge with previously found change points 
@@ -411,30 +438,30 @@ class wspc {
                 // ... if cp have been found and current treatment has cp, merge
                 buffered_merge(found_cp, found_cp_trt, ws/2);
               }
-
+             
               // Save averaged count values
               count_avg_mat.column(t) = to_NumVec(count_avg);
-
+             
             }
             
             // Extract deg and blocks
             int deg = found_cp.size();
             degMat(c, p) = deg;
             int n_blocks = deg + 1;
-
+           
             // Compute and save baseline (reference) values
             List placeholder_ref_values(mc_list.size());
             placeholder_ref_values.names() = mc_list;
             NumericMatrix placeholder_RtEffs(treatment_num, n_blocks);
             for (String mc : mc_list) {
-
+              
               // Mean rate per block
               if (mc == "Rt") {
                 dVec Rt_est(n_blocks); 
                 sMat RtVals(treatment_num, n_blocks);
-
+               
                 for (int t = 0; t < treatment_num; t++) {
-
+                 
                   NumericVector count_avg = count_avg_mat.column(t);
                   
                   if (n_blocks == 1) { // case when deg = 0
@@ -461,9 +488,9 @@ class wspc {
                     
                   }
                   if (t == 0) {placeholder_ref_values[mc] = to_NumVec(Rt_est);}
-
+                 
                 }
-
+               
                 // Estimate fixed effects from treatments for each block
                 for (int bk = 0; bk < n_blocks; bk++) {
                   sVec beta_bk = weight_rows.fullPivLu().solve(RtVals.col(bk));
@@ -475,19 +502,19 @@ class wspc {
                   placeholder_ref_values[mc] = Rcpp::as<NumericVector>(found_cp);
                 } else if (mc == "tslope") {
                   NumericVector tslope_default(deg);
-                  for (int tp = 0; tp < deg; tp++) {tslope_default[tp] = 1.0;}
+                  for (int tp = 0; tp < deg; tp++) {tslope_default[tp] = tslope_initial;}
                   placeholder_ref_values[mc] = tslope_default;
                 }
               }
-
+             
             }
             assign_proxylist(ref_values[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_ref_values);
             assign_proxylist(RtEffs[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_RtEffs);
-
+           
           }
         }
         vprint("Estimated change points with LROcp and found initial baseline parameters", verbose); 
-
+       
         // Build default fixed-effects matrices in shell
         List beta = build_beta_shell(mc_list, treatment_lvls, parent_lvls, child_lvls, ref_values, RtEffs, degMat);
         vprint("Built initial beta (ref and fixed-effects) matrices", verbose); 
@@ -496,7 +523,7 @@ class wspc {
         List wfactors = List(2);
         CharacterVector wfactors_names = {"point", "rate"};
         wfactors.names() = wfactors_names;
-        NumericVector wfs = dseq(-0.5,0.5,n_ran - 1); // ... any sensible magnitude > 0.1 and < 0.75 should do? 
+        NumericVector wfs = dseq(-wf_initial, wf_initial, n_ran - 1); 
         for (String wf : wfactors_names) {
           NumericMatrix wf_array(n_ran, n_child);
           for (int c = 0; c < n_child; c++) {
@@ -548,7 +575,7 @@ class wspc {
         param_struc_idx.names() = struc_names;
         beta_idx = params["beta_idx"];
         wfactor_idx = params["wfactor_idx"];
-
+       
         // Construct grouping variable ids as indexes for warping factor matrices, by count row
         gv_ranLr_int = IntegerVector(n_count_rows);
         gv_fixLr_int = IntegerVector(n_count_rows);
@@ -848,7 +875,7 @@ class wspc {
           sdouble wf = (warping_factors_point(i) + 1.0)/2.0; // rescale
           log_lik += slog(
             spower(wf, beta_shape_point - 1.0) * spower(1.0 - wf, beta_shape_point - 1.0) /
-              (spower(stan::math::tgamma(beta_shape_point),2.0) / stan::math::tgamma(2.0*beta_shape_point))
+              (spower(stan::math::tgamma(beta_shape_point), 2.0) / stan::math::tgamma(2.0*beta_shape_point))
           );
         }
         
@@ -858,7 +885,7 @@ class wspc {
           sdouble wf = (warping_factors_rate(i) + 1.0)/2.0; // rescale
           log_lik += slog(
             spower(wf, beta_shape_rate - 1.0) * spower(1.0 - wf, beta_shape_rate - 1.0) /
-              (spower(stan::math::tgamma(beta_shape_rate),2.0) / stan::math::tgamma(2.0*beta_shape_rate))
+              (spower(stan::math::tgamma(beta_shape_rate), 2.0) / stan::math::tgamma(2.0*beta_shape_rate))
           );
         }
         
@@ -1783,7 +1810,8 @@ class wspc {
         _["treatment"] = treat,
         _["grouping.variables"] = grouping_variables,
         _["struc.params"] = struc_values,
-        _["param.idx0"] = param_idx // "0" to indicate this goes out w/ C++ zero-based indexing
+        _["param.idx0"] = param_idx, // "0" to indicate this goes out w/ C++ zero-based indexing
+        _["settings"] = model_settings
       );
       
       return results_list;
@@ -1846,9 +1874,10 @@ class wspc {
   };
 
 // Export the class constructor and select fields and methods to R
-RCPP_MODULE(wspc_module) {
+RCPP_EXPOSED_CLASS(wspc)
+RCPP_MODULE(wspc) {
     class_<wspc>("wspc")
-    .constructor<DataFrame, bool>()  
+    .constructor<DataFrame, List, bool>()  
     .field("optim_results", &wspc::optim_results)
     .field("fitted_parameters", &wspc::fitted_parameters)
     .method("set_parameters", &wspc::set_parameters)
