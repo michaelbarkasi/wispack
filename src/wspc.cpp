@@ -523,7 +523,8 @@ class wspc {
         List wfactors = List(2);
         CharacterVector wfactors_names = {"point", "rate"};
         wfactors.names() = wfactors_names;
-        NumericVector wfs = dseq(-wf_initial, wf_initial, n_ran - 1); 
+        double wf_initial_low = -1.0 * wf_initial;
+        NumericVector wfs = dseq(wf_initial_low, wf_initial, n_ran - 1); 
         for (String wf : wfactors_names) {
           NumericMatrix wf_array(n_ran, n_child);
           for (int c = 0; c < n_child; c++) {

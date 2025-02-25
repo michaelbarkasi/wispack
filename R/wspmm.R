@@ -18,6 +18,7 @@ wisp <- function(
       fixedeffects = c()
     ),
     bootstraps.num = 1e3, 
+    converged.resamples.only = TRUE,
     max.fork = 10,
     batch.size = 10,
     dim.bounds = NULL, 
@@ -167,6 +168,7 @@ wisp <- function(
     # Run stats on bootstraps
     stats.parameters <- bs.stats(
       wisp.results = results,
+      conv.resamples.only = converged.resamples.only,
       verbose = verbose
     )
     
@@ -269,7 +271,7 @@ bs.stats <- function(
     wisp.results,
     alpha = 0.05,
     Bonferroni = FALSE,
-    converged.resamples.only = TRUE,
+    conv.resamples.only = TRUE,
     verbose = TRUE
   ) {
     
@@ -287,7 +289,7 @@ bs.stats <- function(
     }
     
     # Grab bootstrap results
-    if (converged.resamples.only) {
+    if (conv.resamples.only) {
       if (verbose) snk.report...("Grabbing bootstrap results, only resamples with converged fit")
       bs_results <- wisp.results$bs_params[wisp.results$bs.diagnostics$success.code == 3,]
     } else {
