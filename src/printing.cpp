@@ -1,6 +1,6 @@
 
 // printing.cpp
-#include "wspmm.h"
+#include "wspc.h"
 
 // Function for printing character messages
 void vprint(

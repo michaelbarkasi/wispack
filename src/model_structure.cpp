@@ -1,6 +1,6 @@
 
 // model_structure.cpp
-#include "wspmm.h"
+#include "wspc.h"
 
 // Treatment combinations **********************************************************************************************
 

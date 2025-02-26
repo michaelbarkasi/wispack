@@ -1,7 +1,4 @@
 
-# Define environment
-sink_env <- new.env( parent = globalenv() )
-
 # Helper functions for printing to output.txt
 
 # Aesthetic parameters ####

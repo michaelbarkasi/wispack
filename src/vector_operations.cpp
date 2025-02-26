@@ -1,6 +1,6 @@
 
 // vector_operations.cpp
-#include "wspmm.h"
+#include "wspc.h"
 
 // Vectorized means ****************************************************************************************************
 

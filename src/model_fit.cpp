@@ -1,6 +1,6 @@
 
 // model_fit.cpp
-#include "wspmm.h"
+#include "wspc.h"
 
 // Numerically stable implementation of sigmoid function
 sdouble sigmoid_stable(
