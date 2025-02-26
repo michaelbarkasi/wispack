@@ -1,7 +1,6 @@
 
 // vector_conversions.cpp
-#include "wspmm.h"
-
+#include "wspc.h"
 
 // Convert to Eigen::Matrix with sdouble elements **********************************************************************
 

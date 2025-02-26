@@ -557,7 +557,7 @@ analyze.residuals <- function(
     if (verbose) snk.report...("Making masks")
     # Grab masks for subsets of interest
     mask_list <- list()
-    mask_list[["all"]] <- rep(TRUE, length(residuals))
+    mask_list[["all"]] <- rep(TRUE, ncol(wisp.results$count.data.summed))
     mask_ctr <- 1
     for (rn_lvl in wisp.results$grouping.variables$ran.lvls) {
       mask_list[[paste0("ran_lvl_", rn_lvl)]] <- wisp.results$count.data.summed$ran == rn_lvl

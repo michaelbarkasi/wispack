@@ -1,6 +1,6 @@
 
 // logic.cpp
-#include "wspmm.h"
+#include "wspc.h"
 
 // Return logical vector giving elements of left which match right
 LogicalVector eq_left_broadcast(
