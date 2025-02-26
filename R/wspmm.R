@@ -310,9 +310,9 @@ bs.stats <- function(
       fitted_params_names <- wisp.results$param.names
       struc_mask <- !grepl("baseline|beta_tslope|beta_tpoint|wfactor", fitted_params_names) 
       baseline_mask <- grepl("baseline", fitted_params_names) & !grepl("tpoint", fitted_params_names)     # mask for baseline rate and tslope values
-      tslope_mask <- grepl("tslope", fitted_params_names)          # mask for tslope values
-      beta_w_mask <- grepl("beta_tslope|beta_tpoint|wfactor", fitted_params_names)         # only want to test fixed-effect and wfactor parameters (no baseline or structural parameters)
-      empty_w_mask <- colSums(bs_results) == 0                       # Can only be zero for point wfactors of degree-zero children (which must be zero)
+      tslope_mask <- grepl("tslope", fitted_params_names)                                                 # mask for tslope values
+      beta_w_mask <- grepl("beta_Rt|beta_tslope|beta_tpoint|wfactor", fitted_params_names)                # only want to test fixed-effect and wfactor parameters (no baseline or structural parameters)
+      empty_w_mask <- colSums(bs_results) == 0                                                            # Can only be zero for point wfactors of degree-zero children (which must be zero)
       test_mask <- beta_w_mask & !empty_w_mask
       
       # Compute 95% confidence intervals
@@ -560,10 +560,11 @@ analyze.residuals <- function(
     mask_list[["all"]] <- rep(TRUE, length(residuals))
     mask_ctr <- 1
     for (rn_lvl in wisp.results$grouping.variables$ran.lvls) {
-      mask_list[[rn_lvl]] <- wisp.results$count.data.summed$ran == rn_lvl
-      mask_list[[paste0(rn_lvl,"_left")]] <- wisp.results$count.data.summed$ran == rn_lvl & wisp.results$count.data.summed$hemisphere == "left"
-      mask_list[[paste0(rn_lvl,"_right")]] <- wisp.results$count.data.summed$ran == rn_lvl & wisp.results$count.data.summed$hemisphere == "right"
-      mask_ctr <- mask_ctr + 3
+      mask_list[[paste0("ran_lvl_", rn_lvl)]] <- wisp.results$count.data.summed$ran == rn_lvl
+      mask_ctr <- mask_ctr + 1
+    }
+    for (trt_lvl in wisp.results$treatment$names) {
+      mask_list[[paste0("treatment_", trt_lvl)]] <- wisp.results$count.data.summed$treatment == trt_lvl
     }
     for (gvp_lvl in wisp.results$grouping.variables$parent.lvls) {
       for (gv_lvl in wisp.results$grouping.variables$child.lvls) {
@@ -574,6 +575,8 @@ analyze.residuals <- function(
     
     if (verbose) snk.report...("Making plots and saving stats")
     plots.residuals <- list()
+    stats.residuals <- data.frame()
+    stats.residuals.log <- data.frame()
     for (gp in names(mask_list)) {
       
       # Basic histogram
@@ -599,20 +602,22 @@ analyze.residuals <- function(
       plots.residuals[[paste0(gp,"_resid")]] <- residual_plots
       
       # Find and save residual summary stats
-      stats.residuals <- data.frame(
+      stats.residuals.gp <- data.frame(
         group = gp,
         mean = mean(df_wide$residuals, na.rm = TRUE),
         sd = sd(df_wide$residuals, na.rm = TRUE),
         variance = var(df_wide$residuals, na.rm = TRUE)
       )
+      stats.residuals <- rbind(stats.residuals, stats.residuals.gp)
       
       # Find and save residual summary stats for log residuals
-      stats.residuals.log <- data.frame(
+      stats.residuals.log.gp <- data.frame(
         group = gp,
         mean = mean(df_wide$residuals.log, na.rm = TRUE),
         sd = sd(df_wide$residuals.log, na.rm = TRUE),
         variance = var(df_wide$residuals.log, na.rm = TRUE)
       )
+      stats.residuals.log <- rbind(stats.residuals.log, stats.residuals.log.gp)
       
     }
     

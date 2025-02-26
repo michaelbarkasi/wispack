@@ -89,7 +89,7 @@ class wspc {
     sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
     double LROcutoff = 2.0;                 // cutoff (x sd) for likelihood ratio outlier detection
     double tslope_initial = 1.0;            // initial value for transition slope
-    double wf_initial = 0.5;               // initial value for warping factor ... any sensible magnitude > 0.1 and < 0.75 should do? 
+    double wf_initial = 0.5;                // initial value for warping factor ... any sensible magnitude > 0.1 and < 0.75 should do? 
     
     // Optimization settings
     int max_evals = 200;  // max number of evaluations
@@ -880,6 +880,16 @@ class wspc {
           );
         }
         
+        // Compute the negative log-likelihood of the mean of these point warping factors, given the expected normal distribution
+        // ... the relevant probability distribution is a normal distribution of mean zero, sd = sqrt(1/((4*m)*(2*s + 1)))
+        // ... as the actual warping factors are scaled to range from -1 to 1, the expected sd is twice the above formula
+        sdouble pw_mean_p = vmean(warping_factors_point); 
+        sdouble sd_pw_p = ssqrt(1.0 / ((4.0*(sdouble)warping_factors_point.size()) * (2.0*beta_shape_point + 1.0))) * 2.0;
+        log_lik += slog(
+          // Assume mean = 0
+          sexp(-spower(pw_mean_p, 2.0) / (2.0 * spower(sd_pw_p, 2.0))) / (ssqrt(2.0 * M_PI) * sd_pw_p)
+        );
+        
         // Compute the negative log-likelihood of the warping factors, given the assumed beta distribution
         sdouble beta_shape_rate = parameters[param_struc_idx["beta_shape_rate"]];
         for (int i = 0; i < warping_factors_rate.size(); i++) {
@@ -889,6 +899,15 @@ class wspc {
               (spower(stan::math::tgamma(beta_shape_rate), 2.0) / stan::math::tgamma(2.0*beta_shape_rate))
           );
         }
+        
+        // Compute the negative log-likelihood of the mean of these rate warping factors, given the expected normal distribution
+        // ... see above notes on the formula
+        sdouble pw_mean_r = vmean(warping_factors_rate); 
+        sdouble sd_pw_r = ssqrt(1.0 / ((4.0*(sdouble)warping_factors_rate.size()) * (2.0*beta_shape_rate + 1.0))) * 2.0;
+        log_lik += slog(
+          // Assume mean = 0
+          sexp(-spower(pw_mean_r, 2.0) / (2.0 * spower(sd_pw_r, 2.0))) / (ssqrt(2.0 * M_PI) * sd_pw_r)
+        );
         
         // Compute the negative log-likelihood of the Rt beta values, given the assumed gamma distribution
         // ... Note: We assume it's the "unlinked" exponential of the rate (the "true" multiplicative beta) which comes from the gamma distribution
@@ -957,8 +976,9 @@ class wspc {
           }
           
         }
+        
+        // Take negative and average, the latter so we're looking at values in the same range, regardless of data size
         sdouble negloglik = -log_lik / count_not_na_idx.size();
-        // Use the average, so we're looking at values in the same range, regardless of data size
         
         if (std::isinf(negloglik) || negloglik > inf_) {
           negloglik = inf_;
