@@ -1687,6 +1687,9 @@ Rcpp::List wspc::results() {
   fitted_parameters.names() = param_names_clean;
   
   // Collect fixed-effect names and levels 
+  fix_lvls.names() = fix_names;
+  fix_trt.names() = fix_names;
+  fix_ref.names() = fix_names;
   List fixed_effects = List::create(
     _["name"] = fix_names,
     _["lvls"] = fix_lvls,
@@ -1695,6 +1698,7 @@ Rcpp::List wspc::results() {
   );
   
   // Pack up treatment name information
+  treatment_components.names() = treatment_lvls;
   List treat = List::create(
     _["names"] = treatment_lvls, 
     _["components"] = treatment_components
