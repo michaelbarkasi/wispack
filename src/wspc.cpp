@@ -292,7 +292,7 @@ wspc::wspc(
       RtEffs[(String)parent_lvls[p]] = List(n_child);
       name_proxylist(RtEffs[(String)parent_lvls[p]], child_lvls);
       for (int c = 0; c < n_child; c++) {
-        vprint((String)child_lvls[c], true);
+        
         // Run LRO algorithm for each treatment level of this child-parent pair
         NumericMatrix count_avg_mat(bin_num_i, treatment_num);
         IntegerVector found_cp(0);
@@ -1687,8 +1687,6 @@ Rcpp::List wspc::results() {
   fitted_parameters.names() = param_names_clean;
   
   // Collect fixed-effect names and levels 
-  fix_lvls.names() = fix_names;
-  fix_trt.names() = fix_names;
   fix_ref.names() = fix_names;
   List fixed_effects = List::create(
     _["name"] = fix_names,
@@ -1698,7 +1696,6 @@ Rcpp::List wspc::results() {
   );
   
   // Pack up treatment name information
-  treatment_components.names() = treatment_lvls;
   List treat = List::create(
     _["names"] = treatment_lvls, 
     _["components"] = treatment_components

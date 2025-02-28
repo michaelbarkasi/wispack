@@ -176,7 +176,7 @@ dVec series_nll(
       nlls[i] *= -1;
     
     }
-  
+   
     for (int i = n - ws + 1; i < n; i++) {
       nlls[i] = 1.0;
     }
