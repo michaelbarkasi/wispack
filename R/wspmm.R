@@ -17,6 +17,7 @@ wisp <- function(
       ran = "ran",
       fixedeffects = c()
     ),
+    use.median = TRUE,
     bootstraps.num = 1e3, 
     converged.resamples.only = TRUE,
     max.fork = 10,
@@ -60,7 +61,7 @@ wisp <- function(
     
     # Estimate model parameters with bootstrapping ####
     if (verbose) {
-      snk.report("Estimating model paarameters")
+      snk.report("Estimating model parameters")
       snk.horizontal_rule(reps = snk.small_break_reps)
     }
     
@@ -148,10 +149,16 @@ wisp <- function(
       num.evals = bs_results[,n_params + 4]
     )
     
-    # Set median bootstrap estimates as fitted parameters
-    if (verbose) snk.report...("Setting median bootstrap estimates as parameters", initial_breaks = 1, end_breaks = 1)
+    # Set final fitted parameters
+    if (use.median) {
+      if (verbose) snk.report...("Setting median bootstrap estimates as parameters", initial_breaks = 1, end_breaks = 1)
+      final_parameters <- apply(bs_params, 2, function(x) median(x, na.rm = TRUE))
+    } else {
+      if (verbose) snk.report...("Setting full-data fit as parameters", initial_breaks = 1, end_breaks = 1)
+      final_parameters <- bs_results[bootstraps.num + 1,1:n_params]
+    }
     cpp_model$set_parameters(
-      apply(bs_params, 2, function(x) median(x, na.rm = TRUE)),
+      final_parameters,
       verbose
     )
     
@@ -165,8 +172,18 @@ wisp <- function(
     
     # Run statistical analysis ####
     
+    # Initialize shell to hold stats
+    stats <- list(
+      parameters = data.frame(),
+      tps = data.frame(),
+      residuals = data.frame(),
+      residuals.log = data.frame(),
+      variance = data.frame()
+    )
+    results[["stats"]] <- stats
+    
     # Run stats on bootstraps
-    stats.parameters <- bs.stats(
+    results$stats$parameters <- bs.stats(
       wisp.results = results,
       conv.resamples.only = converged.resamples.only,
       verbose = verbose
@@ -177,24 +194,21 @@ wisp <- function(
       wisp.results = results,
       verbose = verbose
     )
-    stats.residuals <- residuals$stats
-    stats.residuals.log <- residuals$stats.log
+    results$stats$residuals <- residuals$stats
+    results$stats$residuals.log <- residuals$stats.log
     plots.residuals <- residuals$plots
     
     # Check tpoint stability
-    tps <- check.tpoint.stability(
+    results$stats$tps <- check.tpoint.stability(
       wisp.results = results,
       verbose = verbose
     )
     
-    # Gather stats
-    stats <- list(
-      parameters = stats.parameters,
-      tps = tps,
-      residuals = stats.residuals,
-      residuals.log = stats.residuals.log
+    # Check variance between non-universal and universal ratios 
+    results$stats$variance <- analyze.variance(
+      wisp.results = results,
+      verbose = verbose
     )
-    results[["stats"]] <- stats
     
     # Make plots of results ####
     
@@ -394,6 +408,7 @@ bs.stats <- function(
 # Function for checking whether tpoints are stable, i.e., a genuine rate transition
 check.tpoint.stability <- function(
     wisp.results,
+    alpha = 0.05,
     verbose = TRUE
   ) {
    
@@ -408,11 +423,11 @@ check.tpoint.stability <- function(
       # Grab names and other needed values
       fixed_effect_names <- wisp.results$treatment$names
       fixed_effect_components <- wisp.results$treatment$components
+      names(fixed_effect_components) <- fixed_effect_names
       mc_names <- wisp.results$model.component.list
       p_val_adj_names <- wisp.results$stats$parameters$parameter
       parent_names <- as.character(wisp.results$grouping.variables$parent.lvls)
       child_names <- as.character(wisp.results$grouping.variables$child.lvls)
-      fitted_params <- wisp.results$stats$parameters$estimate
       bs_params <- wisp.results$bs_params
       
       # Grab baseline-tslope and beta masks
@@ -426,10 +441,10 @@ check.tpoint.stability <- function(
         wisp.results$variables$parent,
         wisp.results$variables$child,
         "TPS.ref", 
-        paste0("TPS.", fixed_effect_names), 
-        as.character(levels(interaction(mc_names, fixed_effect_names)))
+        paste0("TPS.", fixed_effect_names[-c(1)]), 
+        as.character(levels(interaction(mc_names, fixed_effect_names[-c(1)])))
       )
-      m <- length(as.character(levels(interaction(mc_names, fixed_effect_names)))) + length(fixed_effect_names)
+      m <- length(as.character(levels(interaction(mc_names, fixed_effect_names[-c(1)])))) + length(fixed_effect_names[-c(1)])
       
       # Make row names
       row_names <- as.character(levels(interaction(child_names, parent_names)))
@@ -465,7 +480,7 @@ check.tpoint.stability <- function(
           }
           
           # Check for fixed effects on model components 
-          for (fe in fixed_effect_names) {
+          for (fe in fixed_effect_names[-c(1)]) { # skip "ref" condition, as it is the baseline
             for (mc in mc_names) {
               
               # Grab the mask for this fixed effect and model component
@@ -496,7 +511,7 @@ check.tpoint.stability <- function(
                   for (fec in fe_components) {
                     
                     # Grab mask for this tslope effect for this parent-child pair
-                    fec_mask <- grepl(paste0("_",paste0(fec, collapse = "*"),"_"), p_val_adj_names, fixed = TRUE)
+                    fec_mask <- grepl(paste0("_",paste0(fec),"_"), p_val_adj_names, fixed = TRUE)
                     fec_tslope_mask <- tslope_beta_mask & pc_mask & fec_mask
                     
                     # Sanity check, both should be the number of transition points
@@ -509,6 +524,7 @@ check.tpoint.stability <- function(
                   }
                   
                   # Compute implied slopes for this effects condition in each bs resample
+                  if (length(bs_col_idx) < 2) stop("Problem computing TPS in treatment condition (no effects present, baseline only)")
                   implied_bs_slopes <- rowSums(bs_params[,bs_col_idx])
                   
                   # Compute p_value ("- 1" and lower-tail only because checking if significantly greater than 1)
@@ -635,6 +651,299 @@ analyze.residuals <- function(
         plots = plots.residuals
       )
     )
+    
+  }
+
+analyze.variance <- function(
+    wisp.results,
+    verbose = TRUE
+  ) {
+    
+    # Grab count data frame
+    count_data <- wisp.results$count.data.summed
+    
+    # Grab random effects levels 
+    ran_lvls <- wisp.results$grouping.variables$ran.lvls[-c(1)] # remove "none" level
+    n_ran_lvls <- length(ran_lvls)
+    
+    # Get treatment levels for each ran level
+    trts <- wisp.results$treatment$names
+    trts_comps <- wisp.results$treatment$components
+    names(trts_comps) <- trts
+    n_trts <- length(trts)
+    trt_lvls <- list()
+    for (m in ran_lvls) {
+      mask <- count_data$ran == m & !is.na(count_data$count)
+      trt_lvls[[m]] <- unique(count_data$treatment[mask])
+    }
+    
+    # Grab fixed effects levels
+    fix <- wisp.results$fix
+    names(fix$lvls) <- fix$name
+    names(fix$treat.lvl) <- fix$name
+    names(fix$ref.lvl) <- fix$name
+    
+    # Make treatment component array
+    trt_comp_array <- array(
+      as.character(NA),
+      dim = c(n_trts, 2),
+      dimnames = list(trts, fix$name)
+    )
+    for (t in trts) {
+      if (t == "ref") {
+        trt_comp_array[t,] <- fix$ref.lvl
+      } else {
+        for (fe in fix$name) {
+          if (any(trts_comps[[t]] %in% fix$lvls[[fe]])) {
+            trt_comp_array[t, fe] <- fix$treat.lvl[[fe]]
+          } else {
+            trt_comp_array[t, fe] <- fix$ref.lvl[fe]
+          }
+        }
+      }
+    }
+    
+    # Make data matrices 
+    make_data_matrices <- function(
+        count_type # character, either "count", "pred", "count.log", or "pred.log"
+      ) {
+        
+        # Grab prelim info
+        children <- wisp.results$grouping.variables$child.lvls
+        n_children <- length(children)
+        bins <- unique(count_data$bin)
+        n_bins <- length(bins)
+        param_names <- names(wisp.results$fitted.parameters)
+        tpoint_mask <- grepl("tpoint", param_names) & grepl("baseline", param_names)
+        degs <- rep(0, n_children)
+        tpoints <- list()
+        names(degs) <- children
+        
+        # Make full data matrices
+        data0 <- array(
+          NA, 
+          dim = c(
+            n_bins, n_children,
+            n_ran_lvls,
+            length(trt_lvls)
+          ),
+          dimnames = list(bin = bins, child = children, ran = ran_lvls, fixedeffect = trts)
+        )
+        for (m in ran_lvls) {
+          for (t in trt_lvls[[m]]) {
+            for (g in children) {
+              mask <- count_data$ran == m & count_data$treatment == t & count_data$child == g
+              if (sum(mask) == n_bins) data0[, g, m, t] <- count_data[,count_type][mask]
+            }
+          }
+        }
+        
+        # Find t-points and degrees for each child
+        for (g in children) {
+          gmask <- grepl(g, param_names) & tpoint_mask
+          degs[g] <- sum(gmask)
+          if (any(gmask)) {
+            tpoints[[g]] <- as.integer(c(wisp.results$fitted.parameters[gmask]))
+          }
+        }
+        max_blocks <- max(degs) + 1
+        
+        # Collapse initial data matrices down to blocks
+        data <- array(
+          NA, 
+          dim = c(
+            max_blocks, n_children,
+            n_ran_lvls,
+            length(trt_lvls)
+          ),
+          dimnames = list(bin = 1:max_blocks, child = children, ran = ran_lvls, fixedeffect = trts)
+        )
+        for (m in ran_lvls) {
+          for (t in trt_lvls[[m]]) {
+            if (length(data0[, , m, t]) > 0) {
+              for (g in children) {
+                if (degs[g] == 0) {
+                  data[1, g, m, t] <- mean(data0[, g, m, t])
+                } else {
+                  for (i in 1:(degs[g] + 1)) {
+                    if (i == 1) {
+                      row_batch <- 1:(tpoints[[g]][i] - 1) 
+                    } else if (i > degs[g]) {
+                      row_batch <- tpoints[[g]][i - 1]:n_bins
+                    } else {
+                      row_batch <- tpoints[[g]][i - 1]:(tpoints[[g]][i] - 1) 
+                    }
+                    data[i, g, m, t] <- mean(data0[row_batch, g, m, t])
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        return(data)
+        
+      }
+    
+    data.c <- make_data_matrices("count.log")
+    data.p <- make_data_matrices("pred.log")
+    
+    # Find which treatment levels appear in all ran_lvls (i.e., are "universal") 
+    univ_trt <- rep(TRUE, length(trts))
+    names(univ_trt) <- trts
+    for (t in trts) {
+      for (m in ran_lvls) {
+        t_here <- FALSE
+        mtrts <- trt_lvls[[m]]
+        for (mt in mtrts) {
+          mt_comps <- trts_comps[[mt]]
+          t_here <- t_here || t %in% mt_comps
+        }
+        univ_trt[t] <- univ_trt[t] && t_here
+      }
+    }
+    
+    # For each fixed effect, check if it is universal
+    n_eff <- length(fix$name)
+    univ_eff <- rep(FALSE, n_eff)
+    names(univ_eff) <- fix$name
+    for (fe in fix$name) {
+      for (t in trts) {
+        if (univ_trt[t] && t %in% fix$lvls[[fe]]) {
+          univ_eff[fe] <- TRUE
+        }
+      }
+    }
+    
+    # For reach treatment level of each fixed effect, find normalized differences between random levels
+    find_random_variation <- function(
+        data
+      ) {
+        
+        variation <- list()
+        for (fe in fix$name) {
+          
+          # Initialize array to track which random levels and treatments have been compared
+          running_tally <- array(
+            as.character(NA),
+            dim = c(2, 4)
+          )
+          
+          # Initialize variable to hold normalized differences
+          norm_diffs <- c()
+          
+          # ... then for each treatment level
+          for (t in trts) {
+            
+            # If treatment level is universal, compare random levels on this level t
+            t1 <- t
+            t2 <- t 
+            
+            # If treatment level is not universal, compare random levels on t and t2 
+            #  such that t2 matches t, except on fe
+            if (!univ_eff[fe]) {
+              this_fe <- trt_comp_array[t, fe]
+              fe_col <- trt_comp_array[, fe]
+              fe_mismatches <- fe_col != this_fe 
+              these_fe <- trt_comp_array[t, fix$name != fe]
+              these_col <- trt_comp_array[, fix$name != fe]
+              if (!is.null(dim(these_col))) these_matches <- apply(these_col, 1, function(x) all(x == these_fe))
+              else these_matches <- these_col == these_fe
+              t2 <- trts[these_matches & fe_mismatches]
+            }
+            
+            # For each unique random-level pair 
+            for (m1 in ran_lvls) {
+              for (m2 in ran_lvls) {
+                
+                # Looking at variation between random levels, so don't compare levels to themselves
+                if (m1 != m2) {
+                  
+                  # Grab random levels and treatments for this comparison
+                  this_row <- c(m1, m2, t1, t2)
+                  
+                  # Check if these random levels and treatments have been compared and skip if so
+                  if (any(apply(running_tally, 1, function(x) all(this_row %in% x)))) {
+                    next
+                  } else {
+                    
+                    # Grab data matrices for each randomd level and treatment level
+                    values1 <- data[, , m1, t1]
+                    values2 <- data[, , m2, t2]
+                    
+                    # Find the difference between these two random levels and associated treatments 
+                    diffs <- abs(values1 - values2)
+                    
+                    # If this is a legit comparison (no NA), normalize the differences and add to the list
+                    if (sum(!is.na(c(diffs))) > 0) {
+                      diffs <- diffs/values1
+                      diffs <- na.omit(c(diffs))
+                      norm_diffs <- c(norm_diffs, diffs)
+                      running_tally <- rbind(running_tally, this_row)
+                    }
+                    
+                  }
+                  
+                }
+              }
+            }
+          }
+          
+          # Save normalized differences for this fixed effect
+          variation[[fe]] <- norm_diffs
+          
+        }
+        
+        return(variation)
+        
+      }
+    
+    variation.c <- find_random_variation(data.c)
+    variation.p <- find_random_variation(data.p)
+    
+    # For each universal fixed effect, find variance ratios it and each non-universal fixed effect
+    compute_variation_ratio <- function(variation) {
+      
+      ratios <- c()
+      ratio_names <- c()
+      
+      # For each fixed effect
+      for (fe in fix$name) {
+        
+        # If this effect is universal, want to check all non-universal fixed effects against it
+        if (univ_eff[fe]) {
+          fe_diffs <- variation[[fe]]
+          
+          for (fe2 in fix$name) {
+            
+            if (fe2 != fe && !univ_eff[fe2]) {
+              fe2_diffs <- variation[[fe2]]
+              diff_ratio <- mean(fe2_diffs)/mean(fe_diffs)
+              
+              ratios <- c(ratios, diff_ratio)
+              ratio_names <- c(ratio_names, paste0(fe2, "/", fe))
+              
+            }
+          }
+        }
+        
+      }
+      
+      names(ratios) <- ratio_names
+      return(ratios)
+      
+    }
+    
+    var_ratios.c <- compute_variation_ratio(variation.c)
+    var_ratios.p <- compute_variation_ratio(variation.p)
+    
+    var_ratios <- data.frame(
+      fixed.effect = names(var_ratios.c),
+      count.ratio = var_ratios.c,
+      pred.ratio = var_ratios.p
+    )
+    
+    return(var_ratios)
     
   }
 
@@ -1464,6 +1773,7 @@ plot.struc.stats <- function(
     }
     
     plots.struc_stats <- list()
+    bs_fitted_params <- wisp.results$bs_params
     
     # Warping factors, beta distributions
     if (verbose) snk.report...("Warping factors, beta distributions")
@@ -1475,23 +1785,25 @@ plot.struc.stats <- function(
       probability_point = dbeta(rates, shape_point, shape_point),
       probability_rate = dbeta(rates, shape_rate, shape_rate)
     )
-    bs_fitted_params <- wisp.results$bs_params
     wfactors_point_mask <- grepl("wfactor_point", wisp.results$param.names)
     wfactors_point <- c(bs_fitted_params[,wfactors_point_mask])
     wfactors_point <- (wfactors_point+1)/2
+    data$probability_point <- data$probability_point / max(data$probability_point)
     plot_wfactor_point_struc_stats <- ggplot() +
       geom_histogram(
-        data = data.frame(vals = wfactors_point), aes(x = vals, y = after_stat(density)),
+        data = data.frame(vals = wfactors_point), aes(x = vals, y = after_stat(ndensity)),
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
       geom_line(aes(x = rate, y = probability_point), data = data, linewidth = 1.2, na.rm = TRUE) +
       labs(title = "Beta distribution model of random point effects", x = "Rescaled warping factor, point", y = "Probability") +
       theme_minimal() 
+    
     wfactors_rate_mask <- grepl("wfactor_rate", wisp.results$param.names)
     wfactors_rate <- c(bs_fitted_params[,wfactors_rate_mask])
     wfactors_rate <- (wfactors_rate+1)/2
+    data$probability_rate <- data$probability_rate /max(data$probability_rate)
     plot_wfactor_rate_struc_stats <- ggplot() +
       geom_histogram(
-        data = data.frame(vals = wfactors_rate), aes(x = vals, y = after_stat(density)),
+        data = data.frame(vals = wfactors_rate), aes(x = vals, y = after_stat(ndensity)),
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
       geom_line(aes(x = rate, y = probability_rate), data = data, linewidth = 1.2, na.rm = TRUE) +
       labs(title = "Beta distribution model of random rate effects", x = "Rescaled warping factor, rate", y = "Probability") +
@@ -1507,16 +1819,17 @@ plot.struc.stats <- function(
     gamma_shape <- wisp.results$struc.params["gamma_shape_rate"]
     gamma_rate <- wisp.results$struc.params["gamma_rate_rate"]
     rate_effs_mask <- grepl("Rt", wisp.results$param.names) & grepl("beta", wisp.results$param.names)
-    rate_effects <- c(bs_fitted_params[,unlist(wisp.results$param.idx0$beta$Rt) + 1])
+    rate_effects <- c(bs_fitted_params[,rate_effs_mask])
     rate_effects <- exp(rate_effects)
-    rates <- seq(0.9*min(rate_effects), 1.1*max(rate_effects), length.out = 100)
+    rates <- seq(min(rate_effects), max(rate_effects), length.out = 100)
     data <- data.frame(
       rate = rates,
       probability = dgamma(rates, gamma_shape, rate = gamma_rate)
     )
+    data$probability <- data$probability / max(data$probability)
     plot_rate_effects_struc_stats <- ggplot() +
       geom_histogram(
-        data = data.frame(vals = rate_effects), aes(x = vals, y = after_stat(density)),
+        data = data.frame(vals = rate_effects), aes(x = vals, y = after_stat(ndensity)),
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
       geom_line(aes(x = rate, y = probability), data = data, linewidth = 1.2, na.rm = TRUE) +
       xlim(0.9*min(rate_effects),1.1*max(rate_effects)) +
@@ -1535,22 +1848,23 @@ plot.struc.stats <- function(
       
       slope_effects <- c(bs_fitted_params[,slope_effs_mask])
       slope_effects <- exp(slope_effects)
-      rates <- seq(0.9*min(slope_effects), 1.1*max(slope_effects), length.out = 100)
+      rates <- seq(min(slope_effects), max(slope_effects), length.out = 100)
       data <- data.frame(
         rate = rates,
         probability = dgamma(rates, gamma_shape, rate = gamma_rate)
       )
-      plotslope_effects_struc_stats <- ggplot() +
+      data$probability <- data$probability / max(data$probability)
+      plot_slope_effects_struc_stats <- ggplot() +
         geom_histogram(
-          data = data.frame(vals = slope_effects), aes(x = vals, y = after_stat(density)),
+          data = data.frame(vals = slope_effects), aes(x = vals, y = after_stat(ndensity)),
           bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
         geom_line(aes(x = rate, y = probability), data = data, linewidth = 1.2, na.rm = TRUE) +
         xlim(0.9*min(slope_effects),1.1*max(slope_effects)) +
         labs(title = "Gamma distribution model of fixed slope effects", x = "Exponential of slope effect", y = "Probability") +
         theme_minimal() 
       
-      if (verbose) print(plotslope_effects_struc_stats)
-      plots.struc_stats[["plotslope_effects_struc_stats"]] <- plotslope_effects_struc_stats
+      if (verbose) print(plot_slope_effects_struc_stats)
+      plots.struc_stats[["plot_slope_effects_struc_stats"]] <- plot_slope_effects_struc_stats
       
     }
     
@@ -1569,9 +1883,10 @@ plot.struc.stats <- function(
         rate = rates,
         probability = dnorm(rates, 0, tpoint_shape)
       )
+      data$probability <- data$probability / max(data$probability)
       plot_tpoint_effects_struc_stats <- ggplot() +
         geom_histogram(
-          data = data.frame(vals = tpoint_effects), aes(x = vals, y = after_stat(density)),
+          data = data.frame(vals = tpoint_effects), aes(x = vals, y = after_stat(ndensity)),
           bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
         geom_line(aes(x = rate, y = probability), data = data, linewidth = 1.2, na.rm = TRUE) +
         labs(title = "Gaussian distribution model of fixed t-point effects", x = "t-point effect", y = "Probability") +
@@ -1729,7 +2044,7 @@ plot.decomposition <- function(
     for (r in 1:input_rows) {
       
       plots.decomp[[r]] <- plot.ratecount(
-        wisp.results = merfish_laminar_model,
+        wisp.results = wisp.results,
         pred.type = ptype,
         count.type = ctype,
         dim.boundaries = dim.boundaries,
