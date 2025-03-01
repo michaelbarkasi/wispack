@@ -42,7 +42,7 @@ wspc::wspc(
     double tslope_initial_settings = settings["tslope_initial"];
     double wf_initial_settings = settings["wf_initial"];
     int max_evals_settings = settings["max_evals"];
-    for (int i = 0; i < 7; i++) {struc_values[i] = struc_values_settings[i];}
+    for (int i = 0; i < struc_values.size(); i++) {struc_values[i] = struc_values_settings[i];}
     buffer_factor = sdouble(buffer_factor_settings);
     ctol = ctol_settings;
     max_penalty_at_distance_factor = sdouble(max_penalty_at_distance_factor_settings);
