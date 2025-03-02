@@ -26,14 +26,14 @@ wisp <- function(
     verbose = TRUE,
     print.child.summaries = TRUE,
     model.settings = list(
-      struc_values = c(5.0, 5.0, 5.0, 1.0, 1.0, 1.0, 1.0),  # values of structural parameters to test
-      buffer_factor = 0.05,                                 # buffer factor for penalizing distance from structural parameter values
-      ctol = 1e-4,                                          # convergence tolerance
-      max_penalty_at_distance_factor = 0.01,                # maximum penalty at distance from structural parameter values
-      LROcutoff = 2.0,                                      # cutoff for LROcp
-      tslope_initial = 1.0,                                 # initial value for tslope
-      wf_initial = 0.5,                                     # initial value for wfactor
-      max_evals = 200                                       # maximum number of evaluations for optimization
+      struc_values = c(1.0, 1.0, 1.0, 1.0),       # values of structural parameters to test
+      buffer_factor = 0.05,                       # buffer factor for penalizing distance from structural parameter values
+      ctol = 1e-4,                                # convergence tolerance
+      max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from structural parameter values
+      LROcutoff = 2.0,                            # cutoff for LROcp
+      tslope_initial = 1.0,                       # initial value for tslope
+      wf_initial = 0.5,                           # initial value for wfactor
+      max_evals = 200                             # maximum number of evaluations for optimization
     )
   ) {
    
@@ -166,6 +166,9 @@ wisp <- function(
     results <- cpp_model$results()
     results[["bs_params"]] <- bs_params
     results[["bs.diagnostics"]] <- bs.diagnostics
+    
+    # Sample resample demo
+    results[["resample.demo"]] <- cpp_model$resample(1000)
     
     # Add variable names 
     results[["variables"]] <- variables
@@ -1794,7 +1797,7 @@ plot.struc.stats <- function(
         data = data.frame(vals = wfactors_point), aes(x = vals, y = after_stat(ndensity)),
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
       geom_line(aes(x = rate, y = probability_point), data = data, linewidth = 1.2, na.rm = TRUE) +
-      labs(title = "Beta distribution model of random point effects", x = "Rescaled warping factor, point", y = "Probability") +
+      labs(title = "Beta distribution model of random point effects", x = "Rescaled warping factor, point", y = "Density") +
       theme_minimal() 
     
     wfactors_rate_mask <- grepl("wfactor_rate", wisp.results$param.names)
@@ -1806,7 +1809,7 @@ plot.struc.stats <- function(
         data = data.frame(vals = wfactors_rate), aes(x = vals, y = after_stat(ndensity)),
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
       geom_line(aes(x = rate, y = probability_rate), data = data, linewidth = 1.2, na.rm = TRUE) +
-      labs(title = "Beta distribution model of random rate effects", x = "Rescaled warping factor, rate", y = "Probability") +
+      labs(title = "Beta distribution model of random rate effects", x = "Rescaled warping factor, rate", y = "Density") +
       theme_minimal() 
     
     if (verbose) print(plot_wfactor_point_struc_stats)
@@ -1814,17 +1817,16 @@ plot.struc.stats <- function(
     if (verbose) print(plot_wfactor_rate_struc_stats)
     plots.struc_stats[["plot_wfactor_rate_struc_stats"]] <- plot_wfactor_rate_struc_stats
     
-    # Rate effects, gamma distribution
-    if (verbose) snk.report...("Rate effects, gamma distribution")
-    gamma_shape <- wisp.results$struc.params["gamma_shape_rate"]
-    gamma_rate <- wisp.results$struc.params["gamma_rate_rate"]
+    # Rate effects, Gaussian distribution
+    if (verbose) snk.report...("Rate effects, Gaussian distribution")
+    expected_ran_effect = 2.0 * sqrt(1.0 / (4.0 * (2.0 * shape_rate + 1.0)))
+    Rt_shape = 2.12 * expected_ran_effect
     rate_effs_mask <- grepl("Rt", wisp.results$param.names) & grepl("beta", wisp.results$param.names)
     rate_effects <- c(bs_fitted_params[,rate_effs_mask])
-    rate_effects <- exp(rate_effects)
     rates <- seq(min(rate_effects), max(rate_effects), length.out = 100)
     data <- data.frame(
       rate = rates,
-      probability = dgamma(rates, gamma_shape, rate = gamma_rate)
+      probability = dnorm(rates, 0, Rt_shape)
     )
     data$probability <- data$probability / max(data$probability)
     plot_rate_effects_struc_stats <- ggplot() +
@@ -1832,44 +1834,39 @@ plot.struc.stats <- function(
         data = data.frame(vals = rate_effects), aes(x = vals, y = after_stat(ndensity)),
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
       geom_line(aes(x = rate, y = probability), data = data, linewidth = 1.2, na.rm = TRUE) +
-      xlim(0.9*min(rate_effects),1.1*max(rate_effects)) +
-      labs(title = "Gamma distribution model of fixed rate effects", x = "Exponential of rate effect", y = "Probability") +
+      xlim(min(rate_effects),max(rate_effects)) +
+      labs(title = "Gaussian distribution model of fixed rate effects", x = "Rate effect", y = "Density") +
       theme_minimal() 
     
     if (verbose) print(plot_rate_effects_struc_stats)
     plots.struc_stats[["plot_rate_effects_struc_stats"]] <- plot_rate_effects_struc_stats
     
-    # Slope effects, gamma distribution
-    if (verbose) snk.report...("Slope effects, gamma distribution")
-    gamma_shape <- wisp.results$struc.params["gamma_shape_slope"]
-    gamma_rate <- wisp.results$struc.params["gamma_rate_slope"]
-    slope_effs_mask <- grepl("tslope", wisp.results$param.names) & grepl("beta", wisp.results$param.names)
-    if (any(slope_effs_mask)) {
+    # Slope effects, Gaussian distribution
+    if (verbose) snk.report...("Slope effects, Gaussian distribution")
+    tslope_shape <- wisp.results$struc.params["sd_tslope_effect"]
+    tslope_effs_mask <- grepl("tslope", wisp.results$param.names) & grepl("beta", wisp.results$param.names)
+    if (any(tslope_effs_mask)) {
       
-      slope_effects <- c(bs_fitted_params[,slope_effs_mask])
-      slope_effects <- exp(slope_effects)
-      rates <- seq(min(slope_effects), max(slope_effects), length.out = 100)
+      tslope_effects <- c(bs_fitted_params[,tslope_effs_mask])
+      rates <- seq(min(tslope_effects), max(tslope_effects), length.out = 100)
       data <- data.frame(
         rate = rates,
-        probability = dgamma(rates, gamma_shape, rate = gamma_rate)
+        probability = dnorm(rates, 0, tslope_shape)
       )
       data$probability <- data$probability / max(data$probability)
       plot_slope_effects_struc_stats <- ggplot() +
         geom_histogram(
-          data = data.frame(vals = slope_effects), aes(x = vals, y = after_stat(ndensity)),
+          data = data.frame(vals = tslope_effects), aes(x = vals, y = after_stat(ndensity)),
           bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
         geom_line(aes(x = rate, y = probability), data = data, linewidth = 1.2, na.rm = TRUE) +
-        xlim(0.9*min(slope_effects),1.1*max(slope_effects)) +
-        labs(title = "Gamma distribution model of fixed slope effects", x = "Exponential of slope effect", y = "Probability") +
+        xlim(min(tslope_effects),max(tslope_effects)) +
+        labs(title = "Gaussian distribution model of fixed slope effects", x = "t-slope effect", y = "Density") +
         theme_minimal() 
       
       if (verbose) print(plot_slope_effects_struc_stats)
       plots.struc_stats[["plot_slope_effects_struc_stats"]] <- plot_slope_effects_struc_stats
       
     }
-    
-    # laplace density
-    # dlaplace <- function(x,m,b) exp(-abs(x-m)/b)/(2*b)
     
     # tpoint effects, Gaussian distribution
     if (verbose) snk.report...("tpoint effects, Gaussian distribution")
@@ -1878,7 +1875,7 @@ plot.struc.stats <- function(
     if (any(tpoint_effs_mask)) {
       
       tpoint_effects <- c(bs_fitted_params[,tpoint_effs_mask])
-      rates <- seq(0.9*min(tpoint_effects), 1.1*max(tpoint_effects), length.out = 100)
+      rates <- seq(min(tpoint_effects), max(tpoint_effects), length.out = 100)
       data <- data.frame(
         rate = rates,
         probability = dnorm(rates, 0, tpoint_shape)
@@ -1889,7 +1886,7 @@ plot.struc.stats <- function(
           data = data.frame(vals = tpoint_effects), aes(x = vals, y = after_stat(ndensity)),
           bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
         geom_line(aes(x = rate, y = probability), data = data, linewidth = 1.2, na.rm = TRUE) +
-        labs(title = "Gaussian distribution model of fixed t-point effects", x = "t-point effect", y = "Probability") +
+        labs(title = "Gaussian distribution model of fixed t-point effects", x = "t-point effect", y = "Density") +
         theme_minimal() 
       
       if (verbose) print(plot_tpoint_effects_struc_stats)

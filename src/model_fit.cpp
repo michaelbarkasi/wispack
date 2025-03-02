@@ -2,6 +2,18 @@
 // model_fit.cpp
 #include "wspc.h"
 
+// Log of density of normal distribution centered on zero
+sdouble log_dnorm_centered(
+    const sdouble& x,        // value to evaluate
+    const sdouble& sd        // standard deviation
+  ) {
+    return slog(
+      // Assume mean = 0
+      sexp(-spower(x, 2.0) / (2.0 * spower(sd, 2.0))) /
+        (ssqrt(2.0 * M_PI) * sd)
+    );
+  }
+
 // Numerically stable implementation of sigmoid function
 sdouble sigmoid_stable(
     const sdouble& x

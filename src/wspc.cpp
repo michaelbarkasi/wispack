@@ -804,32 +804,21 @@ sdouble wspc::neg_loglik(
       sexp(-spower(pw_mean_r, 2.0) / (2.0 * spower(sd_pw_r, 2.0))) / (ssqrt(2.0 * M_PI) * sd_pw_r)
     );
     
-    // Compute the negative log-likelihood of the Rt beta values, given the assumed gamma distribution
-    // ... Note: We assume it's the "unlinked" exponential of the rate (the "true" multiplicative beta) which comes from the gamma distribution
-    sdouble gamma_shape_rate = parameters[param_struc_idx["gamma_shape_rate"]];
-    sdouble gamma_rate_rate = parameters[param_struc_idx["gamma_rate_rate"]];
+    // Compute the negative log-likelihood of the Rt beta values, given the normal distribution implied by the beta-rate shape and b-f ratio
+    sdouble expected_ran_effect = ssqrt(1.0 / (4.0 * (2.0 * beta_shape_rate + 1.0)));
+    expected_ran_effect *= 2.0; // scale to range from -1 to 1
+    sdouble sd_Rt_effect = 2.12 * expected_ran_effect;
     for (int i = 0; i < Rt_beta_values_no_ref.size(); i++) {
-      sdouble Rt_exp = sexp(Rt_beta_values_no_ref(i));
-      log_lik += slog(
-        // Assume rate = 1
-        (spower(gamma_rate_rate, gamma_shape_rate) * spower(Rt_exp, gamma_shape_rate - 1.0) * 
-          sexp(-gamma_rate_rate * Rt_exp)) / stan::math::tgamma(gamma_shape_rate)
-      );
+      log_lik += log_dnorm_centered(Rt_beta_values_no_ref(i), sd_Rt_effect);
     }
     
     // Compute the negative log-likelihood of the slope beta values, given the assumed gamma distribution
     // ... Note: As above, assuming it's the exponential which comes from a gamma distribution
     int n_tslope = tslope_beta_values_no_ref.size();
-    sdouble gamma_shape_slope = parameters[param_struc_idx["gamma_shape_slope"]];
-    sdouble gamma_rate_slope = parameters[param_struc_idx["gamma_rate_slope"]];
+    sdouble sd_tslope_effect = parameters[param_struc_idx["sd_tslope_effect"]];
     if (n_tslope != 0) {
       for (int i = 0; i < n_tslope; i++) {
-        sdouble tslope_exp = sexp(tslope_beta_values_no_ref(i)); 
-        log_lik += slog(
-          // Assume rate = 1
-          (spower(gamma_rate_slope, gamma_shape_slope) * spower(tslope_exp, gamma_shape_slope - 1.0) * 
-            sexp(-gamma_rate_slope * tslope_exp)) / stan::math::tgamma(gamma_shape_slope)
-        );
+        log_lik += log_dnorm_centered(tslope_beta_values_no_ref(i), sd_tslope_effect);
       }
     }
     
@@ -838,11 +827,7 @@ sdouble wspc::neg_loglik(
     sdouble sd_tpoint_effect = parameters[param_struc_idx["sd_tpoint_effect"]];
     if (n_tpoint != 0) {
       for (int i = 0; i < n_tpoint; i++) {
-        log_lik += slog(
-          // Assume mean = 0
-          sexp(-spower(tpoint_beta_values_no_ref(i), 2.0) / (2.0 * spower(sd_tpoint_effect, 2.0))) /
-            (ssqrt(2.0 * M_PI) * sd_tpoint_effect)
-        );
+        log_lik += log_dnorm_centered(tpoint_beta_values_no_ref(i), sd_tpoint_effect);
       }
     }
     
@@ -1319,14 +1304,16 @@ dVec wspc::bs_fit(
     pcg32 rng(seed);
     
     // Resample (with replacement), re-sum token pool, and take logs
-    for (int r = 0; r < n_count_rows; r++) {
+    for (int r : count_not_na_idx) {
+      //double lambda = predicted_rates_log[r];
+      //count_log(r) = sdouble(static_cast<double>(R::rpois(lambda)));
       if (ran[r] != "none") {
         IntegerVector token_pool_r = token_pool[r];
         int resample_sz = token_pool_r.size();
         count(r) = 0.0;
         for (int i = 0; i < resample_sz; i++) {
-          int resample_idx = rng(resample_sz);                             // randomly select integer between 0 and resample_sz 
-          count(r) += count_tokenized[token_pool_r[resample_idx]];         
+          int resample_idx = rng(resample_sz);                             // randomly select integer between 0 and resample_sz
+          count(r) += count_tokenized[token_pool_r[resample_idx]];
         }
         count_log(r) = slog(count(r) + 1.0);
       }
@@ -1368,118 +1355,168 @@ Rcpp::NumericMatrix wspc::bs_batch(
     int max_fork,                // Maximum number of forked processes per batch
     bool verbose
   ) {
-  
-  // Fit full model
-  fit(
-    false, // don't bother setting parameters
-    false  // don't print anything
-  );
-  
-  // Initiate variables to hold results
-  const int c_num = fitted_parameters.size() + 4;
-  const int r_num = bs_num_max + 1;
-  NumericMatrix bs_results(r_num, c_num);
-  
-  dVec full_results = to_dVec(fitted_parameters);
-  full_results.reserve(full_results.size() + 4);
-  full_results.push_back(Rcpp::as<double>(optim_results["penalized_neg_loglik"]));
-  full_results.push_back(Rcpp::as<double>(optim_results["neg_loglik"]));
-  full_results.push_back(Rcpp::as<double>(optim_results["success_code"]));
-  full_results.push_back(Rcpp::as<double>(optim_results["num_evals"]));
-  
-  // Save full fit results in last row of results matrix
-  bs_results.row(bs_num_max) = to_NumVec(full_results);
-  
-  // Perform bootstrap fits in batches
-  const int batch_num = bs_num_max / max_fork;
-  for (int b = 0; b < batch_num; b++) {
-    // Run in parallel with forking
     
-    // Initiate timer and grab start time
-    Timer batch_timer;
-    batch_timer.step("start");  
+    // Fit full model
+    fit(
+      false, // don't bother setting parameters
+      false  // don't print anything
+    );
     
-    // Pipes for inter-process communication
-    iVec pids(bs_num_max);
-    std::vector<std::array<int, 2>> pipes(bs_num_max); 
+    // Initiate variables to hold results
+    const int c_num = fitted_parameters.size() + 4;
+    const int r_num = bs_num_max + 1;
+    NumericMatrix bs_results(r_num, c_num);
     
-    // Initialize pipes and fork processes
-    for (int i = 0; i < max_fork; i++) {
+    dVec full_results = to_dVec(fitted_parameters);
+    full_results.reserve(full_results.size() + 4);
+    full_results.push_back(Rcpp::as<double>(optim_results["penalized_neg_loglik"]));
+    full_results.push_back(Rcpp::as<double>(optim_results["neg_loglik"]));
+    full_results.push_back(Rcpp::as<double>(optim_results["success_code"]));
+    full_results.push_back(Rcpp::as<double>(optim_results["num_evals"]));
+    
+    // Save full fit results in last row of results matrix
+    bs_results.row(bs_num_max) = to_NumVec(full_results);
+    
+    // Perform bootstrap fits in batches
+    const int batch_num = bs_num_max / max_fork;
+    for (int b = 0; b < batch_num; b++) {
+      // Run in parallel with forking
       
-      int this_row = b * max_fork + i;
-      pipe(pipes[i].data()); // Create a pipe
-      pid_t pid = fork();
+      // Initiate timer and grab start time
+      Timer batch_timer;
+      batch_timer.step("start");  
       
-      if (pid == 0) { // Child process
+      // Pipes for inter-process communication
+      iVec pids(bs_num_max);
+      std::vector<std::array<int, 2>> pipes(bs_num_max); 
+      
+      // Initialize pipes and fork processes
+      for (int i = 0; i < max_fork; i++) {
+        
+        int this_row = b * max_fork + i;
+        pipe(pipes[i].data()); // Create a pipe
+        pid_t pid = fork();
+        
+        if (pid == 0) { // Child process
+          
+          // Close read end
+          close(pipes[i][0]); 
+          
+          // Fit bootstrap
+          dVec result = bs_fit(this_row, false); 
+          
+          // Send result
+          write(pipes[i][1], result.data(), sizeof(double) * c_num);
+          
+          // Close write end
+          close(pipes[i][1]); 
+          
+          // Exit child process
+          _exit(0); 
+          
+          // implicitly recovers stan memory by killing the process which initiated it
+          
+        } else if (pid > 0) { // Parent process
+          
+          // Grab child pid
+          pids[i] = pid;
+          
+          // Close write end
+          close(pipes[i][1]); 
+          
+        } else {
+          Rcpp::stop("Fork failed!");
+        }
+        
+      }
+      
+      // Fetch results from pipes
+      for (int i = 0; i < max_fork; i++) {
+        
+        // Wait for child process
+        waitpid(pids[i], NULL, 0); 
+        
+        // Create a temporary buffer to hold the row data
+        dVec temp_row(c_num); 
+        
+        // Read the row from the pipe into the buffer
+        read(pipes[i][0], temp_row.data(), sizeof(double) * c_num);
+        
+        // Copy the buffer contents into the corresponding row of the matrix
+        int this_row = b * max_fork + i;
+        bs_results.row(this_row) = to_NumVec(temp_row);
         
         // Close read end
         close(pipes[i][0]); 
         
-        // Fit bootstrap
-        dVec result = bs_fit(this_row, false); 
-        
-        // Send result
-        write(pipes[i][1], result.data(), sizeof(double) * c_num);
-        
-        // Close write end
-        close(pipes[i][1]); 
-        
-        // Exit child process
-        _exit(0); 
-        
-        // implicitly recovers stan memory by killing the process which initiated it
-        
-      } else if (pid > 0) { // Parent process
-        
-        // Grab child pid
-        pids[i] = pid;
-        
-        // Close write end
-        close(pipes[i][1]); 
-        
-      } else {
-        Rcpp::stop("Fork failed!");
+      } 
+      
+      batch_timer.step("end");
+      NumericVector batch_times(batch_timer);
+      double batch_time = 1e-9 * (batch_times[1] - batch_times[0])/max_fork;
+      if (verbose) {
+        Rcpp::Rcout << "Batch " << b << "/" << batch_num << ", " << batch_time << " sec/bs" << std::endl;
       }
       
     }
     
-    // Fetch results from pipes
-    for (int i = 0; i < max_fork; i++) {
-      
-      // Wait for child process
-      waitpid(pids[i], NULL, 0); 
-      
-      // Create a temporary buffer to hold the row data
-      dVec temp_row(c_num); 
-      
-      // Read the row from the pipe into the buffer
-      read(pipes[i][0], temp_row.data(), sizeof(double) * c_num);
-      
-      // Copy the buffer contents into the corresponding row of the matrix
-      int this_row = b * max_fork + i;
-      bs_results.row(this_row) = to_NumVec(temp_row);
-      
-      // Close read end
-      close(pipes[i][0]); 
-      
-    } 
-    
-    batch_timer.step("end");
-    NumericVector batch_times(batch_timer);
-    double batch_time = 1e-9 * (batch_times[1] - batch_times[0])/max_fork;
     if (verbose) {
-      Rcpp::Rcout << "Batch " << b << "/" << batch_num << ", " << batch_time << " sec/bs" << std::endl;
+      Rcpp::Rcout << "All complete!" << std::endl;
     }
     
+    return bs_results;
+    
   }
-  
-  if (verbose) {
-    Rcpp::Rcout << "All complete!" << std::endl;
+
+// Resample (demo)
+NumericMatrix wspc::resample(
+    int n_resample                 // total number of resamples to draw
+  ) {
+    
+    NumericMatrix resamples(n_count_rows, n_resample);
+    
+    for (int j = 0; j < n_resample; j++) {
+      
+      // Set random number generator with unique seed based on resample ID
+      unsigned int seed = 42u + j;
+      pcg32 rng(seed);
+      
+      sVec count_new(n_count_rows);
+      
+      // Resample (with replacement), re-sum token pool, and take logs
+      for (int r : count_not_na_idx) {
+        //double lambda = predicted_rates_log[r];
+        //count_log(r) = sdouble(static_cast<double>(R::rpois(lambda)));
+        if (ran[r] != "none") {
+          count_new(r) = 0.0;
+          IntegerVector token_pool_r = token_pool[r];
+          int resample_sz = token_pool_r.size();
+          for (int i = 0; i < resample_sz; i++) {
+            int resample_idx = rng(resample_sz);                             // randomly select integer between 0 and resample_sz
+            count_new(r) += count_tokenized[token_pool_r[resample_idx]];
+          }
+        }
+      }
+      
+      // Extrapolate none's
+      count_new = extrapolate_none(count_new, ran, extrapolation_pool);
+      
+      // Fill in NAs (and sanity check)
+      // IntegerVector NA_idx = Rwhich(!count_not_na_mask); 
+      // for (int r : NA_idx) {
+      //   count_new(r) = stan::math::NOT_A_NUMBER;
+      //   // if (!std::isnan(count(r))) {
+      //   //   Rcpp::stop("Found non-NA in NA row of summed count!");
+      //   // }
+      // }
+      
+      resamples.column(j) = to_NumVec(count_new);
+      
+    }
+    
+    return resamples;
+    
   }
-  
-  return bs_results;
-  
-}
 
 /*
  * *************************************************************************
@@ -1495,7 +1532,7 @@ void wspc::set_parameters(
     /*
      * This function: 
      *  - Checks feasibility of provided parameters
-     *  - Predicts rates based on provided parameters
+     *  - Predicts (and saves) rates based on provided parameters
      *  - Saves parameters in fitted_parameters vector
      *  - Replaces structural parameters
      */
@@ -1717,6 +1754,14 @@ Rcpp::List wspc::results() {
     _["w.factor"] = wfactor_idx
   );
   
+  // Collect token pool
+  List token_pool_list(n_count_rows); 
+  for (int i = 0; i < n_count_rows; i++) {
+    if (token_pool[i].size() > 0) {
+      token_pool_list[i] = (IntegerVector)token_pool[i];
+    } 
+  }
+  
   // Make final list to return 
   List results_list = List::create(
     _["model.component.list"] = mc_list,
@@ -1728,6 +1773,7 @@ Rcpp::List wspc::results() {
     _["grouping.variables"] = grouping_variables,
     _["struc.params"] = struc_values,
     _["param.idx0"] = param_idx, // "0" to indicate this goes out w/ C++ zero-based indexing
+    _["token.pool"] = token_pool_list,
     _["settings"] = model_settings
   );
   
@@ -1801,5 +1847,6 @@ RCPP_MODULE(wspc) {
     .method("fit", &wspc::fit)
     .method("bs_fit", &wspc::bs_fit)
     .method("bs_batch", &wspc::bs_batch)
+    .method("resample", &wspc::resample)
     .method("results", &wspc::results);
   }
