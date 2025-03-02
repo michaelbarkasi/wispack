@@ -86,10 +86,12 @@ class wspc {
     // Variables to help with data manipulation
     sMat weights;                           // weight matrix, rows as rows of summed count data, columns as treatments (first column is reference)
     IntegerVector idx_mc_unique;            // count data rows at which model component values will change
+    IntegerMatrix bs_bin_ranges;            // bin ranges for bootstrapping (three columns: max back, max up, range)
     std::vector<IntegerVector> token_pool;  // list of token count indexes associated with each summed count row
     std::vector<IntegerVector> extrapolation_pool;  // list of summed-count indexes giving summed count rows from which to extrapolate
     IntegerVector count_not_na_idx;         // indexes of non-NA rows in summed count data
     LogicalVector count_not_na_mask;        // mask of non-NA rows in summed count data
+    List change_points;                     // list of found change points, structured by parent and child
     
     // Variables related to model parameters
     CharacterVector mc_list = {"Rt", "tslope", "tpoint"}; // list of model components, rates, transition slopes, transition points
@@ -325,6 +327,8 @@ sVec to_sVec(const IntegerVector& vec);
 NumericVector to_NumVec(const sVec& vec);
 // ... overload, from std::vector with doubles
 NumericVector to_NumVec(const dVec& vec);
+// ... overload, from IntegerVector
+NumericVector to_NumVec(const IntegerVector& vec);
 
 // Convert to IntegerVector
 // ... from std::vector with int
@@ -420,6 +424,12 @@ IntegerVector buffered_merge(
     const IntegerVector& b,
     const int& buffer
   );
+
+// return the indices of the elements of vec of which x is between
+iVec block_idx(
+    const NumericVector& vec,
+    const double& x
+);
 
 // Vectorized logic ****************************************************************************************************
 

@@ -323,6 +323,7 @@ void assign_proxylist(
 
 // Misc ****************************************************************************************************************
 
+// merge two integer vectors 
 IntegerVector buffered_merge(
     const IntegerVector& a, 
     const IntegerVector& b,
@@ -346,3 +347,28 @@ IntegerVector buffered_merge(
     }
     return out;
   }
+
+// return the indices of the elements of vec of which x is between
+iVec block_idx(
+    const NumericVector& vec,
+    const double& x
+) {
+  iVec out = {-1, -1};
+  int vec_size = vec.size();
+  if (vec_size > 0) {
+    for (int i = 0; i < vec_size; i++) {
+      if (x < vec[i]) {
+        out[1] = i;
+        if (i > 0) {
+          if (x > vec[i - 1]) {
+            out[0] = i - 1;
+          }
+        }
+        break;
+      } else if (i == vec_size - 1) {
+        out[0] = i;
+      }
+    }
+  }
+  return out;
+}

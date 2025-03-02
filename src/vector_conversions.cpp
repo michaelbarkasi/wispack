@@ -73,6 +73,17 @@ NumericVector to_NumVec(
     return Rcpp::wrap(vec);
   }
 
+// ... overload, from IntegerVector
+NumericVector to_NumVec(
+    const IntegerVector& vec
+  ) {
+    NumericVector num_vec(vec.size());
+    for (int i = 0; i < vec.size(); i++) {
+      num_vec(i) = vec[i];
+    }
+    return num_vec;
+  }
+
 // Convert to IntegerVector ********************************************************************************************
 
 // ... from std::vector with int
