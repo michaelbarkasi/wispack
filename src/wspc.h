@@ -94,10 +94,16 @@ class wspc {
     List change_points;                     // list of found change points, structured by parent and child
     
     // Variables related to model parameters
-    CharacterVector mc_list = {"Rt", "tslope", "tpoint"}; // list of model components, rates, transition slopes, transition points
+    CharacterVector mc_list = {             // list of model components
+      "Rt",                                 // ... rates
+      "tslope",                             // ... transition slopes
+      "tpoint"                              // ... transition points
+      }; 
     IntegerMatrix degMat;                   // matrix of degrees for each parent (column) - child (rows) pair
     NumericVector fitted_parameters;        // vector holding the model parameters
     List param_names;                       // list holding the names of the model parameters as they appear in fitted_parameters
+    
+    // Secondary variables related to model parameters
     IntegerVector param_wfactor_point_idx;  // ... indexes in parameter vector for different kinds of model parameters
     IntegerVector param_wfactor_rate_idx;
     IntegerVector param_beta_Rt_idx;
@@ -112,15 +118,17 @@ class wspc {
     List wfactor_idx; 
     IntegerVector gv_ranLr_int;             // indices (row and column) for random effect arrays 
     IntegerVector gv_fixLr_int;  
-    NumericVector struc_values = {1.0, 1.0, 1.0, 1.0};
+    NumericVector struc_values = {1.0, 1.0, 1.0, 1.0, 1.0};
     CharacterVector struc_names = {
       "beta_shape_point", 
       "beta_shape_rate",
+      "sd_Rt_effect",
       "sd_tpoint_effect",
       "sd_tslope_effect"
     };
     sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
     sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
+    sVec observed_mean_ran_eff;             // mean random effect values for each random effect level, observed in data
     double LROcutoff = 2.0;                 // cutoff (x sd) for likelihood ratio outlier detection
     double tslope_initial = 1.0;            // initial value for transition slope
     double wf_initial = 0.5;                // initial value for warping factor ... any sensible magnitude > 0.1 and < 0.75 should do? 
@@ -364,6 +372,9 @@ double vmean_range(const NumericVector& x, const int& start, const int& end);
 // Rolling mean
 dVec roll_mean(const dVec& series, int filter_ws);
 
+// Standard deviations of vector elements 
+sdouble vsd(const sVec& x);
+
 // Component-wise operations
 // -------------------------
 
@@ -521,8 +532,9 @@ sVec extrapolate_none(
 // Model fitting *******************************************************************************************************
 
 // Log of density of normal distribution centered on zero
-sdouble log_dnorm_centered(
+sdouble log_dnorm(
     const sdouble& x,        // value to evaluate
+    const sdouble& mu,       // mean
     const sdouble& sd        // standard deviation
   );
 
