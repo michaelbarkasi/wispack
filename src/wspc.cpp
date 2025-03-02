@@ -1305,14 +1305,12 @@ dVec wspc::bs_fit(
     
     // Resample (with replacement), re-sum token pool, and take logs
     for (int r : count_not_na_idx) {
-      //double lambda = predicted_rates_log[r];
-      //count_log(r) = sdouble(static_cast<double>(R::rpois(lambda)));
       if (ran[r] != "none") {
         IntegerVector token_pool_r = token_pool[r];
         int resample_sz = token_pool_r.size();
         count(r) = 0.0;
         for (int i = 0; i < resample_sz; i++) {
-          int resample_idx = rng(resample_sz);                             // randomly select integer between 0 and resample_sz
+          int resample_idx = rng(resample_sz); // randomly select integer between 0 and resample_sz
           count(r) += count_tokenized[token_pool_r[resample_idx]];
         }
         count_log(r) = slog(count(r) + 1.0);
@@ -1474,6 +1472,7 @@ NumericMatrix wspc::resample(
   ) {
     
     NumericMatrix resamples(n_count_rows, n_resample);
+    IntegerVector NA_idx = Rwhich(!count_not_na_mask);
     
     for (int j = 0; j < n_resample; j++) {
       
@@ -1485,14 +1484,12 @@ NumericMatrix wspc::resample(
       
       // Resample (with replacement), re-sum token pool, and take logs
       for (int r : count_not_na_idx) {
-        //double lambda = predicted_rates_log[r];
-        //count_log(r) = sdouble(static_cast<double>(R::rpois(lambda)));
         if (ran[r] != "none") {
           count_new(r) = 0.0;
           IntegerVector token_pool_r = token_pool[r];
           int resample_sz = token_pool_r.size();
           for (int i = 0; i < resample_sz; i++) {
-            int resample_idx = rng(resample_sz);                             // randomly select integer between 0 and resample_sz
+            int resample_idx = rng(resample_sz); // randomly select integer between 0 and resample_sz
             count_new(r) += count_tokenized[token_pool_r[resample_idx]];
           }
         }
@@ -1501,14 +1498,9 @@ NumericMatrix wspc::resample(
       // Extrapolate none's
       count_new = extrapolate_none(count_new, ran, extrapolation_pool);
       
-      // Fill in NAs (and sanity check)
-      // IntegerVector NA_idx = Rwhich(!count_not_na_mask); 
-      // for (int r : NA_idx) {
-      //   count_new(r) = stan::math::NOT_A_NUMBER;
-      //   // if (!std::isnan(count(r))) {
-      //   //   Rcpp::stop("Found non-NA in NA row of summed count!");
-      //   // }
-      // }
+      for (int r : NA_idx) {
+        count_new(r) = stan::math::NOT_A_NUMBER;
+      }
       
       resamples.column(j) = to_NumVec(count_new);
       
