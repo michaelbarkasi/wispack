@@ -3,13 +3,14 @@
 #include "wspc.h"
 
 // Log of density of normal distribution centered on zero
-sdouble log_dnorm_centered(
+sdouble log_dnorm(
     const sdouble& x,        // value to evaluate
+    const sdouble& mu,       // mean
     const sdouble& sd        // standard deviation
   ) {
     return slog(
       // Assume mean = 0
-      sexp(-spower(x, 2.0) / (2.0 * spower(sd, 2.0))) /
+      sexp(-spower(x - mu, 2.0) / (2.0 * spower(sd, 2.0))) /
         (ssqrt(2.0 * M_PI) * sd)
     );
   }

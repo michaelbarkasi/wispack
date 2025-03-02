@@ -850,6 +850,22 @@ sdouble wspc::neg_loglik(
       );
     }
     
+    // Compute the log-likelihood of the observed mean random rate effects, given these rate warping factors
+    int n_ran = ran_lvls.size() - 1; 
+    // ... Grab warping indices and initiate variables to hold them
+    NumericMatrix wfactor_idx_rate = wfactor_idx["rate"];
+    int f_rw_idx;
+    sdouble f_rw;
+    for (int r = 0; r < n_ran; r++) {
+      // ... Get rate-warp factors for this level (one per child)
+      f_rw_idx = wfactor_idx_rate(gv_ranLr_int[r + 1], gv_fixLr_int[r + 1]);
+      f_rw = parameters(f_rw_idx); 
+      // ... find mean and sd
+      sdouble modeled_mean = vmean(f_rw); 
+      sdouble modeled_sd = vsd(f_rw); 
+    }
+    observed_mean_ran_eff
+    
     // Compute the log-likelihood of the mean of these rate warping factors, given the expected normal distribution
     // ... see above notes on the formula
     sdouble pw_mean_r = vmean(warping_factors_rate); 
@@ -859,48 +875,31 @@ sdouble wspc::neg_loglik(
       sexp(-spower(pw_mean_r, 2.0) / (2.0 * spower(sd_pw_r, 2.0))) / (ssqrt(2.0 * M_PI) * sd_pw_r)
     );
     
-    // Compute the log-likelihood of the observed mean random rate effects, given these rate warping factors
-    int n_ran = ran_lvls.size() - 1; 
-    sdouble sqrt_n_ran = ssqrt((sdouble)n_ran);
-    // ... Grab warping indices and initiate variables to hold them
-    NumericMatrix wfactor_idx_rate = wfactor_idx["rate"];
-    int f_rw_idx;
-    sdouble f_rw;
-    for (int r = 0; r < n_ran; r++) {
-      // ... Get rate-warp factors for this level (one per child)
-      f_rw_idx = wfactor_idx_rate(gv_ranLr_int[r + 1], gv_fixLr_int[r + 1]);
-      f_rw = parameters(f_rw_idx); 
-      // ... find mean and scaled sd
-      sdouble modeled_mean = vmean(f_rw); 
-      sdouble modeled_sd = vsd(f_rw)/sqrt_n_ran; 
-      // ... add log-likelihood
-      log_lik += log_dnorm(observed_mean_ran_eff[r], modeled_mean, modeled_sd);
-    }
-    
-    // Compute the log-likelihood of the Rt beta values, given the normal distribution implied by the beta-rate shape and b-f ratio
+    // Compute the negative log-likelihood of the Rt beta values, given the normal distribution implied by the beta-rate shape and b-f ratio
     //sdouble expected_ran_effect = ssqrt(1.0 / (4.0 * (2.0 * beta_shape_rate + 1.0)));
     //expected_ran_effect *= 2.0; // scale to range from -1 to 1
     //sdouble sd_Rt_effect = 2.12 * expected_ran_effect;
     sdouble sd_Rt_effect = parameters[param_struc_idx["sd_Rt_effect"]];
     for (int i = 0; i < Rt_beta_values_no_ref.size(); i++) {
-      log_lik += log_dnorm(Rt_beta_values_no_ref(i), 0.0, sd_Rt_effect);
+      log_lik += log_dnorm_centered(Rt_beta_values_no_ref(i), sd_Rt_effect);
     }
     
-    // Compute the log-likelihood of the slope beta values, given the assumed gamma distribution
+    // Compute the negative log-likelihood of the slope beta values, given the assumed gamma distribution
+    // ... Note: As above, assuming it's the exponential which comes from a gamma distribution
     int n_tslope = tslope_beta_values_no_ref.size();
     sdouble sd_tslope_effect = parameters[param_struc_idx["sd_tslope_effect"]];
     if (n_tslope != 0) {
       for (int i = 0; i < n_tslope; i++) {
-        log_lik += log_dnorm(tslope_beta_values_no_ref(i), 0.0, sd_tslope_effect);
+        log_lik += log_dnorm_centered(tslope_beta_values_no_ref(i), sd_tslope_effect);
       }
     }
     
-    // Compute the log-likelihood of the tpoint beta values, given the assumed normal distribution
+    // Compute the negative log-likelihood of the tpoint beta values, given the assumed normal distribution
     int n_tpoint = tpoint_beta_values_no_ref.size();
     sdouble sd_tpoint_effect = parameters[param_struc_idx["sd_tpoint_effect"]];
     if (n_tpoint != 0) {
       for (int i = 0; i < n_tpoint; i++) {
-        log_lik += log_dnorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect);
+        log_lik += log_dnorm_centered(tpoint_beta_values_no_ref(i), sd_tpoint_effect);
       }
     }
     
@@ -916,7 +915,7 @@ sdouble wspc::neg_loglik(
       false       // compute all summed count rows, even with a count value of NA?
       );
     
-    // Compute the log-likelihood of the rate data
+    // Compute the negative log-likelihood of the rate data
     for (int r : count_not_na_idx) {
       
       if (std::isinf(predicted_rates_log(r)) || predicted_rates_log(r) < 0.0 || std::isnan(predicted_rates_log(r))) {
@@ -1395,12 +1394,12 @@ dVec wspc::bs_fit(
           token_pool_r = token_pool[r];
           resample_sz = token_pool_r.size();
         }
-        //count(r) = count(r2); 
-        count(r) = 0.0;
-        for (int i = 0; i < resample_sz; i++) {
-          int resample_idx = rng(resample_sz); // randomly select integer between 0 and resample_sz
-          count(r) += count_tokenized[token_pool_r[resample_idx]];
-        }
+        count(r) = count(r2); 
+        // count(r) = 0.0;
+        // for (int i = 0; i < resample_sz; i++) {
+        //   int resample_idx = rng(resample_sz); // randomly select integer between 0 and resample_sz
+        //   count(r) += count_tokenized[token_pool_r[resample_idx]];
+        // }
         count_log(r) = slog(count(r) + 1.0);
       }
     }

@@ -117,6 +117,22 @@ dVec roll_mean(
     return series_out;
   }
 
+// standard deviation of vector elements 
+sdouble vsd(
+    const sVec& x
+  ) {
+    sdouble mean = vmean(x);
+    sdouble sum = 0.0;
+    int ctr = 0;
+    for (sdouble xi : x) {
+      if (!std::isnan(xi)) {
+        sum += (xi - mean) * (xi - mean);
+        ctr++;
+      }
+    }
+    return ssqrt(sum / (sdouble)ctr);
+  }
+
 // Component-wise operations *******************************************************************************************
 
 // Component-wise subtraction 

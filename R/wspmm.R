@@ -26,7 +26,7 @@ wisp <- function(
     verbose = TRUE,
     print.child.summaries = TRUE,
     model.settings = list(
-      struc_values = c(1.0, 1.0, 1.0, 1.0),       # values of structural parameters to test
+      struc_values = c(1.0, 1.0, 1.0, 1.0, 1.0),  # values of structural parameters to test
       buffer_factor = 0.05,                       # buffer factor for penalizing distance from structural parameter values
       ctol = 1e-4,                                # convergence tolerance
       max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from structural parameter values
@@ -1821,8 +1821,9 @@ plot.struc.stats <- function(
     
     # Rate effects, Gaussian distribution
     if (verbose) snk.report...("Rate effects, Gaussian distribution")
-    expected_ran_effect = 2.0 * sqrt(1.0 / (4.0 * (2.0 * shape_rate + 1.0)))
-    Rt_shape = 2.12 * expected_ran_effect
+    #expected_ran_effect = 2.0 * sqrt(1.0 / (4.0 * (2.0 * shape_rate + 1.0)))
+    #Rt_shape = 2.12 * expected_ran_effect
+    Rt_shape <- wisp.results$struc.params["sd_Rt_effect"]
     rate_effs_mask <- grepl("Rt", wisp.results$param.names) & grepl("beta", wisp.results$param.names)
     rate_effects <- c(bs_fitted_params[,rate_effs_mask])
     rates <- seq(min(rate_effects), max(rate_effects), length.out = 100)
