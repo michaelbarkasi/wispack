@@ -230,7 +230,7 @@ wspc::wspc(
               
               // Sum count 
               IntegerVector token_pool_idx = Rwhich(token_mask);
-              if (token_pool_idx.size() > 0) {
+              if (token_pool_idx.size() > 0 || ran_lvls[r] == "none") {
                 token_pool[idx] = token_pool_idx; // save for bootstrap resampling
                 for (int rw : token_pool_idx) {
                   count(idx) += count_tokenized[rw];
@@ -1481,6 +1481,7 @@ NumericMatrix wspc::resample(
       pcg32 rng(seed);
       
       sVec count_new(n_count_rows);
+      count_new.setZero();
       
       // Resample (with replacement), re-sum token pool, and take logs
       for (int r : count_not_na_idx) {
@@ -1495,13 +1496,12 @@ NumericMatrix wspc::resample(
         }
       }
       
-      // Extrapolate none's
+      // Extrapolate none's 
       count_new = extrapolate_none(count_new, ran, extrapolation_pool);
       
       for (int r : NA_idx) {
         count_new(r) = stan::math::NOT_A_NUMBER;
       }
-      
       resamples.column(j) = to_NumVec(count_new);
       
     }
