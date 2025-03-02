@@ -110,15 +110,12 @@ class wspc {
     List wfactor_idx; 
     IntegerVector gv_ranLr_int;             // indices (row and column) for random effect arrays 
     IntegerVector gv_fixLr_int;  
-    NumericVector struc_values = {5.0, 5.0, 5.0, 1.0, 1.0, 1.0, 1.0};
+    NumericVector struc_values = {1.0, 1.0, 1.0, 1.0};
     CharacterVector struc_names = {
       "beta_shape_point", 
       "beta_shape_rate",
       "sd_tpoint_effect",
-      "gamma_shape_slope",
-      "gamma_shape_rate",
-      "gamma_rate_slope",
-      "gamma_rate_rate"
+      "sd_tslope_effect"
     };
     sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
     sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
@@ -259,6 +256,11 @@ class wspc {
         int bs_num_max,              // Number of bootstraps to perform
         int max_fork,                // Maximum number of forked processes per batch
         bool verbose
+    );
+    
+    // Resample (demo)
+    Rcpp::NumericMatrix resample(
+        int n_resample                 // total number of resamples to draw
     );
     
     // ... Setting parameters
@@ -507,6 +509,12 @@ sVec extrapolate_none(
   );
 
 // Model fitting *******************************************************************************************************
+
+// Log of density of normal distribution centered on zero
+sdouble log_dnorm_centered(
+    const sdouble& x,        // value to evaluate
+    const sdouble& sd        // standard deviation
+  );
 
 // Numerically stable implementation of sigmoid function
 sdouble sigmoid_stable(
