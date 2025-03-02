@@ -77,6 +77,8 @@ wisp <- function(
       # Run sequentially
       
       if (verbose) snk.report("Running bootstrap fits (sequentially)", end_breaks = 1)
+      stop("Sequential bootstrapping not yet implemented")
+      # ... Need to figure out how to clear stan memory without killing whole model
       
       # Initialize array to hold results 
       bs_results <- array(

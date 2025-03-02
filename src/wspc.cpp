@@ -279,18 +279,28 @@ wspc::wspc(
     colnames(degMat) = parent_lvls;
     
     // Estimate degree of each parent-child combination at baseline using LRO change-point detection 
+    // ... store ref values in list
     List ref_values(n_parent);
     ref_values.names() = parent_lvls;
+    // ... store rate effects in list
     List RtEffs(n_parent);
     RtEffs.names() = parent_lvls;
+    // ... store change points in list
+    List found_cp_list(n_parent);
+    found_cp_list.names() = parent_lvls;
     for (int p = 0; p < n_parent; p++) {
       
       LogicalVector parent_mask = eq_left_broadcast(parent, parent_lvls[p]);
       
+      // Set up list for ref values
       ref_values[(String)parent_lvls[p]] = List(n_child);
       name_proxylist(ref_values[(String)parent_lvls[p]], child_lvls);
+      // ... for rate effect values
       RtEffs[(String)parent_lvls[p]] = List(n_child);
       name_proxylist(RtEffs[(String)parent_lvls[p]], child_lvls);
+      // ... for change points 
+      found_cp_list[(String)parent_lvls[p]] = List(n_child);
+      name_proxylist(found_cp_list[(String)parent_lvls[p]], child_lvls);
       for (int c = 0; c < n_child; c++) {
         
         // Run LRO algorithm for each treatment level of this child-parent pair
@@ -316,7 +326,7 @@ wspc::wspc(
           }
          
           // Estimate change points from averaged count series
-          int ws = std::round(static_cast<int>(2.0 * bin_num_i * buffer_factor.val()));
+          int ws = static_cast<int>(std::round(2.0 * (double)bin_num_i * buffer_factor.val()));
           int filter_ws = std::round(ws/2);
           IntegerVector found_cp_trt = LROcp(
             count_avg,  // series to scan
@@ -343,8 +353,9 @@ wspc::wspc(
         int deg = found_cp.size();
         degMat(c, p) = deg;
         int n_blocks = deg + 1;
+        assign_proxylist(found_cp_list[(String)parent_lvls[p]], (String)child_lvls[c], to_NumVec(found_cp));
        
-        // Compute and save baseline (reference) values
+        // Set initial parameters for fixed-effect treatments
         List placeholder_ref_values(mc_list.size());
         placeholder_ref_values.names() = mc_list;
         NumericMatrix placeholder_RtEffs(treatment_num, n_blocks);
@@ -408,7 +419,9 @@ wspc::wspc(
        
       }
     }
-    vprint("Estimated change points with LROcp and found initial baseline parameters", verbose); 
+    // ... save found change points 
+    change_points = found_cp_list;
+    vprint("Estimated change points with LROcp and found initial parameter estimates for fixed-effect treatments", verbose); 
    
     // Build default fixed-effects matrices in shell
     List beta = build_beta_shell(mc_list, treatment_lvls, parent_lvls, child_lvls, ref_values, RtEffs, degMat);
@@ -509,6 +522,35 @@ wspc::wspc(
       param_wfactor_point_idx.size()*2 +          // ... and for the warping factor boundaries
       param_wfactor_rate_idx.size()*2; 
     vprint("Computed size of rRsum boundary vector: " + std::to_string(boundary_vec_size), verbose);
+    
+    // Pre-compute bin ranges for bootstrap resampling 
+    bs_bin_ranges = IntegerMatrix(n_count_rows, 3);
+    for (int r : count_not_na_idx) {
+      if (ran[r] != "none") {
+        // ... find the change points for the parent-child pair of this row
+        List p_changepoints = change_points[(String)parent[r]];
+        NumericVector pc_changepoints = p_changepoints[(String)child[r]];
+        iVec block_range_idx = block_idx(pc_changepoints, bin(r).val());
+        // ... find the range of bins in the same block as this row's bin
+        double bin_low = 1;
+        if (block_range_idx[0] >= 0) {
+          bin_low = pc_changepoints[block_range_idx[0]];
+        }
+        double bin_high = bin_num.val();
+        if (block_range_idx[1] >= 0) {
+          bin_high = pc_changepoints[block_range_idx[1]];
+        } 
+        // ... narrow range by 1 in each direction and pack up range information
+        int shift_back_max = static_cast<int>(std::round(bin(r).val() - bin_low)) - 1;
+        int shift_up_max = static_cast<int>(std::round(bin_high - bin(r).val())) - 1;
+        if (shift_back_max < 0) {shift_back_max = 0;}
+        if (shift_up_max < 0) {shift_up_max = 0;}
+        int shift_range = shift_up_max + shift_back_max + 1;
+        IntegerVector back_up_range = {shift_back_max, shift_up_max, shift_range};
+        bs_bin_ranges.row(r) = back_up_range;
+      }
+    }
+    vprint("Pre-computed bin ranges for bootstrap resampling", verbose);
     
     // Initialize list to hold results from model fit
     optim_results = List::create(
@@ -1306,8 +1348,22 @@ dVec wspc::bs_fit(
     // Resample (with replacement), re-sum token pool, and take logs
     for (int r : count_not_na_idx) {
       if (ran[r] != "none") {
-        IntegerVector token_pool_r = token_pool[r];
+        // ... select a new row r2 from the block of r's bin
+        IntegerVector back_up_range = bs_bin_ranges.row(r);
+        int shift_back_max = back_up_range(0); 
+        int shift_up_max = back_up_range(1); 
+        int shift_range = back_up_range(2); 
+        int shift_idx = rng(shift_range); // randomly select integer between 0 and shift_range
+        IntegerVector shift = iseq(-shift_back_max, shift_up_max, shift_range);
+        int r2 = r + shift[shift_idx];
+        // ... redraw randomly (with replacement) from the token pool of r2 and resum into r's count 
+        IntegerVector token_pool_r = token_pool[r2];
         int resample_sz = token_pool_r.size();
+        if (resample_sz < 1) {
+          // ... ensure new point is viable
+          token_pool_r = token_pool[r];
+          resample_sz = token_pool_r.size();
+        }
         count(r) = 0.0;
         for (int i = 0; i < resample_sz; i++) {
           int resample_idx = rng(resample_sz); // randomly select integer between 0 and resample_sz
