@@ -57,7 +57,11 @@ NumericVector to_NumVec(
   ) {
     NumericVector num_vec(vec.size());
     for (int i = 0; i < vec.size(); i++) {
-      num_vec(i) = vec(i).val();
+      if (std::isnan(vec(i))) {
+        num_vec(i) = NA_REAL;
+      } else {
+        num_vec(i) = vec(i).val();
+      }
     }
     return num_vec;
   }
