@@ -276,7 +276,7 @@ wspc::wspc(
     mean_count_log = vmean(count_log);
     vprint("Took log of observed counts", verbose);
     
-    // Find mean observed ran effect
+    // Find mean observed ran effect per ran level
     for (int r = 1; r < n_ran; r++) {
       LogicalVector ran_mask = eq_left_broadcast(ran, ran_lvls[r]) & count_not_na_mask;
       IntegerVector ran_idx = Rwhich(ran_mask);
@@ -533,7 +533,7 @@ wspc::wspc(
         // Add slots for the tpoint boundary distance at each tpoint
         boundary_vec_size += deg + 1;
         // Add slots for each of the tpoint slopes 
-        boundary_vec_size += deg;
+        //boundary_vec_size += deg;
         // Add one slot for the R_sum boundary distance
         boundary_vec_size++;
       } else {
@@ -788,6 +788,11 @@ sVec wspc::predict_rates_log(
           tslope = compute_mc_tslope_r(r, parameters); 
           tpoint = compute_mc_tpoint_r(r, parameters);
           
+          // Pull tslope out of log space 
+          for (int i = 0; i < tslope.size(); i++) {
+            tslope(i) = sexp(tslope(i));
+          }
+          
         } 
         
         // Compute the predicted rate
@@ -889,7 +894,7 @@ sdouble wspc::neg_loglik(
       log_lik += log_dnorm(Rt_beta_values_no_ref(i), 0.0, sd_Rt_effect);
     }
     
-    // Compute the log-likelihood of the slope beta values, given the assumed gamma distribution
+    // Compute the log-likelihood of the slope beta values, given the assumed normal distribution
     int n_tslope = tslope_beta_values_no_ref.size();
     sdouble sd_tslope_effect = parameters[param_struc_idx["sd_tslope_effect"]];
     if (n_tslope != 0) {
@@ -1011,12 +1016,12 @@ sVec wspc::neg_boundary_dist(
           ctr++;
         }
         
-        // Check that all tslopes are > zero.
-        for (int d = 0; d < deg; d++) {
-          sdouble tslope_dist = tslope(d) * 10; // ... *10 so boundary is approached slowly
-          neg_boundary_dist_vec(ctr) = -tslope_dist;
-          ctr++;
-        }
+        // // Check that all tslopes are > zero.
+        // for (int d = 0; d < deg; d++) {
+        //   sdouble tslope_dist = tslope(d) * 10; // ... *10 so boundary is approached slowly
+        //   neg_boundary_dist_vec(ctr) = -tslope_dist;
+        //   ctr++;
+        // }
         
         // Find R_sum boundary distance
         // ... Rates (Rt) must be positive, which happens iff Rt(0) - Rsum > 0.
