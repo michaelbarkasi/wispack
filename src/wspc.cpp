@@ -860,19 +860,18 @@ sdouble wspc::neg_loglik(
     );
     
     // Compute the log-likelihood of the observed mean random rate effects, given these rate warping factors
+    int n_child = child_lvls.size();
     int n_ran = ran_lvls.size() - 1; 
     sdouble sqrt_n_ran = ssqrt((sdouble)n_ran);
     // ... Grab warping indices and initiate variables to hold them
     NumericMatrix wfactor_idx_rate = wfactor_idx["rate"];
-    int f_rw_idx;
-    sdouble f_rw;
+    sVec f_rw_row(n_child);
     for (int r = 0; r < n_ran; r++) {
       // ... Get rate-warp factors for this level (one per child)
-      f_rw_idx = wfactor_idx_rate(gv_ranLr_int[r + 1], gv_fixLr_int[r + 1]);
-      f_rw = parameters(f_rw_idx); 
+      for (int c = 0; c < n_child; c++) {f_rw_row(c) = parameters((int)wfactor_idx_rate(r + 1, c));}
       // ... find mean and scaled sd
-      sdouble modeled_mean = vmean(f_rw); 
-      sdouble modeled_sd = vsd(f_rw)/sqrt_n_ran; 
+      sdouble modeled_mean = vmean(f_rw_row); 
+      sdouble modeled_sd = vsd(f_rw_row)/sqrt_n_ran; 
       // ... add log-likelihood
       log_lik += log_dnorm(observed_mean_ran_eff[r], modeled_mean, modeled_sd);
     }
