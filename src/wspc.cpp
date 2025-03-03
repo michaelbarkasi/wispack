@@ -166,6 +166,7 @@ wspc::wspc(
     n_count_rows = bin_num_i * n_parent * n_child * n_ran * treatment_num;
     count_row_nums = Rcpp::seq(0, n_count_rows - 1);
     observed_mean_ran_eff.resize(n_ran - 1); 
+    observed_mean_ran_eff.setZero(); 
     vprint("Grabbed size constants for summed count data, total rows: " + std::to_string(n_count_rows), verbose);
     
     // Create summed count data, initializations
@@ -235,9 +236,6 @@ wspc::wspc(
                 token_pool[idx] = token_pool_idx; // save for bootstrap resampling
                 for (int rw : token_pool_idx) {
                   count(idx) += count_tokenized[rw];
-                  if (r > 0) { // ... collect total count_log per ran level
-                    observed_mean_ran_eff[r - 1] += slog(count_tokenized[rw] + 1.0);
-                  }
                 }
                 count_not_na_mask(idx) = true;
               } else {
@@ -257,15 +255,6 @@ wspc::wspc(
       
     }
     
-    // Find mean observed ran effect
-    sdouble ran_count_log_mean = 0.0; 
-    for (int r = 0; r < n_ran - 1; r++) {ran_count_log_mean += observed_mean_ran_eff[r];}
-    ran_count_log_mean /= n_ran - 1.0; 
-    for (int r = 0; r < n_ran - 1; r++) {
-      observed_mean_ran_eff[r] /= ran_count_log_mean;
-      observed_mean_ran_eff[r] -= 1.0;
-    }
-   
     // Extract idx from count_not_na_mask
     count_not_na_idx = Rwhich(count_not_na_mask);
     vprint("Extracted non-NA indexes", verbose);
@@ -279,12 +268,29 @@ wspc::wspc(
     count = extrapolate_none(count, ran, extrapolation_pool);
     vprint("Extrapolated 'none' rows", verbose);
     
-    // Take log of observed counts
+    // Take log of observed counts 
     count_log.resize(n_count_rows); 
     for (int r = 0; r < n_count_rows; r++) {
       count_log(r) = slog(count(r) + 1.0);
     }
     vprint("Took log of observed counts", verbose);
+    
+    // Find mean observed ran effect
+    for (int r = 1; r < n_ran; r++) {
+      LogicalVector ran_mask = eq_left_broadcast(ran, ran_lvls[r]) & count_not_na_mask;
+      IntegerVector ran_idx = Rwhich(ran_mask);
+      for (int i = 0; i < ran_idx.size(); i++) {
+        observed_mean_ran_eff[r - 1] += count_log(ran_idx(i)); 
+      }
+    }
+    sdouble ran_count_log_mean = 0.0; 
+    for (int r = 0; r < n_ran - 1; r++) {ran_count_log_mean += observed_mean_ran_eff[r];}
+    ran_count_log_mean /= n_ran - 1.0; 
+    for (int r = 0; r < n_ran - 1; r++) {
+      observed_mean_ran_eff[r] /= ran_count_log_mean;
+      observed_mean_ran_eff[r] -= 1.0;
+    }
+    vprint("Found mean observed ran effect per ran level", verbose);
     
     // Initialize matrix to hold degrees of each parent-child combination
     degMat = IntegerMatrix(n_child, n_parent);
@@ -440,7 +446,7 @@ wspc::wspc(
     List beta = build_beta_shell(mc_list, treatment_lvls, parent_lvls, child_lvls, ref_values, RtEffs, degMat);
     vprint("Built initial beta (ref and fixed-effects) matrices", verbose); 
     
-    // Initialize random effect warping factors in the correct direction 
+    // Initialize random effect warping factors 
     List wfactors = List(2);
     CharacterVector wfactors_names = {"point", "rate"};
     wfactors.names() = wfactors_names;
@@ -459,13 +465,16 @@ wspc::wspc(
           }
           IntegerVector sorted_idx = Rorder(ran_lvl_means);
           NumericVector wfs_c = wfs[sorted_idx];
+          wfs_c = wfs_c * Rcpp::runif(n_ran - 1, 0.5, 1.0); // add noise
           wfs_c.push_front(0.0); // add "none"
           wf_array.column(c) = wfs_c;
-        } else {
-          wf_array.column(c) = Rcpp::rep(0.0, n_ran);
-        }
-        wfactors[wf] = wf_array;
+        } else { 
+          NumericVector wfs_c = Rcpp::runif(n_ran - 1, 0.0, 0.01); 
+          wfs_c.push_front(0.0); // add "none"
+          wf_array.column(c) = wfs_c;
+        } 
       } 
+      wfactors[wf] = wf_array;
     } 
     vprint("Initialized random effect warping factors", verbose);
     
@@ -861,19 +870,22 @@ sdouble wspc::neg_loglik(
     
     // Compute the log-likelihood of the observed mean random rate effects, given these rate warping factors
     int n_child = child_lvls.size();
-    int n_ran = ran_lvls.size() - 1; 
-    sdouble sqrt_n_ran = ssqrt((sdouble)n_ran);
+    int n_ran = ran_lvls.size(); 
+    sdouble sqrt_n_ran = ssqrt((sdouble)n_ran - 1.0);
     // ... Grab warping indices and initiate variables to hold them
     NumericMatrix wfactor_idx_rate = wfactor_idx["rate"];
     sVec f_rw_row(n_child);
-    for (int r = 0; r < n_ran; r++) {
+    //Rcpp::Rcout << "log_lik: " << log_lik << std::endl;
+    for (int r = 1; r < n_ran; r++) {
       // ... Get rate-warp factors for this level (one per child)
-      for (int c = 0; c < n_child; c++) {f_rw_row(c) = parameters((int)wfactor_idx_rate(r + 1, c));}
+      for (int c = 0; c < n_child; c++) {f_rw_row(c) = parameters[(int)wfactor_idx_rate(r, c)];}
+      //print_Vec(f_rw_row); 
       // ... find mean and scaled sd
       sdouble modeled_mean = vmean(f_rw_row); 
       sdouble modeled_sd = vsd(f_rw_row)/sqrt_n_ran; 
       // ... add log-likelihood
-      log_lik += log_dnorm(observed_mean_ran_eff[r], modeled_mean, modeled_sd);
+      log_lik += log_dnorm(observed_mean_ran_eff[r - 1], modeled_mean, modeled_sd);
+      //Rcpp::Rcout << "log_lik: " << log_lik << ", obs: " << observed_mean_ran_eff[r - 1] << ", mean: " << modeled_mean << ", sd: " << modeled_sd << std::endl;
     }
     
     // Compute the log-likelihood of the Rt beta values, given the normal distribution implied by the beta-rate shape and b-f ratio

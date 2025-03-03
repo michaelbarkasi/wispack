@@ -199,7 +199,7 @@ List make_parameter_vector(
     int n_parent = prt_lvls.size();
     int n_child = cld_lvls.size();
     int n_ran = rn_lvls.size();
-  
+   
     /*
      * Beta parameters (ref level and fixed effects)
      */
@@ -251,7 +251,7 @@ List make_parameter_vector(
                 
                 // Add name
                 param_names.push_back(param_name);
-
+               
                 // Collect indices
                 if (mc == "Rt") {
                   param_beta_Rt_idx.push_back(idx);
@@ -303,23 +303,23 @@ List make_parameter_vector(
         String c_name = cld_lvls[c];
         String r_name = rn_lvls[r];
         // ... Point warp
-        CharacterVector param_name_point = CharacterVector::create("wfactor","point",r_name,"X",c_name);
+        CharacterVector param_name_point = CharacterVector::create("wfactor", "point", r_name, "X", c_name);
         param_names.push_back(param_name_point);
         param_wfactor_point_idx.push_back(idx);
-        wfactor_idx_point(r,c) = idx;
+        wfactor_idx_point(r, c) = idx;
         idx++;
         // ... Rate warp
-        CharacterVector param_name_rate = CharacterVector::create("wfactor","rate",r_name,"X",c_name);
+        CharacterVector param_name_rate = CharacterVector::create("wfactor", "rate", r_name, "X", c_name);
         param_names.push_back(param_name_rate);
         param_wfactor_rate_idx.push_back(idx);
-        wfactor_idx_rate(r,c) = idx; 
+        wfactor_idx_rate(r, c) = idx; 
         idx++;
-
+       
         // Make
         // ... Point warp
-        param_vector.push_back(wfactor_point(r,c));
+        param_vector.push_back(wfactor_point(r, c));
         // ... Rate warp
-        param_vector.push_back(wfactor_rate(r,c));
+        param_vector.push_back(wfactor_rate(r, c));
         
       }
     } 
