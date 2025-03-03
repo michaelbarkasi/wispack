@@ -118,14 +118,15 @@ class wspc {
     List wfactor_idx; 
     IntegerVector gv_ranLr_int;             // indices (row and column) for random effect arrays 
     IntegerVector gv_fixLr_int;  
-    NumericVector struc_values = {1.0, 1.0, 1.0, 1.0, 1.0};
+    NumericVector struc_values = {1.0, 1.0, 1.0, 1.0};
     CharacterVector struc_names = {
       "beta_shape_point", 
       "beta_shape_rate",
-      "sd_Rt_effect",
       "sd_tpoint_effect",
       "sd_tslope_effect"
     };
+    sdouble fe_difference_ratio = 1.0;      // ratio of count differences between one-off treatments across ran levels and count differences between same-treatments across ran levels
+    sdouble mean_count_log = 1.0;
     sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
     sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
     sVec observed_mean_ran_eff;             // mean random effect values for each random effect level, observed in data
@@ -288,9 +289,11 @@ class wspc {
     );
     
     // ... export data to R
+    void import_fe_diff_ratio(const double& fe_diff_ratio, const bool& verbose);
     Rcpp::List results(); 
     
     // ... misc and debugging 
+    
     // Wrap neg_loglik in form needed for R
     double bounded_nll_debug(
         const dVec& x
