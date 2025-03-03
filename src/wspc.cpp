@@ -273,6 +273,7 @@ wspc::wspc(
     for (int r = 0; r < n_count_rows; r++) {
       count_log(r) = slog(count(r) + 1.0);
     }
+    mean_count_log = vmean(count_log);
     vprint("Took log of observed counts", verbose);
     
     // Find mean observed ran effect
@@ -835,7 +836,7 @@ sdouble wspc::neg_loglik(
       sdouble wf = (warping_factors_point(i) + 1.0)/2.0; // rescale
       log_lik += slog(
         spower(wf, beta_shape_point - 1.0) * spower(1.0 - wf, beta_shape_point - 1.0) /
-          (spower(stan::math::tgamma(beta_shape_point), 2.0) / stan::math::tgamma(2.0*beta_shape_point))
+          (spower(stan::math::tgamma(beta_shape_point), 2.0) / stan::math::tgamma(2.0 * beta_shape_point))
       );
     }
     
@@ -843,11 +844,8 @@ sdouble wspc::neg_loglik(
     // ... the relevant probability distribution is a normal distribution of mean zero, sd = sqrt(1/((4*m)*(2*s + 1)))
     // ... as the actual warping factors are scaled to range from -1 to 1, the expected sd is twice the above formula
     sdouble pw_mean_p = vmean(warping_factors_point); 
-    sdouble sd_pw_p = ssqrt(1.0 / ((4.0*(sdouble)warping_factors_point.size()) * (2.0*beta_shape_point + 1.0))) * 2.0;
-    log_lik += slog(
-      // Assume mean = 0
-      sexp(-spower(pw_mean_p, 2.0) / (2.0 * spower(sd_pw_p, 2.0))) / (ssqrt(2.0 * M_PI) * sd_pw_p)
-    );
+    sdouble sd_pw_p = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_point.size()) * (2.0 * beta_shape_point + 1.0))) * 2.0;
+    log_lik += log_dnorm(pw_mean_p, 0.0, sd_pw_p);
     
     // Compute the log-likelihood of the warping factors, given the assumed beta distribution
     sdouble beta_shape_rate = parameters[param_struc_idx["beta_shape_rate"]];
@@ -855,18 +853,15 @@ sdouble wspc::neg_loglik(
       sdouble wf = (warping_factors_rate(i) + 1.0)/2.0; // rescale
       log_lik += slog(
         spower(wf, beta_shape_rate - 1.0) * spower(1.0 - wf, beta_shape_rate - 1.0) /
-          (spower(stan::math::tgamma(beta_shape_rate), 2.0) / stan::math::tgamma(2.0*beta_shape_rate))
+          (spower(stan::math::tgamma(beta_shape_rate), 2.0) / stan::math::tgamma(2.0 * beta_shape_rate))
       );
     }
     
     // Compute the log-likelihood of the mean of these rate warping factors, given the expected normal distribution
     // ... see above notes on the formula
     sdouble pw_mean_r = vmean(warping_factors_rate); 
-    sdouble sd_pw_r = ssqrt(1.0 / ((4.0*(sdouble)warping_factors_rate.size()) * (2.0*beta_shape_rate + 1.0))) * 2.0;
-    log_lik += slog(
-      // Assume mean = 0
-      sexp(-spower(pw_mean_r, 2.0) / (2.0 * spower(sd_pw_r, 2.0))) / (ssqrt(2.0 * M_PI) * sd_pw_r)
-    );
+    sdouble sd_pw_r = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_rate.size()) * (2.0 * beta_shape_rate + 1.0))) * 2.0;
+    log_lik += log_dnorm(pw_mean_r, 0.0, sd_pw_r);
     
     // Compute the log-likelihood of the observed mean random rate effects, given these rate warping factors
     int n_child = child_lvls.size();
@@ -875,24 +870,21 @@ sdouble wspc::neg_loglik(
     // ... Grab warping indices and initiate variables to hold them
     NumericMatrix wfactor_idx_rate = wfactor_idx["rate"];
     sVec f_rw_row(n_child);
-    //Rcpp::Rcout << "log_lik: " << log_lik << std::endl;
     for (int r = 1; r < n_ran; r++) {
       // ... Get rate-warp factors for this level (one per child)
       for (int c = 0; c < n_child; c++) {f_rw_row(c) = parameters[(int)wfactor_idx_rate(r, c)];}
-      //print_Vec(f_rw_row); 
       // ... find mean and scaled sd
       sdouble modeled_mean = vmean(f_rw_row); 
       sdouble modeled_sd = vsd(f_rw_row)/sqrt_n_ran; 
       // ... add log-likelihood
       log_lik += log_dnorm(observed_mean_ran_eff[r - 1], modeled_mean, modeled_sd);
-      //Rcpp::Rcout << "log_lik: " << log_lik << ", obs: " << observed_mean_ran_eff[r - 1] << ", mean: " << modeled_mean << ", sd: " << modeled_sd << std::endl;
     }
     
     // Compute the log-likelihood of the Rt beta values, given the normal distribution implied by the beta-rate shape and b-f ratio
-    //sdouble expected_ran_effect = ssqrt(1.0 / (4.0 * (2.0 * beta_shape_rate + 1.0)));
-    //expected_ran_effect *= 2.0; // scale to range from -1 to 1
-    //sdouble sd_Rt_effect = 2.12 * expected_ran_effect;
-    sdouble sd_Rt_effect = parameters[param_struc_idx["sd_Rt_effect"]];
+    sdouble expected_ran_effect = ssqrt(1.0 / (4.0 * (2.0 * beta_shape_rate + 1.0)));
+    expected_ran_effect *= 2.0; // scale to range from -1 to 1
+    sdouble eff_mult = fe_difference_ratio - 1.0;
+    sdouble sd_Rt_effect = eff_mult * mean_count_log * expected_ran_effect;
     for (int i = 0; i < Rt_beta_values_no_ref.size(); i++) {
       log_lik += log_dnorm(Rt_beta_values_no_ref(i), 0.0, sd_Rt_effect);
     }
@@ -1021,7 +1013,7 @@ sVec wspc::neg_boundary_dist(
         
         // Check that all tslopes are > zero.
         for (int d = 0; d < deg; d++) {
-          sdouble tslope_dist = tslope(d);
+          sdouble tslope_dist = tslope(d) * 10; // ... *10 so boundary is approached slowly
           neg_boundary_dist_vec(ctr) = -tslope_dist;
           ctr++;
         }
@@ -1395,10 +1387,11 @@ dVec wspc::bs_fit(
         int shift_back_max = back_up_range(0); 
         int shift_up_max = back_up_range(1); 
         int shift_range = back_up_range(2); 
-        int shift_idx = rng(shift_range); // randomly select integer between 0 and shift_range
+        // ... randomly select integer between 0 and shift_range
+        int shift_idx = rng(shift_range); 
         IntegerVector shift = iseq(-shift_back_max, shift_up_max, shift_range);
         int r2 = r + shift[shift_idx];
-        // ... redraw randomly (with replacement) from the token pool of r2 and resum into r's count 
+        // ... redraw randomly (with replacement) from the token pool of r2 and re-sum into r's count 
         IntegerVector token_pool_r = token_pool[r2];
         int resample_sz = token_pool_r.size();
         if (resample_sz < 1) {
@@ -1406,10 +1399,10 @@ dVec wspc::bs_fit(
           token_pool_r = token_pool[r];
           resample_sz = token_pool_r.size();
         }
-        //count(r) = count(r2); 
         count(r) = 0.0;
         for (int i = 0; i < resample_sz; i++) {
-          int resample_idx = rng(resample_sz); // randomly select integer between 0 and resample_sz
+          // ... randomly select integer between 0 and resample_sz
+          int resample_idx = rng(resample_sz); 
           count(r) += count_tokenized[token_pool_r[resample_idx]];
         }
         count_log(r) = slog(count(r) + 1.0);
@@ -1779,16 +1772,31 @@ Rcpp::List wspc::check_parameter_feasibility(
  * Export data to R
  */
 
+void wspc::import_fe_diff_ratio(
+    const double& fe_diff_ratio,
+    const bool& verbose
+  ) {
+    vprint("Imported fe_difference_ratio: " + std::to_string(fe_diff_ratio), verbose);
+    fe_difference_ratio = (sdouble)fe_diff_ratio;
+  }
+
 Rcpp::List wspc::results() {
+  
+  NumericVector predicted_rates_out(n_count_rows);
+  NumericVector predicted_rates_log_out(n_count_rows);
+  if (predicted_rates.size() == n_count_rows) {
+    predicted_rates_out = predicted_rates;
+    predicted_rates_log_out = predicted_rates_log;
+  }
   
   // Create summed count data frame
   DataFrame count_data_summed = DataFrame::create(
     _["row"] = count_row_nums,
     _["bin"] = to_NumVec(bin),
     _["count"] = to_NumVec(count),
-    _["pred"] = predicted_rates,
+    _["pred"] = predicted_rates_out,
     _["count.log"] = to_NumVec(count_log),
-    _["pred.log"] = predicted_rates_log,
+    _["pred.log"] = predicted_rates_log_out,
     _["parent"] = parent,
     _["child"] = child,
     _["ran"] = ran,
@@ -1853,6 +1861,12 @@ Rcpp::List wspc::results() {
     } 
   }
   
+  // Recompute sd_Rt_effect
+  sdouble expected_ran_effect = ssqrt(1.0 / (4.0 * (2.0 * struc_values["beta_shape_rate"] + 1.0)));
+  expected_ran_effect *= 2.0; // scale to range from -1 to 1
+  sdouble eff_mult = fe_difference_ratio - 1.0;
+  sdouble sd_Rt_effect = eff_mult * mean_count_log * expected_ran_effect;
+  
   // Make final list to return 
   List results_list = List::create(
     _["model.component.list"] = mc_list,
@@ -1865,6 +1879,7 @@ Rcpp::List wspc::results() {
     _["struc.params"] = struc_values,
     _["param.idx0"] = param_idx, // "0" to indicate this goes out w/ C++ zero-based indexing
     _["token.pool"] = token_pool_list,
+    _["computed_sd_Rt_effect"] = sd_Rt_effect.val(),
     _["settings"] = model_settings
   );
   
@@ -1939,5 +1954,6 @@ RCPP_MODULE(wspc) {
     .method("bs_fit", &wspc::bs_fit)
     .method("bs_batch", &wspc::bs_batch)
     .method("resample", &wspc::resample)
+    .method("import_fe_diff_ratio", &wspc::import_fe_diff_ratio)
     .method("results", &wspc::results);
   }
