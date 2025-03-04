@@ -352,8 +352,9 @@ bs.stats <- function(
           p_values[n] <- pvalues.bs(bs_results[,n], fitted_params[n]) 
         } else if (baseline_mask[n]) {
           if (tslope_mask[n]) { # testing slope
-            p_values[n] <- pvalues.bs(bs_results[,n] - 1, fitted_params[n] - 1, lower.tail.only = TRUE) 
+            p_values[n] <- pvalues.bs(bs_results[,n] - 0, fitted_params[n] - 0, lower.tail.only = TRUE) 
             # Basic idea: A slope < 1 is unstably shallow and suggests that there is no transition point here
+            #   ... hence, expect to rest the value - 1; however, the model uses the exp of the parameter, so zero becomes our 1. 
           } else { # testing "log-linked" rate, i.e., true rate is exp of this number
             p_values[n] <- pvalues.bs(bs_results[,n], fitted_params[n]) 
             # ^ ... These values can be negative, meaning unlinked (i.e., taking exp) they are less than 1, which we interpret as not expressed
