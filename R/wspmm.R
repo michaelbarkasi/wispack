@@ -538,7 +538,7 @@ check.tpoint.stability <- function(
                   implied_bs_slopes <- rowSums(bs_params[,bs_col_idx])
                   
                   # Compute p_value ("- 1" and lower-tail only because checking if significantly greater than 1)
-                  p_value <- pvalues.bs(implied_bs_slopes - 1, mean(implied_bs_slopes) - 1, lower.tail.only = TRUE) 
+                  p_value <- pvalues.bs(implied_bs_slopes - 0, mean(implied_bs_slopes) - 0, lower.tail.only = TRUE) 
                   
                   # Test for significance
                   if (p_value < min(wisp.results$stats$parameters$alpha.adj[bs_col_idx], na.rm = TRUE)) df[r,paste0("TPS.",fe)] <- TRUE
