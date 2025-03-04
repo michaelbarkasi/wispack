@@ -62,6 +62,9 @@ wspc::wspc(
         stop("Input data is missing required column (or out of order): " + required_cols[i]);
       }
     }
+    if (tslope_initial < 1.0) {
+      stop("tslope_initial must be greater than or equal to 1.0.");
+    }
     vprint("Data structure check passed", verbose);
     
     // Save tokenized count column before collapsing to sums 
@@ -428,7 +431,8 @@ wspc::wspc(
               placeholder_ref_values[mc] = Rcpp::as<NumericVector>(found_cp);
             } else if (mc == "tslope") {
               NumericVector tslope_default(deg);
-              for (int tp = 0; tp < deg; tp++) {tslope_default[tp] = tslope_initial;}
+              // ... but tslope into log space
+              for (int tp = 0; tp < deg; tp++) {tslope_default[tp] = log(tslope_initial);}
               placeholder_ref_values[mc] = tslope_default;
             }
           }
@@ -532,8 +536,6 @@ wspc::wspc(
       if (deg > 0){
         // Add slots for the tpoint boundary distance at each tpoint
         boundary_vec_size += deg + 1;
-        // Add slots for each of the tpoint slopes 
-        //boundary_vec_size += deg;
         // Add one slot for the R_sum boundary distance
         boundary_vec_size++;
       } else {
@@ -541,8 +543,8 @@ wspc::wspc(
         boundary_vec_size++;
       } 
     }
-    boundary_vec_size += param_struc_idx.size() + // Add slots for the structural parameter boundaries
-      param_wfactor_point_idx.size()*2 +          // ... and for the warping factor boundaries
+    boundary_vec_size += param_struc_idx.size() +  // Add slots for the structural parameter boundaries
+      param_wfactor_point_idx.size()*2 +           // ... and for the warping factor boundaries
       param_wfactor_rate_idx.size()*2; 
     vprint("Computed size of rRsum boundary vector: " + std::to_string(boundary_vec_size), verbose);
     
@@ -669,7 +671,7 @@ sVec wspc::compute_mc_tslope_r(
     if (deg > 0) {
       for (int t = 0; t < deg; t++) {
         for (int i = 0; i < treatment_num; i++) {
-          betas_tslope_r(i, t) = sexp(parameters(betas_tslope_idx[idx_r]));
+          betas_tslope_r(i, t) = parameters(betas_tslope_idx[idx_r]);
           idx_r++;
         }
       } 
@@ -680,6 +682,11 @@ sVec wspc::compute_mc_tslope_r(
     
     // Compute tslope
     sVec tslope_vec = compute_mc(betas_tslope_r, weight_row);
+    
+    // Remove tslope elements from log space 
+    for (int i = 0; i < tslope_vec.size(); i++) {
+      tslope_vec(i) = sexp(tslope_vec(i));
+    }
     
     // Send out
     return tslope_vec;
@@ -908,14 +915,7 @@ sdouble wspc::neg_loglik(
     int n_tslope = tslope_beta_values_no_ref.size();
     sdouble sd_tslope_effect = parameters[param_struc_idx["sd_tslope_effect"]];
     if (n_tslope != 0) {
-      Rcpp::Rcout << "-------" << std::endl;
-      Rcpp::Rcout << log_lik.val() << std::endl;
-      Rcpp::Rcout << sd_tslope_effect.val() << std::endl;
       for (int i = 0; i < n_tslope; i++) {
-        if (i == 0) {
-          Rcpp::Rcout << log_dnorm(tslope_beta_values_no_ref(i), 0.0, sd_tslope_effect).val() << std::endl;
-        }
-        
         log_lik += log_dnorm(tslope_beta_values_no_ref(i), 0.0, sd_tslope_effect);
       }
     }
@@ -925,13 +925,7 @@ sdouble wspc::neg_loglik(
     int n_tpoint = tpoint_beta_values_no_ref.size();
     sdouble sd_tpoint_effect = parameters[param_struc_idx["sd_tpoint_effect"]];
     if (n_tpoint != 0) {
-      Rcpp::Rcout << "-------" << std::endl;
-      Rcpp::Rcout << log_lik.val() << std::endl;
-      Rcpp::Rcout << sd_tpoint_effect.val() << std::endl;
       for (int i = 0; i < n_tpoint; i++) {
-        if (i == 0) {
-          Rcpp::Rcout << log_dnorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect).val() << std::endl;
-        }
         log_lik += log_dnorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect);
       }
     }
