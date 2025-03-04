@@ -663,13 +663,13 @@ sVec wspc::compute_mc_tslope_r(
     int p_num = Rwhich(eq_left_broadcast(parent_lvls, parent[r]))[0];
     int deg = degMat(c_num, p_num);
     
-    // Re-roll beta matrices
+    // Re-roll beta matrices and pull out of log space
     int idx_r = 0;
     sMat betas_tslope_r(treatment_num, deg);
     if (deg > 0) {
       for (int t = 0; t < deg; t++) {
         for (int i = 0; i < treatment_num; i++) {
-          betas_tslope_r(i, t) = parameters(betas_tslope_idx[idx_r]);
+          betas_tslope_r(i, t) = sexp(parameters(betas_tslope_idx[idx_r]));
           idx_r++;
         }
       } 
@@ -784,14 +784,9 @@ sVec wspc::predict_rates_log(
         if (cnt > 0) { 
           
           // Compute model components for this row r
-          Rt = compute_mc_Rt_r(r, parameters, f_rw); // returned already warped
-          tslope = compute_mc_tslope_r(r, parameters); 
+          Rt = compute_mc_Rt_r(r, parameters, f_rw);   // returned already warped
+          tslope = compute_mc_tslope_r(r, parameters); // returned out of log space
           tpoint = compute_mc_tpoint_r(r, parameters);
-          
-          // Pull tslope out of log space 
-          for (int i = 0; i < tslope.size(); i++) {
-            tslope(i) = sexp(tslope(i));
-          }
           
         } 
         
@@ -835,6 +830,9 @@ sdouble wspc::neg_loglik(
     sVec Rt_beta_values_no_ref = idx_vec(parameters, param_beta_Rt_idx_no_ref);
     sVec tpoint_beta_values_no_ref = idx_vec(parameters, param_beta_tpoint_idx_no_ref);
     
+    // *****************************************************************************************************************
+    // log-likelihood of warping factors (ensures warping factors fit a modelled beta distribution)
+    
     // Compute the log-likelihood of the point warping factors, given the assumed beta distribution
     sdouble beta_shape_point = parameters[param_struc_idx["beta_shape_point"]];
     for (int i = 0; i < warping_factors_point.size(); i++) {
@@ -845,14 +843,7 @@ sdouble wspc::neg_loglik(
       );
     }
     
-    // Compute the log-likelihood of the mean of these point warping factors, given the expected normal distribution
-    // ... the relevant probability distribution is a normal distribution of mean zero, sd = sqrt(1/((4*m)*(2*s + 1)))
-    // ... as the actual warping factors are scaled to range from -1 to 1, the expected sd is twice the above formula
-    sdouble pw_mean_p = vmean(warping_factors_point); 
-    sdouble sd_pw_p = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_point.size()) * (2.0 * beta_shape_point + 1.0))) * 2.0;
-    log_lik += log_dnorm(pw_mean_p, 0.0, sd_pw_p);
-    
-    // Compute the log-likelihood of the warping factors, given the assumed beta distribution
+    // Compute the log-likelihood of the rate warping factors, given the assumed beta distribution
     sdouble beta_shape_rate = parameters[param_struc_idx["beta_shape_rate"]];
     for (int i = 0; i < warping_factors_rate.size(); i++) {
       sdouble wf = (warping_factors_rate(i) + 1.0)/2.0; // rescale
@@ -862,11 +853,27 @@ sdouble wspc::neg_loglik(
       );
     }
     
-    // Compute the log-likelihood of the mean of these rate warping factors, given the expected normal distribution
+    // *****************************************************************************************************************
+    // log-likelihood of warping factors means (ensures warping factors tend to be centered around zero)
+    
+    // Compute the log-likelihood of the mean of point warping factors, given the expected normal distribution
+    // ... the relevant probability distribution is a normal distribution of mean zero, sd = sqrt(1/((4*m)*(2*s + 1)))
+    // ... as the actual warping factors are scaled to range from -1 to 1, the expected sd is twice the above formula
+    sdouble pw_mean_p = vmean(warping_factors_point); 
+    sdouble sd_pw_p = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_point.size()) * (2.0 * beta_shape_point + 1.0))) * 2.0;
+    log_lik += log_dnorm(pw_mean_p, 0.0, sd_pw_p);
+    
+    // Compute the log-likelihood of the mean of rate warping factors, given the expected normal distribution
     // ... see above notes on the formula
     sdouble pw_mean_r = vmean(warping_factors_rate); 
     sdouble sd_pw_r = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_rate.size()) * (2.0 * beta_shape_rate + 1.0))) * 2.0;
     log_lik += log_dnorm(pw_mean_r, 0.0, sd_pw_r);
+    
+    // *****************************************************************************************************************
+    // log-likelihood of the estimated overall rate warp of that warping factor,
+    //  given the modelled child-specific rate warping factors for each random level, 
+    // ... idea: warping factors for a random level can vary between child levels, but the mean of these warping factors 
+    //      should still tend to line up with the observed mean random effect of that random level.
     
     // Compute the log-likelihood of the observed mean random rate effects, given these rate warping factors
     int n_child = child_lvls.size();
@@ -885,7 +892,10 @@ sdouble wspc::neg_loglik(
       log_lik += log_dnorm(observed_mean_ran_eff[r - 1], modeled_mean, modeled_sd);
     }
     
-    // Compute the log-likelihood of the Rt beta values, given the normal distribution implied by the beta-rate shape and b-f ratio
+    // *****************************************************************************************************************
+    // log-likelihood of beta values
+    
+    // Compute the log-likelihood of the Rt beta values, given the normal distribution implied by the beta-rate shape and fe_difference_ratio ratio
     sdouble expected_ran_effect = ssqrt(1.0 / (4.0 * (2.0 * beta_shape_rate + 1.0)));
     expected_ran_effect *= 2.0; // scale to range from -1 to 1
     sdouble eff_mult = fe_difference_ratio - 1.0;
@@ -894,20 +904,34 @@ sdouble wspc::neg_loglik(
       log_lik += log_dnorm(Rt_beta_values_no_ref(i), 0.0, sd_Rt_effect);
     }
     
-    // Compute the log-likelihood of the slope beta values, given the assumed normal distribution
+    // Compute the log-likelihood of the tslope beta values, given the assumed normal distribution
     int n_tslope = tslope_beta_values_no_ref.size();
     sdouble sd_tslope_effect = parameters[param_struc_idx["sd_tslope_effect"]];
     if (n_tslope != 0) {
+      Rcpp::Rcout << "-------" << std::endl;
+      Rcpp::Rcout << log_lik.val() << std::endl;
+      Rcpp::Rcout << sd_tslope_effect.val() << std::endl;
       for (int i = 0; i < n_tslope; i++) {
+        if (i == 0) {
+          Rcpp::Rcout << log_dnorm(tslope_beta_values_no_ref(i), 0.0, sd_tslope_effect).val() << std::endl;
+        }
+        
         log_lik += log_dnorm(tslope_beta_values_no_ref(i), 0.0, sd_tslope_effect);
       }
     }
     
     // Compute the log-likelihood of the tpoint beta values, given the assumed normal distribution
+    // TO DO: REWRITE SO THAT IT'S LIKE SD_RT_EFFECT, DERIVED FROM EXPECTED_RAN_EFFECT ON TPOINT
     int n_tpoint = tpoint_beta_values_no_ref.size();
     sdouble sd_tpoint_effect = parameters[param_struc_idx["sd_tpoint_effect"]];
     if (n_tpoint != 0) {
+      Rcpp::Rcout << "-------" << std::endl;
+      Rcpp::Rcout << log_lik.val() << std::endl;
+      Rcpp::Rcout << sd_tpoint_effect.val() << std::endl;
       for (int i = 0; i < n_tpoint; i++) {
+        if (i == 0) {
+          Rcpp::Rcout << log_dnorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect).val() << std::endl;
+        }
         log_lik += log_dnorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect);
       }
     }
@@ -918,13 +942,16 @@ sdouble wspc::neg_loglik(
       return inf_;
     }
     
+    // *****************************************************************************************************************
+    // log-likelihood of observed counts, given predicted rates
+    
     // Predict rates under these parameters
     sVec predicted_rates_log = predict_rates_log(
       parameters, // model parameters for generating prediction
       false       // compute all summed count rows, even with a count value of NA?
       );
     
-    // Compute the log-likelihood of the rate data
+    // Compute the log-likelihood of the count data
     for (int r : count_not_na_idx) {
       
       if (std::isinf(predicted_rates_log(r)) || predicted_rates_log(r) < 0.0 || std::isnan(predicted_rates_log(r))) {
@@ -1015,13 +1042,6 @@ sVec wspc::neg_boundary_dist(
           neg_boundary_dist_vec(ctr) = -buffer_dist;
           ctr++;
         }
-        
-        // // Check that all tslopes are > zero.
-        // for (int d = 0; d < deg; d++) {
-        //   sdouble tslope_dist = tslope(d) * 10; // ... *10 so boundary is approached slowly
-        //   neg_boundary_dist_vec(ctr) = -tslope_dist;
-        //   ctr++;
-        // }
         
         // Find R_sum boundary distance
         // ... Rates (Rt) must be positive, which happens iff Rt(0) - Rsum > 0.
