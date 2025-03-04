@@ -138,8 +138,8 @@ List build_beta_shell(
                     // use estimated rate effect for non-ref treatment levels
                     bta(t,i) = RtEffs_Mat(t,i);
                   } else {
-                    // Begin with uniform random effect for tpoint and tslope
-                    bta(t,i) = R::runif(-0.1, 0.1); 
+                    // Begin with zero effect for tpoint and tslope
+                    bta(t,i) = 0.0; 
                   }
                 }
               }
