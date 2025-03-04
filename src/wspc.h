@@ -114,6 +114,7 @@ class wspc {
     IntegerVector param_beta_tpoint_idx_no_ref;
     IntegerVector param_ref_values_tpoint_idx;
     IntegerVector param_struc_idx;
+    IntegerVector param_struc_idx_bounded;
     List beta_idx;                          // lists giving the structured array indices for named parameters
     List wfactor_idx; 
     IntegerVector gv_ranLr_int;             // indices (row and column) for random effect arrays 
@@ -401,6 +402,8 @@ sVec masked_vec(sVec vec, Rcpp::LogicalVector mask);
 dVec masked_vec(dVec vec, Rcpp::LogicalVector mask);
 // ... overload
 iVec masked_vec(iVec vec, Rcpp::LogicalVector mask);
+// ... overload 
+IntegerVector masked_vec(IntegerVector vec, Rcpp::LogicalVector mask);
 
 // For subsetting vectors with Rcpp IntegerVector
 sVec idx_vec(sVec vec, Rcpp::IntegerVector idx);

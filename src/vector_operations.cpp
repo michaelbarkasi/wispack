@@ -226,6 +226,21 @@ iVec masked_vec(
     return mvec;
   }
 
+// ... overload
+IntegerVector masked_vec(
+    IntegerVector vec, 
+    Rcpp::LogicalVector mask
+  ) {
+    int m = mask.size();
+    if (vec.size() != m) {Rcpp::stop("Vector and mask must have the same length.");}
+    int n = 0;
+    for (int i = 0; i < m; i++) {if (mask[i]) {n++;}}
+    IntegerVector mvec = IntegerVector(n);
+    int j = 0;
+    for (int i = 0; i < m; i++) {if (mask[i]) {mvec[j++] = vec[i];}}
+    return mvec;
+  }
+
 // For subsetting vectors with Rcpp IntegerVector
 sVec idx_vec(
     sVec vec,
