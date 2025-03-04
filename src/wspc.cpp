@@ -431,7 +431,8 @@ wspc::wspc(
               placeholder_ref_values[mc] = Rcpp::as<NumericVector>(found_cp);
             } else if (mc == "tslope") {
               NumericVector tslope_default(deg);
-              for (int tp = 0; tp < deg; tp++) {tslope_default[tp] = tslope_initial;}
+              // ... but tslope into log space
+              for (int tp = 0; tp < deg; tp++) {tslope_default[tp] = log(tslope_initial);}
               placeholder_ref_values[mc] = tslope_default;
             }
           }
@@ -535,8 +536,6 @@ wspc::wspc(
       if (deg > 0){
         // Add slots for the tpoint boundary distance at each tpoint
         boundary_vec_size += deg + 1;
-        // Add slots for each of the tpoint slopes 
-        boundary_vec_size += deg;
         // Add one slot for the R_sum boundary distance
         boundary_vec_size++;
       } else {
@@ -666,7 +665,7 @@ sVec wspc::compute_mc_tslope_r(
     int p_num = Rwhich(eq_left_broadcast(parent_lvls, parent[r]))[0];
     int deg = degMat(c_num, p_num);
     
-    // Re-roll beta matrices
+    // Re-roll beta matrices and pull out of log space
     int idx_r = 0;
     sMat betas_tslope_r(treatment_num, deg);
     if (deg > 0) {
@@ -683,6 +682,11 @@ sVec wspc::compute_mc_tslope_r(
     
     // Compute tslope
     sVec tslope_vec = compute_mc(betas_tslope_r, weight_row);
+    
+    // Remove tslope elements from log space 
+    for (int i = 0; i < tslope_vec.size(); i++) {
+      tslope_vec(i) = sexp(tslope_vec(i));
+    }
     
     // Send out
     return tslope_vec;
@@ -788,7 +792,7 @@ sVec wspc::predict_rates_log(
           
           // Compute model components for this row r
           Rt = compute_mc_Rt_r(r, parameters, f_rw);   // returned already warped
-          tslope = compute_mc_tslope_r(r, parameters); 
+          tslope = compute_mc_tslope_r(r, parameters); // returned out of log space
           tpoint = compute_mc_tpoint_r(r, parameters);
           
         } 
@@ -1030,13 +1034,6 @@ sVec wspc::neg_boundary_dist(
         for (int d = 0; d < deg + 1; d++) {
           sdouble buffer_dist = (tpoint_ext(d + 1) - tpoint_ext(d)) - tpoint_buffer;
           neg_boundary_dist_vec(ctr) = -buffer_dist;
-          ctr++;
-        }
-        
-        // Check that all tslopes are > zero.
-        for (int d = 0; d < deg; d++) {
-          sdouble tslope_dist = sexp(2.0 * tslope(d)) - 1.0; 
-          neg_boundary_dist_vec(ctr) = -tslope_dist;
           ctr++;
         }
         
