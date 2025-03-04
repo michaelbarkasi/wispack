@@ -432,7 +432,7 @@ wspc::wspc(
             } else if (mc == "tslope") {
               NumericVector tslope_default(deg);
               // ... but tslope into log space
-              for (int tp = 0; tp < deg; tp++) {tslope_default[tp] = log(tslope_initial);}
+              for (int tp = 0; tp < deg; tp++) {tslope_default[tp] = tslope_initial;}
               placeholder_ref_values[mc] = tslope_default;
             }
           }
@@ -665,7 +665,7 @@ sVec wspc::compute_mc_tslope_r(
     int p_num = Rwhich(eq_left_broadcast(parent_lvls, parent[r]))[0];
     int deg = degMat(c_num, p_num);
     
-    // Re-roll beta matrices and pull out of log space
+    // Re-roll beta matrices
     int idx_r = 0;
     sMat betas_tslope_r(treatment_num, deg);
     if (deg > 0) {
@@ -683,7 +683,7 @@ sVec wspc::compute_mc_tslope_r(
     // Compute tslope
     sVec tslope_vec = compute_mc(betas_tslope_r, weight_row);
     
-    // Remove tslope elements from log space 
+    // Take exponential of slopes
     for (int i = 0; i < tslope_vec.size(); i++) {
       tslope_vec(i) = sexp(tslope_vec(i));
     }
@@ -916,7 +916,7 @@ sdouble wspc::neg_loglik(
     sdouble sd_tslope_effect = parameters[param_struc_idx["sd_tslope_effect"]];
     if (n_tslope != 0) {
       for (int i = 0; i < n_tslope; i++) {
-        log_lik += log_dnorm(tslope_beta_values_no_ref(i), 0.0, sd_tslope_effect);
+        log_lik += log_dnorm(tslope_beta_values_no_ref(i), 0.0, sexp(sd_tslope_effect));
       }
     }
     
