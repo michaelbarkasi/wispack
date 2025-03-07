@@ -509,6 +509,8 @@ wspc::wspc(
     param_ref_values_tpoint_idx = params["param_ref_values_tpoint_idx"];
     param_struc_idx = params["param_struc_idx"]; 
     param_struc_idx.names() = struc_names;
+    param_gamma_var_idx = params["param_gamma_var_idx"];
+    param_gamma_var_idx.names() = child_lvls;
     beta_idx = params["beta_idx"];
     wfactor_idx = params["wfactor_idx"];
    
@@ -544,6 +546,7 @@ wspc::wspc(
       } 
     }
     boundary_vec_size += param_struc_idx.size() +  // Add slots for the structural parameter boundaries
+      param_gamma_var_idx.size() +                 // ... and for the gamma variance boundaries
       param_wfactor_point_idx.size()*2 +           // ... and for the warping factor boundaries
       param_wfactor_rate_idx.size()*2; 
     vprint("Computed size of rRsum boundary vector: " + std::to_string(boundary_vec_size), verbose);
@@ -937,10 +940,10 @@ sdouble wspc::neg_loglik(
     }
     
     // *****************************************************************************************************************
-    // log-likelihood of observed counts, given predicted rates
+    // log-likelihood of observed counts, given predicted rates and estimated gamma variances
     
     // Predict rates under these parameters
-    sVec predicted_rates_log = predict_rates_log(
+    sVec predicted_rates_log_var = predict_rates_log(
       parameters, // model parameters for generating prediction
       false       // compute all summed count rows, even with a count value of NA?
       );
@@ -948,13 +951,24 @@ sdouble wspc::neg_loglik(
     // Compute the log-likelihood of the count data
     for (int r : count_not_na_idx) {
       
-      if (std::isinf(predicted_rates_log(r)) || predicted_rates_log(r) < 0.0 || std::isnan(predicted_rates_log(r))) {
+      if (std::isinf(predicted_rates_log_var(r)) || predicted_rates_log_var(r) < 0.0 || std::isnan(predicted_rates_log_var(r))) {
         return inf_;
       } else {
-        log_lik += count_log(r) * slog(predicted_rates_log(r)) - predicted_rates_log(r) - stan::math::lgamma(count_log(r) + 1);
-        // ^ Hand-written function for log Poisson density
-        //  ... could use stan implementation: log_lik += stan::math::poisson_lpmf(count_log(r), pred_rate_log);
-        //  ... but seems identical in results and speed?
+        
+        int gamma_var_idx = param_gamma_var_idx[(String)child[r]];
+        sdouble gamma_variance = parameters[gamma_var_idx];
+        std::vector<sdouble> theta = {count_log(r), predicted_rates_log_var(r), gamma_variance};
+        
+        log_lik += stan::math::integrate_1d(
+          log_dpoisGamma,
+          std::numeric_limits<double>::epsilon(),
+          stan::math::positive_infinity(),
+          theta,
+          dVec(),
+          iVec(),
+          nullptr
+        );
+        
       }
       
     }
@@ -1090,6 +1104,14 @@ sVec wspc::neg_boundary_dist(
     // Compute parameter boundary distance, structural parameters
     for (int p : param_struc_idx) {
       // All structural parameters must be > zero.
+      sdouble dist_low = parameters(p);
+      neg_boundary_dist_vec(ctr) = -dist_low;
+      ctr++;
+    }
+    
+    // Compute parameter boudnary distance, gamma variance parameters 
+    for (int p : param_gamma_var_idx) {
+      // All gamma variance parameters must be > zero.
       sdouble dist_low = parameters(p);
       neg_boundary_dist_vec(ctr) = -dist_low;
       ctr++;
@@ -1804,6 +1826,7 @@ Rcpp::List wspc::results() {
   NumericVector predicted_rates_out(n_count_rows);
   NumericVector predicted_rates_log_out(n_count_rows);
   if (predicted_rates.size() == n_count_rows) {
+    // conditional to prevent trying to access an empty vector
     predicted_rates_out = predicted_rates;
     predicted_rates_log_out = predicted_rates_log;
   }
