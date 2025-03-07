@@ -17,7 +17,7 @@ sdouble log_dnorm(
 sdouble log_dgamma(
     const sdouble& x,              // value to evaluate
     const sdouble& expected_value, // expected value   
-    const sdouble& variance,       // variance
+    const sdouble& variance        // variance
   ) {
     // Have: 
     // rate = shape / expected_value;
@@ -27,6 +27,33 @@ sdouble log_dgamma(
     return slog(
       (spower(rate, shape) * spower(x, shape - 1.0) * sexp(-rate * x)) / stan::math::tgamma(shape)
     );
+  }
+
+// Log of density of Poisson distribution
+sdouble log_dpois(
+    const sdouble& x,        // value to evaluate
+    const sdouble& lambda    // rate parameter
+  ) {
+    return x * slog(lambda) - lambda - stan::math::lgamma(x + 1.0);
+    // ^ Hand-written function for log Poisson density
+    //  ... could use stan implementation: stan::math::poisson_lpmf(count_log(r), pred_rate_log);
+    //  ... but seems identical in results and speed?
+  }
+
+// Log of density of negative binomial distribution (Poisson-Gamma)
+// ... note: signature formatted for Stan integration 
+sdouble log_dpoisGamma(
+    sdouble lambda,                          // function argument (rate of pois distribution)
+    double lambdac,                         // complement of function argument
+    const std::vector<sdouble>& theta,      // parameters
+    const std::vector<double>& x_r,         // data (reals)
+    const std::vector<int>& x_i,            // data (ints)
+    std::ostream* msgs
+  ) {
+    sdouble obs_count = theta[0];
+    sdouble gamma_expected_value = theta[1]; 
+    sdouble gamma_variance = theta[2];
+    return log_dpois(obs_count, lambda) + log_dgamma(lambda, gamma_expected_value, gamma_variance);
   }
 
 // Numerically stable implementation of sigmoid function
