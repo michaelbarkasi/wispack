@@ -2,16 +2,25 @@
 // model_fit.cpp
 #include "wspc.h"
 
-// Log of density of normal distribution centered on zero
+// Log of density of normal distribution
 sdouble log_dnorm(
     const sdouble& x,        // value to evaluate
-    const sdouble& mu,       // mean
+    const sdouble& mu,       // mean (expected value)
     const sdouble& sd        // standard deviation
   ) {
     return slog(
-      // Assume mean = 0
-      sexp(-spower(x - mu, 2.0) / (2.0 * spower(sd, 2.0))) /
-        (ssqrt(2.0 * M_PI) * sd)
+      sexp(-spower(x - mu, 2.0) / (2.0 * spower(sd, 2.0))) / (ssqrt(2.0 * M_PI) * sd)
+    );
+  }
+
+// Log of density of gamma distribution
+sdouble log_dgamma(
+    const sdouble& x,        // value to evaluate
+    const sdouble& shape,    // shape parameter
+    const sdouble& rate      // rate parameter
+  ) {
+    return slog(
+      (spower(rate, shape) * spower(x, shape - 1.0) * sexp(-rate * x)) / stan::math::tgamma(shape)
     );
   }
 
