@@ -15,10 +15,15 @@ sdouble log_dnorm(
 
 // Log of density of gamma distribution
 sdouble log_dgamma(
-    const sdouble& x,        // value to evaluate
-    const sdouble& shape,    // shape parameter
-    const sdouble& rate      // rate parameter
+    const sdouble& x,              // value to evaluate
+    const sdouble& expected_value, // expected value   
+    const sdouble& variance,       // variance
   ) {
+    // Have: 
+    // rate = shape / expected_value;
+    // shape = variance / (rate * rate);
+    sdouble shape = (expected_value * expected_value) / variance;
+    sdouble rate = shape / expected_value;
     return slog(
       (spower(rate, shape) * spower(x, shape - 1.0) * sexp(-rate * x)) / stan::math::tgamma(shape)
     );
