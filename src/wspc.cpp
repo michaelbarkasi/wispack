@@ -868,13 +868,13 @@ sdouble wspc::neg_loglik(
     // ... as the actual warping factors are scaled to range from -1 to 1, the expected sd is twice the above formula
     sdouble pw_mean_p = vmean(warping_factors_point); 
     sdouble sd_pw_p = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_point.size()) * (2.0 * beta_shape_point + 1.0))) * 2.0;
-    log_lik += log_dnorm(pw_mean_p, 0.0, sd_pw_p);
+    log_lik += log_dNorm(pw_mean_p, 0.0, sd_pw_p);
     
     // Compute the log-likelihood of the mean of rate warping factors, given the expected normal distribution
     // ... see above notes on the formula
     sdouble pw_mean_r = vmean(warping_factors_rate); 
     sdouble sd_pw_r = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_rate.size()) * (2.0 * beta_shape_rate + 1.0))) * 2.0;
-    log_lik += log_dnorm(pw_mean_r, 0.0, sd_pw_r);
+    log_lik += log_dNorm(pw_mean_r, 0.0, sd_pw_r);
     
     // *****************************************************************************************************************
     // log-likelihood of the estimated overall rate warp of that warping factor,
@@ -896,7 +896,7 @@ sdouble wspc::neg_loglik(
       sdouble modeled_mean = vmean(f_rw_row); 
       sdouble modeled_sd = vsd(f_rw_row)/sqrt_n_ran; 
       // ... add log-likelihood
-      log_lik += log_dnorm(observed_mean_ran_eff[r - 1], modeled_mean, modeled_sd);
+      log_lik += log_dNorm(observed_mean_ran_eff[r - 1], modeled_mean, modeled_sd);
     }
     
     // *****************************************************************************************************************
@@ -908,7 +908,7 @@ sdouble wspc::neg_loglik(
     sdouble eff_mult = fe_difference_ratio - 1.0;
     sdouble sd_Rt_effect = eff_mult * mean_count_log * expected_ran_effect;
     for (int i = 0; i < Rt_beta_values_no_ref.size(); i++) {
-      log_lik += log_dnorm(Rt_beta_values_no_ref(i), 0.0, sd_Rt_effect);
+      log_lik += log_dNorm(Rt_beta_values_no_ref(i), 0.0, sd_Rt_effect);
     }
     
     // Compute the log-likelihood of the tslope beta values, given the assumed normal distribution
@@ -916,7 +916,7 @@ sdouble wspc::neg_loglik(
     sdouble sd_tslope_effect = parameters[param_struc_idx["sd_tslope_effect"]];
     if (n_tslope != 0) {
       for (int i = 0; i < n_tslope; i++) {
-        log_lik += log_dnorm(tslope_beta_values_no_ref(i), 0.0, sexp(sd_tslope_effect));
+        log_lik += log_dNorm(tslope_beta_values_no_ref(i), 0.0, sexp(sd_tslope_effect));
       }
     }
     
@@ -926,7 +926,7 @@ sdouble wspc::neg_loglik(
     sdouble sd_tpoint_effect = parameters[param_struc_idx["sd_tpoint_effect"]];
     if (n_tpoint != 0) {
       for (int i = 0; i < n_tpoint; i++) {
-        log_lik += log_dnorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect);
+        log_lik += log_dNorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect);
       }
     }
     
@@ -940,7 +940,7 @@ sdouble wspc::neg_loglik(
     // log-likelihood of observed counts, given predicted rates
     
     // Predict rates under these parameters
-    sVec predicted_rates_log = predict_rates_log(
+    sVec predicted_rates_log_var = predict_rates_log(
       parameters, // model parameters for generating prediction
       false       // compute all summed count rows, even with a count value of NA?
       );
@@ -948,13 +948,10 @@ sdouble wspc::neg_loglik(
     // Compute the log-likelihood of the count data
     for (int r : count_not_na_idx) {
       
-      if (std::isinf(predicted_rates_log(r)) || predicted_rates_log(r) < 0.0 || std::isnan(predicted_rates_log(r))) {
+      if (std::isinf(predicted_rates_log_var(r)) || predicted_rates_log_var(r) < 0.0 || std::isnan(predicted_rates_log_var(r))) {
         return inf_;
       } else {
-        log_lik += count_log(r) * slog(predicted_rates_log(r)) - predicted_rates_log(r) - stan::math::lgamma(count_log(r) + 1);
-        // ^ Hand-written function for log Poisson density
-        //  ... could use stan implementation: log_lik += stan::math::poisson_lpmf(count_log(r), pred_rate_log);
-        //  ... but seems identical in results and speed?
+        log_lik += log_dPois(count_log(r), predicted_rates_log_var(r));
       }
       
     }
@@ -962,7 +959,7 @@ sdouble wspc::neg_loglik(
     // Take negative and average, the latter so we're looking at values in the same range, regardless of data size
     sdouble negloglik = -log_lik / count_not_na_idx.size();
     
-    if (std::isinf(negloglik) || negloglik > inf_) {
+    if (std::isinf(negloglik) || std::isnan(negloglik) || negloglik > inf_) {
       negloglik = inf_;
     }
     
@@ -1804,6 +1801,7 @@ Rcpp::List wspc::results() {
   NumericVector predicted_rates_out(n_count_rows);
   NumericVector predicted_rates_log_out(n_count_rows);
   if (predicted_rates.size() == n_count_rows) {
+    // conditional to prevent trying to access an empty vector
     predicted_rates_out = predicted_rates;
     predicted_rates_log_out = predicted_rates_log;
   }
