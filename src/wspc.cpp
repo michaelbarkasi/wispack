@@ -959,7 +959,7 @@ sdouble wspc::neg_loglik(
     // Take negative and average, the latter so we're looking at values in the same range, regardless of data size
     sdouble negloglik = -log_lik / count_not_na_idx.size();
     
-    if (std::isinf(negloglik) || std::isnan(negloglik) || negloglik > inf_) {
+    if (std::isinf(negloglik) || negloglik > inf_) {
       negloglik = inf_;
     }
     
