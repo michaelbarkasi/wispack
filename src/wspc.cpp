@@ -871,13 +871,13 @@ sdouble wspc::neg_loglik(
     // ... as the actual warping factors are scaled to range from -1 to 1, the expected sd is twice the above formula
     sdouble pw_mean_p = vmean(warping_factors_point); 
     sdouble sd_pw_p = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_point.size()) * (2.0 * beta_shape_point + 1.0))) * 2.0;
-    log_lik += log_dNorm(pw_mean_p, 0.0, sd_pw_p);
+    log_lik += log_dnorm(pw_mean_p, 0.0, sd_pw_p);
     
     // Compute the log-likelihood of the mean of rate warping factors, given the expected normal distribution
     // ... see above notes on the formula
     sdouble pw_mean_r = vmean(warping_factors_rate); 
     sdouble sd_pw_r = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_rate.size()) * (2.0 * beta_shape_rate + 1.0))) * 2.0;
-    log_lik += log_dNorm(pw_mean_r, 0.0, sd_pw_r);
+    log_lik += log_dnorm(pw_mean_r, 0.0, sd_pw_r);
     
     // *****************************************************************************************************************
     // log-likelihood of the estimated overall rate warp of that warping factor,
@@ -899,7 +899,7 @@ sdouble wspc::neg_loglik(
       sdouble modeled_mean = vmean(f_rw_row); 
       sdouble modeled_sd = vsd(f_rw_row)/sqrt_n_ran; 
       // ... add log-likelihood
-      log_lik += log_dNorm(observed_mean_ran_eff[r - 1], modeled_mean, modeled_sd);
+      log_lik += log_dnorm(observed_mean_ran_eff[r - 1], modeled_mean, modeled_sd);
     }
     
     // *****************************************************************************************************************
@@ -911,7 +911,7 @@ sdouble wspc::neg_loglik(
     sdouble eff_mult = fe_difference_ratio - 1.0;
     sdouble sd_Rt_effect = eff_mult * mean_count_log * expected_ran_effect;
     for (int i = 0; i < Rt_beta_values_no_ref.size(); i++) {
-      log_lik += log_dNorm(Rt_beta_values_no_ref(i), 0.0, sd_Rt_effect);
+      log_lik += log_dnorm(Rt_beta_values_no_ref(i), 0.0, sd_Rt_effect);
     }
     
     // Compute the log-likelihood of the tslope beta values, given the assumed normal distribution
@@ -919,7 +919,7 @@ sdouble wspc::neg_loglik(
     sdouble sd_tslope_effect = parameters[param_struc_idx["sd_tslope_effect"]];
     if (n_tslope != 0) {
       for (int i = 0; i < n_tslope; i++) {
-        log_lik += log_dNorm(tslope_beta_values_no_ref(i), 0.0, sexp(sd_tslope_effect));
+        log_lik += log_dnorm(tslope_beta_values_no_ref(i), 0.0, sexp(sd_tslope_effect));
       }
     }
     
@@ -929,7 +929,7 @@ sdouble wspc::neg_loglik(
     sdouble sd_tpoint_effect = parameters[param_struc_idx["sd_tpoint_effect"]];
     if (n_tpoint != 0) {
       for (int i = 0; i < n_tpoint; i++) {
-        log_lik += log_dNorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect);
+        log_lik += log_dnorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect);
       }
     }
     
@@ -957,21 +957,29 @@ sdouble wspc::neg_loglik(
         
         int gamma_var_idx = param_gamma_var_idx[(String)child[r]];
         sdouble gamma_variance = parameters[gamma_var_idx];
+        std::vector<sdouble> theta = {count_log(r), predicted_rates_log_var(r), gamma_variance};
         
-        // Analytic solution to the log of the integral from 0 to infinity of the Poisson times Gamma densities
-        log_lik += slog(poisson_gamma_integral(count_log(r), predicted_rates_log_var(r), gamma_variance));
+        log_lik += stan::math::integrate_1d(
+          log_dpoisGamma,
+          std::numeric_limits<double>::epsilon(),
+          stan::math::positive_infinity(),
+          theta,
+          dVec(),
+          iVec(),
+          nullptr
+        );
         
       }
       
     }
-    Rcpp::Rcout << "log_lik: " << log_lik << std::endl;
+    
     // Take negative and average, the latter so we're looking at values in the same range, regardless of data size
     sdouble negloglik = -log_lik / count_not_na_idx.size();
     
     if (std::isinf(negloglik) || negloglik > inf_) {
       negloglik = inf_;
     }
-    Rcpp::Rcout << "Negloglik: " << negloglik << std::endl;
+    
     return negloglik;
     
   } 

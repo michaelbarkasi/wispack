@@ -538,43 +538,27 @@ sVec extrapolate_none(
 // Model fitting *******************************************************************************************************
 
 // Log of density of normal distribution centered on zero
-sdouble log_dNorm(
+sdouble log_dnorm(
     const sdouble& x,        // value to evaluate
     const sdouble& mu,       // mean
     const sdouble& sd        // standard deviation
   );
 
-// Log of density of gamma distribution
-sdouble log_dGamma(
-    const sdouble& x,              // value to evaluate
-    const sdouble& expected_value, // expected value   
-    const sdouble& variance        // variance
-  );
-
-// Density of gamma distribution
-sdouble dGamma(
-    const sdouble& x,              // value to evaluate
-    const sdouble& expected_value, // expected value   
-    const sdouble& variance        // variance
-  );
-
 // Log of density of Poisson distribution
-sdouble log_dPois(
+sdouble log_dpois(
     const sdouble& x,        // value to evaluate
     const sdouble& lambda    // rate parameter
   );
 
-// density of Poisson distribution
-sdouble dPois(
-    const sdouble& x,        // value to evaluate
-    const sdouble& lambda    // rate parameter
-  );
-
-// Integral of Poisson-Gamma distribution, from 1 to positive infinity
-sdouble poisson_gamma_integral(
-    sdouble y, 
-    sdouble r, 
-    sdouble v
+// Log of density of negative binomial distribution (Poisson-Gamma)
+// ... note: signature formatted for Stan integration 
+sdouble log_dpoisGamma(
+    sdouble lambda,                          // function argument (rate of pois distribution)
+    double lambdac,                         // complement of function argument
+    const std::vector<sdouble>& theta,      // parameters
+    const std::vector<double>& x_r,         // data (reals)
+    const std::vector<int>& x_i,            // data (ints)
+    std::ostream* msgs
   );
 
 // Numerically stable implementation of sigmoid function
