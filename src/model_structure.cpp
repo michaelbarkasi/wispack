@@ -193,7 +193,6 @@ List make_parameter_vector(
     iVec param_beta_tpoint_idx_no_ref;
     iVec param_ref_values_tpoint_idx;
     iVec param_struc_idx;
-    iVec param_gamma_var_idx;
     List beta_idx = clone(beta);
     List wfactor_idx = clone(wfactor); 
     
@@ -327,7 +326,7 @@ List make_parameter_vector(
     wfactor_idx["point"] = wfactor_idx_point;
     wfactor_idx["rate"] = wfactor_idx_rate; 
     
-    // Add structural parameters
+    // Add structural parameters to the end
     for (int i = 0; i < struc_names.length(); i++) {
       
       // Map
@@ -339,20 +338,6 @@ List make_parameter_vector(
       param_vector.push_back(struc[i]);
       
     } 
-    
-    // Add gamma distribution variance parameters
-    for (int i = 0; i < n_child; i++) {
-      
-      // Map
-      String c_name = cld_lvls[i];
-      CharacterVector gamma_var_name = CharacterVector::create("gamma_var", c_name);
-      param_names.push_back(gamma_var_name);
-      param_gamma_var_idx.push_back(idx);
-      idx++;
-      // Make
-      param_vector.push_back(1.0);
-      
-    }
     
     // Pack up parameter vector and mappings
     List params = List::create(
@@ -368,7 +353,6 @@ List make_parameter_vector(
       _["param_beta_tpoint_idx_no_ref"] = wrap(param_beta_tpoint_idx_no_ref),
       _["param_ref_values_tpoint_idx"] = wrap(param_ref_values_tpoint_idx),
       _["param_struc_idx"] = wrap(param_struc_idx), 
-      _["param_gamma_var_idx"] = wrap(param_gamma_var_idx),
       _["beta_idx"] = beta_idx,
       _["wfactor_idx"] = wfactor_idx
     );

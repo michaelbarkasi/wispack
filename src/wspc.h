@@ -114,7 +114,7 @@ class wspc {
     IntegerVector param_beta_tpoint_idx_no_ref;
     IntegerVector param_ref_values_tpoint_idx;
     IntegerVector param_struc_idx;
-    IntegerVector param_gamma_var_idx;
+    IntegerVector param_struc_idx_bounded;
     List beta_idx;                          // lists giving the structured array indices for named parameters
     List wfactor_idx; 
     IntegerVector gv_ranLr_int;             // indices (row and column) for random effect arrays 
@@ -542,23 +542,6 @@ sdouble log_dnorm(
     const sdouble& x,        // value to evaluate
     const sdouble& mu,       // mean
     const sdouble& sd        // standard deviation
-  );
-
-// Log of density of Poisson distribution
-sdouble log_dpois(
-    const sdouble& x,        // value to evaluate
-    const sdouble& lambda    // rate parameter
-  );
-
-// Log of density of negative binomial distribution (Poisson-Gamma)
-// ... note: signature formatted for Stan integration 
-sdouble log_dpoisGamma(
-    sdouble lambda,                          // function argument (rate of pois distribution)
-    double lambdac,                         // complement of function argument
-    const std::vector<sdouble>& theta,      // parameters
-    const std::vector<double>& x_r,         // data (reals)
-    const std::vector<int>& x_i,            // data (ints)
-    std::ostream* msgs
   );
 
 // Numerically stable implementation of sigmoid function
