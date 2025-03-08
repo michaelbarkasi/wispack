@@ -114,7 +114,6 @@ class wspc {
     IntegerVector param_beta_tpoint_idx_no_ref;
     IntegerVector param_ref_values_tpoint_idx;
     IntegerVector param_struc_idx;
-    IntegerVector param_struc_idx_bounded;
     List beta_idx;                          // lists giving the structured array indices for named parameters
     List wfactor_idx; 
     IntegerVector gv_ranLr_int;             // indices (row and column) for random effect arrays 
@@ -538,10 +537,43 @@ sVec extrapolate_none(
 // Model fitting *******************************************************************************************************
 
 // Log of density of normal distribution centered on zero
-sdouble log_dnorm(
+sdouble log_dNorm(
     const sdouble& x,        // value to evaluate
     const sdouble& mu,       // mean
     const sdouble& sd        // standard deviation
+  );
+
+// Log of density of gamma distribution
+sdouble log_dGamma(
+    const sdouble& x,              // value to evaluate
+    const sdouble& expected_value, // expected value   
+    const sdouble& variance        // variance
+  );
+
+// Density of gamma distribution
+sdouble dGamma(
+    const sdouble& x,              // value to evaluate
+    const sdouble& expected_value, // expected value   
+    const sdouble& variance        // variance
+  );
+
+// Log of density of Poisson distribution
+sdouble log_dPois(
+    const sdouble& x,        // value to evaluate
+    const sdouble& lambda    // rate parameter
+  );
+
+// density of Poisson distribution
+sdouble dPois(
+    const sdouble& x,        // value to evaluate
+    const sdouble& lambda    // rate parameter
+  );
+
+// Integral of Poisson-Gamma distribution, from 1 to positive infinity
+sdouble poisson_gamma_integral(
+    sdouble y, 
+    sdouble r, 
+    sdouble v
   );
 
 // Numerically stable implementation of sigmoid function
