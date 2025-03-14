@@ -348,10 +348,16 @@ IntegerVector to_IntVec(const iVec& vec);
 // Convert to std::vector with doubles 
 // ... from NumericVector
 dVec to_dVec(const NumericVector& vec);
+// ... from Eigen::Matrix with sdouble elements
+dVec to_dVec(const sVec& vec);
 
 // Convert to std::vector with int
 // ... from IntegerVector
 iVec to_iVec(const IntegerVector& vec);
+
+// Misc 
+// ... convert to Eigen::Matrix with sdouble elements
+sMat to_sMat(const IntegerMatrix& mat);
 
 // Vector operations ***************************************************************************************************
 
@@ -376,7 +382,11 @@ double vmean_range(const NumericVector& x, const int& start, const int& end);
 dVec roll_mean(const dVec& series, int filter_ws);
 
 // Standard deviations of vector elements 
+double vsd(const dVec& x); 
+// ... overload 
 sdouble vsd(const sVec& x);
+// ... overload 
+double vsd(const NumericVector& x); 
 
 // Component-wise operations
 // -------------------------
@@ -430,22 +440,27 @@ void name_proxylist(List list, const CharacterVector& new_names);
 void assign_proxylist(List list, String element, List assignment);
 // ... overload
 void assign_proxylist(List list, String element, NumericVector assignment);
+// ... overload
+void assign_proxylist(List list, String element, IntegerMatrix assignment);
 
 // Misc
 // ____
 
-// merge two integer vectors 
+// Merge two integer vectors 
 IntegerVector buffered_merge(
     const IntegerVector& a, 
     const IntegerVector& b,
     const int& buffer
   );
 
-// return the indices of the elements of vec of which x is between
+// Return the indices of the elements of vec of which x is between
 iVec block_idx(
     const NumericVector& vec,
     const double& x
 );
+
+// Return differences between elements 
+IntegerVector vdiff(const IntegerVector& x);
 
 // Vectorized logic ****************************************************************************************************
 
@@ -496,6 +511,7 @@ List build_beta_shell(
   const CharacterVector& child_lvls,
   const List& ref_values,
   const List& RtEffs,
+  const List& tpointEffs,
   const IntegerMatrix& degs
   );
 

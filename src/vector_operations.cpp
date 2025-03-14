@@ -133,6 +133,38 @@ sdouble vsd(
     return ssqrt(sum / (sdouble)ctr);
   }
 
+// ... overload
+double vsd(
+    const dVec& x
+  ) {
+    double mean = vmean(x);
+    double sum = 0.0;
+    int ctr = 0;
+    for (double xi : x) {
+      if (!std::isnan(xi)) {
+        sum += (xi - mean) * (xi - mean);
+        ctr++;
+      }
+    }
+    return std::sqrt(sum / (double)ctr);
+  }
+
+// ... overload
+double vsd(
+    const NumericVector& x
+  ) {
+    double mean = vmean(x);
+    double sum = 0.0;
+    int ctr = 0;
+    for (double xi : x) {
+      if (!std::isnan(xi)) {
+        sum += (xi - mean) * (xi - mean);
+        ctr++;
+      }
+    }
+    return std::sqrt(sum / (double)ctr);
+  }
+
 // Component-wise operations *******************************************************************************************
 
 // Component-wise subtraction 
@@ -352,9 +384,20 @@ void assign_proxylist(
     list = out;
   }
 
+// ... overload 
+void assign_proxylist(
+    List list,
+    String element, 
+    IntegerMatrix assignment
+  ) {
+    List out = List(list);
+    out[element] = assignment;
+    list = out;
+  }
+
 // Misc ****************************************************************************************************************
 
-// merge two integer vectors 
+// Merge two integer vectors 
 IntegerVector buffered_merge(
     const IntegerVector& a, 
     const IntegerVector& b,
@@ -379,7 +422,7 @@ IntegerVector buffered_merge(
     return out;
   }
 
-// return the indices of the elements of vec of which x is between
+// Return the indices of the elements of vec of which x is between
 iVec block_idx(
     const NumericVector& vec,
     const double& x
@@ -403,3 +446,16 @@ iVec block_idx(
   }
   return out;
 }
+
+// Return differences between elements 
+IntegerVector vdiff(
+    const IntegerVector& x
+  ) {
+    int n = x.size();
+    if (n < 2) {Rcpp::stop("Vector must have at least two elements for diff.");}
+    IntegerVector out(n - 1);
+    for (int i = 0; i < n - 1; i++) {
+      out[i] = x[i + 1] - x[i];
+    }
+    return out;
+  }

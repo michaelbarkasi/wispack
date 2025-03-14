@@ -301,6 +301,12 @@ wspc::wspc(
     rownames(degMat) = child_lvls;
     colnames(degMat) = parent_lvls;
     
+    // Compute running and filter window sizes for LRO change-point detection
+    int ws = static_cast<int>(std::round(2.0 * (double)bin_num_i * buffer_factor.val()));
+    int filter_ws = std::round(ws/2);
+    int max_possible_cp = std::round(bin_num_i / ws);
+    int n_ran_trt = n_ran * treatment_num;
+    
     // Estimate degree of each parent-child combination at baseline using LRO change-point detection 
     // ... store ref values in list
     List ref_values(n_parent);
@@ -308,6 +314,9 @@ wspc::wspc(
     // ... store rate effects in list
     List RtEffs(n_parent);
     RtEffs.names() = parent_lvls;
+    // ... store tpoint effects in list
+    List tpointEffs(n_parent);
+    tpointEffs.names() = parent_lvls;
     // ... store change points in list
     List found_cp_list(n_parent);
     found_cp_list.names() = parent_lvls;
@@ -321,67 +330,165 @@ wspc::wspc(
       // ... for rate effect values
       RtEffs[(String)parent_lvls[p]] = List(n_child);
       name_proxylist(RtEffs[(String)parent_lvls[p]], child_lvls);
+      // ... for tpoint effect values 
+      tpointEffs[(String)parent_lvls[p]] = List(n_child);
+      name_proxylist(tpointEffs[(String)parent_lvls[p]], child_lvls);
       // ... for change points 
       found_cp_list[(String)parent_lvls[p]] = List(n_child);
       name_proxylist(found_cp_list[(String)parent_lvls[p]], child_lvls);
       for (int c = 0; c < n_child; c++) {
         
-        // Run LRO algorithm for each treatment level of this child-parent pair
+        LogicalVector child_mask = eq_left_broadcast(child, child_lvls[c]);
+        
+        // Make integer matrix to hold found cp for this parent-child pair
+        IntegerMatrix found_cp_pc(max_possible_cp, n_ran_trt);
+        
+        // Make vector to keep track of number of found cp per trt-ran lvl interaction
+        IntegerVector found_cp_pc_count(n_ran_trt);
+        
+        // Collect LRO algorithm results for each treatment-ran level interaction of this child-parent pair
         NumericMatrix count_avg_mat(bin_num_i, treatment_num);
-        IntegerVector found_cp(0);
         for (int t = 0; t < treatment_num; t++) {
           String trt = treatment_lvls[t];
          
           // Make mask for treatment rows of this parent-child pair
           LogicalVector trt_mask = eq_left_broadcast(treatment, trt);
-          LogicalVector mask = count_not_na_mask & parent_mask & trt_mask & eq_left_broadcast(child, child_lvls[c]);
          
-          // Make masked copies of count_log and bin
-          sVec count_masked = masked_vec(count_log, mask);  
-          sVec bin_masked = masked_vec(bin, mask);
+          // Grab average counts for this treatment level (used later to set initial values)
           dVec count_avg(bin_num_i); 
-         
-          // Compute average count for each bin
+          LogicalVector mask0 = count_not_na_mask & parent_mask & child_mask & trt_mask;
+          sVec count_trt_masked = masked_vec(count_log, mask0);
+          sVec bin_trt_masked = masked_vec(bin, mask0);
           for (int b = 0; b < bin_num_i; b++) {
-            LogicalVector mask_b = eq_left_broadcast(to_NumVec(bin_masked), (double)b + 1.0);
-            sVec count_b = masked_vec(count_masked, mask_b);
+            LogicalVector mask_b = eq_left_broadcast(to_NumVec(bin_trt_masked), (double)b + 1.0);
+            sVec count_b = masked_vec(count_trt_masked, mask_b);
             count_avg[b] = vmean(count_b).val();
           }
-         
-          // Estimate change points from averaged count series
-          int ws = static_cast<int>(std::round(2.0 * (double)bin_num_i * buffer_factor.val()));
-          int filter_ws = std::round(ws/2);
-          IntegerVector found_cp_trt = LROcp(
-            count_avg,  // series to scan
-            ws,         // running window size 
-            filter_ws,  // size of window for taking rolling mean
-            LROcutoff   // points more than this times sd considered outliers
-          );
-          
-          // Merge with previously found change points 
-          if (found_cp.size() == 0) {
-            // ... if no cp found yet, replace with current treatment cp
-            found_cp = found_cp_trt;
-          } else if (found_cp_trt.size() > 0) {
-            // ... if cp have been found and current treatment has cp, merge
-            buffered_merge(found_cp, found_cp_trt, ws/2);
-          }
-         
-          // Save averaged count values
           count_avg_mat.column(t) = to_NumVec(count_avg);
+          
+          // Run LRO algorithm for each ran level and this treatment trt
+          for (int r = 0; r < n_ran; r++) {
+            
+            // Make mask for ran level rows of this treatment (of this parent-child pair)
+            LogicalVector ran_mask = eq_left_broadcast(ran, ran_lvls[r]);
+            LogicalVector mask = mask0 & ran_mask;
+            
+            // Make masked copies of count_log and bin
+            sVec count_masked = masked_vec(count_log, mask);  
+            sVec bin_masked = masked_vec(bin, mask);
+            if (count_masked.size() == bin_num_i && bin_masked.size() == bin_num_i) {
+              
+              // Ensure count_masked is in correct order
+              // ... should be, but sanity check 
+              for (int b = 0; b < bin_num_i; b++) {
+                if (bin_masked[b] != (b + 1.0)) {
+                  stop("Count or bin vectors not in correct order.");
+                }
+              }
+              
+              // Estimate change points from masked count series
+              IntegerVector found_cp_trt_ran = LROcp(
+                to_dVec(count_masked),  // series to scan
+                ws,                     // running window size 
+                filter_ws,              // size of window for taking rolling mean
+                LROcutoff               // points more than this times sd considered outliers
+              );
+              
+              // Save found cp in matrix 
+              int found_cp_trt_count = found_cp_trt_ran.size();
+              found_cp_pc_count(t*n_ran + r) = found_cp_trt_count;
+              if (found_cp_trt_count > max_possible_cp) {Rcpp::stop("Found more change points than possible.");}
+              for (int i = 0; i < found_cp_trt_count; i++) {
+                found_cp_pc(i, t*n_ran + r) = found_cp_trt_ran[i];
+              }
+              
+            } else {
+              found_cp_pc_count(t*n_ran + r) = -1;
+            }
+            
+          }
          
         }
         
-        // Extract deg and blocks
-        int deg = found_cp.size();
-        degMat(c, p) = deg;
+        // Estimate degree of this parent-child pair as max of the found cp counts
+        int deg = Rcpp::max(found_cp_pc_count);
         int n_blocks = deg + 1;
-        assign_proxylist(found_cp_list[(String)parent_lvls[p]], (String)child_lvls[c], to_NumVec(found_cp));
+        degMat(c, p) = deg;
+        
+        // Make found_cp matrix holding all results 
+        IntegerMatrix found_cp(deg, n_ran_trt);
+        for (int j = 0; j < n_ran_trt; j++) {
+          if (found_cp_pc_count(j) == deg) {
+            
+            // ... if deg-num of cp were found for this ran*trt combo, simply save
+            for (int i = 0; i < deg; i++) {found_cp(i, j) = found_cp_pc(i, j);}
+            
+          } else { 
+            
+            // ... else fewer cp were found, and so some must be filled in
+            if (found_cp_pc_count(j) == 0) {
+              
+              // ... if no cp were found, evenly space the needed cp out across bin range
+              IntegerVector filled_seq = iseq(1, bin_num_i, deg + 2); 
+              for (int i = 0; i < deg; i++) {found_cp(i, j) = filled_seq[i + 1];}
+              
+            } else if (found_cp_pc_count(j) > 0) {
+              // ... some cp were found
+              // ... if < 0, then there is no data for this combination of ran and trt lvls
+              
+              // ... grab those cp and add last bin to the end
+              IntegerVector found_cp_pc_j(found_cp_pc_count(j) + 1);
+              for (int k = 0; k < found_cp_pc_count(j); k++) {found_cp_pc_j[k] = found_cp_pc(k, j);}
+              found_cp_pc_j[found_cp_pc_count(j)] = bin_num_i;
+              
+              // ... find number needed to fill in
+              int fill_num = deg - found_cp_pc_count(j);
+              
+              // ... find largest block and fill in evenly spaced cp until num of cp matches deg
+              for (int k = 0; k < fill_num; k++) {
+                // ... find block sizes
+                IntegerVector block_sizes = vdiff(found_cp_pc_j);
+                block_sizes.push_front(found_cp_pc_j(0)); 
+                // ... find the largest block
+                int max_block_size = Rcpp::max(block_sizes);
+                int max_block_size_idx = Rcpp::which_max(block_sizes);
+                // ... insert a new cp splitting that gap
+                int new_cp = std::round(found_cp_pc_j[max_block_size_idx] - max_block_size/2);
+                found_cp_pc_j.insert(max_block_size_idx, new_cp);
+              }
+              
+              // ... fill in the found cp
+              for (int i = 0; i < deg; i++) {
+                found_cp(i, j) = found_cp_pc_j[i];
+              }
+              
+            }
+           
+          }
+        }
+        assign_proxylist(found_cp_list[(String)parent_lvls[p]], (String)child_lvls[c], found_cp);
+        
+        // Extract treatment means 
+        IntegerMatrix found_cp_trt(deg, treatment_num);
+        for (int t = 0; t < treatment_num; t++) {
+          for (int d = 0; d < deg; d++) {
+            found_cp_trt(d, t) = 0;
+            int n_ran_hit = 0;
+            for (int r = 0; r < n_ran; r++) {
+              if (found_cp_pc_count(t*n_ran + r) > 0) { // ... ensure there is data here
+                found_cp_trt(d, t) += found_cp(d, t*n_ran + r);
+                n_ran_hit++;
+              }
+            }
+            found_cp_trt(d, t) = std::round(found_cp_trt(d, t) / n_ran_hit);
+          }
+        }
        
         // Set initial parameters for fixed-effect treatments
         List placeholder_ref_values(mc_list.size());
         placeholder_ref_values.names() = mc_list;
         NumericMatrix placeholder_RtEffs(treatment_num, n_blocks);
+        NumericMatrix placeholder_tpointEffs(treatment_num, deg);
         for (String mc : mc_list) {
           
           // Mean rate per block
@@ -392,6 +499,7 @@ wspc::wspc(
             for (int t = 0; t < treatment_num; t++) {
              
               NumericVector count_avg = count_avg_mat.column(t);
+              IntegerVector found_cp_trt_t = found_cp_trt.column(t);
               
               if (n_blocks == 1) { // case when deg = 0
                 Rt_est[0] = vmean(count_avg);
@@ -403,13 +511,13 @@ wspc::wspc(
                   int bin_end;
                   if (bk == 0) {
                     bin_start = 0;
-                    bin_end = found_cp[bk];
+                    bin_end = found_cp_trt_t[bk];
                   } else if (bk == deg) {
-                    bin_start = found_cp[bk - 1] - 1;
+                    bin_start = found_cp_trt_t[bk - 1] - 1;
                     bin_end = bin_num_i - 1;
                   } else {
-                    bin_start = found_cp[bk - 1] - 1;
-                    bin_end = found_cp[bk];
+                    bin_start = found_cp_trt_t[bk - 1] - 1;
+                    bin_end = found_cp_trt_t[bk];
                   }
                   Rt_est[bk] = vmean_range(count_avg, bin_start, bin_end);
                   RtVals(t, bk) = (sdouble)Rt_est[bk];
@@ -420,15 +528,21 @@ wspc::wspc(
              
             }
            
-            // Estimate fixed effects from treatments for each block
+            // Estimate fixed effects from treatments for each block, rate
             for (int bk = 0; bk < n_blocks; bk++) {
-              sVec beta_bk = weight_rows.fullPivLu().solve(RtVals.col(bk));
-              placeholder_RtEffs.column(bk) = to_NumVec(beta_bk);
+              sVec beta_bk_Rt = weight_rows.fullPivLu().solve(RtVals.col(bk));
+              placeholder_RtEffs.column(bk) = to_NumVec(beta_bk_Rt);
+            }
+            
+            // Estimate fixed effects from treatments for each block, rate
+            for (int d = 0; d < deg; d++) {
+              sVec beta_bk_tpoint = weight_rows.fullPivLu().solve(to_sMat(found_cp_trt).transpose().col(d));
+              placeholder_tpointEffs.column(d) = to_NumVec(beta_bk_tpoint);
             }
             
           } else if (deg > 0) { // Handle tpoint and tslope
             if (mc == "tpoint") {
-              placeholder_ref_values[mc] = Rcpp::as<NumericVector>(found_cp);
+              placeholder_ref_values[mc] = to_NumVec(found_cp_trt.column(0));
             } else if (mc == "tslope") {
               NumericVector tslope_default(deg);
               // ... but tslope into log space
@@ -440,6 +554,7 @@ wspc::wspc(
         }
         assign_proxylist(ref_values[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_ref_values);
         assign_proxylist(RtEffs[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_RtEffs);
+        assign_proxylist(tpointEffs[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_tpointEffs);
        
       }
     }
@@ -448,7 +563,7 @@ wspc::wspc(
     vprint("Estimated change points with LROcp and found initial parameter estimates for fixed-effect treatments", verbose); 
    
     // Build default fixed-effects matrices in shell
-    List beta = build_beta_shell(mc_list, treatment_lvls, parent_lvls, child_lvls, ref_values, RtEffs, degMat);
+    List beta = build_beta_shell(mc_list, treatment_lvls, parent_lvls, child_lvls, ref_values, RtEffs, tpointEffs, degMat);
     vprint("Built initial beta (ref and fixed-effects) matrices", verbose); 
     
     // Initialize random effect warping factors 
@@ -552,18 +667,22 @@ wspc::wspc(
     bs_bin_ranges = IntegerMatrix(n_count_rows, 3);
     for (int r : count_not_na_idx) {
       if (ran[r] != "none") {
+        // ... find the treatment level and random level of this row
+        int trt_num = Rwhich(eq_left_broadcast(treatment_lvls, treatment[r]))[0];
+        int ran_num = Rwhich(eq_left_broadcast(ran_lvls, ran[r]))[0];
         // ... find the change points for the parent-child pair of this row
         List p_changepoints = change_points[(String)parent[r]];
-        NumericVector pc_changepoints = p_changepoints[(String)child[r]];
-        iVec block_range_idx = block_idx(pc_changepoints, bin(r).val());
+        IntegerMatrix pc_changepoints = p_changepoints[(String)child[r]];
+        NumericVector pc_changepoints_r = to_NumVec(pc_changepoints.column(trt_num * n_ran + ran_num));
+        iVec block_range_idx = block_idx(pc_changepoints_r, bin(r).val());
         // ... find the range of bins in the same block as this row's bin
         double bin_low = 1;
         if (block_range_idx[0] >= 0) {
-          bin_low = pc_changepoints[block_range_idx[0]];
+          bin_low = pc_changepoints_r[block_range_idx[0]];
         }
         double bin_high = bin_num.val();
         if (block_range_idx[1] >= 0) {
-          bin_high = pc_changepoints[block_range_idx[1]];
+          bin_high = pc_changepoints_r[block_range_idx[1]];
         } 
         // ... narrow range by 1 in each direction and pack up range information
         int shift_back_max = static_cast<int>(std::round(bin(r).val() - bin_low)) - 1;
@@ -903,10 +1022,10 @@ sdouble wspc::neg_loglik(
     // log-likelihood of beta values
     
     // Compute the log-likelihood of the Rt beta values, given the normal distribution implied by the beta-rate shape and fe_difference_ratio ratio
-    sdouble expected_ran_effect = ssqrt(1.0 / (4.0 * (2.0 * beta_shape_rate + 1.0)));
-    expected_ran_effect *= 2.0; // scale to range from -1 to 1
-    sdouble eff_mult = fe_difference_ratio - 1.0;
-    sdouble sd_Rt_effect = eff_mult * mean_count_log * expected_ran_effect;
+    sdouble expected_ran_effect_rate = ssqrt(1.0 / (4.0 * (2.0 * beta_shape_rate + 1.0)));
+    expected_ran_effect_rate *= 2.0; // scale to range from -1 to 1
+    sdouble eff_mult_rate = fe_difference_ratio - 1.0;
+    sdouble sd_Rt_effect = eff_mult_rate * mean_count_log * expected_ran_effect_rate;
     for (int i = 0; i < Rt_beta_values_no_ref.size(); i++) {
       log_lik += log_dNorm(Rt_beta_values_no_ref(i), 0.0, sd_Rt_effect);
     }
@@ -1879,10 +1998,10 @@ Rcpp::List wspc::results() {
   }
   
   // Recompute sd_Rt_effect
-  sdouble expected_ran_effect = ssqrt(1.0 / (4.0 * (2.0 * struc_values["beta_shape_rate"] + 1.0)));
-  expected_ran_effect *= 2.0; // scale to range from -1 to 1
-  sdouble eff_mult = fe_difference_ratio - 1.0;
-  sdouble sd_Rt_effect = eff_mult * mean_count_log * expected_ran_effect;
+  sdouble expected_ran_effect_rate = ssqrt(1.0 / (4.0 * (2.0 * struc_values["beta_shape_rate"] + 1.0)));
+  expected_ran_effect_rate *= 2.0; // scale to range from -1 to 1
+  sdouble eff_mult_rate = fe_difference_ratio - 1.0;
+  sdouble sd_Rt_effect = eff_mult_rate * mean_count_log * expected_ran_effect_rate;
   
   // Make final list to return 
   List results_list = List::create(
