@@ -92,6 +92,7 @@ List build_beta_shell(
     const CharacterVector& child_lvls,
     const List& ref_values,
     const List& RtEffs,
+    const List& tpointEffs,
     const IntegerMatrix& degs
   ) {
     
@@ -125,6 +126,9 @@ List build_beta_shell(
          
             List RtEffs_prt = RtEffs[p];
             NumericMatrix RtEffs_Mat = RtEffs_prt[c];
+            
+            List tpointEffs_prt = tpointEffs[p];
+            NumericMatrix tpointEffs_Mat = tpointEffs_prt[c];
            
             for (int t = 0; t < treat_num; t++) {
               for (int i = 0; i < col_num; i++) {
@@ -136,16 +140,18 @@ List build_beta_shell(
                 } else {
                   if (mc == "Rt") {
                     // use estimated rate effect for non-ref treatment levels
-                    bta(t,i) = RtEffs_Mat(t,i);
+                    bta(t, i) = RtEffs_Mat(t, i);
+                  } else if (mc =="tpoint") {
+                    // use estimated tpoint effect for non-ref treatment levels 
+                    bta(t, i) = tpointEffs_Mat(t, i);
                   } else {
-                    // Begin with zero effect for tpoint and tslope
-                    bta(t,i) = 0.0; 
+                    // Begin with zero effect for tslope
+                    bta(t, i) = 0.0; 
                   }
                 }
               }
             }
           }
-          
           beta_mc_prt[c] = bta;
         } 
         beta_mc[p] = beta_mc_prt;

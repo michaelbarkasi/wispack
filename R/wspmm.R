@@ -756,7 +756,7 @@ analyze.diff <- function(
         dim = c(
           n_bins, n_children, n_parents,
           n_ran_lvls,
-          length(trt_lvls_in_ran)
+          n_trts
         ),
         dimnames = list(bin = bins, child = children, parent = parents, ran = ran_lvls, fixedeffect = trts)
       )
@@ -791,7 +791,7 @@ analyze.diff <- function(
         dim = c(
           max_blocks, n_children, n_parents,
           n_ran_lvls,
-          length(trt_lvls_in_ran)
+          n_trts
         ),
         dimnames = list(bin = 1:max_blocks, child = children, parents, ran = ran_lvls, fixedeffect = trts)
       )

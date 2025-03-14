@@ -102,6 +102,17 @@ dVec to_dVec(
     return Rcpp::as<dVec>(vec);
   }
 
+// ... from Eigen::Matrix with sdouble elements
+dVec to_dVec(
+    const sVec& vec
+  ) {
+    dVec dvec(vec.size());
+    for (int i = 0; i < vec.size(); i++) {
+      dvec[i] = vec(i).val();
+    }
+    return dvec;
+  }
+
 // Convert to std::vector with int *************************************************************************************
 
 // ... from IntegerVector
@@ -111,3 +122,17 @@ iVec to_iVec(
     return Rcpp::as<iVec>(vec);
   }
 
+// Misc ****************************************************************************************************************
+
+// Convert to Eigen::Matrix with sdouble elements
+sMat to_sMat(
+    const IntegerMatrix& mat
+  ) {
+    sMat stan_mat(mat.nrow(), mat.ncol());
+    for (int i = 0; i < mat.nrow(); i++) {
+      for (int j = 0; j < mat.ncol(); j++) {
+        stan_mat(i, j) = sdouble(static_cast<double>(mat(i, j)));
+      }
+    }
+    return stan_mat;
+  }

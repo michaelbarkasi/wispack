@@ -223,7 +223,7 @@ dVec series_nll(
     
     int n = series0.size();
     dVec series = roll_mean(series0, filter_ws);
-    dVec nlls(n);
+    dVec nlls(n); // length out should equal length in
     
     for (int i = 0; i <= (n - ws); i++) {
     
@@ -255,6 +255,7 @@ dVec series_nll(
     
     }
    
+    // Fill in the last part of the vector with 1.0
     for (int i = n - ws + 1; i < n; i++) {
       nlls[i] = 1.0;
     }
@@ -284,10 +285,9 @@ IntegerVector LROcp(
     iVec fcp;
     int last_cp = 0;
     double nll_ratio_mean = vmean(nll_ratio);
-    double nll_ratio_sd = Rcpp::sd(to_NumVec(nll_ratio));
+    double nll_ratio_sd = vsd(to_NumVec(nll_ratio));
     double nll_max = nll_ratio_mean + out_mult*nll_ratio_sd;
     int n_nll = nll_ratio.size();
-    LogicalVector outlier_mask(n_nll);
     for (int i = 0; i < n_nll; i++) {
       if (
           nll_ratio[i] > nll_max && 
