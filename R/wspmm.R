@@ -790,7 +790,7 @@ analyze.diff <- function(
           n_ran_lvls + 1,
           n_trts
         ),
-        dimnames = list(tp = 1:max_deg, child = children, parents, ran = c("none", ran_lvls), fixedeffect = trts)
+        dimnames = list(tp = 1:max_deg, child = children, parent = parents, ran = c("none", ran_lvls), fixedeffect = trts)
       )
       for (p in parents) {
         for (g in children) {
@@ -935,8 +935,8 @@ analyze.diff <- function(
     oneoff.diffs.tp <- find_norm_diffs(data.tp, FALSE)
     diff.ratio.tp <- mean(oneoff.diffs.tp)/mean(ran.diffs.tp)
     
-    if (diff.ratio.c < 1) {diff.ratio.c <- 1.5}
-    if (diff.ratio.tp < 1) {diff.ratio.tp <- 1.5}
+    if (diff.ratio.c < 1) {diff.ratio.c <- 1.0}
+    # ... diff.ratio.tp can be below zero, mathematically
     
     return(
       list(

@@ -320,6 +320,8 @@ wspc::wspc(
     // ... store change points in list
     List found_cp_list(n_parent);
     found_cp_list.names() = parent_lvls;
+    
+    // Loop through parent levels
     for (int p = 0; p < n_parent; p++) {
       
       LogicalVector parent_mask = eq_left_broadcast(parent, parent_lvls[p]);
@@ -336,17 +338,16 @@ wspc::wspc(
       // ... for change points 
       found_cp_list[(String)parent_lvls[p]] = List(n_child);
       name_proxylist(found_cp_list[(String)parent_lvls[p]], child_lvls);
+      
+      // Loop through child levels
       for (int c = 0; c < n_child; c++) {
         
         LogicalVector child_mask = eq_left_broadcast(child, child_lvls[c]);
+        sMat count_masked_array(bin_num_i, n_ran_trt);
+        count_masked_array.setZero();
+        LogicalVector good_col(n_ran_trt);
         
-        // Make integer matrix to hold found cp for this parent-child pair
-        IntegerMatrix found_cp_pc(max_possible_cp, n_ran_trt);
-        
-        // Make vector to keep track of number of found cp per trt-ran lvl interaction
-        IntegerVector found_cp_pc_count(n_ran_trt);
-        CharacterVector debugging(n_ran_trt);
-        // Collect LRO algorithm results for each treatment-ran level interaction of this child-parent pair
+        // Collect count values for each treatment-ran level interaction of this child-parent pair
         NumericMatrix count_avg_mat(bin_num_i, treatment_num);
         for (int t = 0; t < treatment_num; t++) {
           String trt = treatment_lvls[t];
@@ -366,9 +367,8 @@ wspc::wspc(
           }
           count_avg_mat.column(t) = to_NumVec(count_avg);
           
-          // Run LRO algorithm for each ran level and this treatment trt
+          // Collect count values for each ran level and this treatment trt
           for (int r = 0; r < n_ran; r++) {
-            debugging.push_back(std::to_string(t) + std::to_string(r));
             // Make mask for ran level rows of this treatment (of this parent-child pair)
             LogicalVector ran_mask = eq_left_broadcast(ran, ran_lvls[r]);
             LogicalVector mask = mask0 & ran_mask;
@@ -386,86 +386,32 @@ wspc::wspc(
                 }
               }
               
-              // Estimate change points from masked count series
-              IntegerVector found_cp_trt_ran = LROcp(
-                to_dVec(count_masked),  // series to scan
-                ws,                     // running window size 
-                filter_ws,              // size of window for taking rolling mean
-                LROcutoff               // points more than this times sd considered outliers
-              );
-              
-              // Save found cp in matrix 
-              int found_cp_trt_count = found_cp_trt_ran.size();
-              found_cp_pc_count(t*n_ran + r) = found_cp_trt_count;
-              if (found_cp_trt_count > max_possible_cp) {Rcpp::stop("Found more change points than possible.");}
-              for (int i = 0; i < found_cp_trt_count; i++) {
-                found_cp_pc(i, t*n_ran + r) = found_cp_trt_ran[i];
-              }
+              // Set this column and mark good
+              count_masked_array.col(t*n_ran + r) = count_masked;
+              good_col(t*n_ran + r) = true;
               
             } else {
-              found_cp_pc_count(t*n_ran + r) = -1;
+              good_col(t*n_ran + r) = false;
             }
             
           }
          
         }
         
+        // Estimate change points from masked count series
+        IntegerMatrix found_cp = LROcp_array(
+          count_masked_array,     // series to scan
+          ws,                     // running window size 
+          filter_ws,              // size of window for taking rolling mean
+          LROcutoff               // points more than this times sd considered outliers
+        );
+        
         // Estimate degree of this parent-child pair as max of the found cp counts
-        int deg = Rcpp::max(found_cp_pc_count);
+        int deg = found_cp.rows();
         int n_blocks = deg + 1;
         degMat(c, p) = deg;
         
-        // Make found_cp matrix holding all results 
-        IntegerMatrix found_cp(deg, n_ran_trt);
-        for (int j = 0; j < n_ran_trt; j++) {
-          if (found_cp_pc_count(j) == deg) {
-            
-            // ... if deg-num of cp were found for this ran*trt combo, simply save
-            for (int i = 0; i < deg; i++) {found_cp(i, j) = found_cp_pc(i, j);}
-            
-          } else { 
-            
-            // ... else fewer cp were found, and so some must be filled in
-            if (found_cp_pc_count(j) == 0) {
-              
-              // ... if no cp were found, evenly space the needed cp out across bin range
-              IntegerVector filled_seq = iseq(1, bin_num_i, deg + 2); 
-              for (int i = 0; i < deg; i++) {found_cp(i, j) = filled_seq[i + 1];}
-              
-            } else if (found_cp_pc_count(j) > 0) {
-              // ... some cp were found
-              // ... if < 0, then there is no data for this combination of ran and trt lvls
-              
-              // ... grab those cp and add last bin to the end
-              IntegerVector found_cp_pc_j(found_cp_pc_count(j) + 1);
-              for (int k = 0; k < found_cp_pc_count(j); k++) {found_cp_pc_j[k] = found_cp_pc(k, j);}
-              found_cp_pc_j[found_cp_pc_count(j)] = bin_num_i;
-              
-              // ... find number needed to fill in
-              int fill_num = deg - found_cp_pc_count(j);
-              
-              // ... find largest block and fill in evenly spaced cp until num of cp matches deg
-              for (int k = 0; k < fill_num; k++) {
-                // ... find block sizes
-                IntegerVector block_sizes = vdiff(found_cp_pc_j);
-                block_sizes.push_front(found_cp_pc_j(0)); 
-                // ... find the largest block
-                int max_block_size = Rcpp::max(block_sizes);
-                int max_block_size_idx = Rcpp::which_max(block_sizes);
-                // ... insert a new cp splitting that gap
-                int new_cp = std::round(found_cp_pc_j[max_block_size_idx] - max_block_size/2);
-                found_cp_pc_j.insert(max_block_size_idx, new_cp);
-              }
-              
-              // ... fill in the found cp
-              for (int i = 0; i < deg; i++) {
-                found_cp(i, j) = found_cp_pc_j[i];
-              }
-              
-            }
-           
-          }
-        }
+        // Save
         assign_proxylist(found_cp_list[(String)parent_lvls[p]], (String)child_lvls[c], found_cp);
         
         // Extract treatment means 
@@ -475,7 +421,7 @@ wspc::wspc(
             found_cp_trt(d, t) = 0;
             int n_ran_hit = 0;
             for (int r = 0; r < n_ran; r++) {
-              if (found_cp_pc_count(t*n_ran + r) > 0) { // ... ensure there is data here
+              if (good_col) { // ... ensure there is data here
                 found_cp_trt(d, t) += found_cp(d, t*n_ran + r);
                 n_ran_hit++;
               }

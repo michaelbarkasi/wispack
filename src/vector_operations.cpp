@@ -49,6 +49,21 @@ double vmean(
     return sum / (double)ctr; 
   }
 
+// ... overload 
+int vmean(
+    const iVec& x
+  ) {
+    int sum = 0;
+    int ctr = 0;
+    for (int xi : x) {
+      if (!std::isnan(xi)) {
+        sum += xi;
+        ctr++;
+      }
+    }
+    return std::round(sum / ctr); 
+  }
+
 // Mean of vector elements within a range
 double vmean_range(
     const dVec& x,
