@@ -1022,10 +1022,10 @@ sdouble wspc::neg_loglik(
     // log-likelihood of beta values
     
     // Compute the log-likelihood of the Rt beta values, given the normal distribution implied by the beta-rate shape and fe_difference_ratio ratio
-    sdouble expected_ran_effect_rate = ssqrt(1.0 / (4.0 * (2.0 * beta_shape_rate + 1.0)));
-    expected_ran_effect_rate *= 2.0; // scale to range from -1 to 1
+    sdouble expected_ran_effect_rate = 1.0 / ssqrt(4.0 * beta_shape_rate + 2.0);    // ... already includes the *= 2.0 rescaling to range from -1 to 1
     sdouble eff_mult_rate = fe_difference_ratio_Rt - 1.0;
-    sdouble sd_Rt_effect = eff_mult_rate * mean_count_log * expected_ran_effect_rate;
+    sdouble expected_Rt = mean_count_log;
+    sdouble sd_Rt_effect = eff_mult_rate * expected_Rt * expected_ran_effect_rate;
     for (int i = 0; i < Rt_beta_values_no_ref.size(); i++) {
       log_lik += log_dNorm(Rt_beta_values_no_ref(i), 0.0, sd_Rt_effect);
     }
@@ -1041,10 +1041,10 @@ sdouble wspc::neg_loglik(
     
     // Compute the log-likelihood of the tpoint beta values, given the assumed normal distribution
     int n_tpoint = tpoint_beta_values_no_ref.size();
-    sdouble expected_ran_effect_tpoint = ssqrt(1.0 / (4.0 * (2.0 * beta_shape_point + 1.0)));
-    expected_ran_effect_tpoint *= 2.0; // scale to range from -1 to 1
-    sdouble eff_mult_tpoint = fe_difference_ratio_tpoint - 1.0;
-    sdouble sd_tpoint_effect = eff_mult_tpoint * (bin_num/2.0) * expected_ran_effect_tpoint;
+    sdouble expected_ran_effect_tpoint = 1.0 / ssqrt(4.0 * beta_shape_point + 2.0); // ... already includes the *= 2.0 rescaling to range from -1 to 1
+    sdouble eff_mult_tpoint = fe_difference_ratio_tpoint + 1.0;                     // ... note the different sign
+    sdouble expected_tpoint = bin_num / 2.0;
+    sdouble sd_tpoint_effect = (eff_mult_tpoint * expected_tpoint * expected_ran_effect_tpoint) / (2.0 + eff_mult_tpoint * expected_ran_effect_tpoint);
     if (n_tpoint != 0) {
       for (int i = 0; i < n_tpoint; i++) {
         log_lik += log_dNorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect);
@@ -2008,16 +2008,16 @@ Rcpp::List wspc::results() {
   }
   
   // Recompute sd_Rt_effect
-  sdouble expected_ran_effect_rate = ssqrt(1.0 / (4.0 * (2.0 * struc_values["beta_shape_rate"] + 1.0)));
-  expected_ran_effect_rate *= 2.0; // scale to range from -1 to 1
+  sdouble expected_ran_effect_rate = 1.0 / ssqrt(4.0 * struc_values["beta_shape_rate"] + 2.0);    // ... already includes the *= 2.0 rescaling to range from -1 to 1
   sdouble eff_mult_rate = fe_difference_ratio_Rt - 1.0;
-  sdouble sd_Rt_effect = eff_mult_rate * mean_count_log * expected_ran_effect_rate;
+  sdouble expected_Rt = mean_count_log;
+  sdouble sd_Rt_effect = eff_mult_rate * expected_Rt * expected_ran_effect_rate;
   
   // Recompute sd_tpoint_effect
-  sdouble expected_ran_effect_tpoint = ssqrt(1.0 / (4.0 * (2.0 * struc_values["beta_shape_point"] + 1.0)));
-  expected_ran_effect_tpoint *= 2.0; // scale to range from -1 to 1
-  sdouble eff_mult_tpoint = fe_difference_ratio_tpoint - 1.0;
-  sdouble sd_tpoint_effect = eff_mult_tpoint * (bin_num/2.0) * expected_ran_effect_tpoint;
+  sdouble expected_ran_effect_tpoint = 1.0 / ssqrt(4.0 * struc_values["beta_shape_point"] + 2.0); // ... already includes the *= 2.0 rescaling to range from -1 to 1
+  sdouble eff_mult_tpoint = fe_difference_ratio_tpoint + 1.0;                                     // ... note the different sign
+  sdouble expected_tpoint = bin_num / 2.0;
+  sdouble sd_tpoint_effect = (eff_mult_tpoint * expected_tpoint * expected_ran_effect_tpoint) / (2.0 + eff_mult_tpoint * expected_ran_effect_tpoint);
   
   // Make final list to return 
   List results_list = List::create(

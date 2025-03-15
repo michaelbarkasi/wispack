@@ -139,7 +139,7 @@ sdouble point_warp(
     const sdouble& bin_num,  // Max bin coordinate
     const sdouble& f         // warping factor
   ) {
-
+   
     /*
     * The main poly-sigmoid itself is "warped" via two functions: 
     *  - a point-warp function which warps bin coordinates, and 
@@ -148,7 +148,7 @@ sdouble point_warp(
     *  In terms of modelling, the fixed-effects are built into the poly-sigmoid function, 
     *   while the random effects are modelled via "warping factors" which control these two warping functions. 
     */
-
+   
     return b - f * b * (1.0 - (b / bin_num));
     
   } 
