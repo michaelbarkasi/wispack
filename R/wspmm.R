@@ -26,7 +26,7 @@ wisp <- function(
     verbose = TRUE,
     print.child.summaries = TRUE,
     model.settings = list(
-      struc_values = c(1.0, 1.0, 1.0, 1.0),       # values of structural parameters to test
+      struc_values = c(1.0, 1.0, 1.0),            # values of structural parameters to test
       buffer_factor = 0.05,                       # buffer factor for penalizing distance from structural parameter values
       ctol = 1e-4,                                # convergence tolerance
       max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from structural parameter values
@@ -67,7 +67,8 @@ wisp <- function(
       wisp.results = cpp_model$results(),
       count.type = "count.log"
     )
-    cpp_model$import_fe_diff_ratio(fe_diff_ratio, verbose)
+    cpp_model$import_fe_diff_ratio_Rt(fe_diff_ratio$diff.ratio.c, verbose)
+    cpp_model$import_fe_diff_ratio_tpoint(fe_diff_ratio$diff.ratio.tp, verbose)
     
     # Estimate model parameters with bootstrapping ####
     if (verbose) {
@@ -742,15 +743,14 @@ analyze.diff <- function(
       bins <- unique(count_data$bin)
       n_bins <- length(bins)
       param_names <- names(wisp.results$fitted.parameters)
-      tpoint_mask <- grepl("tpoint", param_names) & grepl("baseline", param_names)
       degs <- array( 
         0,
         dim = c(n_children, n_parents),
         dimnames = list(child = children, parent = parents)
       )
-      tpoints <- list()
+      tpoints <- wisp.results$change.points
       
-      # Make full data matrices
+      # Make full count data matrices
       data0 <- array(
         NA, 
         dim = c(
@@ -773,19 +773,42 @@ analyze.diff <- function(
       
       # Find t-points and degrees for each parent-child pair
       for (p in parents) {
-        tpoints_p <- list()
         for (g in children) {
-          gmask <- grepl(p, param_names) & grepl(g, param_names) & tpoint_mask
-          degs[g, p] <- sum(gmask)
-          if (any(gmask)) {
-            tpoints_p[[g]] <- as.integer(c(wisp.results$fitted.parameters[gmask]))
+          degs[g, p] <- 0
+          tpoints_pg <- tpoints[[p]][[g]]
+          if (length(tpoints_pg) > 0) degs[g, p] <- nrow(tpoints_pg)
+        }
+      }
+      max_deg <- max(degs)
+      max_blocks <- max_deg + 1
+      
+      # Make tpoint matrices 
+      datat <- array(
+        NA,
+        dim = c(
+          max_deg, n_children, n_parents,
+          n_ran_lvls + 1,
+          n_trts
+        ),
+        dimnames = list(tp = 1:max_deg, child = children, parents, ran = c("none", ran_lvls), fixedeffect = trts)
+      )
+      for (p in parents) {
+        for (g in children) {
+          for (m in ran_lvls) {
+            for (t in trt_lvls_in_ran[[m]]) {
+              t_num <- which(trts == t)
+              m_num <- which(c("none", ran_lvls) == m)
+              tpoints_array_col_num <- (t_num - 1) * (n_ran_lvls + 1) + m_num
+              tpoints_pg <- tpoints[[p]][[g]]
+              if (length(tpoints_pg) > 0) {
+                datat[1:degs[g, p], g, p, m, t] <- tpoints_pg[, tpoints_array_col_num]
+              }
+            }
           }
         }
-        tpoints[[p]] <- tpoints_p
       }
-      max_blocks <- max(degs) + 1
       
-      # Collapse initial data matrices down to blocks
+      # Collapse full count data matrices down to blocks
       data <- array(
         NA, 
         dim = c(
@@ -803,13 +826,14 @@ analyze.diff <- function(
                 if (degs[g, p] == 0) {
                   data[1, g, p, m, t] <- mean(data0[, g, p, m, t])
                 } else {
+                  tpoints_pgtm <- datat[, g, p, m, t]
                   for (i in 1:(degs[g, p] + 1)) {
                     if (i == 1) {
-                      row_batch <- 1:(tpoints[[p]][[g]][i] - 1) 
+                      row_batch <- 1:(tpoints_pgtm[i] - 1) 
                     } else if (i > degs[g, p]) {
-                      row_batch <- tpoints[[p]][[g]][i - 1]:n_bins
+                      row_batch <- tpoints_pgtm[i - 1]:n_bins
                     } else {
-                      row_batch <- tpoints[[p]][[g]][i - 1]:(tpoints[[p]][[g]][i] - 1) 
+                      row_batch <- tpoints_pgtm[i - 1]:(tpoints_pgtm[i] - 1) 
                     }
                     data[i, g, p, m, t] <- mean(data0[row_batch, g, p, m, t])
                   }
@@ -820,11 +844,18 @@ analyze.diff <- function(
         }
       }
       
-      return(data)
+      return(
+        list(
+          count_data = data,
+          tpoint_data = datat
+        )
+      )
       
     }
     
-    data.c <- make_data_matrices(count.type)
+    data.both <- make_data_matrices(count.type)
+    data.c <- data.both$count_data
+    data.tp <- data.both$tpoint_data
     
     # For reach treatment level of each fixed effect, find normalized differences between random levels
     find_norm_diffs <- function(
@@ -900,7 +931,19 @@ analyze.diff <- function(
     oneoff.diffs.c <- find_norm_diffs(data.c, FALSE)
     diff.ratio.c <- mean(oneoff.diffs.c)/mean(ran.diffs.c)
     
-    return(diff.ratio.c)
+    ran.diffs.tp <- find_norm_diffs(data.tp, TRUE)
+    oneoff.diffs.tp <- find_norm_diffs(data.tp, FALSE)
+    diff.ratio.tp <- mean(oneoff.diffs.tp)/mean(ran.diffs.tp)
+    
+    if (diff.ratio.c < 1) {diff.ratio.c <- 1.5}
+    if (diff.ratio.tp < 1) {diff.ratio.tp <- 1.5}
+    
+    return(
+      list(
+        diff.ratio.c = diff.ratio.c,
+        diff.ratio.tp = diff.ratio.tp
+      )
+    )
     
   }
 

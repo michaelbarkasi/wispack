@@ -345,7 +345,7 @@ wspc::wspc(
         
         // Make vector to keep track of number of found cp per trt-ran lvl interaction
         IntegerVector found_cp_pc_count(n_ran_trt);
-        
+        CharacterVector debugging(n_ran_trt);
         // Collect LRO algorithm results for each treatment-ran level interaction of this child-parent pair
         NumericMatrix count_avg_mat(bin_num_i, treatment_num);
         for (int t = 0; t < treatment_num; t++) {
@@ -368,7 +368,7 @@ wspc::wspc(
           
           // Run LRO algorithm for each ran level and this treatment trt
           for (int r = 0; r < n_ran; r++) {
-            
+            debugging.push_back(std::to_string(t) + std::to_string(r));
             // Make mask for ran level rows of this treatment (of this parent-child pair)
             LogicalVector ran_mask = eq_left_broadcast(ran, ran_lvls[r]);
             LogicalVector mask = mask0 & ran_mask;
@@ -1024,7 +1024,7 @@ sdouble wspc::neg_loglik(
     // Compute the log-likelihood of the Rt beta values, given the normal distribution implied by the beta-rate shape and fe_difference_ratio ratio
     sdouble expected_ran_effect_rate = ssqrt(1.0 / (4.0 * (2.0 * beta_shape_rate + 1.0)));
     expected_ran_effect_rate *= 2.0; // scale to range from -1 to 1
-    sdouble eff_mult_rate = fe_difference_ratio - 1.0;
+    sdouble eff_mult_rate = fe_difference_ratio_Rt - 1.0;
     sdouble sd_Rt_effect = eff_mult_rate * mean_count_log * expected_ran_effect_rate;
     for (int i = 0; i < Rt_beta_values_no_ref.size(); i++) {
       log_lik += log_dNorm(Rt_beta_values_no_ref(i), 0.0, sd_Rt_effect);
@@ -1040,9 +1040,11 @@ sdouble wspc::neg_loglik(
     }
     
     // Compute the log-likelihood of the tpoint beta values, given the assumed normal distribution
-    // TO DO: REWRITE SO THAT IT'S LIKE SD_RT_EFFECT, DERIVED FROM EXPECTED_RAN_EFFECT ON TPOINT
     int n_tpoint = tpoint_beta_values_no_ref.size();
-    sdouble sd_tpoint_effect = parameters[param_struc_idx["sd_tpoint_effect"]];
+    sdouble expected_ran_effect_tpoint = ssqrt(1.0 / (4.0 * (2.0 * beta_shape_point + 1.0)));
+    expected_ran_effect_tpoint *= 2.0; // scale to range from -1 to 1
+    sdouble eff_mult_tpoint = fe_difference_ratio_tpoint - 1.0;
+    sdouble sd_tpoint_effect = eff_mult_tpoint * (bin_num/2.0) * expected_ran_effect_tpoint;
     if (n_tpoint != 0) {
       for (int i = 0; i < n_tpoint; i++) {
         log_lik += log_dNorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect);
@@ -1907,12 +1909,20 @@ Rcpp::List wspc::check_parameter_feasibility(
  * Export data to R
  */
 
-void wspc::import_fe_diff_ratio(
+void wspc::import_fe_diff_ratio_Rt(
     const double& fe_diff_ratio,
     const bool& verbose
   ) {
-    vprint("Imported fe_difference_ratio: " + std::to_string(fe_diff_ratio), verbose);
-    fe_difference_ratio = (sdouble)fe_diff_ratio;
+    vprint("Imported fe_difference_ratio_Rt: " + std::to_string(fe_diff_ratio), verbose);
+    fe_difference_ratio_Rt = (sdouble)fe_diff_ratio;
+  }
+
+void wspc::import_fe_diff_ratio_tpoint(
+    const double& fe_diff_ratio,
+    const bool& verbose
+  ) {
+    vprint("Imported fe_difference_ratio_tpoint: " + std::to_string(fe_diff_ratio), verbose);
+    fe_difference_ratio_tpoint = (sdouble)fe_diff_ratio;
   }
 
 Rcpp::List wspc::results() {
@@ -2000,8 +2010,14 @@ Rcpp::List wspc::results() {
   // Recompute sd_Rt_effect
   sdouble expected_ran_effect_rate = ssqrt(1.0 / (4.0 * (2.0 * struc_values["beta_shape_rate"] + 1.0)));
   expected_ran_effect_rate *= 2.0; // scale to range from -1 to 1
-  sdouble eff_mult_rate = fe_difference_ratio - 1.0;
+  sdouble eff_mult_rate = fe_difference_ratio_Rt - 1.0;
   sdouble sd_Rt_effect = eff_mult_rate * mean_count_log * expected_ran_effect_rate;
+  
+  // Recompute sd_tpoint_effect
+  sdouble expected_ran_effect_tpoint = ssqrt(1.0 / (4.0 * (2.0 * struc_values["beta_shape_point"] + 1.0)));
+  expected_ran_effect_tpoint *= 2.0; // scale to range from -1 to 1
+  sdouble eff_mult_tpoint = fe_difference_ratio_tpoint - 1.0;
+  sdouble sd_tpoint_effect = eff_mult_tpoint * (bin_num/2.0) * expected_ran_effect_tpoint;
   
   // Make final list to return 
   List results_list = List::create(
@@ -2016,6 +2032,8 @@ Rcpp::List wspc::results() {
     _["param.idx0"] = param_idx, // "0" to indicate this goes out w/ C++ zero-based indexing
     _["token.pool"] = token_pool_list,
     _["computed_sd_Rt_effect"] = sd_Rt_effect.val(),
+    _["computed_sd_tpoint_effect"] = sd_tpoint_effect.val(),
+    _["change.points"] = change_points,
     _["settings"] = model_settings
   );
   
@@ -2090,6 +2108,7 @@ RCPP_MODULE(wspc) {
     .method("bs_fit", &wspc::bs_fit)
     .method("bs_batch", &wspc::bs_batch)
     .method("resample", &wspc::resample)
-    .method("import_fe_diff_ratio", &wspc::import_fe_diff_ratio)
+    .method("import_fe_diff_ratio_Rt", &wspc::import_fe_diff_ratio_Rt)
+    .method("import_fe_diff_ratio_tpoint", &wspc::import_fe_diff_ratio_tpoint)
     .method("results", &wspc::results);
   }
