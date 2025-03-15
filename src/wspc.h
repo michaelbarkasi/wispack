@@ -31,6 +31,7 @@ constexpr sdouble (*smin)(const sVec&) = stan::math::min;
 constexpr sdouble (*slog)(const sdouble&) = stan::math::log;
 constexpr sdouble (*sexp)(const sdouble&) = stan::math::exp;
 constexpr sdouble (*ssqrt)(const sdouble&) = stan::math::sqrt;
+typedef int IndexType;
 
 // Constants ***********************************************************************************************************
 
@@ -371,6 +372,8 @@ double vmean(const dVec& x);
 sdouble vmean(const sVec& x);
 // ... overload 
 double vmean(const NumericVector& x);
+// ... overload 
+int vmean(const iVec& x);
 
 // Mean of vector elements within a range
 double vmean_range(const dVec& x, const int& start, const int& end);
@@ -646,6 +649,14 @@ IntegerVector LROcp(
   const int& ws,                // Running window size
   const int& filter_ws,         // Size of window for taking rolling mean
   const double& out_mult        // Outlier multiplier
+  );
+
+// Likelihood ratio outlier change-point detection, array input and output
+IntegerMatrix LROcp_array(
+    const sMat& series_array,     // 2D matrix of points to test for change points
+    const int& ws,                // Running window size
+    const int& filter_ws,         // Size of window for taking rolling mean
+    const double& out_mult        // Outlier multiplier
   );
 
 #endif // WSPC_H
