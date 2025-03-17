@@ -645,7 +645,7 @@ dVec series_nll(
 
 // Likelihood ratio outlier change-point detection
 IntegerVector LROcp(
-  const dVec& series,           // 1D vector of points to test for change points
+  const dVec& series,          // 1D vector of points to test for change points
   const int& ws,                // Running window size
   const int& filter_ws,         // Size of window for taking rolling mean
   const double& out_mult        // Outlier multiplier
@@ -653,10 +653,10 @@ IntegerVector LROcp(
 
 // Likelihood ratio outlier change-point detection, array input and output
 IntegerMatrix LROcp_array(
-    const sMat& series_array,       // 2D matrix of points to test for change points
-    const int& ws,                  // Running window size
-    const int& filter_ws,           // Size of window for taking rolling mean
-    const double& out_mult          // Outlier multiplier
+    const sMat& series_array,     // 2D matrix of points to test for change points
+    const int& ws,                // Running window size
+    const int& filter_ws,         // Size of window for taking rolling mean
+    const double& out_mult        // Outlier multiplier
   );
 
 #endif // WSPC_H
