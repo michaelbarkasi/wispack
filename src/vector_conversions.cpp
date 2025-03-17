@@ -136,3 +136,16 @@ sMat to_sMat(
     }
     return stan_mat;
   }
+
+// ... overload
+sMat to_sMat(
+    const NumericMatrix& mat
+  ) {
+    sMat stan_mat(mat.nrow(), mat.ncol());
+    for (int i = 0; i < mat.nrow(); i++) {
+      for (int j = 0; j < mat.ncol(); j++) {
+        stan_mat(i, j) = sdouble(mat(i, j));
+      }
+    }
+    return stan_mat;
+  }

@@ -269,23 +269,23 @@ dVec series_nll(
         double mean_i = vmean(series_i);
         double sd_i = vsd(series_i);
         for (int j = 0; j < ws; j++) {
-          nlls[i] += R::dnorm(series_i[j], mean_i, sd_i, true);
+          nlls[i] += dNorm(series_i[j], mean_i, sd_i);
         }
       } else {
         double mean_i1 = vmean(series_i1);
         double sd_i1 = vsd(series_i1);
         for (int j = 0; j < ws/2; j++) {
-          nlls[i] += R::dnorm(series_i[j], mean_i1, sd_i1, true);
+          nlls[i] += dNorm(series_i[j], mean_i1, sd_i1);
         }
         double mean_i2 = vmean(series_i2);
         double sd_i2 = vsd(series_i2);
         for (int j = ws/2; j < ws; j++) {
-          nlls[i] += R::dnorm(series_i[j], mean_i2, sd_i2, true);
+          nlls[i] += dNorm(series_i[j], mean_i2, sd_i2);
         }
       }
       
       // Make negative
-      nlls[i] *= -1;
+      //nlls[i] *= -1;
       
       // Check for nan's and replace with 1
       if (std::isnan(nlls[i])) {nlls[i] = 1.0;}
@@ -378,32 +378,24 @@ IntegerMatrix LROcp_array(
     int n_series = series_array.cols();
     int n_samples = series_array.rows();
     NumericMatrix nll_ratio_array(n_samples, n_series);
-    Rcpp::Rcout << "-----------  -----------" << std::endl;
-    Rcpp::Rcout << "building series array" << std::endl;
+    
     // Convert series_array of raw (or log) count values into an array of likelihood ratios
     for (int s = 0; s < n_series; s++) {
-      Rcpp::Rcout << "-----------" << std::endl;
+      
       // Get the series for this column
       dVec series = to_dVec(series_array.col(s));
       
       // Compute the null negative log-likelihood at each bin (no change point)
       dVec nll_null = series_nll(series, ws, filter_ws, true);
-      print_Vec(nll_null);
+      
       // Compute the change-point negative log-likelihood at each bin
       dVec nll_cp = series_nll(series, ws, filter_ws, false);
-      print_Vec(nll_cp);
+      
       // Find the nll ratio at each bin 
       // ... expected value is 1. Expect nll_null to be 
       // ... larger than nll_cp (i.e., a worse fit), so expect
       // ... this value to be 1 or larger. 
-      dVec nll_ratio = vdivide(nll_null, nll_cp);
-      
-      print_Vec(nll_ratio);
-      /*
-       * TO-DO: 
-       * - Why are these almost all below 1? Cp should always be a better fit. 
-       * - Why are a few negative? Probably because the density sometimes goes above 1. Use normalized density??
-       */
+      dVec nll_ratio = vdivide(nll_cp, nll_null);
       
       // Save in array 
       nll_ratio_array.column(s) = to_NumVec(nll_ratio);
@@ -414,23 +406,9 @@ IntegerMatrix LROcp_array(
     // ... calling function from dtwclust package in R
     Function find_centroid("find_centroid");   
     NumericVector centroid = find_centroid(nll_ratio_array);
-    Rcpp::Rcout << "-----------  ---" << std::endl;
-    Rcpp::Rcout << "centroid" << std::endl;
-    print_Vec(centroid);
-    
-    // Take log of centroid and data and then rolling mean
-    //centroid = Rcpp::log(centroid);
-    //centroid = roll_mean(to_dVec(centroid), filter_ws);
-    for (int s = 0; s < n_series; s++) {
-      //nll_ratio_array.column(s) = Rcpp::log(nll_ratio_array.column(s));
-      //nll_ratio_array.column(s) = to_NumVec(roll_mean(to_dVec(nll_ratio_array.column(s)), filter_ws));
-    }
     
     // Use LROcp on this series to estimate change points 
     IntegerVector found_cp = LROcp_find(to_dVec(centroid), ws, out_mult);
-    Rcpp::Rcout << "-----------  ---" << std::endl;
-    Rcpp::Rcout << "found_cp" << std::endl;
-    print_Vec(found_cp);
     
     if (found_cp.size() > 0) {
       
@@ -438,6 +416,8 @@ IntegerMatrix LROcp_array(
       // ... these will be one-based indices that need to be subtracted back to zero-based
       Function project_cp("project_cp");
       IntegerMatrix found_cp_array = project_cp(found_cp, centroid, nll_ratio_array);
+      // ... ^ in this matrix, rows are change points (by deg), columns are trt x ran interactions
+     
       for (int i = 0; i < found_cp_array.ncol(); i++) {
         found_cp_array.column(i) = found_cp_array.column(i) - 1;
         for (int k = 0; k < found_cp_array.nrow(); k++) {
