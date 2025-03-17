@@ -125,8 +125,8 @@ class wspc {
       "beta_shape_rate",
       "sd_tslope_effect"
     };
-    sdouble fe_difference_ratio_Rt = 1.0;      // ratio of count differences between one-off treatments across ran levels and count differences between same-treatments across ran levels
-    sdouble fe_difference_ratio_tpoint = 1.0;  // same, but for tpoints instead of count
+    sdouble fe_difference_ratio_Rt = 1.05;      // ratio of count differences between one-off treatments across ran levels and count differences between same-treatments across ran levels
+    sdouble fe_difference_ratio_tpoint = 1.05;  // same, but for tpoints instead of count
     sdouble mean_count_log = 1.0;
     sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
     sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
@@ -360,6 +360,8 @@ iVec to_iVec(const IntegerVector& vec);
 // Misc 
 // ... convert to Eigen::Matrix with sdouble elements
 sMat to_sMat(const IntegerMatrix& mat);
+// ... overload
+sMat to_sMat(const NumericMatrix& mat);
 
 // Vector operations ***************************************************************************************************
 

@@ -57,7 +57,7 @@ wisp <- function(
     }
     cpp_model <- new(
       wspc, 
-      data, # should be tokenized
+      data, 
       model.settings,
       verbose
     )
@@ -935,8 +935,11 @@ analyze.diff <- function(
     oneoff.diffs.tp <- find_norm_diffs(data.tp, FALSE)
     diff.ratio.tp <- mean(oneoff.diffs.tp)/mean(ran.diffs.tp)
     
-    if (diff.ratio.c < 1) {diff.ratio.c <- 1.0}
-    # ... diff.ratio.tp can be below zero, mathematically
+    # Mathematically, this must be greater than zero, or model fitting will fail
+    # ... from a physical point of view, even if the true effect is zero, it will 
+    #      be measured as non-zero due to noise, so we should expect this to be greater than 1. 
+    if (diff.ratio.c < 1.05) {diff.ratio.c <- 1.05}
+    if (diff.ratio.tp < 1.05) {diff.ratio.tp <- 1.05}
     
     return(
       list(
@@ -2088,6 +2091,7 @@ project_cp <- function(
     X_nll     # data from which that centroid was computed
   ) {
     # Function will return the implied change points in the original data
+    # ... rows are change points (by deg), columns as trt x ran interactions
     
     # Uses R package from: https://doi.org/10.1016/j.patcog.2010.09.013
     # R package: 
@@ -2105,7 +2109,7 @@ project_cp <- function(
       # )
     
     # Get alignment indices
-    # ... rake transpose, as dtwclust::DBA expects columns as time points
+    # ... take transpose, as dtwclust::DBA expects columns as time points
     X <- t(X_nll)
     # ... initialize list to store alignment indices
     aX <- list()

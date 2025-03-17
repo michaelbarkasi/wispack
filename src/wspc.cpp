@@ -427,18 +427,18 @@ wspc::wspc(
         assign_proxylist(found_cp_list[(String)parent_lvls[p]], (String)child_lvls[c], found_cp);
         
         // Extract treatment means 
-        IntegerMatrix found_cp_trt(deg, treatment_num);
+        NumericMatrix found_cp_trt(deg, treatment_num);
         for (int t = 0; t < treatment_num; t++) {
           for (int d = 0; d < deg; d++) {
-            found_cp_trt(d, t) = 0;
+            found_cp_trt(d, t) = 0.0;
             int n_ran_hit = 0;
             for (int r = 0; r < n_ran; r++) {
-              if (good_col) { // ... ensure there is data here
-                found_cp_trt(d, t) += found_cp(d, t*n_ran + r);
+              if (good_col(t*n_ran + r)) { // ... ensure there is data here
+                found_cp_trt(d, t) += (double)found_cp(d, t*n_ran + r);
                 n_ran_hit++;
               }
             }
-            found_cp_trt(d, t) = std::round(found_cp_trt(d, t) / n_ran_hit);
+            found_cp_trt(d, t) = found_cp_trt(d, t) / (double)n_ran_hit;
           }
         }
        
@@ -457,7 +457,11 @@ wspc::wspc(
             for (int t = 0; t < treatment_num; t++) {
              
               NumericVector count_avg = count_avg_mat.column(t);
-              IntegerVector found_cp_trt_t = found_cp_trt.column(t);
+              NumericVector found_cp_trt_t_num = found_cp_trt.column(t);
+              IntegerVector found_cp_trt_t(deg);
+              for (int d = 0; d < deg; d++) {
+                found_cp_trt_t[d] = std::round(found_cp_trt_t_num[d]);
+              }
               
               if (n_blocks == 1) { // case when deg = 0
                 Rt_est[0] = vmean(count_avg);
@@ -492,20 +496,27 @@ wspc::wspc(
               placeholder_RtEffs.column(bk) = to_NumVec(beta_bk_Rt);
             }
             
-            // Estimate fixed effects from treatments for each block, rate
-            for (int d = 0; d < deg; d++) {
-              sVec beta_bk_tpoint = weight_rows.fullPivLu().solve(to_sMat(found_cp_trt).transpose().col(d));
-              placeholder_tpointEffs.column(d) = to_NumVec(beta_bk_tpoint);
-            }
-            
           } else if (deg > 0) { // Handle tpoint and tslope
             if (mc == "tpoint") {
-              placeholder_ref_values[mc] = to_NumVec(found_cp_trt.column(0));
+              
+              // Grab reference values 
+              placeholder_ref_values[mc] = found_cp_trt.column(0);
+              
+              // Estimate fixed effects from treatments for each block, tpoint
+              // ... put into Eigen for solving and make rows trts, cols degrees
+              sMat found_cp_trt_transposed = to_sMat(found_cp_trt).transpose(); 
+              for (int d = 0; d < deg; d++) {
+                sVec beta_bk_tpoint = weight_rows.fullPivLu().solve(found_cp_trt_transposed.col(d));
+                placeholder_tpointEffs.column(d) = to_NumVec(beta_bk_tpoint);
+              }
+              
             } else if (mc == "tslope") {
+              
+              // Grab reference values 
               NumericVector tslope_default(deg);
-              // ... but tslope into log space
               for (int tp = 0; tp < deg; tp++) {tslope_default[tp] = tslope_initial;}
               placeholder_ref_values[mc] = tslope_default;
+              
             }
           }
          
@@ -543,12 +554,13 @@ wspc::wspc(
           }
           IntegerVector sorted_idx = Rorder(ran_lvl_means);
           NumericVector wfs_c = wfs[sorted_idx];
-          wfs_c = wfs_c * Rcpp::runif(n_ran - 1, 0.5, 1.0); // add noise
+          //wfs_c = wfs_c * Rcpp::runif(n_ran - 1, 0.5, 1.0); // add noise
           wfs_c.push_front(0.0); // add "none"
           wf_array.column(c) = wfs_c;
         } else { 
-          NumericVector wfs_c = Rcpp::runif(n_ran - 1, 0.0, 0.01); 
-          wfs_c.push_front(0.0); // add "none"
+          //NumericVector wfs_c = Rcpp::runif(n_ran - 1, 0.0, 0.01); 
+          //wfs_c.push_front(0.0); // add "none"
+          NumericVector wfs_c(n_ran, 0.0);
           wf_array.column(c) = wfs_c;
         } 
       } 
@@ -1093,6 +1105,7 @@ sVec wspc::neg_boundary_dist(
         sVec tpoint = compute_mc_tpoint_r(r, parameters);
         
         // Find tpoint boundary distances
+        // WARNING: this code is duplicated in test_tpoint
         sVec tpoint_ext(deg + 2);
         for (int bt = 0; bt < tpoint_ext.size(); bt++) {
           if (bt == 0) {
@@ -1192,34 +1205,52 @@ bool wspc::test_tpoints(
     // Compute predicted rate for rows of the summed count data
     for (int r = 0; r < n_count_rows; r++) {
       
-      // Grab warping factors
-      if (gv_ranLr_int[r] == 0) {
-        f_pw = 0.0;
-      } else {
-        f_pw_idx = wfactor_idx_point(gv_ranLr_int[r], gv_fixLr_int[r]);
-        f_pw = parameters(f_pw_idx);
-      }
-      
       // Only update predicted model components if r begins a new batch of unique values 
       int cnt = std::count(mc_unique_rows.begin(), mc_unique_rows.end(), r);
       if (cnt > 0) { 
+        
+        // Grab warping factors
+        if (gv_ranLr_int[r] == 0) {
+          f_pw = 0.0;
+        } else {
+          f_pw_idx = wfactor_idx_point(gv_ranLr_int[r], gv_fixLr_int[r]);
+          f_pw = parameters(f_pw_idx);
+        }
+        
         // Find degree
-        List beta_idx_Rt = Rcpp::as<List>(beta_idx["Rt"]);
-        List beta_idx_Rt_prt = Rcpp::as<List>(beta_idx_Rt[Rcpp::as<std::string>(parent[r])]);
-        IntegerVector betas_Rt_idx = beta_idx_Rt_prt[Rcpp::as<std::string>(child[r])];
         int c_num = Rwhich(eq_left_broadcast(child_lvls, child[r]))[0];
         int p_num = Rwhich(eq_left_broadcast(parent_lvls, parent[r]))[0];
         int deg = degMat(c_num, p_num);
         if (deg > 0) {
+          
           // Compute tpoints for this row r
           tpoint = compute_mc_tpoint_r(r, parameters);
-          // Check for negative tpoints 
-          for (int p = 0; p < tpoint.size(); p++) {
-            if (point_warp(tpoint(p), bin_num, f_pw) < tpoint_buffer) {
+          
+          // Find tpoint boundary distances
+          // WARNING: this code is duplicated from neg_boundary_dist
+          sVec tpoint_ext(deg + 2);
+          for (int bt = 0; bt < tpoint_ext.size(); bt++) {
+            if (bt == 0) {
+              tpoint_ext(bt) = 0.0;
+            } else if (bt <= deg) {
+              tpoint_ext(bt) = point_warp(tpoint(bt - 1), bin_num, f_pw);
+            } else { 
+              tpoint_ext(bt) = bin_num;
+            } 
+          }
+          // Transition points must be in increasing order 
+          // ... and can't be closer than the buffer
+          // ... and first point must be > buffer, 
+          // ... and last point must be < bin_num - buffer
+          for (int d = 0; d < deg + 1; d++) {
+            sdouble buffer_dist = (tpoint_ext(d + 1) - tpoint_ext(d)) - tpoint_buffer;
+            if (buffer_dist < 0.0) {
               return false;
             }
           }
+          
         }
+        
       }  
       
     }  
@@ -1233,11 +1264,11 @@ sdouble wspc::max_neg_boundary_dist(
     const sVec& parameters
   ) const {
    
-    // Compute neg_tRsum_boundary_dist and take max
+    // Compute neg_boundary_dist and take max
     sVec bd = neg_boundary_dist(parameters);
     sdouble bd_max = smax(bd);
     
-    return -bd_max;
+    return bd_max;
     
   }
 
@@ -1541,6 +1572,9 @@ Rcpp::NumericMatrix wspc::bs_batch(
     bool verbose
   ) {
     
+    // Reset initial parameters to check their feasibility 
+    set_parameters(fitted_parameters, true);
+    
     // Fit full model
     fit(
       false, // don't bother setting parameters
@@ -1716,13 +1750,8 @@ void wspc::set_parameters(
      *  - Replaces structural parameters
      */
     
-    // Convert parameters to math stan 
-    sVec parameters_var = to_sVec(parameters);
-    
     // Ensure provided parameters are feasible (i.e., don't predict negative rates) 
-    List feasibility_results = check_parameter_feasibility(parameters_var, verbose);
-    parameters_var = to_sVec(Rcpp::as<NumericVector>(feasibility_results["parameters_var"]));
-    sVec predicted_rates_log_var = to_sVec(Rcpp::as<NumericVector>(feasibility_results["predicted_rates_log_var"]));
+    List feasibility_results = check_parameter_feasibility(to_sVec(parameters), verbose);
     bool feasible = feasibility_results["feasible"];
     
     // Stop if not feasible 
@@ -1730,22 +1759,21 @@ void wspc::set_parameters(
       Rcpp::stop("Negative or nan rates predicted!");
     }
     
-    // Convert back to doubles, remove from log space, and save
-    predicted_rates_log = NumericVector(n_count_rows);
+    // Convert back to doubles, remove from log space, and save predicted values
+    predicted_rates_log = Rcpp::as<NumericVector>(feasibility_results["predicted_rates_log"]);
     predicted_rates = NumericVector(n_count_rows); 
     for (int i = 0; i < n_count_rows; i++) {
-      predicted_rates_log[i] = predicted_rates_log_var(i).val();
-      predicted_rates[i] = exp(predicted_rates_log_var(i).val()) - 1.0;
+      predicted_rates[i] = std::exp(predicted_rates_log(i)) - 1.0;
     }
     
     // Update saved parameter vector 
-    fitted_parameters = parameters;
-    optim_results["fitted_parameters"] = parameters;
+    fitted_parameters = Rcpp::as<NumericVector>(feasibility_results["parameters"]);
+    optim_results["fitted_parameters"] = Rcpp::as<NumericVector>(feasibility_results["parameters"]);
     
     // Update struc_values 
     for (int i = 0; i < param_struc_idx.size(); i++) {
       int p = param_struc_idx(i);
-      struc_values[i] = parameters(p);
+      struc_values[i] = fitted_parameters(p);
     }
     
   } 
@@ -1766,6 +1794,13 @@ Rcpp::List wspc::check_parameter_feasibility(
     
     // Test if any tpoints are below the buffer 
     bool feasible = test_tpoints(parameters_var);
+    if (verbose) {
+      if (feasible) {
+        Rcpp::Rcout << "... no tpoints below buffer" << std::endl;
+      } else {
+        Rcpp::Rcout << "... tpoints found below buffer" << std::endl;
+      }
+    }
     if (feasible) {
       
       // Predict rates 
@@ -1778,6 +1813,14 @@ Rcpp::List wspc::check_parameter_feasibility(
       for (int i = 0; i < n_count_rows; i++) {
         if (predicted_rates_log_var(i) < 0 || std::isnan(predicted_rates_log_var(i))) {
           feasible = false;
+        }
+      }
+      
+      if (verbose) {
+        if (feasible) {
+          Rcpp::Rcout << "... no negative rates predicted" << std::endl;
+        } else {
+          Rcpp::Rcout << "... negative rates predicted" << std::endl;
         }
       }
       
@@ -1796,7 +1839,9 @@ Rcpp::List wspc::check_parameter_feasibility(
       
       // Find and report initial distance to boundary
       sdouble initial_dist = -1 * max_neg_boundary_dist(parameters_var); 
-      Rcpp::Rcout << "Initial boundary distance: " << initial_dist << std::endl;
+      if (verbose) {
+        Rcpp::Rcout << "Initial boundary distance (want to make >0): " << initial_dist << std::endl;
+      }
       
       // Variables for optimization
       dVec x = to_dVec(to_NumVec(parameters_var));
@@ -1840,6 +1885,7 @@ Rcpp::List wspc::check_parameter_feasibility(
           Rcpp::Rcout << "Could not find a nearby feasible parameters, returning provided ones" << std::endl;
         }
       } else { // found a feasible starting point, save
+        feasible = true;
         if (verbose) {
           Rcpp::Rcout << "Nearby feasible parameters found!" << std::endl;
         }
@@ -1856,8 +1902,8 @@ Rcpp::List wspc::check_parameter_feasibility(
     // Return feasible parameters
     return List::create(
       _["feasible"] = feasible,
-      _["predicted_rates_log_var"] = to_NumVec(predicted_rates_log_var),
-      _["parameters_var"] = to_NumVec(feasible_parameters_var)
+      _["predicted_rates_log"] = to_NumVec(predicted_rates_log_var),
+      _["parameters"] = to_NumVec(feasible_parameters_var)
     );
     
   } 
