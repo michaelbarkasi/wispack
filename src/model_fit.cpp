@@ -2,15 +2,45 @@
 // model_fit.cpp
 #include "wspc.h"
 
+// Density of normal distribution 
+double dNorm(
+    const double& x,        // value to evaluate
+    const double& mu,       // mean (expected value)
+    const double& sd        // standard deviation
+  ) {
+    return std::exp(-((x - mu) * (x - mu)) / (2.0 * sd * sd)) / (std::sqrt(2.0 * M_PI) * sd);
+  }
+
 // Log of density of normal distribution
 sdouble log_dNorm(
     const sdouble& x,        // value to evaluate
     const sdouble& mu,       // mean (expected value)
     const sdouble& sd        // standard deviation
   ) {
-    return slog(
-      sexp(-spower(x - mu, 2.0) / (2.0 * spower(sd, 2.0))) / (ssqrt(2.0 * M_PI) * sd)
-    );
+    /*
+     * Have: log_dNorm = log(exp(-((x - mu)^2) / (2 * sd^2)) / (sqrt(2 * pi) * sd))
+     * ... since log(x/y) = log(x) - log(y), and log(exp(x)) = x, then:
+     * log_dNorm = -((x - mu)^2) / (2 * sd^2) - log(sqrt(2 * pi) * sd)
+     */
+    return (-spower(x - mu, 2.0) / (2.0 * spower(sd, 2.0))) - slog(2.0 * M_PI * spower(sd, 2.0))/2.0;
+  }
+
+// ... overload
+double log_dNorm(
+    const double& x,        // value to evaluate
+    const double& mu,       // mean (expected value)
+    const double& sd        // standard deviation
+  ) {
+    return (-((x - mu) * (x - mu)) / (2.0 * sd * sd)) - std::log(2.0 * M_PI * sd * sd)/2.0;
+  }
+
+// Log of density of normal distribution, normalized so highest value is 0
+double log_dNorm0(
+    const double& x,        // value to evaluate
+    const double& mu,       // mean (expected value)
+    const double& sd        // standard deviation
+  ) {
+    return -((x - mu) * (x - mu)) / (2.0 * sd * sd);
   }
 
 // Log of density of gamma distribution
@@ -225,44 +255,90 @@ dVec series_nll(
     dVec series = roll_mean(series0, filter_ws);
     dVec nlls(n); // length out should equal length in
     
+    // Compute nll for each window
     for (int i = 0; i <= (n - ws); i++) {
     
       nlls[i] = 0.0;
       dVec series_i(series.begin() + i, series.begin() + (i + ws));
+      // ... series values in first half of window
       dVec series_i1(series_i.begin(), series_i.begin() + (ws / 2));
+      // ... series values in second half of window
       dVec series_i2(series_i.begin() + (ws / 2), series_i.end());
       
       if (null) {
         double mean_i = vmean(series_i);
-        double sd_i = Rcpp::sd(to_NumVec(series_i));
+        double sd_i = vsd(series_i);
         for (int j = 0; j < ws; j++) {
           nlls[i] += R::dnorm(series_i[j], mean_i, sd_i, true);
         }
       } else {
         double mean_i1 = vmean(series_i1);
-        double sd_i1 = Rcpp::sd(to_NumVec(series_i1));
+        double sd_i1 = vsd(series_i1);
         for (int j = 0; j < ws/2; j++) {
-          nlls[i] += R::dnorm(series_i1[j], mean_i1, sd_i1, true);
+          nlls[i] += R::dnorm(series_i[j], mean_i1, sd_i1, true);
         }
         double mean_i2 = vmean(series_i2);
-        double sd_i2 = Rcpp::sd(to_NumVec(series_i2));
+        double sd_i2 = vsd(series_i2);
         for (int j = ws/2; j < ws; j++) {
-          nlls[i] += R::dnorm(series_i2[j], mean_i2, sd_i2, true);
+          nlls[i] += R::dnorm(series_i[j], mean_i2, sd_i2, true);
         }
       }
       
+      // Make negative
       nlls[i] *= -1;
-    
+      
+      // Check for nan's and replace with 1
+      if (std::isnan(nlls[i])) {nlls[i] = 1.0;}
+     
     }
    
-    // Fill in the last part of the vector with 1.0
+    // Fill in the last part of the vector with the mean
+    double nlls_mean = vmean(nlls);
     for (int i = n - ws + 1; i < n; i++) {
-      nlls[i] = 1.0;
+      nlls[i] = nlls_mean;
     }
     
     return nlls;
     
   }
+
+// Likelihood ratio outlier change-point detection
+IntegerVector LROcp_find(
+    const dVec& nll_ratio,        // 1D vector of points to test for change points
+    const int& ws,                // Running window size
+    const double& out_mult        // Outlier multiplier
+  ) {
+    
+    //Find change points
+    iVec fcp;
+    int last_cp = 0;
+    double nll_ratio_mean = vmean(nll_ratio);
+    double nll_ratio_sd = vsd(nll_ratio);
+    double nll_max = nll_ratio_mean + out_mult*nll_ratio_sd;
+    int n_nll = nll_ratio.size();
+    for (int i = 0; i < n_nll; i++) {
+      if (
+          nll_ratio[i] > nll_max && 
+            i < (nll_ratio.size() - ws/2) && // can't be too close to end
+            i > ws/2                         // can't be too close to beginning
+      ) {
+        if (i - last_cp > ws/2) {            // can't be too close to last change point
+          fcp.push_back(i);
+          last_cp = i;
+        }
+      }
+    }
+    
+    // Make found_cp vector
+    IntegerVector found_cp;
+    if (fcp.size() > 0) {
+      // Grab the indexes of the found change points and add 1 (first bin is 1)
+      found_cp = to_IntVec(fcp) + 1;
+    } 
+    
+    return found_cp;
+    
+  } 
 
 // Likelihood ratio outlier change-point detection
 IntegerVector LROcp(
@@ -281,38 +357,14 @@ IntegerVector LROcp(
     // Find the nll ratio at each bin
     dVec nll_ratio = vsubtract(nll_cp, nll_null);
     
-    //Find change points
-    iVec fcp;
-    int last_cp = 0;
-    double nll_ratio_mean = vmean(nll_ratio);
-    double nll_ratio_sd = vsd(nll_ratio);
-    double nll_max = nll_ratio_mean + out_mult*nll_ratio_sd;
-    int n_nll = nll_ratio.size();
-    for (int i = 0; i < n_nll; i++) {
-      if (
-          nll_ratio[i] > nll_max && 
-          i < (series.size() - ws/2) && // can't be too close to end
-          i > ws/2                      // can't be too close to beginning
-      ) {
-        if (i - last_cp > ws/2) {       // can't be too close to last change point
-          fcp.push_back(i);
-          last_cp = i;
-        }
-      }
-    }
-    
-    // Make found_cp vector
-    IntegerVector found_cp;
-    if (fcp.size() > 0) {
-      // Grab the indexes of the found change points and add 1 (first bin is 1)
-      found_cp = to_IntVec(fcp) + 1;
-    } 
+    // Use LROcp on this series to estimate change points 
+    IntegerVector found_cp = LROcp_find(series, ws, out_mult);
     
     return found_cp;
     
   }
 
-// ... overload for arrays
+// Likelihood ratio outlier change-point detection, arrays
 IntegerMatrix LROcp_array(
     const sMat& series_array,     // 2D matrix of points to test for change points
     const int& ws,                // Running window size
@@ -324,108 +376,80 @@ IntegerMatrix LROcp_array(
     //  change points, plus some variance between them on the exact location. 
     
     int n_series = series_array.cols();
-    int series_length = series_array.rows();
-    int window_steps = series_length - ws; 
-    sMat nll_ratio_array(series_length, n_series);
-    sMat alignment_values(series_length, n_series);
-    sMat divisor_values(series_length, n_series);
-    alignment_values.setZero();
-    divisor_values.setOnes();
-    
+    int n_samples = series_array.rows();
+    NumericMatrix nll_ratio_array(n_samples, n_series);
+    Rcpp::Rcout << "-----------  -----------" << std::endl;
+    Rcpp::Rcout << "building series array" << std::endl;
+    // Convert series_array of raw (or log) count values into an array of likelihood ratios
     for (int s = 0; s < n_series; s++) {
-      
+      Rcpp::Rcout << "-----------" << std::endl;
       // Get the series for this column
       dVec series = to_dVec(series_array.col(s));
       
       // Compute the null negative log-likelihood at each bin (no change point)
       dVec nll_null = series_nll(series, ws, filter_ws, true);
-      
+      print_Vec(nll_null);
       // Compute the change-point negative log-likelihood at each bin
       dVec nll_cp = series_nll(series, ws, filter_ws, false);
+      print_Vec(nll_cp);
+      // Find the nll ratio at each bin 
+      // ... expected value is 1. Expect nll_null to be 
+      // ... larger than nll_cp (i.e., a worse fit), so expect
+      // ... this value to be 1 or larger. 
+      dVec nll_ratio = vdivide(nll_null, nll_cp);
       
-      // Find the nll ratio at each bin
-      dVec nll_ratio = vsubtract(nll_cp, nll_null);
+      print_Vec(nll_ratio);
+      /*
+       * TO-DO: 
+       * - Why are these almost all below 1? Cp should always be a better fit. 
+       * - Why are a few negative? Probably because the density sometimes goes above 1. Use normalized density??
+       */
       
       // Save in array 
-      nll_ratio_array.col(s) = to_sVec(nll_ratio);
+      nll_ratio_array.column(s) = to_NumVec(nll_ratio);
       
     }
     
-    // Align the individual series so that peak nll ratios are at the same time within the window
-    for (int w = 0; w < window_steps; w++) {
-      
-      int idx0 = w;
-      int idx1 = w + ws - 1;
-      sMat nll_ratio_array_block = nll_ratio_array.block(idx0, 0, ws, n_series);
-      iVec idx_max(n_series); 
-      
-      // Find max nll ratio in this window block, for each series
-      for (int s = 0; s < n_series; s++) {nll_ratio_array_block.col(s).maxCoeff(&idx_max[s]);}
-      
-      // Find mean position of the max nll ratio 
-      int idx_max_mean = vmean(idx_max);
-      
-      // Compute and save alignment values 
-      for (int s = 0; s < n_series; s++) {alignment_values(w, s) += (sdouble)(idx_max_mean - idx_max[s]);}
-      
-      // Perform alignment
-      for (int s = 0; s < n_series; s++) {
-        for (int i = idx0; i < idx1 + 1; i++) {
-          int new_idx = i + (int)alignment_values(w, s).val();
-          if (new_idx < 0) {new_idx = 0;}
-          if (new_idx >= series_length) {new_idx = series_length - 1;}
-          divisor_values(new_idx, s) += 1.0;
-          nll_ratio_array(new_idx, s) += nll_ratio_array(i, s);
-          nll_ratio_array(new_idx, s) /= divisor_values(new_idx, s);
-        }
-      }
-      
-    }
+    // Find the centroid of nll_ratio_array
+    // ... calling function from dtwclust package in R
+    Function find_centroid("find_centroid");   
+    NumericVector centroid = find_centroid(nll_ratio_array);
+    Rcpp::Rcout << "-----------  ---" << std::endl;
+    Rcpp::Rcout << "centroid" << std::endl;
+    print_Vec(centroid);
     
-    // Collapse along rows
-    dVec nll_ratio = dVec(series_length);
-    for (int i = 0; i < series_length; i++) {
-      nll_ratio[i] = nll_ratio_array.row(i).mean().val();
-    }
-    
-    //Find change points
-    iVec fcp;
-    int last_cp = 0;
-    double nll_ratio_mean = vmean(nll_ratio);
-    double nll_ratio_sd = vsd(nll_ratio);
-    double nll_max = nll_ratio_mean + out_mult*nll_ratio_sd;
-    for (int i = 0; i < series_length; i++) {
-      if (
-          nll_ratio[i] > nll_max && 
-            i < (series_length - ws/2) && // can't be too close to end
-            i > ws/2                      // can't be too close to beginning
-      ) {
-        if (i - last_cp > ws/2) {         // can't be too close to last change point
-          fcp.push_back(i);
-          last_cp = i;
-        }
-      }
-    }
-    
-    // Make (1D) found_cp vector
-    IntegerVector found_cp;
-    if (fcp.size() > 0) {
-      // Grab the indexes of the found change points and add 1 (first bin is 1)
-      found_cp = to_IntVec(fcp) + 1;
-    } 
-    
-    // Expand back out to array
-    int n_cp = found_cp.size();
-    IntegerMatrix found_cp_array(n_cp, n_series);
+    // Take log of centroid and data and then rolling mean
+    //centroid = Rcpp::log(centroid);
+    //centroid = roll_mean(to_dVec(centroid), filter_ws);
     for (int s = 0; s < n_series; s++) {
-      for (int i = 0; i < n_cp; i++) {
-        int align_value = (int)alignment_values(found_cp(i), s).val();
-        found_cp_array(i, s) = found_cp(i) - align_value;
-        if (found_cp_array(i, s) < 1) {found_cp_array(i, s) = 1;}
-        if (found_cp_array(i, s) > series_length) {found_cp_array(i, s) = series_length;}
-      }
+      //nll_ratio_array.column(s) = Rcpp::log(nll_ratio_array.column(s));
+      //nll_ratio_array.column(s) = to_NumVec(roll_mean(to_dVec(nll_ratio_array.column(s)), filter_ws));
     }
     
-    return found_cp_array;
+    // Use LROcp on this series to estimate change points 
+    IntegerVector found_cp = LROcp_find(to_dVec(centroid), ws, out_mult);
+    Rcpp::Rcout << "-----------  ---" << std::endl;
+    Rcpp::Rcout << "found_cp" << std::endl;
+    print_Vec(found_cp);
+    
+    if (found_cp.size() > 0) {
+      
+      // Project found_cp back to original series 
+      // ... these will be one-based indices that need to be subtracted back to zero-based
+      Function project_cp("project_cp");
+      IntegerMatrix found_cp_array = project_cp(found_cp, centroid, nll_ratio_array);
+      for (int i = 0; i < found_cp_array.ncol(); i++) {
+        found_cp_array.column(i) = found_cp_array.column(i) - 1;
+        for (int k = 0; k < found_cp_array.nrow(); k++) {
+          if (found_cp_array(k, i) < filter_ws) {found_cp_array(k, i) = filter_ws;}
+          if (found_cp_array(k, i) > n_samples - filter_ws) {found_cp_array(k, i) = n_samples - filter_ws;}
+        }
+      }
+      return found_cp_array;
+      
+    } else {
+      // If no change points found, return empty matrix
+      return IntegerMatrix(0, 0);
+    }
     
   } 
