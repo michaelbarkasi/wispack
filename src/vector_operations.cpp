@@ -182,6 +182,19 @@ double vsd(
 
 // Component-wise operations *******************************************************************************************
 
+// Component-wise division
+dVec vdivide(
+    const dVec& x,
+    const dVec& y
+  ) {
+    int n = x.size();
+    dVec out(n);
+    for (int i = 0; i < n; i++) {
+      out[i] = x[i] / y[i];
+    }
+    return out;
+  }
+
 // Component-wise subtraction 
 dVec vsubtract(
     const dVec& x,

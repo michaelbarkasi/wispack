@@ -2055,6 +2055,86 @@ plot.decomposition <- function(
 
 # Debugging and misc ###################################################################################################
 
+# Functions used (in Cpp) in the initial change-point estimation
+find_centroid <- function(
+    X_nll     # array with values as nll ratios, rows as bins, columns as trt x ran interactions
+  ) {
+    
+    # Uses R package from: https://doi.org/10.1016/j.patcog.2010.09.013
+    # R package: 
+      # citHeader("To cite the R package, use:")
+      # citation(auto = meta)
+      # 
+      # bibentry(
+      #   "Article",
+      #   header = "If the vignette's content was useful, consider citing the summarized version published in:",
+      #   title = "Time-Series Clustering in R Using the dtwclust Package",
+      #   author = person("Alexis", "Sardá-Espinosa"),
+      #   year = "2019",
+      #   journal = "The R Journal",
+      #   doi = "10.32614/RJ-2019-023"
+      # )
+    
+    # Take transpose, as dtwclust::DBA expects columns as time points
+    X <- t(X_nll)
+    # Find centroid of X, i.e., the "average" series
+    d <- dtwclust::DBA(X)
+    return(d)
+  }
+
+project_cp <- function(
+    found_cp, # vector of change points 
+    centroid, # centroid from which those cp were estimated
+    X_nll     # data from which that centroid was computed
+  ) {
+    # Function will return the implied change points in the original data
+    
+    # Uses R package from: https://doi.org/10.1016/j.patcog.2010.09.013
+    # R package: 
+      # citHeader("To cite the R package, use:")
+      # citation(auto = meta)
+      # 
+      # bibentry(
+      #   "Article",
+      #   header = "If the vignette's content was useful, consider citing the summarized version published in:",
+      #   title = "Time-Series Clustering in R Using the dtwclust Package",
+      #   author = person("Alexis", "Sardá-Espinosa"),
+      #   year = "2019",
+      #   journal = "The R Journal",
+      #   doi = "10.32614/RJ-2019-023"
+      # )
+    
+    # Get alignment indices
+    # ... rake transpose, as dtwclust::DBA expects columns as time points
+    X <- t(X_nll)
+    # ... initialize list to store alignment indices
+    aX <- list()
+    # ... for each row of X (i.e., each trt x ran interaction), find the indices to align it to the centroid
+    for (i in 1:nrow(X)) {
+      Xi <- X[i,]
+      Xi[is.na(Xi)] <- 1
+      alignment_idx <- dtwclust::dtw_basic(Xi, centroid, backtrack = TRUE)
+      aX[[i]] <- cbind(alignment_idx$index1, alignment_idx$index2)
+    }
+    
+    # Project alignment indices to original data
+    X_nllp <- array(NA, dim = c(length(found_cp), ncol(X_nll)))
+    for (c in 1:ncol(X_nll)) {
+      
+      a_idx <- aX[[c]]
+      
+      for (cpi in 1:length(found_cp)) {
+        cp <- found_cp[cpi]                # index of change point on the centroid
+        cp_a_idx <- which(a_idx[,2] == cp) # second column is the centroid alignment indices
+        X_nllp[cpi, c] <- round(mean(a_idx[cp_a_idx, 1])) # project back, take mean, and round to integer
+      }
+      
+    }
+    
+    return(X_nllp)
+    
+  }
+
 # R.sum and M.hat helper functions to enforce block-rate constraints
 #  ... These are no longer used as part of the prediction or optimization functions (most of that is 
 #      now in cpp only), but these are used in the "make" functions for when generating parameters 
