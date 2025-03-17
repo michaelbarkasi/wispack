@@ -398,34 +398,19 @@ wspc::wspc(
          
         }
         
-        // Extract good column numbers 
-        IntegerVector good_col_idx = Rwhich(good_col);
-        sMat count_masked_array_good = count_masked_array(Eigen::placeholders::all, to_iVec(good_col_idx));
-        
         // Estimate change points from masked count series
-        IntegerMatrix found_cp_good = LROcp_array(
-          count_masked_array_good,    // series to scan
-          ws,                         // running window size 
-          filter_ws,                  // size of window for taking rolling mean
-          LROcutoff                   // points more than this times sd considered outliers
+        IntegerMatrix found_cp = LROcp_array(
+          count_masked_array,     // series to scan
+          ws,                     // running window size 
+          filter_ws,              // size of window for taking rolling mean
+          LROcutoff               // points more than this times sd considered outliers
         );
         
-        // Estimate degree of this parent-child pair 
-        int deg = found_cp_good.rows();
+        // Estimate degree of this parent-child pair as max of the found cp counts
+        int deg = found_cp.rows();
         int n_blocks = deg + 1;
         degMat(c, p) = deg;
         
-        Rcpp::Rcout << "here1" << std::endl;
-        
-        // Fill removed empty columns back into the found_cp matrix
-        IntegerMatrix found_cp(deg, n_ran_trt);
-        if (deg > 0) {
-          for (int si = 0; si < good_col_idx.size(); si++) {
-            int s = good_col_idx[si];
-            found_cp.column(s) = found_cp_good.column(si);
-          }
-        }
-        Rcpp::Rcout << "here2" << std::endl;
         // Save
         assign_proxylist(found_cp_list[(String)parent_lvls[p]], (String)child_lvls[c], found_cp);
         
