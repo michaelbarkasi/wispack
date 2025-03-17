@@ -397,11 +397,25 @@ double vsd(const NumericVector& x);
 // Component-wise operations
 // -------------------------
 
+// Multiplication 
+dVec vmult(const dVec& x, const dVec& y);
+// ... overload
+NumericVector vmult(const NumericVector& x, const NumericVector& y);
+
 // Division
 dVec vdivide(const dVec& x, const dVec& y);
+// ... overload
+NumericVector vdivide(const NumericVector& x, const NumericVector& y);
+
+// Addition 
+dVec vadd(const dVec& x, const dVec& y);
+// ... overload
+NumericVector vadd(const NumericVector& x, const NumericVector& y);
 
 // Subtraction
 dVec vsubtract(const dVec& x, const dVec& y);
+// ... overload 
+NumericVector vsubtract(const NumericVector& x, const NumericVector& y);
 
 // Masks and indexes
 // -----------------
@@ -669,7 +683,7 @@ IntegerVector LROcp_find(
     const double& out_mult        // Outlier multiplier
   );
 
-// Likelihood ratio outlier change-point detection
+// Likelihood ratio outlier change-point detection, single series
 IntegerVector LROcp(
   const dVec& series,           // 1D vector of points to test for change points
   const int& ws,                // Running window size

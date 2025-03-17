@@ -340,7 +340,7 @@ IntegerVector LROcp_find(
     
   } 
 
-// Likelihood ratio outlier change-point detection
+// Likelihood ratio outlier change-point detection, single-series
 IntegerVector LROcp(
     const dVec& series,           // 1D vector of points to test for change points
     const int& ws,                // Running window size

@@ -182,6 +182,31 @@ double vsd(
 
 // Component-wise operations *******************************************************************************************
 
+// Component-wise multiplication
+dVec vmult(
+    const dVec& x,
+    const dVec& y
+  ) {
+    int n = x.size();
+    dVec out(n);
+    for (int i = 0; i < n; i++) {
+      out[i] = x[i] * y[i];
+    }
+    return out;
+  }
+// ... overload for NumericVector
+NumericVector vmult(
+    const NumericVector& x,
+    const NumericVector& y
+  ) {
+    int n = x.size();
+    NumericVector out(n);
+    for (int i = 0; i < n; i++) {
+      out[i] = x[i] * y[i];
+    }
+    return out;
+  }
+
 // Component-wise division
 dVec vdivide(
     const dVec& x,
@@ -194,6 +219,43 @@ dVec vdivide(
     }
     return out;
   }
+// ... overload for NumericVector
+NumericVector vdivide(
+    const NumericVector& x,
+    const NumericVector& y
+  ) {
+    int n = x.size();
+    NumericVector out(n);
+    for (int i = 0; i < n; i++) {
+      out[i] = x[i] / y[i];
+    }
+    return out;
+  }
+
+// Component-wise addition
+dVec vadd(
+    const dVec& x,
+    const dVec& y
+  ) {
+    int n = x.size();
+    dVec out(n);
+    for (int i = 0; i < n; i++) {
+      out[i] = x[i] + y[i];
+    }
+    return out;
+  }
+// ... overload for NumericVector
+NumericVector vadd(
+    const NumericVector& x,
+    const NumericVector& y
+  ) {
+    int n = x.size();
+    NumericVector out(n);
+    for (int i = 0; i < n; i++) {
+      out[i] = x[i] + y[i];
+    }
+    return out;
+  }
 
 // Component-wise subtraction 
 dVec vsubtract(
@@ -202,6 +264,18 @@ dVec vsubtract(
   ) {
     int n = x.size();
     dVec out(n);
+    for (int i = 0; i < n; i++) {
+      out[i] = x[i] - y[i];
+    }
+    return out;
+  }
+// ... overload for NumericVector
+NumericVector vsubtract(
+    const NumericVector& x,
+    const NumericVector& y
+  ) {
+    int n = x.size();
+    NumericVector out(n);
     for (int i = 0; i < n; i++) {
       out[i] = x[i] - y[i];
     }
