@@ -14,7 +14,7 @@
 #include <Rcpp/Benchmark/Timer.h>
 #include <nlopt.hpp>
 #include "pcg/pcg_random.hpp"
-#include <unistd.h> // for forking on unix
+#include <unistd.h>                           // for forking on unix
 using namespace Rcpp;
 
 // [[Rcpp::plugins(cpp14)]]
@@ -40,7 +40,7 @@ const sdouble inf_ = 1e100;   // pseudo-infinity value for optimization
 // Main class **********************************************************************************************************
 
 /*
- * Object class to hold and fit Warped Sigmoidal Poisson-Process Mixed-Effect Model (WSPmm) model. 
+ * Object class to hold and fit Warped Sigmoidal Poisson-Process Mixed-Effect Model (WSPmm, aka "WiSP") model. 
  */
 
 class wspc {
@@ -50,16 +50,16 @@ class wspc {
     // Fields **********************************************************************************************************
     
     // Data sizes
-    int n_count_rows;       // number of rows in summed count data frame
-    int treatment_num;      // number of treatment combinations (including "none", i.e., the reference)
-    sdouble bin_num;        // max bin (i.e., number of bins)
-    IntegerVector count_row_nums;  // sequence of integers from 0 to n_count_rows - 1
+    int n_count_rows;                       // number of rows in summed count data frame
+    int treatment_num;                      // number of treatment combinations (including "none", i.e., the reference)
+    sdouble bin_num;                        // max bin (i.e., number of bins)
+    IntegerVector count_row_nums;           // sequence of integers from 0 to n_count_rows - 1
     
     // Data variables, stan
-    sVec bin;               // bin column of summed data
-    sVec count;             // count column of summed data
-    sVec count_log;         // log of observed counts
-    sVec count_tokenized;   // tokenized count data
+    sVec bin;                               // bin column of summed data
+    sVec count;                             // count column of summed data
+    sVec count_log;                         // log of observed counts
+    sVec count_tokenized;                   // tokenized count data
     
     // Data variables, Rcpp ("factors")
     CharacterVector parent;                 // parent column of summed data
@@ -68,15 +68,15 @@ class wspc {
     CharacterVector treatment;              // treatment column of summed data
     
     // Model predictions, Rcpp 
-    NumericVector predicted_rates_log;
-    NumericVector predicted_rates; 
+    NumericVector predicted_rates_log;      // log of values predicted by model
+    NumericVector predicted_rates;          // values predicted by model
     
     // Fixed effect variables
     CharacterVector fix_names;              // names of fixed effect variables
     std::vector<CharacterVector> fix_lvls;  // levels for each fixed effect
-    std::vector<CharacterVector> fix_trt;   // treatment levels for each fixed effect
+    std::vector<CharacterVector> fix_trt;                // treatment levels for each fixed effect
     std::vector<CharacterVector> treatment_components;   // all possible treatment combinations, level components
-    CharacterVector treatment_lvls;         // all possible treatment combinations, levels as single-string name
+    CharacterVector treatment_lvls;                      // all possible treatment combinations, levels as single-string name
     CharacterVector fix_ref;                // reference level for each fixed effect
     
     // Grouping variables
@@ -88,9 +88,9 @@ class wspc {
     sMat weights;                           // weight matrix, rows as rows of summed count data, columns as treatments (first column is reference)
     IntegerVector idx_mc_unique;            // count data rows at which model component values will change
     IntegerMatrix bs_bin_ranges;            // bin ranges for bootstrapping (three columns: max back, max up, range)
-    std::vector<IntegerVector> token_pool;  // list of token count indexes associated with each summed count row
-    std::vector<IntegerVector> extrapolation_pool;  // list of summed-count indexes giving summed count rows from which to extrapolate
-    IntegerVector count_not_na_idx;         // indexes of non-NA rows in summed count data
+    std::vector<IntegerVector> token_pool;               // list of token count indexes associated with each summed count row
+    std::vector<IntegerVector> extrapolation_pool;       // list of summed-count indexes giving summed count rows from which to extrapolate
+    IntegerVector count_not_na_idx;                      // indexes of non-NA rows in summed count data
     LogicalVector count_not_na_mask;        // mask of non-NA rows in summed count data
     List change_points;                     // list of found change points, structured by parent and child
     
@@ -100,12 +100,12 @@ class wspc {
       "tslope",                             // ... transition slopes
       "tpoint"                              // ... transition points
       }; 
-    IntegerMatrix degMat;                   // matrix of degrees for each parent (column) - child (rows) pair
+    IntegerMatrix degMat;                   // matrix of degrees for each parent (column) -- child (rows) pair
     NumericVector fitted_parameters;        // vector holding the model parameters
     List param_names;                       // list holding the names of the model parameters as they appear in fitted_parameters
     
     // Secondary variables related to model parameters
-    IntegerVector param_wfactor_point_idx;  // ... indexes in parameter vector for different kinds of model parameters
+    IntegerVector param_wfactor_point_idx;  // ... indexes of parameter vector for quick access of different kinds of model parameters
     IntegerVector param_wfactor_rate_idx;
     IntegerVector param_beta_Rt_idx;
     IntegerVector param_beta_Rt_idx_no_ref;
@@ -115,19 +115,19 @@ class wspc {
     IntegerVector param_beta_tpoint_idx_no_ref;
     IntegerVector param_ref_values_tpoint_idx;
     IntegerVector param_struc_idx;
-    List beta_idx;                          // lists giving the structured array indices for named parameters
+    List beta_idx;                          // ... lists giving the structured array indices for named parameters
     List wfactor_idx; 
-    IntegerVector gv_ranLr_int;             // indices (row and column) for random effect arrays 
+    IntegerVector gv_ranLr_int;             // ... indices (row and column) for random effect arrays 
     IntegerVector gv_fixLr_int;  
-    NumericVector struc_values = {1.0, 1.0, 1.0};
-    CharacterVector struc_names = {
+    NumericVector struc_values = {1.0, 1.0, 1.0};        // Initial values of structural parameters of model
+    CharacterVector struc_names = {         // Names of structural parameters of model
       "beta_shape_point", 
       "beta_shape_rate",
       "sd_tslope_effect"
     };
-    sdouble fe_difference_ratio_Rt = 1.05;      // ratio of count differences between one-off treatments across ran levels and count differences between same-treatments across ran levels
-    sdouble fe_difference_ratio_tpoint = 1.05;  // same, but for tpoints instead of count
-    sdouble mean_count_log = 1.0;
+    sdouble fe_difference_ratio_Rt = 1.05;               // ratio of count differences between one-off treatments across ran levels and count differences between same-treatments across ran levels
+    sdouble fe_difference_ratio_tpoint = 1.05;           // same, but for tpoints instead of count
+    sdouble mean_count_log = 1.0;                        // mean of log(count) values, used in estimating sd of beta parameters for rate
     sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
     sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
     sVec observed_mean_ran_eff;             // mean random effect values for each random effect level, observed in data
@@ -139,8 +139,8 @@ class wspc {
     double wf_initial = 0.5;                // initial value for warping factor ... any sensible magnitude > 0.1 and < 0.75 should do? 
     
     // Optimization settings
-    int max_evals = 200;  // max number of evaluations
-    double ctol = 5e-4;   // convergence tolerance
+    int max_evals = 500;                    // max number of evaluations
+    double ctol = 5e-6;                     // convergence tolerance
     
     // Other settings 
     List model_settings;
@@ -152,13 +152,13 @@ class wspc {
      */
     
     // Boundary penalty variables
-    int boundary_vec_size = 0;                     // number of boundary components
-    sVec bp_coefs;                                 // Coefficients used to scale boundary penality so it's negligible when far from boundary, and infinity at boundary
-    sdouble max_penalty_at_distance_factor = 0.01; // as fraction of initial neg_loglik, the max penalty when far from the boundary
-    sdouble max_penalty_at_distance = 1;           // variable to hold the max penalty value, once computed
+    int boundary_vec_size = 0;                           // number of boundary components
+    sVec bp_coefs;                                       // Coefficients used to scale boundary penality so it's negligible when far from boundary, and infinity at boundary
+    sdouble max_penalty_at_distance_factor = 0.01;       // as fraction of initial neg_loglik, the max penalty when far from the boundary
+    sdouble max_penalty_at_distance = 1;                 // variable to hold the max penalty value, once computed
     
     // Variables for holding results 
-    List optim_results;                            // results from optimization
+    List optim_results;                     // results from optimization
    
     // Methods *********************************************************************************************************
    
@@ -169,7 +169,7 @@ class wspc {
     // R copy 
     wspc clone() const;
     
-    // ... computing predicted values from parameters 
+    // ***** computing predicted values from parameters 
     
     // Compute model component values for rows of summed count data
     // ... for Rt
@@ -197,7 +197,7 @@ class wspc {
         const bool& all_rows 
     ) const;
     
-    // ... computing objective function (i.e., fitting model and parameter boundary distances)
+    // ***** computing objective function (i.e., fitting model and parameter boundary distances)
     
     // Compute neg_loglik of the model under the given parameters
     sdouble neg_loglik(
@@ -238,7 +238,7 @@ class wspc {
         void* data
     );
     
-    // ... Computing gradients with stan reverse-mode autodiff
+    // ***** Computing gradients with stan reverse-mode autodiff
     
     // Compute the gradient of the bounded_nll function
     // ... this is the gradient function used in model optimization
@@ -252,7 +252,7 @@ class wspc {
         const sVec& p_
     ) const;
     
-    // ... Bootstrapping and model fitting, for statistical testing
+    // ***** Bootstrapping and model fitting, for statistical testing
     
     // Fit model using NLopt
     void fit(
@@ -262,23 +262,23 @@ class wspc {
     
     // Fit model to bootstrap resample
     dVec bs_fit(
-        int bs_num,                 // A unique number for this resample
-        bool clear_stan             // Recover stan memory at end?
+        int bs_num,                         // A unique number for this resample
+        bool clear_stan                     // Recover stan memory at end?
     );
     
     // Fork bootstraps (parallel processing)
     Rcpp::NumericMatrix bs_batch(
-        int bs_num_max,              // Number of bootstraps to perform
-        int max_fork,                // Maximum number of forked processes per batch
+        int bs_num_max,                     // Number of bootstraps to perform
+        int max_fork,                       // Maximum number of forked processes per batch
         bool verbose
     );
     
     // Resample (demo)
     Rcpp::NumericMatrix resample(
-        int n_resample                 // total number of resamples to draw
+        int n_resample                      // total number of resamples to draw
     );
     
-    // ... Setting parameters
+    // ***** Setting parameters
     
     // Set the model with the given parameters
     void set_parameters(
@@ -292,12 +292,12 @@ class wspc {
         const bool verbose
     );
     
-    // ... export data to R
+    // ***** export data to R
     void import_fe_diff_ratio_Rt(const double& fe_diff_ratio, const bool& verbose);
     void import_fe_diff_ratio_tpoint(const double& fe_diff_ratio, const bool& verbose);
     Rcpp::List results(); 
     
-    // ... misc and debugging 
+    // ***** misc and debugging 
     
     // Wrap neg_loglik in form needed for R
     double bounded_nll_debug(
@@ -407,6 +407,7 @@ sdouble vsd(const sVec& x);
 double vsd(const NumericVector& x); 
 
 // Estimate variation after x -> log(x + 1) transform 
+// ... critical (!!) for Gaussian kernel of Poisson distribution
 sdouble delta_var_est(const sdouble& var, const sdouble& mu);
 
 // Component-wise operations
@@ -592,23 +593,23 @@ sVec extrapolate_none(
 
 // Log of density of normal distribution centered on zero
 sdouble log_dNorm(
-    const sdouble& x,        // value to evaluate
-    const sdouble& mu,       // mean
-    const sdouble& sd        // standard deviation
+    const sdouble& x,              // value to evaluate
+    const sdouble& mu,             // mean
+    const sdouble& sd              // standard deviation
   );
 
 // ... overload
 double log_dNorm(
-    const double& x,        // value to evaluate
-    const double& mu,       // mean
-    const double& sd        // standard deviation
+    const double& x,               // value to evaluate
+    const double& mu,              // mean
+    const double& sd               // standard deviation
   );
 
 // Log of density of normal distribution, normalized so highest value is 0
 double log_dNorm0(
-    const double& x,        // value to evaluate
-    const double& mu,       // mean
-    const double& sd        // standard deviation
+    const double& x,               // value to evaluate
+    const double& mu,              // mean
+    const double& sd               // standard deviation
   );
 
 // Log of density of gamma distribution
@@ -627,17 +628,18 @@ sdouble dGamma(
 
 // Log of density of Poisson distribution
 sdouble log_dPois(
-    const sdouble& x,        // value to evaluate
-    const sdouble& lambda    // rate parameter
+    const sdouble& x,              // value to evaluate
+    const sdouble& lambda          // rate parameter
   );
 
-// density of Poisson distribution
+// Density of Poisson distribution
 sdouble dPois(
-    const sdouble& x,        // value to evaluate
-    const sdouble& lambda    // rate parameter
+    const sdouble& x,              // value to evaluate
+    const sdouble& lambda          // rate parameter
   );
 
 // Integral of Poisson-Gamma distribution, from 1 to positive infinity
+// ... analytic solution
 sdouble poisson_gamma_integral(
     sdouble y, 
     sdouble r, 
@@ -651,30 +653,30 @@ sdouble sigmoid_stable(
 
 // Core poly-sigmoid function of the model
 sdouble poly_sigmoid(
-  const sdouble& b,        // input variable
-  const int& deg,          // degree of the poly-sigmoid, i.e., number of transitions between blocks
-  const sVec& Rt,          // vector containing the height ("rate") of each block
-  const sVec& tslope,      // vector containing the slope of each transition between blocks
-  const sVec& tpoint       // vector containing the point of each transition in the bin space
+  const sdouble& b,                // input variable
+  const int& deg,                  // degree of the poly-sigmoid, i.e., number of transitions between blocks
+  const sVec& Rt,                  // vector containing the height ("rate") of each block
+  const sVec& tslope,              // vector containing the slope of each transition between blocks
+  const sVec& tpoint               // vector containing the point of each transition in the bin space
   );
 
 // Warping function for random effects on transition points
 sdouble point_warp(
-  const sdouble& b,        // Bin coordinate
-  const sdouble& bin_num,  // Max bin coordinate
-  const sdouble& f         // warping factor
+  const sdouble& b,                // Bin coordinate
+  const sdouble& bin_num,          // Max bin coordinate
+  const sdouble& f                 // warping factor
   );
 
 // Warping function for random effects on count rate
 sdouble rate_warp(
-  const sdouble& rate,     // rate output by the poly-sigmoid
-  const sdouble& f         // warping factor
+  const sdouble& rate,             // rate output by the poly-sigmoid
+  const sdouble& f                 // warping factor
   );
 
 // Function for computing model components
 sVec compute_mc(
-  const sMat& betas,       // effects matrix, rows as interactions, columns as blocks/transitions
-  const sVec& weight_row   // row of weight matrix, elements as fixed effects
+  const sMat& betas,               // effects matrix, rows as interactions, columns as blocks/transitions
+  const sVec& weight_row           // row of weight matrix, elements as fixed effects
   );
 
 // Inverse quadratic ramp function for boundary penalty
@@ -685,25 +687,25 @@ sdouble boundary_penalty_transform(
 
 // Calculate rolling-window negloglik of a series being generated by a given rate, with or without change-point
 dVec series_nll(
-  const dVec& series0,          // 1D vector of points for which to take negative log-likelihood of a change-point
-  const int& ws,                // Running window size
-  const int& filter_ws,         // Size of window for taking rolling mean
-  const bool& null              // If true, compute likelihood of data assuming no transitions; otherwise, assuming transition
+  const dVec& series0,             // 1D vector of points for which to take negative log-likelihood of a change-point
+  const int& ws,                   // Running window size
+  const int& filter_ws,            // Size of window for taking rolling mean
+  const bool& null                 // If true, compute likelihood of data assuming no transitions; otherwise, assuming transition
   );
 
 // Likelihood ratio outlier change-point detection
 IntegerVector LROcp_find(
-    const dVec& nll_ratio,        // 1D vector of points to test for change points
-    const int& ws,                // Running window size
-    const double& out_mult        // Outlier multiplier
+    const dVec& nll_ratio,         // 1D vector of points to test for change points
+    const int& ws,                 // Running window size
+    const double& out_mult         // Outlier multiplier
   );
 
 // Likelihood ratio outlier change-point detection, single series
 IntegerVector LROcp(
-  const dVec& series,           // 1D vector of points to test for change points
-  const int& ws,                // Running window size
-  const int& filter_ws,         // Size of window for taking rolling mean
-  const double& out_mult        // Outlier multiplier
+  const dVec& series,              // 1D vector of points to test for change points
+  const int& ws,                   // Running window size
+  const int& filter_ws,            // Size of window for taking rolling mean
+  const double& out_mult           // Outlier multiplier
   );
 
 // Likelihood ratio outlier change-point detection, array input and output
