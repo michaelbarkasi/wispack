@@ -5,7 +5,7 @@
 // WSPmm class and methods *********************************************************************************************
 
 /*
- * Object class to hold and fit Warped Sigmoidal Poisson-Process Mixed-Effect Model (WSPmm) model. 
+ * Object class to hold and fit Warped Sigmoidal Poisson-Process Mixed-Effect Model (WSPmm, aka "WiSP") model. 
  */
 
 // Constructor
@@ -17,23 +17,13 @@ wspc::wspc(
     
     /*
      * Input data should be an R data frame with the columns specified below, and rows 
-     *  as token count observations. 
-     *  
-     * Explanation of the difference between "summed" and "tokenized" count data:
-     * 
-     * Consider the following case. We have multiple parent levels, e.g. different cell types (glia, 
-     *  excitatory neurons, inhibitory neurons, etc). In many cases, each bin will have multiple instances (tokens) 
-     *  of that parent level. For example, a bin may have 3 glia cells, 5 excitatory neurons, and 2 inhibitory neurons.
-     *  In this case, we have a decision to make: Either collapse those token together and put the total count (of whatever
-     *  is being counted, e.g., gene transcripts) for a given bin in a single row (in the rate / count data frames), or 
-     *  have individual rows for each token. Conceptually, one way to look at it is that in the rate data frame, 
-     *  every row holds a unique combination of independent variables having an effect on expression rate (and so exhaust all
-     *  we need to know for prediction), whereas in the count data frame, every row is a unique observation. Multiple rows 
-     *  can have the same independent variables values. Practically speaking, only the rate data frame is relevant for 
-     *  predicting rates, but the count data frame is the one relevant to computing measures of model fit, like likelihood. 
+     *  as token count observations. For example, a spatial axis of measure could be 
+     *  divided into 100 bins, each containing some number of cells with various transcript 
+     *  counts. Each cell and its transcript count would be a different token observation 
+     *  for its bin. 
      */
     
-    // Extract and save settings
+    // Extract settings
     NumericVector struc_values_settings = settings["struc_values"];
     double buffer_factor_settings = settings["buffer_factor"];
     double ctol_settings = settings["ctol"];
@@ -59,11 +49,11 @@ wspc::wspc(
     int r_cols = required_cols.size();
     for (int i = 0; i < r_cols; i++) {
       if (col_names[i] != required_cols[i]) {
-        stop("Input data is missing required column (or out of order): " + required_cols[i]);
+        Rcpp::stop("Input data is missing required column (or out of order): " + required_cols[i]);
       }
     }
     if (tslope_initial < 1.0) {
-      stop("tslope_initial must be greater than or equal to 1.0.");
+      Rcpp::stop("tslope_initial must be greater than or equal to 1.0.");
     }
     vprint("Data structure check passed", verbose);
     
@@ -77,18 +67,18 @@ wspc::wspc(
     
     // Extract fixed effects 
     int n_fix = n_cols - r_cols;
-    fix_names = CharacterVector(n_fix);  // names of fixed effect variables 
-    fix_ref = CharacterVector(n_fix);    // reference level for each fixed effect
-    fix_lvls.resize(n_fix);              // levels for each fixed effect
-    fix_trt.resize(n_fix);               // treatments for each fixed effect
+    fix_names = CharacterVector(n_fix);                                 // names of fixed effect variables 
+    fix_ref = CharacterVector(n_fix);                                   // reference level for each fixed effect
+    fix_lvls.resize(n_fix);                                             // levels for each fixed effect
+    fix_trt.resize(n_fix);                                              // treatments for each fixed effect
     for (int i = 0; i < n_fix; i++) {
       fix_names[i] = col_names[i + r_cols];
       CharacterVector lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data[i + r_cols]));
       if (lvls.size() < 2) {
-        stop("Fixed effect " + fix_names[i] + " has less than 2 levels.");
+        Rcpp::stop("Fixed effect " + fix_names[i] + " has less than 2 levels.");
       }
       fix_lvls[i] = lvls;
-      fix_ref[i] = lvls[0];   // assume first level is reference
+      fix_ref[i] = lvls[0];                                             // assume first level is reference
       fix_trt[i] = lvls[Rcpp::Range(1, lvls.size() - 1)]; 
     }
     vprint("Extracted fixed effects:", verbose);
@@ -135,7 +125,7 @@ wspc::wspc(
         CharacterVector trt_testing = treatment_components[tc];
         for (String trt : trt_testing) {
           if(!any_true(eq_left_broadcast(trt_given, trt)) && trt != "ref") {weight_rows(tr, tc) = 0.0;}
-          // ref level must always have weight 1
+          // ^ ... ref level must always have weight 1
         }
       }
     }
@@ -145,7 +135,8 @@ wspc::wspc(
     parent_lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["parent"]));
     child_lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["child"]));
     ran_lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["ran"]));
-    ran_lvls.push_front("none"); // add "none" to represent no random effect (reference level)
+    ran_lvls.push_front("none");                                        // add "none" to represent no random effect (reference level)
+    // ... print extracted grouping variables
     vprint("Extracted parent grouping variables:", verbose);
     vprintV(parent_lvls, verbose);
     vprint("Extracted child grouping variables:", verbose);
@@ -172,7 +163,7 @@ wspc::wspc(
     observed_mean_ran_eff.setZero(); 
     vprint("Grabbed size constants for summed count data, total rows: " + std::to_string(n_count_rows), verbose);
     
-    // Create summed count data, initializations
+    // Create summed count data rows, initializations
     count.resize(n_count_rows);
     bin.resize(n_count_rows);
     parent = CharacterVector(n_count_rows);
@@ -236,7 +227,8 @@ wspc::wspc(
               // Sum count 
               IntegerVector token_pool_idx = Rwhich(token_mask);
               if (token_pool_idx.size() > 0 || ran_lvls[r] == "none") {
-                token_pool[idx] = token_pool_idx; // save for bootstrap resampling
+                token_pool[idx] = token_pool_idx; 
+                // ^ ... save for bootstrap resampling
                 for (int rw : token_pool_idx) {
                   count(idx) += count_tokenized[rw];
                 }
@@ -346,7 +338,9 @@ wspc::wspc(
       // ... for change points 
       found_cp_list[(String)parent_lvls[p]] = List(n_child);
       name_proxylist(found_cp_list[(String)parent_lvls[p]], child_lvls);
-      for (int c = 0; c < n_child; c++) { // ... for each child
+      
+      // Loop through child levels
+      for (int c = 0; c < n_child; c++) { 
         
         // Estimate dispersion of raw count (not log)
         LogicalVector child_mask = eq_left_broadcast(child, child_lvls[c]);
@@ -469,6 +463,8 @@ wspc::wspc(
         placeholder_ref_values.names() = mc_list;
         NumericMatrix placeholder_RtEffs(treatment_num, n_blocks);
         NumericMatrix placeholder_tpointEffs(treatment_num, deg);
+        
+        // Loop through model components (Rt, tslope, tpoint)
         for (String mc : mc_list) {
           
           // Mean rate per block
@@ -476,6 +472,7 @@ wspc::wspc(
             dVec Rt_est(n_blocks); 
             sMat RtVals(treatment_num, n_blocks);
            
+            // Loop through treatments
             for (int t = 0; t < treatment_num; t++) {
              
               NumericVector count_avg = count_avg_mat.column(t);
@@ -490,6 +487,7 @@ wspc::wspc(
                 RtVals(t, 0) = (sdouble)Rt_est[0];
               } else {
                 
+                // Estimate rate values as mean of count values in each block
                 for (int bk = 0; bk < n_blocks; bk++) {
                   int bin_start;
                   int bin_end;
@@ -518,7 +516,9 @@ wspc::wspc(
               placeholder_RtEffs.column(bk) = to_NumVec(beta_bk_Rt);
             }
             
-          } else if (deg > 0) { // Handle tpoint and tslope
+          } else if (deg > 0) { 
+            
+            // Handle tpoint and tslope
             if (mc == "tpoint") {
               
               // Grab reference values 
@@ -563,9 +563,16 @@ wspc::wspc(
     wfactors.names() = wfactors_names;
     double wf_initial_low = -1.0 * wf_initial;
     NumericVector wfs = dseq(wf_initial_low, wf_initial, n_ran - 1); 
+    
+    // Loop through warping factors (point and rate)
     for (String wf : wfactors_names) {
+      
+      // Initialize array to hold warping factors 
       NumericMatrix wf_array(n_ran, n_child);
+      
+      // Loop through child levels
       for (int c = 0; c < n_child; c++) {
+        
         if (wf == "rate") {
           // Find mean count value for each random level
           dVec ran_lvl_means(n_ran - 1);
@@ -576,15 +583,14 @@ wspc::wspc(
           }
           IntegerVector sorted_idx = Rorder(ran_lvl_means);
           NumericVector wfs_c = wfs[sorted_idx];
-          //wfs_c = wfs_c * Rcpp::runif(n_ran - 1, 0.5, 1.0); // add noise
-          wfs_c.push_front(0.0); // add "none"
+          wfs_c.push_front(0.0);            // add "none"
           wf_array.column(c) = wfs_c;
         } else { 
-          //NumericVector wfs_c = Rcpp::runif(n_ran - 1, 0.0, 0.01); 
-          //wfs_c.push_front(0.0); // add "none"
           NumericVector wfs_c(n_ran, 0.0);
+          // ^ ... revise later to initiate in correct direction, as in rate??
           wf_array.column(c) = wfs_c;
         } 
+        
       } 
       wfactors[wf] = wf_array;
     } 
@@ -846,10 +852,12 @@ sVec wspc::compute_mc_tpoint_r(
 // Predict log of rates
 sVec wspc::predict_rates_log(
     const sVec& parameters,
-    const bool& all_rows // compute all summed count rows, even with a count value of NA?
+    const bool& all_rows 
   ) const {
     
     /*
+     * If "all_rows" is true, will compute all summed count rows, even with a count value of NA.
+     * 
      * Function is called "log" because we assume the parameters are for counts
      *   that have been put into log space (plus 1). Hence, model parameters always 
      *   predict the log of the observed count rate.
@@ -912,6 +920,7 @@ sVec wspc::predict_rates_log(
         int c_num = Rwhich(eq_left_broadcast(child_lvls, child[r]))[0];
         int p_num = Rwhich(eq_left_broadcast(parent_lvls, parent[r]))[0];
         
+        // Compute the actual poly-sigmoid!! 
         predicted_rates(r) = poly_sigmoid(
           point_warp(bin(r), bin_num, f_pw),
           degMat(c_num, p_num),
@@ -938,7 +947,7 @@ sdouble wspc::neg_loglik(
     const sVec& parameters
   ) const {
    
-    // Initialize variable to hold nll
+    // Initialize variable to hold (what will become) nll
     sdouble log_lik = 0.0;
     
     // Subset the wfactor and beta parameters
@@ -1058,7 +1067,7 @@ sdouble wspc::neg_loglik(
       false       // compute all summed count rows, even with a count value of NA?
       );
     
-    // Compute the log-likelihood of the count data
+    // Compute the log-likelihood of the count data, assuming a Poisson distribution with Gamma kernel for over-dispersion
     for (int r : count_not_na_idx) {
       
       if (std::isinf(prate_log_var(r)) || prate_log_var(r) < 0.0 || std::isnan(prate_log_var(r))) {
@@ -1471,10 +1480,10 @@ void wspc::fit(
     size_t n = x.size();
     
     // Set up NLopt optimizer
-    nlopt::opt opt(nlopt::LD_LBFGS, n); // LD_LBFGS, LN_SBPLX, LN_COBYLA, GN_DIRECT
+    nlopt::opt opt(nlopt::LD_LBFGS, n); // Might try? LD_LBFGS, LN_SBPLX, LN_COBYLA, GN_DIRECT
     opt.set_min_objective(wspc::bounded_nll_NLopt, this);
-    opt.set_ftol_rel(ctol);       // stop when iteration changes objective fn value by less than this fraction 
-    opt.set_maxeval(max_evals);   // Maximum number of evaluations to try
+    opt.set_ftol_rel(ctol);             // Stop when iteration changes objective fn value by less than this fraction 
+    opt.set_maxeval(max_evals);         // Maximum number of evaluations to try
     
     // Find and print initial neg_loglik and total objective values
     if (verbose) {
@@ -1533,8 +1542,8 @@ void wspc::fit(
 
 // Fit model to bootstrap resample
 dVec wspc::bs_fit(
-    int bs_num,                 // A unique number for this resample
-    bool clear_stan             // Recover stan memory at end?
+    int bs_num,                  // A unique number for this resample
+    bool clear_stan              // Recover stan memory at end?
   ) {
     
     // Set random number generator with unique seed based on resample ID
@@ -1543,16 +1552,21 @@ dVec wspc::bs_fit(
     
     // Resample (with replacement), re-sum token pool, and take logs
     for (int r : count_not_na_idx) {
+      
+      // ... but only for actual observations of random grouping variable
       if (ran[r] != "none") {
+        
         // ... select a new row r2 from the block of r's bin
         IntegerVector back_up_range = bs_bin_ranges.row(r);
         int shift_back_max = back_up_range(0); 
         int shift_up_max = back_up_range(1); 
         int shift_range = back_up_range(2); 
+        
         // ... randomly select integer between 0 and shift_range
         int shift_idx = rng(shift_range); 
         IntegerVector shift = iseq(-shift_back_max, shift_up_max, shift_range);
         int r2 = r + shift[shift_idx];
+        
         // ... redraw randomly (with replacement) from the token pool of r2 and re-sum into r's count 
         IntegerVector token_pool_r = token_pool[r2];
         int resample_sz = token_pool_r.size();
@@ -1568,10 +1582,11 @@ dVec wspc::bs_fit(
           count(r) += count_tokenized[token_pool_r[resample_idx]];
         }
         count_log(r) = slog(count(r) + 1.0);
+        
       }
     }
     
-    // Extrapolate none's and take logs
+    // Extrapolate none's and take their logs
     count = extrapolate_none(count, ran, extrapolation_pool);
     iVec r_rows = Rcpp::as<iVec>(count_row_nums[eq_left_broadcast(ran,"none")]);
     for (int r : r_rows) {
@@ -1723,7 +1738,7 @@ Rcpp::NumericMatrix wspc::bs_batch(
 
 // Resample (demo)
 NumericMatrix wspc::resample(
-    int n_resample                 // total number of resamples to draw
+    int n_resample               // total number of resamples to draw
   ) {
     
     NumericMatrix resamples(n_count_rows, n_resample);
@@ -1958,126 +1973,126 @@ void wspc::import_fe_diff_ratio_tpoint(
   }
 
 Rcpp::List wspc::results() {
-  
-  NumericVector predicted_rates_out(n_count_rows);
-  NumericVector predicted_rates_log_out(n_count_rows);
-  if (predicted_rates.size() == n_count_rows) {
-    // conditional to prevent trying to access an empty vector
-    predicted_rates_out = predicted_rates;
-    predicted_rates_log_out = predicted_rates_log;
-  }
-  
-  // Create summed count data frame
-  DataFrame count_data_summed = DataFrame::create(
-    _["row"] = count_row_nums,
-    _["bin"] = to_NumVec(bin),
-    _["count"] = to_NumVec(count),
-    _["pred"] = predicted_rates_out,
-    _["count.log"] = to_NumVec(count_log),
-    _["pred.log"] = predicted_rates_log_out,
-    _["parent"] = parent,
-    _["child"] = child,
-    _["ran"] = ran,
-    _["treatment"] = treatment
-  );
-  
-  // Reformat parameter names for R
-  int n_params = param_names.size();
-  CharacterVector param_names_clean(n_params);
-  for (int n = 0; n < n_params; n++) {
-    CharacterVector name_comps = Rcpp::as<CharacterVector>(param_names[n]);
-    int m = name_comps.size();
-    if (m == 0) {Rcpp::stop("Empty parameter name!");}
-    String name = name_comps[0]; 
-    if (m > 1) {
-      for (int i = 1; i < m; i++) {
-        name += "_" + name_comps[i];
-      }
+    
+    NumericVector predicted_rates_out(n_count_rows);
+    NumericVector predicted_rates_log_out(n_count_rows);
+    if (predicted_rates.size() == n_count_rows) {
+      // conditional to prevent trying to access an empty vector
+      predicted_rates_out = predicted_rates;
+      predicted_rates_log_out = predicted_rates_log;
     }
-    param_names_clean[n] = name;
+    
+    // Create summed count data frame
+    DataFrame count_data_summed = DataFrame::create(
+      _["row"] = count_row_nums,
+      _["bin"] = to_NumVec(bin),
+      _["count"] = to_NumVec(count),
+      _["pred"] = predicted_rates_out,
+      _["count.log"] = to_NumVec(count_log),
+      _["pred.log"] = predicted_rates_log_out,
+      _["parent"] = parent,
+      _["child"] = child,
+      _["ran"] = ran,
+      _["treatment"] = treatment
+    );
+    
+    // Reformat parameter names for R
+    int n_params = param_names.size();
+    CharacterVector param_names_clean(n_params);
+    for (int n = 0; n < n_params; n++) {
+      CharacterVector name_comps = Rcpp::as<CharacterVector>(param_names[n]);
+      int m = name_comps.size();
+      if (m == 0) {Rcpp::stop("Empty parameter name!");}
+      String name = name_comps[0]; 
+      if (m > 1) {
+        for (int i = 1; i < m; i++) {
+          name += "_" + name_comps[i];
+        }
+      }
+      param_names_clean[n] = name;
+    }
+    
+    // Add parameter names to fitted parameter vector 
+    fitted_parameters.names() = param_names_clean;
+    
+    // Collect fixed-effect names and levels 
+    fix_ref.names() = fix_names;
+    List fixed_effects = List::create(
+      _["name"] = fix_names,
+      _["lvls"] = fix_lvls,
+      _["treat.lvl"] = fix_trt,
+      _["ref.lvl"] = fix_ref
+    );
+    
+    // Pack up treatment name information
+    List treat = List::create(
+      _["names"] = treatment_lvls, 
+      _["components"] = treatment_components
+    );
+    
+    // Put grouping variable information into list
+    List grouping_variables = List::create(
+      _["parent.lvls"] = parent_lvls,
+      _["child.lvls"] = child_lvls,
+      _["ran.lvls"] = ran_lvls
+    );
+    
+    // Add names to structure parameters
+    struc_values.names() = struc_names;
+    
+    // Pack up parameter indexes into list
+    List param_idx = List::create(
+      _["beta"] = beta_idx,
+      _["w.factor"] = wfactor_idx
+    );
+    
+    // Collect token pool
+    List token_pool_list(n_count_rows); 
+    for (int i = 0; i < n_count_rows; i++) {
+      if (token_pool[i].size() > 0) {
+        token_pool_list[i] = (IntegerVector)token_pool[i];
+      } 
+    }
+    
+    // Recompute sd_Rt_effect
+    sdouble expected_ran_effect_rate = 1.0 / ssqrt(4.0 * struc_values["beta_shape_rate"] + 2.0);    // ... already includes the *= 2.0 rescaling to range from -1 to 1
+    sdouble eff_mult_rate = fe_difference_ratio_Rt - 1.0;
+    sdouble expected_Rt = mean_count_log;
+    sdouble sd_Rt_effect = eff_mult_rate * expected_Rt * expected_ran_effect_rate;
+    
+    // Recompute sd_tpoint_effect
+    sdouble expected_ran_effect_tpoint = 1.0 / ssqrt(4.0 * struc_values["beta_shape_point"] + 2.0); // ... already includes the *= 2.0 rescaling to range from -1 to 1
+    sdouble eff_mult_tpoint = fe_difference_ratio_tpoint + 1.0;                                     // ... note the different sign
+    sdouble expected_tpoint = bin_num / 2.0;
+    sdouble sd_tpoint_effect = (eff_mult_tpoint * expected_tpoint * expected_ran_effect_tpoint) / (2.0 + eff_mult_tpoint * expected_ran_effect_tpoint);
+    
+    // Reformat gamma dispersion parameters 
+    NumericMatrix g_dispersion = to_NumMat(gamma_dispersion);
+    rownames(g_dispersion) = child_lvls;
+    colnames(g_dispersion) = parent_lvls;
+    
+    // Make final list to return 
+    List results_list = List::create(
+      _["model.component.list"] = mc_list,
+      _["count.data.summed"] = count_data_summed,
+      _["fitted.parameters"] = fitted_parameters,
+      _["gamma.dispersion"] = g_dispersion,
+      _["param.names"] = param_names_clean,
+      _["fix"] = fixed_effects,
+      _["treatment"] = treat,
+      _["grouping.variables"] = grouping_variables,
+      _["struc.params"] = struc_values,
+      _["param.idx0"] = param_idx, // "0" to indicate this goes out w/ C++ zero-based indexing
+      _["token.pool"] = token_pool_list,
+      _["computed_sd_Rt_effect"] = sd_Rt_effect.val(),
+      _["computed_sd_tpoint_effect"] = sd_tpoint_effect.val(),
+      _["change.points"] = change_points,
+      _["settings"] = model_settings
+    );
+    
+    return results_list;
+    
   }
-  
-  // Add parameter names to fitted parameter vector 
-  fitted_parameters.names() = param_names_clean;
-  
-  // Collect fixed-effect names and levels 
-  fix_ref.names() = fix_names;
-  List fixed_effects = List::create(
-    _["name"] = fix_names,
-    _["lvls"] = fix_lvls,
-    _["treat.lvl"] = fix_trt,
-    _["ref.lvl"] = fix_ref
-  );
-  
-  // Pack up treatment name information
-  List treat = List::create(
-    _["names"] = treatment_lvls, 
-    _["components"] = treatment_components
-  );
-  
-  // Put grouping variable information into list
-  List grouping_variables = List::create(
-    _["parent.lvls"] = parent_lvls,
-    _["child.lvls"] = child_lvls,
-    _["ran.lvls"] = ran_lvls
-  );
-  
-  // Add names to structure parameters
-  struc_values.names() = struc_names;
-  
-  // Pack up parameter indexes into list
-  List param_idx = List::create(
-    _["beta"] = beta_idx,
-    _["w.factor"] = wfactor_idx
-  );
-  
-  // Collect token pool
-  List token_pool_list(n_count_rows); 
-  for (int i = 0; i < n_count_rows; i++) {
-    if (token_pool[i].size() > 0) {
-      token_pool_list[i] = (IntegerVector)token_pool[i];
-    } 
-  }
-  
-  // Recompute sd_Rt_effect
-  sdouble expected_ran_effect_rate = 1.0 / ssqrt(4.0 * struc_values["beta_shape_rate"] + 2.0);    // ... already includes the *= 2.0 rescaling to range from -1 to 1
-  sdouble eff_mult_rate = fe_difference_ratio_Rt - 1.0;
-  sdouble expected_Rt = mean_count_log;
-  sdouble sd_Rt_effect = eff_mult_rate * expected_Rt * expected_ran_effect_rate;
-  
-  // Recompute sd_tpoint_effect
-  sdouble expected_ran_effect_tpoint = 1.0 / ssqrt(4.0 * struc_values["beta_shape_point"] + 2.0); // ... already includes the *= 2.0 rescaling to range from -1 to 1
-  sdouble eff_mult_tpoint = fe_difference_ratio_tpoint + 1.0;                                     // ... note the different sign
-  sdouble expected_tpoint = bin_num / 2.0;
-  sdouble sd_tpoint_effect = (eff_mult_tpoint * expected_tpoint * expected_ran_effect_tpoint) / (2.0 + eff_mult_tpoint * expected_ran_effect_tpoint);
-  
-  // Reformat gamma dispersion parameters 
-  NumericMatrix g_dispersion = to_NumMat(gamma_dispersion);
-  rownames(g_dispersion) = child_lvls;
-  colnames(g_dispersion) = parent_lvls;
-  
-  // Make final list to return 
-  List results_list = List::create(
-    _["model.component.list"] = mc_list,
-    _["count.data.summed"] = count_data_summed,
-    _["fitted.parameters"] = fitted_parameters,
-    _["gamma.dispersion"] = g_dispersion,
-    _["param.names"] = param_names_clean,
-    _["fix"] = fixed_effects,
-    _["treatment"] = treat,
-    _["grouping.variables"] = grouping_variables,
-    _["struc.params"] = struc_values,
-    _["param.idx0"] = param_idx, // "0" to indicate this goes out w/ C++ zero-based indexing
-    _["token.pool"] = token_pool_list,
-    _["computed_sd_Rt_effect"] = sd_Rt_effect.val(),
-    _["computed_sd_tpoint_effect"] = sd_tpoint_effect.val(),
-    _["change.points"] = change_points,
-    _["settings"] = model_settings
-  );
-  
-  return results_list;
-  
-}
 
 /*
  * *************************************************************************
