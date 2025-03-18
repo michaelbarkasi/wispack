@@ -1414,15 +1414,6 @@ Eigen::VectorXd wspc::grad_bounded_nll(
     // Compute bounded_nll and its gradient
     stan::math::grad(bnll, p, gr_bnll);
     
-    // int gr_size = gr_bnll.size();
-    // int ch_size = child_lvls.size();
-    // int str_idx = gr_size - ch_size;
-    // Rcpp::Rcout << "grad: ";
-    // for (int i = 0; i < ch_size; i++) {
-    //   Rcpp::Rcout << gr_bnll(str_idx + i) << ", ";  
-    // }
-    // Rcpp::Rcout << std::endl;  
-    
     // Return bounded_nll gradient
     return gr_bnll;
     
@@ -1489,11 +1480,11 @@ void wspc::fit(
     if (verbose) {
       sVec ip = to_sVec(fitted_parameters);
       sdouble initial_nll = neg_loglik(ip);
-      Rcpp::Rcout << "Initial neg_loglik: " << initial_nll << std::endl;
+      vprint("Initial neg_loglik: ", initial_nll);
       sdouble initial_obj = bounded_nll(ip);
-      Rcpp::Rcout << "Initial neg_loglik with penalty: " << initial_obj << std::endl;
+      vprint("Initial neg_loglik with penalty: ");
       sdouble ff_dist = -1 * max_neg_boundary_dist(ip);
-      Rcpp::Rcout << "Initial min boundary distance: " << ff_dist << std::endl;
+      vprint("Initial min boundary distance: ");
     } 
     
     // Fit model
@@ -1515,14 +1506,14 @@ void wspc::fit(
     
     // Print final neg_loglik, total objective, and min boundary distance values
     if (verbose) {
-      Rcpp::Rcout << "Final neg_loglik: " << final_nll << std::endl;
-      Rcpp::Rcout << "Final neg_loglik with penalty: " << min_fx << std::endl;
+      vprint("Final neg_loglik: ", final_nll);
+      vprint("Final neg_loglik with penalty: ", min_fx);
       sdouble ff_dist = -1 * max_neg_boundary_dist(parameters_final);
-      Rcpp::Rcout << "Final min boundary distance: " << ff_dist.val() << std::endl;
+      vprint("Final min boundary distance: ", ff_dist);
       int num_evals = opt.get_numevals();
-      Rcpp::Rcout << "Number of evaluations: " << num_evals << std::endl;
+      vprint("Number of evaluations: ", num_evals);
       if (success_code == 0) {
-        Rcpp::Rcout << "Warning: optimization did not converge." << std::endl;
+        vprint("Warning: optimization did not converge.");
       }
     } 
     
@@ -1719,14 +1710,12 @@ Rcpp::NumericMatrix wspc::bs_batch(
       NumericVector batch_times(batch_timer);
       double batch_time = 1e-9 * (batch_times[1] - batch_times[0])/max_fork;
       if (verbose) {
-        Rcpp::Rcout << "Batch " << b << "/" << batch_num << ", " << batch_time << " sec/bs" << std::endl;
+        Rcpp::Rcout << "Batch " << b + 1 << "/" << batch_num << ", " << batch_time << " sec/bs" << std::endl;
       }
       
     }
     
-    if (verbose) {
-      Rcpp::Rcout << "All complete!" << std::endl;
-    }
+    vprint("All complete!", verbose); 
     
     return bs_results;
     
@@ -1829,9 +1818,7 @@ Rcpp::List wspc::check_parameter_feasibility(
     const bool verbose
   ) { 
     
-    if (verbose) {
-      Rcpp::Rcout << "Checking feasibility of provided parameters" << std::endl;
-    }
+    vprint("Checking feasibility of provided parameters", verbose); 
     
     // Initialize vectors to return 
     sVec feasible_parameters_var = parameters_var; 
@@ -1841,9 +1828,9 @@ Rcpp::List wspc::check_parameter_feasibility(
     bool feasible = test_tpoints(parameters_var);
     if (verbose) {
       if (feasible) {
-        Rcpp::Rcout << "... no tpoints below buffer" << std::endl;
+        vprint("... no tpoints below buffer");
       } else {
-        Rcpp::Rcout << "... tpoints found below buffer" << std::endl;
+        vprint("... tpoints found below buffer");
       }
     }
     if (feasible) {
@@ -1863,9 +1850,9 @@ Rcpp::List wspc::check_parameter_feasibility(
       
       if (verbose) {
         if (feasible) {
-          Rcpp::Rcout << "... no negative rates predicted" << std::endl;
+          vprint("... no negative rates predicted");
         } else {
-          Rcpp::Rcout << "... negative rates predicted" << std::endl;
+          vprint("... negative rates predicted");
         }
       }
       
@@ -1873,9 +1860,9 @@ Rcpp::List wspc::check_parameter_feasibility(
     
     if (verbose) {
       if (feasible) {
-        Rcpp::Rcout << "Provided parameters are feasible" << std::endl;
+        vprint("Provided parameters are feasible");
       } else {
-        Rcpp::Rcout << "Provided parameters not feasible, searching nearby" << std::endl;
+        vprint("Provided parameters not feasible, searching nearby");
       }
     }
     
@@ -1885,7 +1872,7 @@ Rcpp::List wspc::check_parameter_feasibility(
       // Find and report initial distance to boundary
       sdouble initial_dist = -1 * max_neg_boundary_dist(parameters_var); 
       if (verbose) {
-        Rcpp::Rcout << "Initial boundary distance (want to make >0): " << initial_dist << std::endl;
+        vprint("Initial boundary distance (want to make >0): ", initial_dist);
       }
       
       // Variables for optimization
@@ -1914,9 +1901,9 @@ Rcpp::List wspc::check_parameter_feasibility(
       
       // Find and report final distance to boundary
       if (verbose) {
-        Rcpp::Rcout << "Numer of evals: " << opt.get_numevals() << std::endl;
-        Rcpp::Rcout << "Success code: " << success_code << std::endl;
-        Rcpp::Rcout << "Final boundary distance: " << -1 * min_fx << std::endl;
+        vprint("Numer of evals: ", (int)opt.get_numevals());
+        vprint("Success code: ", (int)success_code);
+        vprint("Final boundary distance: ", (double)-1.0 * min_fx);
       }
       
       // Final check of negative boundary distance
@@ -1926,14 +1913,10 @@ Rcpp::List wspc::check_parameter_feasibility(
       
       // Check for success
       if (success_code == 0) {
-        if (verbose) {
-          Rcpp::Rcout << "Could not find a nearby feasible parameters, returning provided ones" << std::endl;
-        }
+        vprint("Could not find a nearby feasible parameters, returning provided ones", verbose); 
       } else { // found a feasible starting point, save
         feasible = true;
-        if (verbose) {
-          Rcpp::Rcout << "Nearby feasible parameters found!" << std::endl;
-        }
+        vprint("Nearby feasible parameters found!", verbose); 
         feasible_parameters_var = to_sVec(x);
         // Recompute predicted rates 
         predicted_rates_log_var = predict_rates_log(

@@ -12,6 +12,37 @@ void vprint(
     }
   }
 
+// ... overload for no verbose flag
+void vprint(
+    const std::string& message
+  ) {
+    Rcpp::Rcout << message << std::endl;
+  }
+
+// ... overload for sdouble variant
+void vprint(
+    const std::string& message, 
+    sdouble val
+  ) {
+    Rcpp::Rcout << message << val << std::endl;
+  }
+
+// ... overload for double variant
+void vprint(
+    const std::string& message, 
+    double val
+  ) {
+    Rcpp::Rcout << message << val << std::endl;
+  }
+
+// ... overload for int variant
+void vprint(
+    const std::string& message, 
+    int val
+  ) {
+    Rcpp::Rcout << message << val << std::endl;
+  }
+
 void vprintV(
     const CharacterVector& message,
     bool verbose
@@ -22,8 +53,9 @@ void vprintV(
   }
 
 // Function for printing vectors
-void print_Vec(
-    const NumericVector& vec
+void vprintV(
+    const NumericVector& vec,
+    bool verbose
   ) {
     if (vec.size() > 20) {
       Rcpp::Rcout << "vec (first 20): ";
@@ -41,8 +73,9 @@ void print_Vec(
   }
 
 // ... overload for IntegerVector
-void print_Vec(
-    const IntegerVector& vec
+void vprintV(
+    const IntegerVector& vec,
+    bool verbose
   ) {
     if (vec.size() > 20) {
       Rcpp::Rcout << "vec (first 20): ";
@@ -60,8 +93,9 @@ void print_Vec(
   } 
 
 // ... overload for std::vector
-void print_Vec(
-    const dVec& vec
+void vprintV(
+    const dVec& vec,
+    bool verbose
   ) {
     if (vec.size() > 20) {
       Rcpp::Rcout << "vec (first 20): ";
@@ -79,8 +113,9 @@ void print_Vec(
   }
   
 // ... overload for sdouble
-void print_Vec(
-    const sVec& vec
+void vprintV(
+    const sVec& vec,
+    bool verbose
   ) {
     if (vec.size() > 20) {
       Rcpp::Rcout << "vec (first 20): ";

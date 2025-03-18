@@ -315,16 +315,20 @@ class wspc {
 
 // Function for printing character messages
 void vprint(const std::string& message, bool verbose);
+void vprint(const std::string& message);
+void vprint(const std::string& message, sdouble val);
+void vprint(const std::string& message, double val);
+void vprint(const std::string& message, int val);
 void vprintV(const CharacterVector& message, bool verbose);
 
 // Function for printing vectors
-void print_Vec(const NumericVector& vec);
+void vprintV(const NumericVector& vec, bool verbose);
 // ... overload for IntegerVector
-void print_Vec(const IntegerVector& vec);
+void vprintV(const IntegerVector& vec, bool verbose);
 // ... overload for std::vector
-void print_Vec(const dVec& vec);
+void vprintV(const dVec& vec, bool verbose);
 // ... overload for sdouble
-void print_Vec(const sVec& vec);
+void vprintV(const sVec& vec, bool verbose);
 
 // Vector-type conversions *********************************************************************************************
 
