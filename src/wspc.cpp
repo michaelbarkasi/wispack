@@ -363,7 +363,6 @@ wspc::wspc(
           gamma_dispersion(c, p) = ((count_pc_var / count_pc_mean) - 1) / count_pc_mean;
         }
         
-        LogicalVector child_mask = eq_left_broadcast(child, child_lvls[c]);
         sMat count_masked_array(bin_num_i, n_ran_trt);
         count_masked_array.setZero();
         LogicalVector good_col(n_ran_trt);
