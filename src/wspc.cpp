@@ -279,6 +279,14 @@ wspc::wspc(
     mean_count_log = vmean(count_log);
     vprint("Took log of observed counts", verbose);
     
+    // Resize gamma dispersion matrix (... fill in next step)
+    gamma_dispersion.resize(n_child, n_parent);
+    gamma_dispersion.setZero();
+    gd_child = IntegerVector(n_child);
+    gd_parent = IntegerVector(n_parent);
+    gd_child.names() = child_lvls;
+    gd_parent.names() = parent_lvls;
+    
     // Find mean observed ran effect per ran level
     for (int r = 1; r < n_ran; r++) {
       LogicalVector ran_mask = eq_left_broadcast(ran, ran_lvls[r]) & count_not_na_mask;
@@ -324,6 +332,7 @@ wspc::wspc(
     for (int p = 0; p < n_parent; p++) {
       
       LogicalVector parent_mask = eq_left_broadcast(parent, parent_lvls[p]);
+      gd_parent[(String)parent_lvls[p]] = p;
       
       // Set up list for ref values
       ref_values[(String)parent_lvls[p]] = List(n_child);
@@ -337,9 +346,22 @@ wspc::wspc(
       // ... for change points 
       found_cp_list[(String)parent_lvls[p]] = List(n_child);
       name_proxylist(found_cp_list[(String)parent_lvls[p]], child_lvls);
-      
-      // Loop through child levels
-      for (int c = 0; c < n_child; c++) {
+      for (int c = 0; c < n_child; c++) { // ... for each child
+        
+        // Estimate dispersion of raw count (not log)
+        LogicalVector child_mask = eq_left_broadcast(child, child_lvls[c]);
+        LogicalVector pc_mask = parent_mask & child_mask & count_not_na_mask;
+        sVec count_pc_masked = masked_vec(count, pc_mask); 
+        sdouble count_pc_mean = vmean(count_pc_masked);
+        sdouble count_pc_var = vvar(count_pc_masked);
+        gd_child[(String)child_lvls[c]] = c;
+        if (count_pc_var > count_pc_mean) {
+          // Have: count_pc_var = count_pc_mean + count_pc_mean^2 * gdis
+          // ... count_pc_var = count_pc_mean * (1 + count_pc_mean * gdis)
+          // ... count_pc_var / count_pc_mean = 1 + count_pc_mean * gdis
+          // ... (count_pc_var / count_pc_mean) - 1 = count_pc_mean * gdis
+          gamma_dispersion(c, p) = ((count_pc_var / count_pc_mean) - 1) / count_pc_mean;
+        }
         
         LogicalVector child_mask = eq_left_broadcast(child, child_lvls[c]);
         sMat count_masked_array(bin_num_i, n_ran_trt);
@@ -353,6 +375,7 @@ wspc::wspc(
          
           // Make mask for treatment rows of this parent-child pair
           LogicalVector trt_mask = eq_left_broadcast(treatment, trt);
+          LogicalVector mask = pc_mask & trt_mask;
          
           // Grab average counts for this treatment level (used later to set initial values)
           dVec count_avg(bin_num_i); 
@@ -1031,7 +1054,7 @@ sdouble wspc::neg_loglik(
     // log-likelihood of observed counts, given predicted rates
     
     // Predict rates under these parameters
-    sVec predicted_rates_log_var = predict_rates_log(
+    sVec prate_log_var = predict_rates_log(
       parameters, // model parameters for generating prediction
       false       // compute all summed count rows, even with a count value of NA?
       );
@@ -1039,10 +1062,24 @@ sdouble wspc::neg_loglik(
     // Compute the log-likelihood of the count data
     for (int r : count_not_na_idx) {
       
-      if (std::isinf(predicted_rates_log_var(r)) || predicted_rates_log_var(r) < 0.0 || std::isnan(predicted_rates_log_var(r))) {
+      if (std::isinf(prate_log_var(r)) || prate_log_var(r) < 0.0 || std::isnan(prate_log_var(r))) {
         return inf_;
       } else {
-        log_lik += log_dPois(count_log(r), predicted_rates_log_var(r));
+        
+        // Find gamma variance for this row
+        // ... grab parent and child index numbers
+        int n_c = gd_child[(String)child[r]];
+        int n_p = gd_parent[(String)parent[r]];
+        // ... pull predicted rate from log space
+        sdouble prate_var = sexp(prate_log_var(r)) - 1.0;
+        // ... estimate variance of rate outside log space
+        sdouble gamma_variance = prate_var + gamma_dispersion(n_c, n_p) * prate_var * prate_var;
+        // ... estimate the corresponding variance of the rate back in log space 
+        gamma_variance = delta_var_est(gamma_variance, prate_var);
+        
+        // Analytic solution to the log of the integral from 1 to positive infinity of the Poisson times Gamma densities
+        log_lik += slog(poisson_gamma_integral(count_log(r), prate_log_var(r), gamma_variance));
+        
       }
       
     }
@@ -1378,6 +1415,15 @@ Eigen::VectorXd wspc::grad_bounded_nll(
     // Compute bounded_nll and its gradient
     stan::math::grad(bnll, p, gr_bnll);
     
+    // int gr_size = gr_bnll.size();
+    // int ch_size = child_lvls.size();
+    // int str_idx = gr_size - ch_size;
+    // Rcpp::Rcout << "grad: ";
+    // for (int i = 0; i < ch_size; i++) {
+    //   Rcpp::Rcout << gr_bnll(str_idx + i) << ", ";  
+    // }
+    // Rcpp::Rcout << std::endl;  
+    
     // Return bounded_nll gradient
     return gr_bnll;
     
@@ -1435,7 +1481,7 @@ void wspc::fit(
     size_t n = x.size();
     
     // Set up NLopt optimizer
-    nlopt::opt opt(nlopt::LD_LBFGS, n);
+    nlopt::opt opt(nlopt::LD_LBFGS, n); // LD_LBFGS, LN_SBPLX, LN_COBYLA, GN_DIRECT
     opt.set_min_objective(wspc::bounded_nll_NLopt, this);
     opt.set_ftol_rel(ctol);       // stop when iteration changes objective fn value by less than this fraction 
     opt.set_maxeval(max_evals);   // Maximum number of evaluations to try
@@ -1910,7 +1956,7 @@ Rcpp::List wspc::check_parameter_feasibility(
 
 /*
  * *************************************************************************
- * Export data to R
+ * Export/import data to/from R
  */
 
 void wspc::import_fe_diff_ratio_Rt(
@@ -2023,11 +2069,17 @@ Rcpp::List wspc::results() {
   sdouble expected_tpoint = bin_num / 2.0;
   sdouble sd_tpoint_effect = (eff_mult_tpoint * expected_tpoint * expected_ran_effect_tpoint) / (2.0 + eff_mult_tpoint * expected_ran_effect_tpoint);
   
+  // Reformat gamma dispersion parameters 
+  NumericMatrix g_dispersion = to_NumMat(gamma_dispersion);
+  rownames(g_dispersion) = child_lvls;
+  colnames(g_dispersion) = parent_lvls;
+  
   // Make final list to return 
   List results_list = List::create(
     _["model.component.list"] = mc_list,
     _["count.data.summed"] = count_data_summed,
     _["fitted.parameters"] = fitted_parameters,
+    _["gamma.dispersion"] = g_dispersion,
     _["param.names"] = param_names_clean,
     _["fix"] = fixed_effects,
     _["treatment"] = treat,

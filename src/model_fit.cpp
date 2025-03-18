@@ -96,18 +96,27 @@ sdouble dPois(
 
 // Integral of Poisson-Gamma distribution, from 1 to positive infinity
 sdouble poisson_gamma_integral(
-    sdouble y, 
-    sdouble r, 
-    sdouble v
+    sdouble y, // observed count value
+    sdouble r, // expected process rate drawn from the gamma distribution
+    sdouble v  // variance of the gamma distribution
   ) {
-    sdouble s = r * r / v;
-    sdouble R = s / r;
+   
+    // convert more intuitive rate and variance parameters into the standard shape-rate parameters 
+    // ... for the gamma distribution
+    sdouble s = r * r / v; // Gamma distribution "shape" parameter
+    sdouble R = s / r;     // Gamma distribution "rate" parameter
     
-    //sdouble num = spower(R, s) * stan::math::tgamma(y + s) * (1.0 - stan::math::gamma_q(y + s, R + 1.0));
+    // Idea: This is an analytic solution to the integral of dPois(y, lambda) * dGamma(lambda, r, v) from 1 to positive infinity. 
+    //        ... The solution takes the form of a ratio num/denom which is subject to overflow/underflow, and so instead of 
+    //            computing this ratio directly, we compute the log of the numerator and denominator separately, and then exponentiate the difference.
+    
     sdouble log_num = s * slog(R) + stan::math::lgamma(y + s) + stan::math::log1m(stan::math::gamma_p(y + s, R + 1.0));
-    sdouble num = exp(log_num);
-    sdouble denom = (sexp(stan::math::lgamma(y + 1.0)) * stan::math::tgamma(s) * spower(R + 1.0, y + s));
-    return num / denom;
+    sdouble log_denom = stan::math::lgamma(y + 1.0) + stan::math::lgamma(s) + (y + s) * slog(R + 1.0);
+    sdouble integral = sexp(log_num - log_denom);
+   
+    // note: this return value is *not* the log of the density! It's the density itself. 
+    return integral;
+    
   }
 
 // Numerically stable implementation of sigmoid function

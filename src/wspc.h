@@ -131,6 +131,9 @@ class wspc {
     sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
     sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
     sVec observed_mean_ran_eff;             // mean random effect values for each random effect level, observed in data
+    sMat gamma_dispersion;                  // dispersion terms for "kernel" of gamma-Poisson model
+    IntegerVector gd_child;                 // indexes of child levels in gamma_dispersion
+    IntegerVector gd_parent;                // indexes of parent levels in gamma_dispersion
     double LROcutoff = 2.0;                 // cutoff (x sd) for likelihood ratio outlier detection
     double tslope_initial = 1.0;            // initial value for transition slope
     double wf_initial = 0.5;                // initial value for warping factor ... any sensible magnitude > 0.1 and < 0.75 should do? 
@@ -342,6 +345,8 @@ NumericVector to_NumVec(const sVec& vec);
 NumericVector to_NumVec(const dVec& vec);
 // ... overload, from IntegerVector
 NumericVector to_NumVec(const IntegerVector& vec);
+// ... convert to NumericMatrix
+NumericMatrix to_NumMat(const sMat& mat);
 
 // Convert to IntegerVector
 // ... from std::vector with int
@@ -387,12 +392,18 @@ double vmean_range(const NumericVector& x, const int& start, const int& end);
 // Rolling mean
 dVec roll_mean(const dVec& series, int filter_ws);
 
+// Variance of vector elements 
+sdouble vvar(const sVec& x);
+
 // Standard deviations of vector elements 
 double vsd(const dVec& x); 
 // ... overload 
 sdouble vsd(const sVec& x);
 // ... overload 
 double vsd(const NumericVector& x); 
+
+// Estimate variation after x -> log(x + 1) transform 
+sdouble delta_var_est(const sdouble& var, const sdouble& mu);
 
 // Component-wise operations
 // -------------------------
