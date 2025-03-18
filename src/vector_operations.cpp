@@ -155,17 +155,6 @@ sdouble vsd(
     return ssqrt(vvar(x));
   }
 
-// Estimate variation after x -> log(x + 1) transform 
-sdouble delta_var_est(
-    const sdouble& var,
-    const sdouble& mu
-  ) {
-    // For a random variable X with variance var and mean mu, 
-    // ... estimate the variance of log(X + 1) using the delta method 
-    //      applied to the first-order Taylor series of g(x) = log(x + 1) around mu.
-    return var / ((mu + 1) * (mu + 1));
-  }
-
 // ... overload
 double vsd(
     const dVec& x
@@ -198,6 +187,18 @@ double vsd(
     return std::sqrt(sum / (double)ctr);
   }
 
+// Estimate variation after x -> log(x + 1) transform 
+// ... critical (!!) for Gaussian kernel of Poisson distribution
+sdouble delta_var_est(
+    const sdouble& var,
+    const sdouble& mu
+  ) {
+    // For a random variable X with variance var and mean mu, 
+    // ... estimate the variance of log(X + 1) using the delta method 
+    //      applied to the first-order Taylor series of g(x) = log(x + 1) around mu.
+    return var / ((mu + 1) * (mu + 1));
+  }
+
 // Component-wise operations *******************************************************************************************
 
 // Component-wise multiplication
@@ -212,6 +213,7 @@ dVec vmult(
     }
     return out;
   }
+
 // ... overload for NumericVector
 NumericVector vmult(
     const NumericVector& x,
@@ -237,6 +239,7 @@ dVec vdivide(
     }
     return out;
   }
+
 // ... overload for NumericVector
 NumericVector vdivide(
     const NumericVector& x,
@@ -262,6 +265,7 @@ dVec vadd(
     }
     return out;
   }
+
 // ... overload for NumericVector
 NumericVector vadd(
     const NumericVector& x,
@@ -287,6 +291,7 @@ dVec vsubtract(
     }
     return out;
   }
+
 // ... overload for NumericVector
 NumericVector vsubtract(
     const NumericVector& x,
@@ -546,26 +551,26 @@ IntegerVector buffered_merge(
 iVec block_idx(
     const NumericVector& vec,
     const double& x
-) {
-  iVec out = {-1, -1};
-  int vec_size = vec.size();
-  if (vec_size > 0) {
-    for (int i = 0; i < vec_size; i++) {
-      if (x < vec[i]) {
-        out[1] = i;
-        if (i > 0) {
-          if (x > vec[i - 1]) {
-            out[0] = i - 1;
+  ) {
+    iVec out = {-1, -1};
+    int vec_size = vec.size();
+    if (vec_size > 0) {
+      for (int i = 0; i < vec_size; i++) {
+        if (x < vec[i]) {
+          out[1] = i;
+          if (i > 0) {
+            if (x > vec[i - 1]) {
+              out[0] = i - 1;
+            }
           }
+          break;
+        } else if (i == vec_size - 1) {
+          out[0] = i;
         }
-        break;
-      } else if (i == vec_size - 1) {
-        out[0] = i;
       }
     }
+    return out;
   }
-  return out;
-}
 
 // Return differences between elements 
 IntegerVector vdiff(

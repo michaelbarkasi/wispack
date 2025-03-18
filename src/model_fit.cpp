@@ -266,7 +266,7 @@ dVec series_nll(
     
     // Compute nll for each window
     for (int i = 0; i <= (n - ws); i++) {
-    
+     
       nlls[i] = 0.0;
       dVec series_i(series.begin() + i, series.begin() + (i + ws));
       // ... series values in first half of window
