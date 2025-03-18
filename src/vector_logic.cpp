@@ -54,9 +54,9 @@ bool any_true(
 
 bool all_true(
     const LogicalVector& x
-) {
-  for (int i = 0; i < x.size(); i++) {
-    if (!x[i]) {return false;}
+  ) {
+    for (int i = 0; i < x.size(); i++) {
+      if (!x[i]) {return false;}
+    }
+    return true;
   }
-  return true;
-}

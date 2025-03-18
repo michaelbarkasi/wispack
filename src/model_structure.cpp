@@ -369,7 +369,7 @@ List make_parameter_vector(
 
 // Extrapolating random-effect free counts ("none's") ******************************************************************
 
- std::vector<IntegerVector> make_extrapolation_pool(
+std::vector<IntegerVector> make_extrapolation_pool(
     const sVec& bin,
     const sVec& count, 
     const CharacterVector& parent,
