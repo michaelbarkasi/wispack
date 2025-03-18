@@ -119,12 +119,14 @@ snk.print_var_list <- function(
     cat(paste(rep("\n", end_breaks)))
   }
 
-snk.print_function <- function(func) {
-  if (class(func) != "character") stop("func must be a character string naming a function")
-  cat("\n\n", func, " definition:\n",rep("-", 30),"\n", sep="")
-  print(get(func))
-  cat(rep("-", 4), sep = "")
-}
+snk.print_function <- function(
+    func
+  ) {
+    if (class(func) != "character") stop("func must be a character string naming a function")
+    cat("\n\n", func, " definition:\n",rep("-", 30),"\n", sep="")
+    print(get(func))
+    cat(rep("-", 4), sep = "")
+  }
 
 snk.print_table <- function(
     label, 

@@ -235,14 +235,14 @@ wisp <- function(
       pred.type = "pred.log",
       count.type = "count.log",
       dim.boundaries = dim.bounds
-      )
+    )
     
     # Make parameter plots 
     plots.parameters <- plot.parameters(
       wisp.results = results,
       print.plots = FALSE, 
       verbose = FALSE
-      )
+    )
     
     # Gather plots
     plots <- list(
@@ -261,7 +261,7 @@ wisp <- function(
         these.childs = NULL,
         log.scale = TRUE,
         verbose = TRUE
-        )
+      )
     }
     
     return(results)
