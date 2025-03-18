@@ -132,8 +132,8 @@ dVec roll_mean(
     return series_out;
   }
 
-// standard deviation of vector elements 
-sdouble vsd(
+// Variance of vector elements
+sdouble vvar(
     const sVec& x
   ) {
     sdouble mean = vmean(x);
@@ -145,7 +145,25 @@ sdouble vsd(
         ctr++;
       }
     }
-    return ssqrt(sum / (sdouble)ctr);
+    return sum / (sdouble)ctr;
+  }
+
+// Standard deviation of vector elements 
+sdouble vsd(
+    const sVec& x
+  ) {
+    return ssqrt(vvar(x));
+  }
+
+// Estimate variation after x -> log(x + 1) transform 
+sdouble delta_var_est(
+    const sdouble& var,
+    const sdouble& mu
+  ) {
+    // For a random variable X with variance var and mean mu, 
+    // ... estimate the variance of log(X + 1) using the delta method 
+    //      applied to the first-order Taylor series of g(x) = log(x + 1) around mu.
+    return var / ((mu + 1) * (mu + 1));
   }
 
 // ... overload

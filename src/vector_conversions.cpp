@@ -84,6 +84,23 @@ NumericVector to_NumVec(
     return num_vec;
   }
 
+// ... to NumericMatrix
+NumericMatrix to_NumMat(
+    const sMat& mat
+  ) {
+    NumericMatrix num_mat(mat.rows(), mat.cols());
+    for (int i = 0; i < mat.rows(); i++) {
+      for (int j = 0; j < mat.cols(); j++) {
+        if (std::isnan(mat(i, j))) {
+          num_mat(i, j) = NA_REAL;
+        } else {
+          num_mat(i, j) = mat(i, j).val();
+        }
+      }
+    }
+    return num_mat;
+  }
+
 // Convert to IntegerVector ********************************************************************************************
 
 // ... from std::vector with int
