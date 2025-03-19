@@ -244,8 +244,7 @@ sdouble boundary_penalty_transform(
     const sdouble& x,
     const sdouble& a
   ) {
-    sdouble x_ = -x;
-    // x is negative boundary distance, so want to flip back to boundary distance 
+    sdouble x_ = x;
     if (x_ <= 0) {
       x_ = 1e-30;
     } 
@@ -268,6 +267,7 @@ dVec series_nll(
     for (int i = 0; i <= (n - ws); i++) {
      
       nlls[i] = 0.0;
+      // ... series values in window
       dVec series_i(series.begin() + i, series.begin() + (i + ws));
       // ... series values in first half of window
       dVec series_i1(series_i.begin(), series_i.begin() + (ws / 2));
@@ -323,7 +323,7 @@ IntegerVector LROcp_find(
     int last_cp = 0;
     double nll_ratio_mean = vmean(nll_ratio);
     double nll_ratio_sd = vsd(nll_ratio);
-    double nll_max = nll_ratio_mean + out_mult*nll_ratio_sd;
+    double nll_max = nll_ratio_mean + out_mult * nll_ratio_sd;
     int n_nll = nll_ratio.size();
     for (int i = 0; i < n_nll; i++) {
       if (
@@ -383,6 +383,9 @@ IntegerMatrix LROcp_array(
     // The test here will treat each column of the matrix as a separate series. 
     //  it further assumes that the series are dependent on each other, and share 
     //  change points, plus some variance between them on the exact location. 
+    
+    // Control random number generator
+    Rcpp::RNGScope scope;
     
     int n_series = series_array.cols();
     int n_samples = series_array.rows();

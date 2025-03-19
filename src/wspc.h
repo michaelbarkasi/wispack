@@ -119,7 +119,7 @@ class wspc {
     List wfactor_idx; 
     IntegerVector gv_ranLr_int;             // ... indices (row and column) for random effect arrays 
     IntegerVector gv_fixLr_int;  
-    NumericVector struc_values = {1.0, 1.0, 1.0};        // Initial values of structural parameters of model
+    NumericVector struc_values = {5.0, 5.0, 1.0};        // Initial values of structural parameters of model
     CharacterVector struc_names = {         // Names of structural parameters of model
       "beta_shape_point", 
       "beta_shape_rate",
@@ -135,12 +135,14 @@ class wspc {
     IntegerVector gd_child;                 // indexes of child levels in gamma_dispersion
     IntegerVector gd_parent;                // indexes of parent levels in gamma_dispersion
     double LROcutoff = 2.0;                 // cutoff (x sd) for likelihood ratio outlier detection
+    double LROwindow_factor = 2.0;          // factor for window size in likelihood ratio outlier detection (bigger is bigger window)
     double tslope_initial = 1.0;            // initial value for transition slope
     double wf_initial = 0.5;                // initial value for warping factor ... any sensible magnitude > 0.1 and < 0.75 should do? 
     
     // Optimization settings
     int max_evals = 500;                    // max number of evaluations
     double ctol = 5e-6;                     // convergence tolerance
+    unsigned int rng_seed = 42u;            // seed for random number generator
     
     // Other settings 
     List model_settings;
@@ -205,7 +207,7 @@ class wspc {
     ) const;
     
     // Compute boundary distances
-    sVec neg_boundary_dist(
+    sVec boundary_dist(
         const sVec& parameters
     ) const;
     
@@ -215,12 +217,12 @@ class wspc {
     ) const;
     
     // Compute min boundary penalty
-    sdouble max_neg_boundary_dist(
+    sdouble min_boundary_dist(
         const sVec& parameters
     ) const;
     
     // Wrap neg_min_boundary_dist in form needed for NLopt constraint function
-    static double max_neg_boundary_dist_NLopt(
+    static double min_boundary_dist_NLopt(
         const dVec& x,
         dVec& grad,
         void* data
@@ -246,9 +248,9 @@ class wspc {
         const sVec& p_
     ) const;
     
-    // Compute the gradient of the max_neg_boundary_dist function
+    // Compute the gradient of the min_boundary_dist function
     // ... this is the gradient function used in the search for feasible parameters
-    Eigen::VectorXd grad_max_neg_boundary_dist(
+    Eigen::VectorXd grad_min_boundary_dist(
         const sVec& p_
     ) const;
     

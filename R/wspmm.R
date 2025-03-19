@@ -26,16 +26,22 @@ wisp <- function(
     verbose = TRUE,
     print.child.summaries = TRUE,
     model.settings = list(
-      struc_values = c(1.0, 1.0, 1.0),            # values of structural parameters to test
+      struc_values = c(5.0, 5.0, 1.0),            # values of structural parameters to test
       buffer_factor = 0.05,                       # buffer factor for penalizing distance from structural parameter values
-      ctol = 1e-4,                                # convergence tolerance
+      ctol = 1e-6,                                # convergence tolerance
       max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from structural parameter values
       LROcutoff = 2.0,                            # cutoff for LROcp
+      LROwindow_factor = 2.0,                     # controls size of window used in LROcp algorithm (window = LROwindow_factor * bin_num * buffer_factor)
       tslope_initial = 1.0,                       # initial value for tslope
-      wf_initial = 0.5,                           # initial value for wfactor
-      max_evals = 200                             # maximum number of evaluations for optimization
+      wf_initial = 0.1,                           # initial value for wfactor
+      max_evals = 1000,                           # maximum number of evaluations for optimization
+      rng_seed = 42                               # seed for random number generator
     )
   ) {
+    
+    # Make reproducible
+    ran.seed <- 1234
+    set.seed(ran.seed)
    
     # Relabel and rearrange data columns 
     old_names <- colnames(count.data.raw)
@@ -179,9 +185,6 @@ wisp <- function(
     results <- cpp_model$results()
     results[["bs_params"]] <- bs_params
     results[["bs.diagnostics"]] <- bs.diagnostics
-    
-    # Sample resample demo
-    results[["resample.demo"]] <- cpp_model$resample(1000)
     
     # Add variable names 
     results[["variables"]] <- variables
