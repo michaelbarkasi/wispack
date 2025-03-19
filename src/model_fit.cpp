@@ -2,6 +2,21 @@
 // model_fit.cpp
 #include "wspc.h"
 
+// Thread-safe normal distribution function
+double safe_rnorm(
+    double mean, 
+    double sd
+  ) {
+    // Create a thread-local random engine
+    static thread_local std::mt19937 generator(std::random_device{}());
+    
+    // Create a normal distribution with the given mean and standard deviation
+    std::normal_distribution<double> distribution(mean, sd);
+    
+    // Generate and return a random number
+    return distribution(generator);
+  }
+
 // Density of normal distribution 
 double dNorm(
     const double& x,        // value to evaluate
@@ -445,3 +460,4 @@ IntegerMatrix LROcp_array(
     }
     
   } 
+

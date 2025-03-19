@@ -15,6 +15,7 @@
 #include <nlopt.hpp>
 #include "pcg/pcg_random.hpp"
 #include <unistd.h>                           // for forking on unix
+#include <random>                             // for thread-safe random number generation
 using namespace Rcpp;
 
 // [[Rcpp::plugins(cpp14)]]
@@ -597,6 +598,12 @@ sVec extrapolate_none(
   );
 
 // Model fitting *******************************************************************************************************
+
+// Thread-safe normal distribution function
+double safe_rnorm(
+    double mean, 
+    double sd
+  );
 
 // Log of density of normal distribution centered on zero
 sdouble log_dNorm(
