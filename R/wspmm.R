@@ -35,6 +35,7 @@ wisp <- function(
       tslope_initial = 1.0,                       # initial value for tslope
       wf_initial = 0.1,                           # initial value for wfactor
       max_evals = 1000,                           # maximum number of evaluations for optimization
+      initial_fits = 10,                          # number of initial fits to run
       rng_seed = 42                               # seed for random number generator
     )
   ) {
@@ -733,7 +734,8 @@ analyze.diff <- function(
       }
     }
     
-    # Make data matrices 
+    # Function to make data matrices 
+    # ... will randomly nudge the provided tpoints
     make_data_matrices <- function(
       count_type 
     ) {
@@ -804,7 +806,14 @@ analyze.diff <- function(
               tpoints_array_col_num <- (t_num - 1) * (n_ran_lvls + 1) + m_num
               tpoints_pg <- tpoints[[p]][[g]]
               if (length(tpoints_pg) > 0) {
-                datat[1:degs[g, p], g, p, m, t] <- tpoints_pg[, tpoints_array_col_num]
+                tpoints_pg_this <- tpoints_pg[, tpoints_array_col_num]
+                # Randomly nudge 
+                jit <- sample((-3):3, 1)
+                tpoints_pg_this <- tpoints_pg_this + jit
+                # Ensure in bounds
+                if (any(tpoints_pg_this < 3)) tpoints_pg_this[tpoints_pg_this < 3] <- 3
+                if (any(tpoints_pg_this > n_bins - 2)) tpoints_pg_this[tpoints_pg_this > n_bins - 2] <- n_bins - 2
+                datat[1:degs[g, p], g, p, m, t] <- tpoints_pg_this
               }
             }
           }
@@ -856,11 +865,7 @@ analyze.diff <- function(
       
     }
     
-    data.both <- make_data_matrices(count.type)
-    data.c <- data.both$count_data
-    data.tp <- data.both$tpoint_data
-    
-    # For reach treatment level of each fixed effect, find normalized differences between random levels
+    # Function for finding normalized differences between random levels
     find_norm_diffs <- function(
       data,
       random # If not random, then one-off
@@ -930,19 +935,40 @@ analyze.diff <- function(
       
     }
     
-    ran.diffs.c <- find_norm_diffs(data.c, TRUE)
-    oneoff.diffs.c <- find_norm_diffs(data.c, FALSE)
-    diff.ratio.c <- mean(oneoff.diffs.c)/mean(ran.diffs.c)
+    # Run analysis a bunch and take means 
+    n_runs <- 100
+    diff.ratio.c_i <- rep(0, n_runs)
+    diff.ratio.tp_i <- rep(0, n_runs)
+    for (i in 1:n_runs) {
+      
+      # Make data matrices with random nudge of tpoints
+      data.both <- make_data_matrices(count.type)
+      data.c <- data.both$count_data
+      data.tp <- data.both$tpoint_data
+      
+      # For reach treatment level of each fixed effect, find normalized differences between random levels
+      ran.diffs.c <- find_norm_diffs(data.c, TRUE)
+      oneoff.diffs.c <- find_norm_diffs(data.c, FALSE)
+      diff.ratio.c <- mean(oneoff.diffs.c)/mean(ran.diffs.c)
+      
+      ran.diffs.tp <- find_norm_diffs(data.tp, TRUE)
+      oneoff.diffs.tp <- find_norm_diffs(data.tp, FALSE)
+      diff.ratio.tp <- mean(oneoff.diffs.tp)/mean(ran.diffs.tp)
+      
+      # Mathematically, this must be greater than zero, or model fitting will fail
+      # ... from a physical point of view, even if the true effect is zero, it will 
+      #      be measured as non-zero due to noise, so we should expect this to be greater than 1. 
+      if (diff.ratio.c < 1.05) {diff.ratio.c <- 1.05}
+      if (diff.ratio.tp < 1.05) {diff.ratio.tp <- 1.05}
+      
+      diff.ratio.c_i[i] <- diff.ratio.c
+      diff.ratio.tp_i[i] <- diff.ratio.tp
+      
+    }
     
-    ran.diffs.tp <- find_norm_diffs(data.tp, TRUE)
-    oneoff.diffs.tp <- find_norm_diffs(data.tp, FALSE)
-    diff.ratio.tp <- mean(oneoff.diffs.tp)/mean(ran.diffs.tp)
-    
-    # Mathematically, this must be greater than zero, or model fitting will fail
-    # ... from a physical point of view, even if the true effect is zero, it will 
-    #      be measured as non-zero due to noise, so we should expect this to be greater than 1. 
-    if (diff.ratio.c < 1.05) {diff.ratio.c <- 1.05}
-    if (diff.ratio.tp < 1.05) {diff.ratio.tp <- 1.05}
+    # Take means 
+    diff.ratio.c <- mean(diff.ratio.c_i)
+    diff.ratio.tp <- mean(diff.ratio.tp_i)
     
     return(
       list(
