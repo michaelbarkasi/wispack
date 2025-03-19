@@ -425,7 +425,7 @@ wspc::wspc(
         
         // Estimate change points from masked count series
         IntegerMatrix found_cp_good = LROcp_array(
-          count_masked_array_good,    // series to scan
+          count_masked_array_good,    // 2D matrix of points to test for change points (columns as series, rows as bins)
           ws,                         // running window size 
           filter_ws,                  // size of window for taking rolling mean
           LROcutoff                   // points more than this times sd considered outliers
