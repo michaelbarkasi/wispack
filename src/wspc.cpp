@@ -1568,9 +1568,13 @@ dVec wspc::bs_fit(
         int shift_range = back_up_range(2); 
         
         // ... randomly select integer between 0 and shift_range
-        int shift_idx = rng(shift_range); 
-        IntegerVector shift = iseq(-shift_back_max, shift_up_max, shift_range);
-        int r2 = r + shift[shift_idx];
+        int shift_bins = 0;
+        if (shift_range > 2) {
+          int shift_idx = rng(shift_range); 
+          IntegerVector shift = iseq(-shift_back_max, shift_up_max, shift_range);
+          shift_bins = shift[shift_idx];
+        }
+        int r2 = r + shift_bins;
         
         // ... redraw randomly (with replacement) from the token pool of r2 and re-sum into r's count 
         IntegerVector token_pool_r = token_pool[r2];
@@ -1580,6 +1584,7 @@ dVec wspc::bs_fit(
           token_pool_r = token_pool[r];
           resample_sz = token_pool_r.size();
         }
+        
         count(r) = 0.0;
         for (int i = 0; i < resample_sz; i++) {
           // ... randomly select integer between 0 and resample_sz
@@ -1682,7 +1687,9 @@ Rcpp::NumericMatrix wspc::bs_batch(
       
     }
     // Set fitted parameters to best found 
+    
     fitted_parameters = fitted_parameters_best;
+    
     optim_results = optim_results_best;
     
     // Initiate variables to hold results
@@ -1702,7 +1709,7 @@ Rcpp::NumericMatrix wspc::bs_batch(
     bs_results.row(bs_num_max) = to_NumVec(full_results);
     
     // Perform bootstrap fits in batches
-    const int batch_num = bs_num_max / max_fork;
+    const int batch_num = std::round(bs_num_max / max_fork);
     for (int b = 0; b < batch_num; b++) {
       // Run in parallel with forking
       
@@ -2021,7 +2028,7 @@ Rcpp::NumericVector wspc::jitter_parameter_seed() const {
     
     // Jitter warping factors, point
     for (int p : param_wfactor_point_idx) {
-      double wfpj = R::rnorm(jittered_parameters(p), wf_sd);
+      double wfpj = safe_rnorm(jittered_parameters(p), wf_sd);
       if (wfpj < -wf_cap) {wfpj = -wf_cap;}
       if (wfpj > wf_cap) {wfpj = wf_cap;}
       jittered_parameters(p) = wfpj;
@@ -2029,7 +2036,7 @@ Rcpp::NumericVector wspc::jitter_parameter_seed() const {
     
     // Jitter warping factors, rate 
     for (int p : param_wfactor_rate_idx) {
-      double wfrj = R::rnorm(jittered_parameters(p), wf_sd);
+      double wfrj = safe_rnorm(jittered_parameters(p), wf_sd);
       if (wfrj < -wf_cap) {wfrj = -wf_cap;}
       if (wfrj > wf_cap) {wfrj = wf_cap;}
       jittered_parameters(p) = wfrj;
@@ -2038,27 +2045,27 @@ Rcpp::NumericVector wspc::jitter_parameter_seed() const {
     // Jitter beta Rt parameters
     for (int p : param_beta_Rt_idx) {
       // might be sent into unfeasible position, but should be correctable
-      double betaj = R::rnorm(jittered_parameters(p), beta_Rt_sd);
+      double betaj = safe_rnorm(jittered_parameters(p), beta_Rt_sd);
       jittered_parameters(p) = betaj;
     }
     
     // Jitter beta tpoint parameters
     for (int p : param_beta_tpoint_idx) {
       // might be sent into unfeasible position, but should be correctable
-      double betaj = R::rnorm(jittered_parameters(p), beta_tpoint_sd);
+      double betaj = safe_rnorm(jittered_parameters(p), beta_tpoint_sd);
       jittered_parameters(p) = betaj;
     }
     
     // Jitter beta tslope parameters
     for (int p : param_beta_tslope_idx) {
       // might be sent into unfeasible position, but should be correctable
-      double betaj = R::rnorm(jittered_parameters(p), beta_tslope_sd);
+      double betaj = safe_rnorm(jittered_parameters(p), beta_tslope_sd);
       jittered_parameters(p) = betaj;
     }
     
     // Jitter structural parameters
     for (int p : param_struc_idx) {
-      double jit = R::rnorm(1.0, struc_sd);
+      double jit = safe_rnorm(1.0, struc_sd);
       double strucj = jittered_parameters(p) + jit * jit;
       jittered_parameters(p) = strucj;
     }
