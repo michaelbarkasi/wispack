@@ -387,11 +387,9 @@ std::vector<IntegerVector> make_extrapolation_pool(
     NumericVector bin_NumVec = to_NumVec(bin);
     
     int n_rows = r_idx.size();
-    int alert_now = n_rows/10;
-    int ctr = 0;
-    int t_row = 0;
-    
-    for (int r : r_idx) {
+    IntegerVector tracker = iseq((int)(n_rows/5 - 1), n_rows - 1, 5); 
+    for (int ri = 0; ri < n_rows; ri++) {
+      int r = r_idx[ri];
       
       // Find all rows with the same fixed effects and bin
       LogicalVector mask = eq_left_broadcast(bin_NumVec, bin(r).val())
@@ -405,13 +403,9 @@ std::vector<IntegerVector> make_extrapolation_pool(
       extrapolation_pool[r] = Rwhich(mask);
       
       // Track progress
-      if (ctr >= alert_now || r >= r_idx[n_rows - 1]) {
-        t_row += ctr;
-        ctr = 0;
-        vprint("row: " + std::to_string(t_row) + "/" + std::to_string(n_rows), verbose);
-      } else {
-        ctr++;
-      }
+      if (any_true(eq_left_broadcast(tracker, ri))) {
+        vprint("row: " + std::to_string(ri + 1) + "/" + std::to_string(n_rows), verbose);
+      } 
       
     }
     

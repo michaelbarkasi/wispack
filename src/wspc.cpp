@@ -29,17 +29,21 @@ wspc::wspc(
     double ctol_settings = settings["ctol"];
     double max_penalty_at_distance_factor_settings = settings["max_penalty_at_distance_factor"];
     double LROcutoff_settings = settings["LROcutoff"];
+    double LROwindow_factor_settings = settings["LROwindow_factor"];
     double tslope_initial_settings = settings["tslope_initial"];
     double wf_initial_settings = settings["wf_initial"];
     int max_evals_settings = settings["max_evals"];
+    unsigned int rng_seed_settings = settings["rng_seed"];
     for (int i = 0; i < struc_values.size(); i++) {struc_values[i] = struc_values_settings[i];}
     buffer_factor = sdouble(buffer_factor_settings);
     ctol = ctol_settings;
     max_penalty_at_distance_factor = sdouble(max_penalty_at_distance_factor_settings);
     LROcutoff = LROcutoff_settings;
+    LROwindow_factor = LROwindow_factor_settings;
     tslope_initial = tslope_initial_settings;
     wf_initial = wf_initial_settings;
     max_evals = max_evals_settings;
+    rng_seed = rng_seed_settings;
     model_settings = Rcpp::clone(settings);
     
     // Check structure of input data
@@ -302,7 +306,7 @@ wspc::wspc(
     colnames(degMat) = parent_lvls;
     
     // Compute running and filter window sizes for LRO change-point detection
-    int ws = static_cast<int>(std::round(2.0 * (double)bin_num_i * buffer_factor.val()));
+    int ws = static_cast<int>(std::round(LROwindow_factor * (double)bin_num_i * buffer_factor.val()));
     int filter_ws = std::round(ws/2);
     int n_ran_trt = n_ran * treatment_num;
     
@@ -624,6 +628,7 @@ wspc::wspc(
     param_struc_idx.names() = struc_names;
     beta_idx = params["beta_idx"];
     wfactor_idx = params["wfactor_idx"];
+    if (verbose) {vprint("Number of parameters: ", (int)fitted_parameters.size());}
    
     // Construct grouping variable ids as indexes for warping factor matrices, by count row
     gv_ranLr_int = IntegerVector(n_count_rows);
@@ -634,7 +639,7 @@ wspc::wspc(
       gv_ranLr_int[r] = std::distance(ran_lvls.begin(), it_ran);
       gv_fixLr_int[r] = std::distance(child_lvls.begin(), it_fix);
     }
-    vprint("Constructed grouping variable ids", verbose);
+    vprint("Constructed grouping variable IDs", verbose);
     
     // Compute tpoint buffer
     tpoint_buffer = bin_num * buffer_factor;
@@ -645,7 +650,6 @@ wspc::wspc(
       int c_num = Rwhich(eq_left_broadcast(child_lvls, child[r]))[0];
       int p_num = Rwhich(eq_left_broadcast(parent_lvls, parent[r]))[0];
       int deg = degMat(c_num, p_num);
-      // Compute t-point and R_sum boundary distances
       if (deg > 0){
         // Add slots for the tpoint boundary distance at each tpoint
         boundary_vec_size += deg + 1;
@@ -659,7 +663,7 @@ wspc::wspc(
     boundary_vec_size += param_struc_idx.size() +  // Add slots for the structural parameter boundaries
       param_wfactor_point_idx.size()*2 +           // ... and for the warping factor boundaries
       param_wfactor_rate_idx.size()*2; 
-    vprint("Computed size of rRsum boundary vector: " + std::to_string(boundary_vec_size), verbose);
+    vprint("Computed size of boundary vector: " + std::to_string(boundary_vec_size), verbose);
     
     // Pre-compute bin ranges for bootstrap resampling 
     bs_bin_ranges = IntegerMatrix(n_count_rows, 3);
@@ -801,6 +805,8 @@ sVec wspc::compute_mc_tslope_r(
     sVec tslope_vec = compute_mc(betas_tslope_r, weight_row);
     
     // Take exponential of slopes
+    // ... slopes must be positive, but fit and reported as a normal parameter,
+    //      so here the exp is taken.
     for (int i = 0; i < tslope_vec.size(); i++) {
       tslope_vec(i) = sexp(tslope_vec(i));
     }
@@ -1032,12 +1038,11 @@ sdouble wspc::neg_loglik(
     }
     
     // Compute the log-likelihood of the tslope beta values, given the assumed normal distribution
+    // ... recall: slopes must be positive, but are fit and reported as a normal parameter
     int n_tslope = tslope_beta_values_no_ref.size();
     sdouble sd_tslope_effect = parameters[param_struc_idx["sd_tslope_effect"]];
-    if (n_tslope != 0) {
-      for (int i = 0; i < n_tslope; i++) {
-        log_lik += log_dNorm(tslope_beta_values_no_ref(i), 0.0, sexp(sd_tslope_effect));
-      }
+    for (int i = 0; i < n_tslope; i++) {
+      log_lik += log_dNorm(tslope_beta_values_no_ref(i), 0.0, sd_tslope_effect); 
     }
     
     // Compute the log-likelihood of the tpoint beta values, given the assumed normal distribution
@@ -1046,10 +1051,8 @@ sdouble wspc::neg_loglik(
     sdouble eff_mult_tpoint = fe_difference_ratio_tpoint + 1.0;                     // ... note the different sign
     sdouble expected_tpoint = bin_num / 2.0;
     sdouble sd_tpoint_effect = (eff_mult_tpoint * expected_tpoint * expected_ran_effect_tpoint) / (2.0 + eff_mult_tpoint * expected_ran_effect_tpoint);
-    if (n_tpoint != 0) {
-      for (int i = 0; i < n_tpoint; i++) {
-        log_lik += log_dNorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect);
-      }
+    for (int i = 0; i < n_tpoint; i++) {
+      log_lik += log_dNorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect);
     }
     
     // Check for zero likelihood
@@ -1104,12 +1107,12 @@ sdouble wspc::neg_loglik(
   } 
 
 // Compute boundary distances
-sVec wspc::neg_boundary_dist(
+sVec wspc::boundary_dist(
     const sVec& parameters
   ) const {
     
-    // Initialize vector to hold negative boundary distances
-    sVec neg_boundary_dist_vec(boundary_vec_size);
+    // Initialize vector to hold boundary distances
+    sVec boundary_dist_vec(boundary_vec_size);
     int ctr = 0;
     
     // Grab warping indices and initiate variables to hold them
@@ -1120,7 +1123,9 @@ sVec wspc::neg_boundary_dist(
     sdouble f_pw;
     sdouble f_rw;
     
-    // Compute the boundary distance
+    // Compute the boundary distance, for ...
+    // ... transition points (enforces tpoint buffer), and 
+    // ... Rsum (enforces positive predicted rates)
     for (int r : idx_mc_unique) {
       
       // Grab warping factors
@@ -1167,7 +1172,7 @@ sVec wspc::neg_boundary_dist(
         // ... and last point must be < bin_num - buffer
         for (int d = 0; d < deg + 1; d++) {
           sdouble buffer_dist = (tpoint_ext(d + 1) - tpoint_ext(d)) - tpoint_buffer;
-          neg_boundary_dist_vec(ctr) = -buffer_dist;
+          boundary_dist_vec(ctr) = buffer_dist;
           ctr++;
         }
         
@@ -1181,18 +1186,16 @@ sVec wspc::neg_boundary_dist(
         sdouble Rsum = 0.0;
         for (int d = 0; d < deg; d++) {
           Rsum += (Rt(d) - Rt(d+1)) / (1.0 + sexp(-tslope(d)*(bin_num - tpoint(d))));
-          // ... optimization wants to inflate Rt(deg), as that lowers Rsum; the same effect does not 
-          //      happen for d <= deg, as that would also increase Rsum. 
         } 
         sdouble R_sum_boundary_dist = Rt(0) - Rsum; 
         // ... need Rt(0) > Rsum, i.e., this difference should be positive
-        neg_boundary_dist_vec(ctr) = -R_sum_boundary_dist;
+        boundary_dist_vec(ctr) = R_sum_boundary_dist;
         ctr++;
         
       } else {
         
         // ... trivial to check if rate (Rt) is positive
-        neg_boundary_dist_vec(ctr) = -Rt(0);
+        boundary_dist_vec(ctr) = Rt(0);
         ctr++;
         
       }
@@ -1203,10 +1206,10 @@ sVec wspc::neg_boundary_dist(
     for (int p : param_wfactor_point_idx) {
       // All warping factors must be between -1 and 1
       sdouble dist_low = parameters(p) + 1.0;
-      neg_boundary_dist_vec(ctr) = -dist_low; 
+      boundary_dist_vec(ctr) = dist_low; 
       ctr++;
       sdouble dist_high = 1.0 - parameters(p);
-      neg_boundary_dist_vec(ctr) = -dist_high;
+      boundary_dist_vec(ctr) = dist_high;
       ctr++; 
     } 
     
@@ -1214,10 +1217,10 @@ sVec wspc::neg_boundary_dist(
     for (int p : param_wfactor_rate_idx) {
       // All warping factors must be between -1 and 1
       sdouble dist_low = parameters(p) + 1.0;
-      neg_boundary_dist_vec(ctr) = -dist_low; 
+      boundary_dist_vec(ctr) = dist_low; 
       ctr++;
       sdouble dist_high = 1.0 - parameters(p);
-      neg_boundary_dist_vec(ctr) = -dist_high;
+      boundary_dist_vec(ctr) = dist_high;
       ctr++; 
     } 
     
@@ -1225,11 +1228,11 @@ sVec wspc::neg_boundary_dist(
     for (int p : param_struc_idx) {
       // All structural parameters must be > zero.
       sdouble dist_low = parameters(p);
-      neg_boundary_dist_vec(ctr) = -dist_low;
+      boundary_dist_vec(ctr) = dist_low;
       ctr++;
     }
     
-    return neg_boundary_dist_vec;
+    return boundary_dist_vec;
     
   }
 
@@ -1272,7 +1275,7 @@ bool wspc::test_tpoints(
           tpoint = compute_mc_tpoint_r(r, parameters);
           
           // Find tpoint boundary distances
-          // WARNING: this code is duplicated from neg_boundary_dist
+          // WARNING: this code is duplicated from boundary_dist
           sVec tpoint_ext(deg + 2);
           for (int bt = 0; bt < tpoint_ext.size(); bt++) {
             if (bt == 0) {
@@ -1305,20 +1308,20 @@ bool wspc::test_tpoints(
   } 
 
 // Compute min boundary penalty
-sdouble wspc::max_neg_boundary_dist(
+sdouble wspc::min_boundary_dist(
     const sVec& parameters
   ) const {
    
-    // Compute neg_boundary_dist and take max
-    sVec bd = neg_boundary_dist(parameters);
-    sdouble bd_max = smax(bd);
+    // Compute boundary_dist and take min
+    sVec bd = boundary_dist(parameters);
+    sdouble bd_min = smin(bd);
     
-    return bd_max;
+    return bd_min;
     
   }
 
 // Wrap neg_min_boundary_dist in form needed for NLopt constraint function
-double wspc::max_neg_boundary_dist_NLopt(
+double wspc::min_boundary_dist_NLopt(
     const dVec& x,
     dVec& grad,
     void* data
@@ -1330,12 +1333,12 @@ double wspc::max_neg_boundary_dist_NLopt(
     // Convert dVec to Eigen with stan
     sVec parameters_var = to_sVec(x);
     
-    // Compute max_neg_boundary_dist
-    sdouble fx = model->max_neg_boundary_dist(parameters_var);
+    // Compute max_boundary_dist
+    sdouble fx = model->min_boundary_dist(parameters_var);
     
     // Compute gradient if needed
     if (!grad.empty()) {
-      Eigen::VectorXd grad_eigen = model->grad_max_neg_boundary_dist(parameters_var);
+      Eigen::VectorXd grad_eigen = model->grad_min_boundary_dist(parameters_var);
       grad.assign(grad_eigen.data(), grad_eigen.data() + grad_eigen.size());
     }  
     
@@ -1353,11 +1356,11 @@ sdouble wspc::bounded_nll(
     sdouble bnll = neg_loglik(parameters);
     
     // Compute boundary distance
-    sVec nbd = neg_boundary_dist(parameters);
+    sVec bd = boundary_dist(parameters);
     
     // Add boundary penalty
-    for (int i = 0; i < nbd.size(); i++) {
-      bnll += boundary_penalty_transform(nbd(i), bp_coefs(i));
+    for (int i = 0; i < bd.size(); i++) {
+      bnll += boundary_penalty_transform(bd(i), bp_coefs(i));
     }
     
     /*
@@ -1428,9 +1431,9 @@ Eigen::VectorXd wspc::grad_bounded_nll(
     
   }
 
-// Compute the gradient of the max_neg_boundary_dist function
+// Compute the gradient of the max_boundary_dist function
 // ... this is the gradient function used in the search for feasible parameters
-Eigen::VectorXd wspc::grad_max_neg_boundary_dist(
+Eigen::VectorXd wspc::grad_min_boundary_dist(
     const sVec& p_
   ) const { 
     
@@ -1440,17 +1443,17 @@ Eigen::VectorXd wspc::grad_max_neg_boundary_dist(
     // Make copy
     sVec p = p_;
     
-    // Initialize max_neg_boundary_dist variable
-    sdouble mnbd = max_neg_boundary_dist(p);
+    // Initialize min_boundary_dist variable
+    sdouble mbd = min_boundary_dist(p);
     
     // Initialize variable to hold gradient
-    Eigen::VectorXd gr_mnbd(p.size());
+    Eigen::VectorXd gr_mbd(p.size());
     
-    // Compute max_neg_boundary_dist and its gradient
-    stan::math::grad(mnbd, p, gr_mnbd);
+    // Compute min_boundary_dist and its gradient
+    stan::math::grad(mbd, p, gr_mbd);
     
-    // Return max_neg_boundary_dist gradient
-    return gr_mnbd;
+    // Return min_boundary_dist gradient
+    return gr_mbd;
     
   }
 
@@ -1469,11 +1472,10 @@ void wspc::fit(
     sVec initial_params_var = to_sVec(fitted_parameters);
     max_penalty_at_distance = neg_loglik(initial_params_var) * max_penalty_at_distance_factor;
     sdouble coefs_square = static_cast<double>(boundary_vec_size)/max_penalty_at_distance;
-    bp_coefs = neg_boundary_dist(initial_params_var);
+    bp_coefs = boundary_dist(initial_params_var);
     for (int i = 0; i < boundary_vec_size - 1; i++) {
-      bp_coefs(i) = -1.0 * ssqrt(coefs_square)/bp_coefs(i);
+      bp_coefs(i) = ssqrt(coefs_square)/bp_coefs(i);
     } 
-    // ^ ... * -1.0 because starts as negative of boundary distance, and we want the actual distance
     
     // Grab initial parameters
     dVec x = to_dVec(fitted_parameters); 
@@ -1491,9 +1493,9 @@ void wspc::fit(
       sdouble initial_nll = neg_loglik(ip);
       vprint("Initial neg_loglik: ", initial_nll);
       sdouble initial_obj = bounded_nll(ip);
-      vprint("Initial neg_loglik with penalty: ");
-      sdouble ff_dist = -1 * max_neg_boundary_dist(ip);
-      vprint("Initial min boundary distance: ");
+      vprint("Initial neg_loglik with penalty: ", initial_obj);
+      sdouble mb_dist = min_boundary_dist(ip);
+      vprint("Initial min boundary distance: ", mb_dist);
     } 
     
     // Fit model
@@ -1517,8 +1519,8 @@ void wspc::fit(
     if (verbose) {
       vprint("Final neg_loglik: ", final_nll);
       vprint("Final neg_loglik with penalty: ", min_fx);
-      sdouble ff_dist = -1 * max_neg_boundary_dist(parameters_final);
-      vprint("Final min boundary distance: ", ff_dist);
+      sdouble mb_dist = min_boundary_dist(parameters_final);
+      vprint("Final min boundary distance: ", mb_dist);
       int num_evals = opt.get_numevals();
       vprint("Number of evaluations: ", num_evals);
       if (success_code == 0) {
@@ -1547,7 +1549,7 @@ dVec wspc::bs_fit(
   ) {
     
     // Set random number generator with unique seed based on resample ID
-    unsigned int seed = 42u + bs_num;
+    unsigned int seed = rng_seed + bs_num;
     pcg32 rng(seed);
     
     // Resample (with replacement), re-sum token pool, and take logs
@@ -1736,7 +1738,7 @@ Rcpp::NumericMatrix wspc::bs_batch(
     
   }
 
-// Resample (demo)
+// Resample (demo, not used in package)
 NumericMatrix wspc::resample(
     int n_resample               // total number of resamples to draw
   ) {
@@ -1747,7 +1749,7 @@ NumericMatrix wspc::resample(
     for (int j = 0; j < n_resample; j++) {
       
       // Set random number generator with unique seed based on resample ID
-      unsigned int seed = 42u + j;
+      unsigned int seed = rng_seed + j;
       pcg32 rng(seed);
       
       sVec count_new(n_count_rows);
@@ -1885,7 +1887,7 @@ Rcpp::List wspc::check_parameter_feasibility(
     if (!feasible) {
       
       // Find and report initial distance to boundary
-      sdouble initial_dist = -1 * max_neg_boundary_dist(parameters_var); 
+      sdouble initial_dist = min_boundary_dist(parameters_var); 
       if (verbose) {
         vprint("Initial boundary distance (want to make >0): ", initial_dist);
       }
@@ -1896,16 +1898,16 @@ Rcpp::List wspc::check_parameter_feasibility(
       
       // Set up NLopt optimizer
       nlopt::opt opt(nlopt::LD_LBFGS, n);
-      opt.set_min_objective(wspc::max_neg_boundary_dist_NLopt, this);
+      opt.set_max_objective(wspc::min_boundary_dist_NLopt, this);
       opt.set_ftol_rel(ctol);               // stop when iteration changes objective fn value by less than this fraction 
       opt.set_maxeval(max_evals);           // Maximum number of evaluations to try 
-      opt.set_stopval(-0.001);              // ensure negative boundary distance is at least just under zero
-      double min_fx;
+      opt.set_stopval(0.01);                // ensure boundary distance is at least this much above zero (and then stop)
+      double max_fx;
       int success_code = 0;
       
       // Optimize
       try {
-        nlopt::result sc = opt.optimize(x, min_fx);
+        nlopt::result sc = opt.optimize(x, max_fx);
         success_code = static_cast<int>(sc);
       } catch (std::exception& e) {
         if (verbose) {
@@ -1918,11 +1920,11 @@ Rcpp::List wspc::check_parameter_feasibility(
       if (verbose) {
         vprint("Numer of evals: ", (int)opt.get_numevals());
         vprint("Success code: ", (int)success_code);
-        vprint("Final boundary distance: ", (double)-1.0 * min_fx);
+        vprint("Final boundary distance: ", (double)max_fx);
       }
       
-      // Final check of negative boundary distance
-      if (min_fx >= 0) {
+      // Final check of boundary distance
+      if (max_fx <= 0) {
         success_code = 0;
       }
       
