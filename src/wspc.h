@@ -102,6 +102,7 @@ class wspc {
       }; 
     IntegerMatrix degMat;                   // matrix of degrees for each parent (column) -- child (rows) pair
     NumericVector fitted_parameters;        // vector holding the model parameters
+    NumericVector fitted_parameters_seed;   // saved original seed of fitted parameters from which to jitter before fitting
     List param_names;                       // list holding the names of the model parameters as they appear in fitted_parameters
     
     // Secondary variables related to model parameters
@@ -141,6 +142,7 @@ class wspc {
     
     // Optimization settings
     int max_evals = 500;                    // max number of evaluations
+    int initial_fits = 10;                  // number of initial fits to perform in search of best initial conditions
     double ctol = 5e-6;                     // convergence tolerance
     unsigned int rng_seed = 42u;            // seed for random number generator
     
@@ -160,7 +162,7 @@ class wspc {
     sdouble max_penalty_at_distance = 1;                 // variable to hold the max penalty value, once computed
     
     // Variables for holding results 
-    List optim_results;                     // results from optimization
+    List optim_results;                                  // results from optimization
    
     // Methods *********************************************************************************************************
    
@@ -293,6 +295,9 @@ class wspc {
         const sVec& parameters_var,
         const bool verbose
     );
+    
+    // Jitter parameter seed, for use before fitting 
+    Rcpp::NumericVector jitter_parameter_seed() const;
     
     // ***** export data to R
     void import_fe_diff_ratio_Rt(const double& fe_diff_ratio, const bool& verbose);

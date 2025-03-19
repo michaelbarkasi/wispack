@@ -33,6 +33,7 @@ wspc::wspc(
     double tslope_initial_settings = settings["tslope_initial"];
     double wf_initial_settings = settings["wf_initial"];
     int max_evals_settings = settings["max_evals"];
+    int initial_fits_settings = settings["initial_fits"];
     unsigned int rng_seed_settings = settings["rng_seed"];
     for (int i = 0; i < struc_values.size(); i++) {struc_values[i] = struc_values_settings[i];}
     buffer_factor = sdouble(buffer_factor_settings);
@@ -43,6 +44,7 @@ wspc::wspc(
     tslope_initial = tslope_initial_settings;
     wf_initial = wf_initial_settings;
     max_evals = max_evals_settings;
+    initial_fits = initial_fits_settings;
     rng_seed = rng_seed_settings;
     model_settings = Rcpp::clone(settings);
     
@@ -614,6 +616,7 @@ wspc::wspc(
     
     // Extract parameter vector information
     fitted_parameters = params["param_vec"];
+    fitted_parameters_seed = fitted_parameters;
     param_names = params["param_names"];
     param_wfactor_point_idx = params["param_wfactor_point_idx"]; 
     param_wfactor_rate_idx = params["param_wfactor_rate_idx"];
@@ -1595,6 +1598,13 @@ dVec wspc::bs_fit(
       count_log(r) = slog(count(r) + 1.0);
     }
     
+    // Set fitted parameters to jitter of initial seed
+    fitted_parameters = jitter_parameter_seed();
+    
+    // Check feasibility 
+    List feasibility_results = check_parameter_feasibility(to_sVec(fitted_parameters), false); 
+    fitted_parameters = Rcpp::as<NumericVector>(feasibility_results["parameters"]);
+    
     // Fit model
     fit(
       false, // don't bother setting parameters
@@ -1628,17 +1638,59 @@ Rcpp::NumericMatrix wspc::bs_batch(
     // Reset initial parameters to check their feasibility 
     set_parameters(fitted_parameters, true);
     
-    // Fit full model
-    fit(
-      false, // don't bother setting parameters
-      false  // don't print anything
-    );
+    // Fit full model from multiple jittered seed parameters
+    vprint("Performing initial fit of full data", verbose);
+    NumericVector fitted_parameters_best = Rcpp::clone(fitted_parameters);
+    List optim_results_best = Rcpp::clone(optim_results);
+    double least_pnll = inf_.val();
+    for (int i = 0; i < initial_fits; i++) {
+      
+      // Report progress
+      if (verbose) {
+        Rcpp::Rcout << "Jittered initial position " << i + 1 << "/" << initial_fits << std::endl;
+      }
+      
+      // Set fitted parameters to jitter of initial seed
+      fitted_parameters = jitter_parameter_seed();
+      
+      // Check feasibility 
+      List feasibility_results = check_parameter_feasibility(to_sVec(fitted_parameters), false); 
+      fitted_parameters = Rcpp::as<NumericVector>(feasibility_results["parameters"]);
+      
+      // Save this seed
+      NumericVector fitted_parameters_seed_this = Rcpp::clone(fitted_parameters);
+      
+      // Now fit
+      fit(
+        false, // don't bother setting parameters
+        false  // don't print anything
+      );
+      
+      // Grab penalized neg_loglik
+      double pnll = optim_results["penalized_neg_loglik"]; 
+      
+      // Check if this is a better initial position 
+      if (pnll < least_pnll) {
+        least_pnll = pnll;
+        // ... if so, save this seed
+        fitted_parameters_seed = fitted_parameters_seed_this;
+        // ... and save the fitted parameters
+        fitted_parameters_best = fitted_parameters;
+        // ... and optim results 
+        optim_results_best = optim_results;
+      }
+      
+    }
+    // Set fitted parameters to best found 
+    fitted_parameters = fitted_parameters_best;
+    optim_results = optim_results_best;
     
     // Initiate variables to hold results
     const int c_num = fitted_parameters.size() + 4;
     const int r_num = bs_num_max + 1;
     NumericMatrix bs_results(r_num, c_num);
     
+    // Save results from initial full fit
     dVec full_results = to_dVec(fitted_parameters);
     full_results.reserve(full_results.size() + 4);
     full_results.push_back(Rcpp::as<double>(optim_results["penalized_neg_loglik"]));
@@ -1952,6 +2004,68 @@ Rcpp::List wspc::check_parameter_feasibility(
     );
     
   } 
+
+// Jitter parameter seed, for use before fitting 
+Rcpp::NumericVector wspc::jitter_parameter_seed() const {
+    
+    // Grab seed parameters
+    NumericVector jittered_parameters = fitted_parameters_seed;
+    
+    // Jitter parameters
+    double wf_cap = 0.75;        // Max magnitude for wf ... keep away from bounds
+    double wf_sd = 0.2;          // Standard deviation for wf jitter
+    double beta_Rt_sd = 0.1;     // Standard deviation for beta_Rt jitter ... be very conservative
+    double beta_tpoint_sd = 0.5; // Standard deviation for beta_tpoint jitter ... be very conservative
+    double beta_tslope_sd = 0.1; // Standard deviation for beta_tslope jitter ... be very conservative
+    double struc_sd = 1.0;       // Standard deviation for structural parameter jitter 
+    
+    // Jitter warping factors, point
+    for (int p : param_wfactor_point_idx) {
+      double wfpj = R::rnorm(jittered_parameters(p), wf_sd);
+      if (wfpj < -wf_cap) {wfpj = -wf_cap;}
+      if (wfpj > wf_cap) {wfpj = wf_cap;}
+      jittered_parameters(p) = wfpj;
+    }
+    
+    // Jitter warping factors, rate 
+    for (int p : param_wfactor_rate_idx) {
+      double wfrj = R::rnorm(jittered_parameters(p), wf_sd);
+      if (wfrj < -wf_cap) {wfrj = -wf_cap;}
+      if (wfrj > wf_cap) {wfrj = wf_cap;}
+      jittered_parameters(p) = wfrj;
+    }
+    
+    // Jitter beta Rt parameters
+    for (int p : param_beta_Rt_idx) {
+      // might be sent into unfeasible position, but should be correctable
+      double betaj = R::rnorm(jittered_parameters(p), beta_Rt_sd);
+      jittered_parameters(p) = betaj;
+    }
+    
+    // Jitter beta tpoint parameters
+    for (int p : param_beta_tpoint_idx) {
+      // might be sent into unfeasible position, but should be correctable
+      double betaj = R::rnorm(jittered_parameters(p), beta_tpoint_sd);
+      jittered_parameters(p) = betaj;
+    }
+    
+    // Jitter beta tslope parameters
+    for (int p : param_beta_tslope_idx) {
+      // might be sent into unfeasible position, but should be correctable
+      double betaj = R::rnorm(jittered_parameters(p), beta_tslope_sd);
+      jittered_parameters(p) = betaj;
+    }
+    
+    // Jitter structural parameters
+    for (int p : param_struc_idx) {
+      double jit = R::rnorm(1.0, struc_sd);
+      double strucj = jittered_parameters(p) + jit * jit;
+      jittered_parameters(p) = strucj;
+    }
+   
+    return jittered_parameters;
+   
+  }
 
 /*
  * *************************************************************************

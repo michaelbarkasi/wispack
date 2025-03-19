@@ -145,7 +145,7 @@ List build_beta_shell(
                     // use estimated tpoint effect for non-ref treatment levels 
                     bta(t, i) = tpointEffs_Mat(t, i);
                   } else {
-                    // Begin with zero effect for tslope
+                    // Seed with zero effect for tslope
                     bta(t, i) = 0.0; 
                   }
                 }
