@@ -305,6 +305,18 @@ NumericVector vsubtract(
     return out;
   }
 
+// Vectorized sqrt
+NumericVector vsqrt(
+    const NumericVector& x
+  ) {
+    int n = x.size();
+    NumericVector out(n);
+    for (int i = 0; i < n; i++) {
+      out[i] = std::sqrt(x[i]);
+    }
+    return out;
+  }
+
 // Masks and indexes ***************************************************************************************************
 
 // Convert boolean masks to integer indexes

@@ -30,6 +30,7 @@ wspc::wspc(
     double max_penalty_at_distance_factor_settings = settings["max_penalty_at_distance_factor"];
     double LROcutoff_settings = settings["LROcutoff"];
     double LROwindow_factor_settings = settings["LROwindow_factor"];
+    double LROfilter_ws_divisor_settings = settings["LROfilter_ws_divisor"];
     double tslope_initial_settings = settings["tslope_initial"];
     double wf_initial_settings = settings["wf_initial"];
     int max_evals_settings = settings["max_evals"];
@@ -41,6 +42,7 @@ wspc::wspc(
     max_penalty_at_distance_factor = sdouble(max_penalty_at_distance_factor_settings);
     LROcutoff = LROcutoff_settings;
     LROwindow_factor = LROwindow_factor_settings;
+    LROfilter_ws_divisor = LROfilter_ws_divisor_settings;
     tslope_initial = tslope_initial_settings;
     wf_initial = wf_initial_settings;
     max_evals = max_evals_settings;
@@ -309,7 +311,7 @@ wspc::wspc(
     
     // Compute running and filter window sizes for LRO change-point detection
     int ws = static_cast<int>(std::round(LROwindow_factor * (double)bin_num_i * buffer_factor.val()));
-    int filter_ws = std::round(ws/2);
+    int filter_ws = std::round((double)ws/LROfilter_ws_divisor);
     int n_ran_trt = n_ran * treatment_num;
     
     // Estimate degree of each parent-child combination at baseline using LRO change-point detection 
@@ -1686,10 +1688,9 @@ Rcpp::NumericMatrix wspc::bs_batch(
       }
       
     }
+    
     // Set fitted parameters to best found 
-    
     fitted_parameters = fitted_parameters_best;
-    
     optim_results = optim_results_best;
     
     // Initiate variables to hold results
