@@ -32,6 +32,7 @@ wisp <- function(
       max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from structural parameter values
       LROcutoff = 2.0,                            # cutoff for LROcp
       LROwindow_factor = 2.0,                     # controls size of window used in LROcp algorithm (window = LROwindow_factor * bin_num * buffer_factor)
+      LROfilter_ws_divisor = 2.0,                 # divisor for filter window size in likelihood ratio outlier detection (bigger is smaller window)
       tslope_initial = 1.0,                       # initial value for tslope
       wf_initial = 0.1,                           # initial value for wfactor
       max_evals = 1000,                           # maximum number of evaluations for optimization
@@ -94,57 +95,8 @@ wisp <- function(
     if (max.fork == 0) {
       # Run sequentially
       
-      if (verbose) snk.report("Running bootstrap fits (sequentially)", end_breaks = 1)
       stop("Sequential bootstrapping not yet implemented")
       # ... Need to figure out how to clear stan memory without killing whole model
-      
-      # Initialize array to hold results 
-      bs_results <- array(
-        NA, 
-        dim = c(
-          bootstraps.num + 1, 
-          length(cpp_model$fitted_parameters) + 4 
-        )
-      )
-      
-      batch_num <- bootstraps.num/batch.size
-      for (b in seq_along(1:batch_num)) {
-        
-        # Grab start time
-        start_time <- Sys.time()
-        
-        for (i in seq_along(1:batch.size)) {
-          
-          # Run bootstrap fit
-          this_row <- (b-1) * batch.size + (i-1)
-          bs_results[this_row + 1,] <- cpp_model$bs_fit(
-            this_row, # unique number for bootstrap seeding
-            TRUE      # clear stan memory after fitting
-          )
-          
-        }
-        
-        if (verbose) {
-          duration <- Sys.time() - start_time
-          cat("Batch ", b, "/", batch_num, ", ", duration, " sec/bs\n", sep = "")
-        }
-        
-      }
-      
-      # Fit model to full data, starting from LROcp estimates
-      cpp_model$fit(
-        FALSE,      # Don't set parameters after fitting
-        FALSE       # Don't print progress
-      )
-      bs_results[bootstraps.num + 1,] <- c(
-        cpp_model$optim_results$fitted_parameters, 
-        cpp_model$optim_results$penalized_neg_loglik, 
-        cpp_model$optim_results$neg_loglik, 
-        cpp_model$optim_results$success_code, 
-        cpp_model$optim_results$num_evals
-      )
-      
-      if (verbose) snk.report...("All complete")
       
     } else {
       # Run in parallel with forking
@@ -2089,7 +2041,7 @@ plot.decomposition <- function(
 
 # Functions used (in Cpp) in the initial change-point estimation
 find_centroid <- function(
-    X_nll     # array with values as nll ratios, rows as bins, columns as trt x ran interactions
+    X_lik     # array with values as lik ratios, rows as bins, columns as trt x ran interactions
   ) {
     
     # Uses R package from: https://doi.org/10.1016/j.patcog.2010.09.013
@@ -2108,7 +2060,7 @@ find_centroid <- function(
       # )
     
     # Take transpose, as dtwclust::DBA expects columns as time points
-    X <- t(X_nll)
+    X <- t(X_lik)
     # Find centroid of X, i.e., the "average" series
     d <- dtwclust::DBA(X)
     return(d)
@@ -2117,7 +2069,7 @@ find_centroid <- function(
 project_cp <- function(
     found_cp, # vector of change points 
     centroid, # centroid from which those cp were estimated
-    X_nll     # data from which that centroid was computed
+    X_lik     # data from which that centroid was computed
   ) {
     # Function will return the implied change points in the original data
     # ... rows are change points (by deg), columns as trt x ran interactions
@@ -2139,7 +2091,7 @@ project_cp <- function(
     
     # Get alignment indices
     # ... take transpose, as dtwclust::DBA expects columns as time points
-    X <- t(X_nll)
+    X <- t(X_lik)
     # ... initialize list to store alignment indices
     aX <- list()
     # ... for each row of X (i.e., each trt x ran interaction), find the indices to align it to the centroid
@@ -2151,20 +2103,20 @@ project_cp <- function(
     }
     
     # Project alignment indices to original data
-    X_nllp <- array(NA, dim = c(length(found_cp), ncol(X_nll)))
-    for (c in 1:ncol(X_nll)) {
+    X_likp <- array(NA, dim = c(length(found_cp), ncol(X_lik)))
+    for (c in 1:ncol(X_lik)) {
       
       a_idx <- aX[[c]]
       
       for (cpi in 1:length(found_cp)) {
         cp <- found_cp[cpi]                # index of change point on the centroid
         cp_a_idx <- which(a_idx[,2] == cp) # second column is the centroid alignment indices
-        X_nllp[cpi, c] <- round(mean(a_idx[cp_a_idx, 1])) # project back, take mean, and round to integer
+        X_likp[cpi, c] <- round(mean(a_idx[cp_a_idx, 1])) # project back, take mean, and round to integer
       }
       
     }
     
-    return(X_nllp)
+    return(X_likp)
     
   }
 
