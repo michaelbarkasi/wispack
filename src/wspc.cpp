@@ -1643,7 +1643,7 @@ Rcpp::NumericMatrix wspc::bs_batch(
   ) {
     
     // Reset initial parameters to check their feasibility 
-    set_parameters(fitted_parameters, true);
+    set_parameters(fitted_parameters, verbose);
     
     // Fit full model from multiple jittered seed parameters
     vprint("Performing initial fit of full data", verbose);
