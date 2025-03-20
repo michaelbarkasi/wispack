@@ -1794,6 +1794,11 @@ Rcpp::NumericMatrix wspc::bs_batch(
     
     vprint("All complete!", verbose); 
     
+    // Clear stan memory
+    if (bs_num_max == 0) {
+      stan::math::recover_memory();
+    }
+    
     return bs_results;
     
   }
