@@ -113,7 +113,8 @@ wisp <- function(
     
     # Extract bs results and diagnostics
     n_params <- ncol(bs_results) - 4
-    bs_params <- bs_results[,1:n_params]
+    if (bootstraps.num > 0) bs_params <- bs_results[,1:n_params]
+    else bs_params <- NULL
     bs.diagnostics <- data.frame( 
       pen.neg.value = bs_results[,n_params + 1],
       neg.loglik = bs_results[,n_params + 2], 
@@ -122,7 +123,7 @@ wisp <- function(
     )
     
     # Set final fitted parameters
-    if (use.median) {
+    if (use.median && bootstraps.num > 0) {
       if (verbose) snk.report...("Setting median bootstrap estimates as parameters", initial_breaks = 1, end_breaks = 1)
       final_parameters <- apply(bs_params, 2, function(x) median(x, na.rm = TRUE))
     } else {
@@ -155,11 +156,15 @@ wisp <- function(
     results[["stats"]] <- stats
     
     # Run stats on bootstraps
-    results$stats$parameters <- bs.stats(
-      wisp.results = results,
-      conv.resamples.only = converged.resamples.only,
-      verbose = verbose
-    )
+    if (bootstraps.num > 0) {
+      results$stats$parameters <- bs.stats(
+        wisp.results = results,
+        conv.resamples.only = converged.resamples.only,
+        verbose = verbose
+      )
+    } else {
+      results$stats$parameters <- NULL
+    }
     
     # Analyze residuals 
     residuals <- analyze.residuals(
@@ -171,18 +176,26 @@ wisp <- function(
     plots.residuals <- residuals$plots
     
     # Check tpoint stability
-    results$stats$tps <- check.tpoint.stability(
-      wisp.results = results,
-      verbose = verbose
-    )
+    if (bootstraps.num > 0) {
+      results$stats$tps <- check.tpoint.stability(
+        wisp.results = results,
+        verbose = verbose
+      )
+    } else {
+      results$stats$tps <- NULL
+    }
     
     # Make plots of results ####
     
     # Plot structural parameter stats
-    plot.struc <- plot.struc.stats(
-      wisp.results = results,
-      verbose = verbose
-    )
+    if (bootstraps.num > 0) {
+      plot.struc <- plot.struc.stats(
+        wisp.results = results,
+        verbose = verbose
+      )
+    } else {
+      plot.struc <- NULL
+    }
     
     # Make rate plots 
     if (verbose) snk.report...("Making rate-count plots")
@@ -605,11 +618,13 @@ analyze.residuals <- function(
     }
     
     # Print results 
-    snk.print_table(
-      "Log-residual summary by grouping variables", 
-      stats.residuals.log,
-      initial_breaks = 1
-    )
+    if (verbose) {
+      snk.print_table(
+        "Log-residual summary by grouping variables", 
+        stats.residuals.log,
+        initial_breaks = 1
+      )
+    }
     
     return(
       list(
@@ -1190,13 +1205,14 @@ plot.parameters <- function(
     # Checks
     print_stats <- TRUE
     bs_params <- wisp.results$bs_params
-    downsample_size <- min(1e2, nrow(bs_params))
     if (length(bs_params) == 0) {
       print_stats <- FALSE
       if (violin) {
         violin <- FALSE
-        warning("bs_params not found, setting violin = FALSE and not printing stats")
+        if (verbose) snk.report...("bs_params not found, setting violin = FALSE and not printing stats")
       } 
+    } else {
+      downsample_size <- min(1e2, nrow(bs_params))
     }
     
     if (verbose) {
