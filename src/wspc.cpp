@@ -670,39 +670,6 @@ wspc::wspc(
       param_wfactor_rate_idx.size()*2; 
     vprint("Computed size of boundary vector: " + std::to_string(boundary_vec_size), verbose);
     
-    // Pre-compute bin ranges for bootstrap resampling 
-    bs_bin_ranges = IntegerMatrix(n_count_rows, 3);
-    for (int r : count_not_na_idx) {
-      if (ran[r] != "none") {
-        // ... find the treatment level and random level of this row
-        int trt_num = Rwhich(eq_left_broadcast(treatment_lvls, treatment[r]))[0];
-        int ran_num = Rwhich(eq_left_broadcast(ran_lvls, ran[r]))[0];
-        // ... find the change points for the parent-child pair of this row
-        List p_changepoints = change_points[(String)parent[r]];
-        IntegerMatrix pc_changepoints = p_changepoints[(String)child[r]];
-        NumericVector pc_changepoints_r = to_NumVec(pc_changepoints.column(trt_num * n_ran + ran_num));
-        iVec block_range_idx = block_idx(pc_changepoints_r, bin(r).val());
-        // ... find the range of bins in the same block as this row's bin
-        double bin_low = 1;
-        if (block_range_idx[0] >= 0) {
-          bin_low = pc_changepoints_r[block_range_idx[0]];
-        }
-        double bin_high = bin_num.val();
-        if (block_range_idx[1] >= 0) {
-          bin_high = pc_changepoints_r[block_range_idx[1]];
-        } 
-        // ... narrow range by 1 in each direction and pack up range information
-        int shift_back_max = static_cast<int>(std::round(bin(r).val() - bin_low)) - 1;
-        int shift_up_max = static_cast<int>(std::round(bin_high - bin(r).val())) - 1;
-        if (shift_back_max < 0) {shift_back_max = 0;}
-        if (shift_up_max < 0) {shift_up_max = 0;}
-        int shift_range = shift_up_max + shift_back_max + 1;
-        IntegerVector back_up_range = {shift_back_max, shift_up_max, shift_range};
-        bs_bin_ranges.row(r) = back_up_range;
-      }
-    }
-    vprint("Pre-computed bin ranges for bootstrap resampling", verbose);
-    
     // Initialize list to hold results from model fit
     optim_results = List::create(
       _["fitted_parameters"] = NumericVector(), 
@@ -1563,23 +1530,8 @@ dVec wspc::bs_fit(
       // ... but only for actual observations of random grouping variable
       if (ran[r] != "none") {
         
-        // ... select a new row r2 from the block of r's bin
-        IntegerVector back_up_range = bs_bin_ranges.row(r);
-        int shift_back_max = back_up_range(0); 
-        int shift_up_max = back_up_range(1); 
-        int shift_range = back_up_range(2); 
-        
-        // ... randomly select integer between 0 and shift_range
-        int shift_bins = 0;
-        if (shift_range > 2) {
-          int shift_idx = rng(shift_range); 
-          IntegerVector shift = iseq(-shift_back_max, shift_up_max, shift_range);
-          shift_bins = shift[shift_idx];
-        }
-        int r2 = r + shift_bins;
-        
-        // ... redraw randomly (with replacement) from the token pool of r2 and re-sum into r's count 
-        IntegerVector token_pool_r = token_pool[r2];
+        // ... redraw randomly (with replacement) from the token pool of r and re-sum into r's count 
+        IntegerVector token_pool_r = token_pool[r];
         int resample_sz = token_pool_r.size();
         if (resample_sz < 1) {
           // ... ensure new point is viable
