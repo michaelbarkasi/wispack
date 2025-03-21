@@ -2057,7 +2057,8 @@ plot.decomposition <- function(
 
 # Functions used (in Cpp) in the initial change-point estimation
 find_centroid <- function(
-    X_lik     # array with values as lik ratios, rows as bins, columns as trt x ran interactions
+    X_lik,     # array with values as lik ratios, rows as bins, columns as trt x ran interactions
+    window     # window size for dtwclust::DBA, constraint on slope
   ) {
     
     # Uses R package from: https://doi.org/10.1016/j.patcog.2010.09.013
@@ -2078,7 +2079,7 @@ find_centroid <- function(
     # Take transpose, as dtwclust::DBA expects columns as time points
     X <- t(X_lik)
     # Find centroid of X, i.e., the "average" series
-    d <- dtwclust::DBA(X)
+    d <- dtwclust::DBA(X, window.size = window) 
     return(d)
   }
 
@@ -2090,20 +2091,10 @@ project_cp <- function(
     # Function will return the implied change points in the original data
     # ... rows are change points (by deg), columns as trt x ran interactions
     
-    # Uses R package from: https://doi.org/10.1016/j.patcog.2010.09.013
-    # R package: 
-      # citHeader("To cite the R package, use:")
-      # citation(auto = meta)
-      # 
-      # bibentry(
-      #   "Article",
-      #   header = "If the vignette's content was useful, consider citing the summarized version published in:",
-      #   title = "Time-Series Clustering in R Using the dtwclust Package",
-      #   author = person("Alexis", "Sardá-Espinosa"),
-      #   year = "2019",
-      #   journal = "The R Journal",
-      #   doi = "10.32614/RJ-2019-023"
-      # )
+    # Uses R package dtw, with step pattern derived from: 
+    # H. Sakoe and S. Chiba, "Dynamic programming algorithm optimization for spoken word recognition," 
+    #   in IEEE Transactions on Acoustics, Speech, and Signal Processing, vol. 26, no. 1, pp. 43-49, February 1978, doi: 10.1109/TASSP.1978.1163055. 
+    #   This step pattern chosen to enforce a very shallow slope. 
     
     # Get alignment indices
     # ... take transpose, as dtwclust::DBA expects columns as time points
@@ -2114,7 +2105,7 @@ project_cp <- function(
     for (i in 1:nrow(X)) {
       Xi <- X[i,]
       Xi[is.na(Xi)] <- 1
-      alignment_idx <- dtwclust::dtw_basic(Xi, centroid, backtrack = TRUE)
+      alignment_idx <- dtw::dtw(Xi, centroid, step.pattern = dtw::symmetricP05, distance.only = FALSE)
       aX[[i]] <- cbind(alignment_idx$index1, alignment_idx$index2)
     }
     

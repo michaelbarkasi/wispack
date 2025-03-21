@@ -279,10 +279,10 @@ dVec series_lik(
     dVec series = roll_mean(series0, filter_ws);
     dVec lik(n); // length out should equal length in
     
-    // Compute likelihood for each window
+    // Compute mean likelihood of an observation within each window
     for (int i = 0; i <= (n - ws); i++) {
      
-      lik[i] = 1.0;
+      lik[i] = 0.0;
       // ... series values in window
       dVec series_i(series.begin() + i, series.begin() + (i + ws));
       // ... series values in first half of window
@@ -294,20 +294,22 @@ dVec series_lik(
         double mean_i = vmean(series_i);
         double sd_i = vsd(series_i);
         for (int j = 0; j < ws; j++) {
-          lik[i] *= dNorm(series_i[j], mean_i, sd_i);
+          lik[i] += dNorm(series_i[j], mean_i, sd_i);
         }
       } else {
         double mean_i1 = vmean(series_i1);
         double sd_i1 = vsd(series_i1);
         for (int j = 0; j < ws/2; j++) {
-          lik[i] *= dNorm(series_i[j], mean_i1, sd_i1);
+          lik[i] += dNorm(series_i[j], mean_i1, sd_i1);
         }
         double mean_i2 = vmean(series_i2);
         double sd_i2 = vsd(series_i2);
         for (int j = ws/2; j < ws; j++) {
-          lik[i] *= dNorm(series_i[j], mean_i2, sd_i2);
+          lik[i] += dNorm(series_i[j], mean_i2, sd_i2);
         }
       }
+      
+      lik[i] = lik[i] / (double)ws;
       
       // Check for nan's and replace with 1
       if (std::isnan(lik[i])) {lik[i] = 1.0;}
@@ -431,20 +433,26 @@ IntegerMatrix LROcp_array(
       dVec lik_ratio = LROcp_ratio(series, ws, filter_ws);
       
       // Square the likelihood ratios so DTW-DBA algorithm more heavily weights peaks when aligning series
-      NumericVector lik_ratio2 = to_NumVec(vmult(lik_ratio, lik_ratio));
+      //NumericVector lik_ratio2 = to_NumVec(vmult(lik_ratio, lik_ratio));
       
       // Save in array 
-      lik_ratio_array.column(s) = lik_ratio2;
+      lik_ratio_array.column(s) = to_NumVec(lik_ratio);
       
     }
     
     // Find the centroid of lik_ratio_array
     // ... calling function from dtwclust package in R
-    Function find_centroid("find_centroid");   
-    NumericVector centroid = find_centroid(lik_ratio_array);
+    //int dtw_window = ws / 2;
+    //Function find_centroid("find_centroid");   
+    //NumericVector centroid = find_centroid(lik_ratio_array, dtw_window);
+    
+    NumericVector centroid(n_samples);
+    for (int i = 0; i < n_samples; i++) {
+      centroid[i] = vmean(lik_ratio_array.row(i));
+    }
     
     // Take centroid out of squared space
-    centroid = vsqrt(centroid);
+    //centroid = vsqrt(centroid);
     
     // Use LROcp on this series to estimate change points 
     IntegerVector found_cp = LROcp_find(to_dVec(centroid), ws, out_mult);
