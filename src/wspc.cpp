@@ -1649,7 +1649,7 @@ Rcpp::NumericMatrix wspc::bs_batch(
     vprint("Performing initial fit of full data", verbose);
     NumericVector fitted_parameters_best = Rcpp::clone(fitted_parameters);
     List optim_results_best = Rcpp::clone(optim_results);
-    double least_pnll = inf_.val();
+    double least_pnll = 1.0;
     for (int i = 0; i < initial_fits; i++) {
       
       // Report progress
@@ -1677,7 +1677,7 @@ Rcpp::NumericMatrix wspc::bs_batch(
       double pnll = optim_results["penalized_neg_loglik"]; 
       
       // Check if this is a better initial position 
-      if (pnll < least_pnll) {
+      if (pnll < least_pnll || i == 0) {
         least_pnll = pnll;
         // ... if so, save this seed
         fitted_parameters_seed = fitted_parameters_seed_this;
