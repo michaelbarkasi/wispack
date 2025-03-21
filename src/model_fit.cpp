@@ -344,9 +344,9 @@ IntegerVector LROcp_find(
       if (
           lik_ratio[i] > lik_max && 
             i < (lik_ratio.size() - ws/2) &&  // can't be too close to end
-            i > ws/2                         // can't be too close to beginning
+            i > ws/2                          // can't be too close to beginning
       ) {
-        if (i - last_cp > ws/2) {            // can't be too close to last change point
+        if (i - last_cp > ws/2) {             // can't be too close to last change point
           fcp.push_back(i);
           last_cp = i;
         }
