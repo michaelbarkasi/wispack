@@ -1606,7 +1606,7 @@ Rcpp::NumericMatrix wspc::bs_batch(
       
       // Report progress
       if (verbose) {
-        Rcpp::Rcout << "Jittered initial position " << i + 1 << "/" << initial_fits << std::endl;
+        Rcpp::Rcout << "Trying jittered initial position " << i + 1 << "/" << initial_fits << std::endl;
       }
       
       // Set fitted parameters to jitter of initial seed
@@ -1627,6 +1627,12 @@ Rcpp::NumericMatrix wspc::bs_batch(
       
       // Grab penalized neg_loglik
       double pnll = optim_results["penalized_neg_loglik"]; 
+      
+      // Report progress
+      if (verbose) {
+        vprint("Penalized neg_loglik: ", pnll);
+      }
+      
       
       // Check if this is a better initial position 
       if (pnll < least_pnll || i == 0) {
