@@ -658,6 +658,8 @@ wspc::wspc(
       if (deg > 0){
         // Add slots for the tpoint boundary distance at each tpoint
         boundary_vec_size += deg + 1;
+        // Add slots for the tslope boundary distance at each tslope
+        boundary_vec_size += deg;
         // Add one slot for the R_sum boundary distance
         boundary_vec_size++;
       } else {
@@ -1119,12 +1121,19 @@ sVec wspc::boundary_dist(
       // Grab degree for this row
       int deg = Rt.size() - 1;
       
-      // Compute t-point and R_sum boundary distances
+      // Compute tslope, t-point, and R_sum boundary distances
       if (deg > 0){
         
         // Compute tslope and tpoint for this row r
         sVec tslope = compute_mc_tslope_r(r, parameters); 
         sVec tpoint = compute_mc_tpoint_r(r, parameters);
+        
+        // Transition slopes can't be too extreme (large or small)
+        for (int d = 0; d < deg; d++) {
+          sdouble slope_boundary = 1.0 / (spower(slog(tslope(d)), 2.0) + 1.0);
+          boundary_dist_vec(ctr) = slope_boundary;
+          ctr++;
+        }
         
         // Find tpoint boundary distances
         // WARNING: this code is duplicated in test_tpoint
@@ -1138,6 +1147,7 @@ sVec wspc::boundary_dist(
             tpoint_ext(bt) = bin_num;
           } 
         }
+        
         // Transition points must be in increasing order 
         // ... and can't be closer than the buffer
         // ... and first point must be > buffer, 
@@ -1558,7 +1568,7 @@ dVec wspc::bs_fit(
     }
     
     // Set fitted parameters to jitter of initial seed
-    fitted_parameters = jitter_parameter_seed();
+    //fitted_parameters = jitter_parameter_seed();
     
     // Check feasibility 
     List feasibility_results = check_parameter_feasibility(to_sVec(fitted_parameters), false); 
