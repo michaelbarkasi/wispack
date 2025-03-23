@@ -146,6 +146,7 @@ class wspc {
     int initial_fits = 10;                  // number of initial fits to perform in search of best initial conditions
     double ctol = 5e-6;                     // convergence tolerance
     unsigned int rng_seed = 42u;            // seed for random number generator
+    double MCMC_prior = 0.5;                // probability of parameters found by full model fit, used as prior in MCMC
     
     // Other settings 
     List model_settings;
