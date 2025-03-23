@@ -34,7 +34,6 @@ wspc::wspc(
     double tslope_initial_settings = settings["tslope_initial"];
     double wf_initial_settings = settings["wf_initial"];
     int max_evals_settings = settings["max_evals"];
-    int initial_fits_settings = settings["initial_fits"];
     unsigned int rng_seed_settings = settings["rng_seed"];
     for (int i = 0; i < struc_values.size(); i++) {struc_values[i] = struc_values_settings[i];}
     buffer_factor = sdouble(buffer_factor_settings);
@@ -46,7 +45,6 @@ wspc::wspc(
     tslope_initial = tslope_initial_settings;
     wf_initial = wf_initial_settings;
     max_evals = max_evals_settings;
-    initial_fits = initial_fits_settings;
     rng_seed = rng_seed_settings;
     model_settings = Rcpp::clone(settings);
     
@@ -618,7 +616,6 @@ wspc::wspc(
     
     // Extract parameter vector information
     fitted_parameters = params["param_vec"];
-    fitted_parameters_seed = fitted_parameters;
     param_names = params["param_names"];
     param_wfactor_point_idx = params["param_wfactor_point_idx"]; 
     param_wfactor_rate_idx = params["param_wfactor_rate_idx"];
@@ -694,6 +691,44 @@ wspc wspc::clone() const {
   wspc this_copy = wspc(*this);
   return this_copy;
 }
+
+// Clear stan
+void wspc::clear_stan_mem() {
+    
+    // Temporarily save stan variable values 
+    double dbin_num = bin_num.val();
+    double dfe_difference_ratio_Rt = fe_difference_ratio_Rt.val();
+    double dfe_difference_ratio_tpoint = fe_difference_ratio_tpoint.val();
+    double dmean_count_log = mean_count_log.val();
+    double dbuffer_factor = buffer_factor.val();
+    double dtpoint_buffer = tpoint_buffer.val();
+    dVec dbin = to_dVec(bin);
+    dVec dcount = to_dVec(count);
+    dVec dcount_log = to_dVec(count_log);
+    dVec dcount_tokenized = to_dVec(count_tokenized);
+    dVec dobserved_mean_ran_eff = to_dVec(observed_mean_ran_eff);
+    NumericMatrix Numweights = to_NumMat(weights);
+    NumericMatrix Numgamma_dispersion = to_NumMat(gamma_dispersion);
+    
+    // Recover memory from stan
+    stan::math::recover_memory();
+    
+    // Re-assign stan variables
+    bin_num = (sdouble)dbin_num;
+    fe_difference_ratio_Rt = (sdouble)dfe_difference_ratio_Rt;
+    fe_difference_ratio_tpoint = (sdouble)dfe_difference_ratio_tpoint;
+    mean_count_log = (sdouble)dmean_count_log;
+    buffer_factor = (sdouble)dbuffer_factor;
+    tpoint_buffer = (sdouble)dtpoint_buffer;
+    bin = to_sVec(dbin);
+    count = to_sVec(dcount);
+    count_log = to_sVec(dcount_log);
+    count_tokenized = to_sVec(dcount_tokenized);
+    observed_mean_ran_eff = to_sVec(dobserved_mean_ran_eff);
+    weights = to_sMat(Numweights);
+    gamma_dispersion = to_sMat(Numgamma_dispersion);
+    
+  }
 
 /*
  * *************************************************************************
@@ -1199,7 +1234,7 @@ sVec wspc::boundary_dist(
     for (int p : param_wfactor_rate_idx) {
       // All warping factors must be between -1 and 1
       sdouble dist_low = parameters(p) + 1.0;
-      boundary_dist_vec(ctr) = dist_low; 
+      boundary_dist_vec(ctr) = dist_low;
       ctr++;
       sdouble dist_high = 1.0 - parameters(p);
       boundary_dist_vec(ctr) = dist_high;
@@ -1212,6 +1247,13 @@ sVec wspc::boundary_dist(
       sdouble dist_low = parameters(p);
       boundary_dist_vec(ctr) = dist_low;
       ctr++;
+    }
+    
+    // Check for nan
+    for (int i = 0; i < boundary_vec_size; i++) {
+      if (std::isnan(boundary_dist_vec(i))) {
+        boundary_dist_vec(i) = 0.0;
+      }
     }
     
     return boundary_dist_vec;
@@ -1441,7 +1483,7 @@ Eigen::VectorXd wspc::grad_min_boundary_dist(
 
 /*
  * *************************************************************************
- * Bootstrapping and model fitting, for statistical testing
+ * Bootstrapping and MCMC model fitting, for statistical testing
  */
 
 // Fit model using NLopt
@@ -1567,9 +1609,6 @@ dVec wspc::bs_fit(
       count_log(r) = slog(count(r) + 1.0);
     }
     
-    // Set fitted parameters to jitter of initial seed
-    //fitted_parameters = jitter_parameter_seed();
-    
     // Check feasibility 
     List feasibility_results = check_parameter_feasibility(to_sVec(fitted_parameters), false); 
     fitted_parameters = Rcpp::as<NumericVector>(feasibility_results["parameters"]);
@@ -1590,7 +1629,7 @@ dVec wspc::bs_fit(
     
     // Clear stan memory
     if (clear_stan) {
-      stan::math::recover_memory();
+      clear_stan_mem();
     }
     
     return fitted_parameters;
@@ -1607,59 +1646,14 @@ Rcpp::NumericMatrix wspc::bs_batch(
     // Reset initial parameters to check their feasibility 
     set_parameters(fitted_parameters, verbose);
     
-    // Fit full model from multiple jittered seed parameters
+    // Fit full model 
     vprint("Performing initial fit of full data", verbose);
-    NumericVector fitted_parameters_best = Rcpp::clone(fitted_parameters);
-    List optim_results_best = Rcpp::clone(optim_results);
-    double least_pnll = 1.0;
-    for (int i = 0; i < initial_fits; i++) {
-      
-      // Report progress
-      if (verbose) {
-        Rcpp::Rcout << "Trying jittered initial position " << i + 1 << "/" << initial_fits << std::endl;
-      }
-      
-      // Set fitted parameters to jitter of initial seed
-      fitted_parameters = jitter_parameter_seed();
-      
-      // Check feasibility 
-      List feasibility_results = check_parameter_feasibility(to_sVec(fitted_parameters), false); 
-      fitted_parameters = Rcpp::as<NumericVector>(feasibility_results["parameters"]);
-      
-      // Save this seed
-      NumericVector fitted_parameters_seed_this = Rcpp::clone(fitted_parameters);
-      
-      // Now fit
-      fit(
-        false, // don't bother setting parameters
-        false  // don't print anything
-      );
-      
-      // Grab penalized neg_loglik
-      double pnll = optim_results["penalized_neg_loglik"]; 
-      
-      // Report progress
-      if (verbose) {
-        vprint("Penalized neg_loglik: ", pnll);
-      }
-      
-      
-      // Check if this is a better initial position 
-      if (pnll < least_pnll || i == 0) {
-        least_pnll = pnll;
-        // ... if so, save this seed
-        fitted_parameters_seed = fitted_parameters_seed_this;
-        // ... and save the fitted parameters
-        fitted_parameters_best = fitted_parameters;
-        // ... and optim results 
-        optim_results_best = optim_results;
-      }
-      
-    }
-    
-    // Set fitted parameters to best found 
-    fitted_parameters = fitted_parameters_best;
-    optim_results = optim_results_best;
+    fit(
+      false, // don't bother setting parameters
+      false  // don't print anything
+    );
+    double pnll = optim_results["penalized_neg_loglik"]; 
+    if (verbose) {vprint("Penalized neg_loglik: ", pnll);}
     
     // Initiate variables to hold results
     const int c_num = fitted_parameters.size() + 4;
@@ -1764,10 +1758,104 @@ Rcpp::NumericMatrix wspc::bs_batch(
     
     // Clear stan memory
     if (bs_num_max == 0) {
-      stan::math::recover_memory();
+      clear_stan_mem();
     }
     
     return bs_results;
+    
+  }
+
+// Markov-chain Monte Carlo (MCMC) simulation
+Rcpp::NumericMatrix wspc::MCMC(
+    int n_steps,              // Number of steps to take in random walk
+    double step_size,         // Step size for random walk
+    bool verbose
+  ) {
+    
+    // Reset initial parameters to check their feasibility 
+    set_parameters(fitted_parameters, verbose);
+   
+    // Fit full model 
+    vprint("Performing initial fit of full data", verbose);
+    fit(
+      false, // don't bother setting parameters
+      false  // don't print anything
+    );
+    double pnll = optim_results["penalized_neg_loglik"]; 
+    if (verbose) {vprint("Penalized neg_loglik: ", pnll);}
+    
+    // Initiate variables to hold results
+    const int n_params = fitted_parameters.size();
+    NumericMatrix RMW_steps(n_steps, n_params);
+    
+    // Save current parameters as first step of RMW
+    RMW_steps.row(0) = fitted_parameters;
+    
+    // Set prior 
+    double prior = std::log(0.05);
+    
+    // Run MCMC simulation, with Random-walk Metropolis algorithm
+    int step = 0;
+    int ctr = 0;
+    double acceptance_rate = 1.0;
+    IntegerVector tracker = iseq(n_steps/10, n_steps - 1, 10);
+    // Grab current point (model parameters) in random walk
+    NumericVector params_current = RMW_steps.row(step);
+    // Set prior as log likelihood for this initial point
+    prior = -1.0 * bounded_nll(to_sVec(params_current)).val();
+    while (step < n_steps - 1) {
+      
+      // Generate random step
+      NumericVector params_next(n_params);
+      for (int i = 0; i < n_params; i++) {
+        params_next(i) = R::rnorm(params_current(i), step_size * std::abs(params_current(i)) + step_size);
+      }
+      
+      // Compute posterior for this random step
+      double posterior = -1.0 * bounded_nll(to_sVec(params_next)).val() + prior;
+      
+      // Calculate acceptance probability 
+      double acceptance = std::exp(posterior - prior);
+      if (acceptance > 1.0) {acceptance = 1.0;}
+      if (std::isnan(acceptance)) {acceptance = 0.0;}
+     
+      // Accept or reject the proposed step
+      double ran_draw = R::runif(0.0, 1.0); 
+      if (ran_draw < acceptance) {
+        // Tracker
+        if (any_true(eq_left_broadcast(tracker, step))) {
+          int this_step_batch = Rwhich(eq_left_broadcast(tracker, step))[0];
+          Rcpp::Rcout << "step: " << (this_step_batch + 1) * (n_steps/tracker.size()) << "/" << n_steps << std::endl;
+        }
+        // Advance step
+        step++;
+        // Save new parameters
+        RMW_steps.row(step) = params_next;
+        // Set new parameters as current 
+        params_current = params_next;
+        // Update prior
+        prior = posterior;
+      } 
+      
+      // Advance general counter
+      ctr++; 
+      
+      // Check for infinite loop
+      acceptance_rate = static_cast<double>(step)/static_cast<double>(ctr);
+      if (ctr > 200 && acceptance_rate < 0.01) {
+        Rcpp::stop("Acceptance rate too low; Infinite loop detected!");
+      }
+      
+      // Clear stan memory
+      if (ctr > 100) {clear_stan_mem();}
+      
+    }
+    
+    // Report acceptance rate
+    vprint("All complete!", verbose); 
+    if (verbose) {vprint("Acceptance rate: ", acceptance_rate);}
+    
+    return RMW_steps;
     
   }
 
@@ -1986,11 +2074,13 @@ Rcpp::List wspc::check_parameter_feasibility(
     
   } 
 
-// Jitter parameter seed, for use before fitting 
-Rcpp::NumericVector wspc::jitter_parameter_seed() const {
+// Jitter parameters
+// ... not currently used, leaving for possible future use
+Rcpp::NumericVector wspc::jitter_parameters(
+  const NumericVector& initial_parameters
+  ) const {
     
-    // Grab seed parameters
-    NumericVector jittered_parameters = fitted_parameters_seed;
+    NumericVector parameters = Rcpp::clone(initial_parameters);
     
     // Jitter parameters
     double wf_cap = 0.75;        // Max magnitude for wf ... keep away from bounds
@@ -2002,49 +2092,49 @@ Rcpp::NumericVector wspc::jitter_parameter_seed() const {
     
     // Jitter warping factors, point
     for (int p : param_wfactor_point_idx) {
-      double wfpj = safe_rnorm(jittered_parameters(p), wf_sd);
+      double wfpj = safe_rnorm(parameters(p), wf_sd);
       if (wfpj < -wf_cap) {wfpj = -wf_cap;}
       if (wfpj > wf_cap) {wfpj = wf_cap;}
-      jittered_parameters(p) = wfpj;
+      parameters(p) = wfpj;
     }
     
     // Jitter warping factors, rate 
     for (int p : param_wfactor_rate_idx) {
-      double wfrj = safe_rnorm(jittered_parameters(p), wf_sd);
+      double wfrj = safe_rnorm(parameters(p), wf_sd);
       if (wfrj < -wf_cap) {wfrj = -wf_cap;}
       if (wfrj > wf_cap) {wfrj = wf_cap;}
-      jittered_parameters(p) = wfrj;
+      parameters(p) = wfrj;
     }
     
     // Jitter beta Rt parameters
     for (int p : param_beta_Rt_idx) {
       // might be sent into unfeasible position, but should be correctable
-      double betaj = safe_rnorm(jittered_parameters(p), beta_Rt_sd);
-      jittered_parameters(p) = betaj;
+      double betaj = safe_rnorm(parameters(p), beta_Rt_sd);
+      parameters(p) = betaj;
     }
     
     // Jitter beta tpoint parameters
     for (int p : param_beta_tpoint_idx) {
       // might be sent into unfeasible position, but should be correctable
-      double betaj = safe_rnorm(jittered_parameters(p), beta_tpoint_sd);
-      jittered_parameters(p) = betaj;
+      double betaj = safe_rnorm(parameters(p), beta_tpoint_sd);
+      parameters(p) = betaj;
     }
     
     // Jitter beta tslope parameters
     for (int p : param_beta_tslope_idx) {
       // might be sent into unfeasible position, but should be correctable
-      double betaj = safe_rnorm(jittered_parameters(p), beta_tslope_sd);
-      jittered_parameters(p) = betaj;
+      double betaj = safe_rnorm(parameters(p), beta_tslope_sd);
+      parameters(p) = betaj;
     }
     
     // Jitter structural parameters
     for (int p : param_struc_idx) {
       double jit = safe_rnorm(1.0, struc_sd);
-      double strucj = jittered_parameters(p) + jit * jit;
-      jittered_parameters(p) = strucj;
+      double strucj = parameters(p) + jit * jit;
+      parameters(p) = strucj;
     }
    
-    return jittered_parameters;
+    return parameters;
    
   }
 
@@ -2257,6 +2347,7 @@ RCPP_MODULE(wspc) {
     .method("fit", &wspc::fit)
     .method("bs_fit", &wspc::bs_fit)
     .method("bs_batch", &wspc::bs_batch)
+    .method("MCMC", &wspc::MCMC)
     .method("resample", &wspc::resample)
     .method("import_fe_diff_ratio_Rt", &wspc::import_fe_diff_ratio_Rt)
     .method("import_fe_diff_ratio_tpoint", &wspc::import_fe_diff_ratio_tpoint)

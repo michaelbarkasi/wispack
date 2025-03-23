@@ -166,3 +166,4 @@ sMat to_sMat(
     }
     return stan_mat;
   }
+
