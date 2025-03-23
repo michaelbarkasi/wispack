@@ -8,7 +8,9 @@
 
 # Function for fitting model to raw count data list 
 wisp <- function(
+    # Data to model
     count.data.raw, 
+    # Variable labels
     variables = list( # names of columns in count.data.raw giving each model variable type
       count = "count",
       bin = "bin", 
@@ -17,14 +19,18 @@ wisp <- function(
       ran = "ran",
       fixedeffects = c()
     ),
+    # Settings used on R side
     use.median = TRUE,
-    bootstraps.num = 1e3, 
-    converged.resamples.only = TRUE,
+    MCMC.burnin = 1e3,
+    MCMC.steps = 1e3,
+    MCMC.step.size = 0.1,
+    bootstraps.num = 0, 
+    converged.resamples.only = FALSE,
     max.fork = 10,
-    batch.size = 10,
     dim.bounds = NULL, 
     verbose = TRUE,
     print.child.summaries = TRUE,
+    # Setting to pass to C++ model
     model.settings = list(
       struc_values = c(5.0, 5.0, 1.0),            # values of structural parameters to test
       buffer_factor = 0.05,                       # buffer factor for penalizing distance from structural parameter values
@@ -36,7 +42,6 @@ wisp <- function(
       tslope_initial = 1.0,                       # initial value for tslope
       wf_initial = 0.1,                           # initial value for wfactor
       max_evals = 1000,                           # maximum number of evaluations for optimization
-      initial_fits = 10,                          # number of initial fits to run
       rng_seed = 42                               # seed for random number generator
     )
   ) {
@@ -78,7 +83,7 @@ wisp <- function(
     cpp_model$import_fe_diff_ratio_Rt(fe_diff_ratio$diff.ratio.c, verbose)
     cpp_model$import_fe_diff_ratio_tpoint(fe_diff_ratio$diff.ratio.tp, verbose)
     
-    # Estimate model parameters with bootstrapping ####
+    # Estimate model parameters with MCMC or bootstrapping ####
     if (verbose) {
       snk.report("Estimating model parameters", initial_breaks = 1)
       snk.horizontal_rule(reps = snk.small_break_reps, end_breaks = 0)
@@ -86,24 +91,29 @@ wisp <- function(
     
     # Confirm forking is possible
     if (!(Sys.info()["sysname"] == "Darwin" || Sys.info()["sysname"] == "Linux")) {
-      if (max.fork > 0) {
-        if (verbose) snk.report...("Parallel processing not available on Windows, setting max.fork to 0")
-        max.fork <- 0 
+      if (bootstraps.num > 0) {
+        if (verbose) snk.report...("Forking not available on Windows, cannot bootstrap, switching to MCMC")
+        bootstraps.num <- 0 
+        MCMC.steps <- 1e4
       }
     } 
     
-    if (max.fork == 0) {
-      # Run sequentially
+    if (bootstraps.num == 0) {
       
-      stop("Sequential bootstrapping not yet implemented")
-      # ... Need to figure out how to clear stan memory without killing whole model
-      
+      # Run MCMC simulation
+      if (verbose) snk.report("Running MCMC stimulations (single-threaded)", end_breaks = 1)
+      MCMC_walk <- cpp_model$MCMC(
+        MCMC.steps + MCMC.burnin, 
+        MCMC.step.size,
+        verbose 
+      )
+      MCMC_walk <- MCMC_walk[-c(2:MCMC.burnin),]
+     
     } else {
-      # Run in parallel with forking
       
-      # Run bootstrap fits
-      if (verbose) snk.report("Running bootstrap fits (forking)", end_breaks = 1)
-      bs_results <- cpp_model$bs_batch(
+      # Run bootstrap fits in parallel with forking
+      if (verbose) snk.report("Running bootstrap fits (with forking)", end_breaks = 1)
+      sample_results <- cpp_model$bs_batch(
         bootstraps.num, 
         max.fork,
         verbose
@@ -112,32 +122,42 @@ wisp <- function(
     }
     
     # Extract bs results and diagnostics
-    n_params <- ncol(bs_results) - 4
-    if (bootstraps.num > 0) bs_params <- bs_results[,1:n_params]
-    else bs_params <- NULL
-    bs.diagnostics <- data.frame( 
-      pen.neg.value = bs_results[,n_params + 1],
-      neg.loglik = bs_results[,n_params + 2], 
-      success.code = bs_results[,n_params + 3],
-      num.evals = bs_results[,n_params + 4]
-    )
+    
+    if (bootstraps.num > 0) {
+      n_params <- ncol(sample_results) - 4
+      sample.params <- sample_results[,1:n_params]
+      bs.diagnostics <- data.frame( 
+        pen.neg.value = sample_results[,n_params + 1],
+        neg.loglik = sample_results[,n_params + 2], 
+        success.code = sample_results[,n_params + 3],
+        num.evals = sample.stats[,n_params + 4]
+      )
+    } else {
+      n_params <- ncol(MCMC_walk)
+      sample.params <- MCMC_walk
+      bs.diagnostics <- NULL
+    }
     
     # Set final fitted parameters
-    if (use.median && bootstraps.num > 0) {
-      if (verbose) snk.report...("Setting median bootstrap estimates as parameters", initial_breaks = 1, end_breaks = 1)
-      final_parameters <- apply(bs_params, 2, function(x) median(x, na.rm = TRUE))
+    if (use.median) {
+      if (verbose) snk.report...("Setting median parameter samples as final parameters", initial_breaks = 1, end_breaks = 1)
+      final_parameters <- apply(sample.params, 2, function(x) median(x, na.rm = TRUE))
     } else {
       if (verbose) snk.report...("Setting full-data fit as parameters", initial_breaks = 1, end_breaks = 1)
-      final_parameters <- bs_results[bootstraps.num + 1,1:n_params]
+      if (bootstraps.num > 0) {
+        final_parameters <- sample.params[bootstraps.num + 1,]
+      } else {
+        final_parameters <- sample.params[1,]
+      }
     }
     cpp_model$set_parameters(
       final_parameters,
       verbose
     )
     
-    # Grab model results and add bootstrap results
+    # Grab model results and add samples
     results <- cpp_model$results()
-    results[["bs_params"]] <- bs_params
+    results[["sample.params"]] <- sample.params
     results[["bs.diagnostics"]] <- bs.diagnostics
     
     # Add variable names 
@@ -155,16 +175,13 @@ wisp <- function(
     )
     results[["stats"]] <- stats
     
-    # Run stats on bootstraps
-    if (bootstraps.num > 0) {
-      results$stats$parameters <- bs.stats(
-        wisp.results = results,
-        conv.resamples.only = converged.resamples.only,
-        verbose = verbose
-      )
-    } else {
-      results$stats$parameters <- NULL
-    }
+    # Run stats on samples
+    if (bootstraps.num == 0) converged.resamples.only <- FALSE
+    results$stats$parameters <- sample.stats(
+      wisp.results = results,
+      conv.resamples.only = converged.resamples.only,
+      verbose = verbose
+    )
     
     # Analyze residuals 
     residuals <- analyze.residuals(
@@ -176,26 +193,18 @@ wisp <- function(
     plots.residuals <- residuals$plots
     
     # Check tpoint stability
-    if (bootstraps.num > 0) {
-      results$stats$tps <- check.tpoint.stability(
-        wisp.results = results,
-        verbose = verbose
-      )
-    } else {
-      results$stats$tps <- NULL
-    }
+    results$stats$tps <- check.tpoint.stability(
+      wisp.results = results,
+      verbose = verbose
+    )
     
     # Make plots of results ####
     
     # Plot structural parameter stats
-    if (bootstraps.num > 0) {
-      plot.struc <- plot.struc.stats(
-        wisp.results = results,
-        verbose = verbose
-      )
-    } else {
-      plot.struc <- NULL
-    }
+    plot.struc <- plot.struc.stats(
+      wisp.results = results,
+      verbose = verbose
+    )
     
     # Make rate plots 
     if (verbose) snk.report...("Making rate-count plots")
@@ -239,9 +248,9 @@ wisp <- function(
 
 # Analysis methods #####################################################################################################
 
-# Helper function for computing p_values from bootstraps
-pvalues.bs <- function(
-    mu.B,    # vector of bootstrapped estimates
+# Helper function for computing p_values from bootstraps or MCMC samples
+pvalues.samples <- function(
+    mu.B,    # vector of bootstrapped or MCMC estimates
     mu.obs,  # observed value, either mean of mu.B or actual observation
     lower.tail.only = FALSE
   ) {
@@ -260,7 +269,7 @@ pvalues.bs <- function(
   }
 
 # Function for running stat analysis of bootstraps
-bs.stats <- function(
+sample.stats <- function(
     wisp.results,
     alpha = 0.05,
     Bonferroni = FALSE,
@@ -275,23 +284,23 @@ bs.stats <- function(
     #       the number of tests performed minus the rank of the p-value plus 1. 
     #   - In both cases, the CI are presented as "(1-alpha)%", but calculated with adjustment.
     
-    # Run stats on bootstrap results
+    # Run stats on simulation results
     if (verbose) {
-      snk.report("Running stats on bootstrap results", initial_breaks = 1)
+      snk.report("Running stats on simulation results", initial_breaks = 1)
       snk.horizontal_rule(reps = snk.simple_break_reps)
     }
     
-    # Grab bootstrap results
+    # Grab simulation results
     if (conv.resamples.only) {
-      if (verbose) snk.report...("Grabbing bootstrap results, only resamples with converged fit")
-      bs_results <- wisp.results$bs_params[wisp.results$bs.diagnostics$success.code == 3,]
+      if (verbose) snk.report...("Grabbing sample results, only resamples with converged fit")
+      sample_results <- wisp.results$sample.params[wisp.results$bs.diagnostics$success.code == 3,]
     } else {
-      if (verbose) snk.report...("Grabbing bootstrap results, all resamples")
-      bs_results <- wisp.results$bs_params
+      if (verbose) snk.report...("Grabbing sample results")
+      sample_results <- wisp.results$sample.params
     }
     
-    if (length(bs_results) == 0) {
-      snk.report...("\nNo bootstraps to analyze") 
+    if (length(sample_results) == 0) {
+      snk.report...("\nNo samples to analyze") 
     } else {
       
       # Grab parameter values 
@@ -305,12 +314,12 @@ bs.stats <- function(
       baseline_mask <- grepl("baseline", fitted_params_names) & !grepl("tpoint", fitted_params_names)     # mask for baseline rate and tslope values
       tslope_mask <- grepl("tslope", fitted_params_names)                                                 # mask for tslope values
       beta_w_mask <- grepl("beta_Rt|beta_tslope|beta_tpoint|wfactor", fitted_params_names)                # only want to test fixed-effect and wfactor parameters (no baseline or structural parameters)
-      empty_w_mask <- colSums(bs_results) == 0                                                            # Can only be zero for point wfactors of degree-zero children (which must be zero)
+      empty_w_mask <- colSums(sample_results) == 0                                                        # Can only be zero for point wfactors of degree-zero children (which must be zero)
       test_mask <- beta_w_mask & !empty_w_mask
       
       # Compute 95% confidence intervals
       if (verbose) snk.report...("Computing 95% confidence intervals")
-      bs_params_ci <- apply(bs_results, 2, quantile, probs = c(alpha/2, 1 - alpha/2))
+      sample.params_ci <- apply(sample_results, 2, quantile, probs = c(alpha/2, 1 - alpha/2))
       
       # Estimate p_values from bs params
       if (verbose) snk.report...("Estimating p-values from bootstraped parameters")
@@ -319,14 +328,14 @@ bs.stats <- function(
       sig_marks <- rep(" ", n_params)
       for (n in seq_along(fitted_params)) {
         if (test_mask[n]) {
-          p_values[n] <- pvalues.bs(bs_results[,n], fitted_params[n]) 
+          p_values[n] <- pvalues.samples(sample_results[,n], fitted_params[n]) 
         } else if (baseline_mask[n]) {
           if (tslope_mask[n]) { # testing slope
-            p_values[n] <- pvalues.bs(bs_results[,n] - 0, fitted_params[n] - 0, lower.tail.only = TRUE) 
+            p_values[n] <- pvalues.samples(sample_results[,n] - 0, fitted_params[n] - 0, lower.tail.only = TRUE) 
             # Basic idea: A slope < 1 is unstably shallow and suggests that there is no transition point here
             #   ... hence, expect to rest the value - 1; however, the model uses the exp of the parameter, so zero becomes our 1. 
           } else { # testing "log-linked" rate, i.e., true rate is exp of this number
-            p_values[n] <- pvalues.bs(bs_results[,n], fitted_params[n]) 
+            p_values[n] <- pvalues.samples(sample_results[,n], fitted_params[n]) 
             # ^ ... These values can be negative, meaning unlinked (i.e., taking exp) they are less than 1, which we interpret as not expressed
             #   ... As there are multiple cells per bin, perhaps the cutoff shouldn't be 1, but the number of cells (so avg is 1)??
           }
@@ -346,8 +355,8 @@ bs.stats <- function(
         alpha_adj[p_value_order] <- alpha / (num_of_tests:1)
         # Adjust CI
         for (i in p_value_order) {
-          bs_params_ci[,i] <- quantile(
-            bs_results[,i], 
+          sample.params_ci[,i] <- quantile(
+            sample_results[,i], 
             probs = c(alpha_adj[i]/2, 1 - alpha_adj[i]/2),
             na.rm = TRUE
           )
@@ -357,7 +366,7 @@ bs.stats <- function(
         p_values_adj <- rep(p_values * num_of_tests, n_params) 
         alpha_adj <- rep(alpha / num_of_tests, n_params) 
         # Adjust CI
-        bs_params_ci <- apply(bs_results, 2, quantile, probs = c(alpha_adj[1]/2, 1 - alpha_adj[1]/2), na.rm = TRUE)
+        sample.params_ci <- apply(sample_results, 2, quantile, probs = c(alpha_adj[1]/2, 1 - alpha_adj[1]/2), na.rm = TRUE)
       }
       sig_marks[!is.na(p_values_adj) & p_values_adj < alpha/50] <- "***"                            # < 0.001
       sig_marks[!is.na(p_values_adj) & p_values_adj < alpha/5 & p_values_adj >= alpha/50] <- "**"   # < 0.01, >= 0.001
@@ -368,8 +377,8 @@ bs.stats <- function(
       stats.parameters <- data.frame(
         "parameter" = fitted_params_names,
         "estimate" = fitted_params,
-        "CI.low" = bs_params_ci[1,], 
-        "CI.high" = bs_params_ci[2,], 
+        "CI.low" = sample.params_ci[1,], 
+        "CI.high" = sample.params_ci[2,], 
         "p.value" = p_values, 
         "p.value.adj" = p_values_adj,
         "alpha.adj" = alpha_adj,
@@ -408,7 +417,7 @@ check.tpoint.stability <- function(
       p_val_adj_names <- wisp.results$stats$parameters$parameter
       parent_names <- as.character(wisp.results$grouping.variables$parent.lvls)
       child_names <- as.character(wisp.results$grouping.variables$child.lvls)
-      bs_params <- wisp.results$bs_params
+      sample.params <- wisp.results$sample.params
       
       # Grab baseline-tslope and beta masks
       beta_mask <- grepl("beta_", p_val_adj_names)
@@ -505,10 +514,10 @@ check.tpoint.stability <- function(
                   
                   # Compute implied slopes for this effects condition in each bs resample
                   if (length(bs_col_idx) < 2) stop("Problem computing TPS in treatment condition (no effects present, baseline only)")
-                  implied_bs_slopes <- rowSums(bs_params[,bs_col_idx])
+                  implied_bs_slopes <- rowSums(sample.params[,bs_col_idx])
                   
                   # Compute p_value ("- 1" and lower-tail only because checking if significantly greater than 1)
-                  p_value <- pvalues.bs(implied_bs_slopes - 0, mean(implied_bs_slopes) - 0, lower.tail.only = TRUE) 
+                  p_value <- pvalues.samples(implied_bs_slopes - 0, mean(implied_bs_slopes) - 0, lower.tail.only = TRUE) 
                   
                   # Test for significance
                   if (p_value < min(wisp.results$stats$parameters$alpha.adj[bs_col_idx], na.rm = TRUE)) df[r,paste0("TPS.",fe)] <- TRUE
@@ -1204,15 +1213,15 @@ plot.parameters <- function(
     
     # Checks
     print_stats <- TRUE
-    bs_params <- wisp.results$bs_params
-    if (length(bs_params) == 0) {
+    sample.params <- wisp.results$sample.params
+    if (length(sample.params) == 0) {
       print_stats <- FALSE
       if (violin) {
         violin <- FALSE
-        if (verbose) snk.report...("bs_params not found, setting violin = FALSE and not printing stats")
+        if (verbose) snk.report...("sample.params not found, setting violin = FALSE and not printing stats")
       } 
     } else {
-      downsample_size <- min(1e2, nrow(bs_params))
+      downsample_size <- min(1e2, nrow(sample.params))
     }
     
     if (verbose) {
@@ -1257,7 +1266,7 @@ plot.parameters <- function(
     # Rename fitted_params vector with nice names
     names(fitted_params) <- param_names
     if (print_stats) {
-      boot_ci <- rbind(wisp.results$stats$parameters$CI.low, wisp.results$stats$parameters$CI.high)
+      sample_ci <- rbind(wisp.results$stats$parameters$CI.low, wisp.results$stats$parameters$CI.high)
       sig_marks <- wisp.results$stats$parameters$significance
     }
     
@@ -1300,7 +1309,7 @@ plot.parameters <- function(
           
           # Baseline tpoint parameters
           if (violin) {
-            baseline_fitted_tpoint <- c(as.matrix(bs_params[sample(1:nrow(bs_params), downsample_size, replace = FALSE), baseline_mask & point_mask]))
+            baseline_fitted_tpoint <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), baseline_mask & point_mask]))
             params <- rep(param_names[baseline_mask & point_mask], each = downsample_size)
             means <- rep(fitted_params[baseline_mask & point_mask], each = downsample_size)
           } else {
@@ -1317,12 +1326,12 @@ plot.parameters <- function(
           )
           if (print_stats) {
             if (violin) {
-              baseline_fitted_tpoint_df$value_low <- rep(boot_ci[1,baseline_mask & point_mask], each = downsample_size)
-              baseline_fitted_tpoint_df$value_high <- rep(boot_ci[2,baseline_mask & point_mask], each = downsample_size)
+              baseline_fitted_tpoint_df$value_low <- rep(sample_ci[1,baseline_mask & point_mask], each = downsample_size)
+              baseline_fitted_tpoint_df$value_high <- rep(sample_ci[2,baseline_mask & point_mask], each = downsample_size)
               baseline_fitted_tpoint_df$sig_marks <- rep(sig_marks[baseline_mask & point_mask], each = downsample_size)
             } else {
-              baseline_fitted_tpoint_df$value_low <- boot_ci[1,baseline_mask & point_mask]
-              baseline_fitted_tpoint_df$value_high <- boot_ci[2,baseline_mask & point_mask] 
+              baseline_fitted_tpoint_df$value_low <- sample_ci[1,baseline_mask & point_mask]
+              baseline_fitted_tpoint_df$value_high <- sample_ci[2,baseline_mask & point_mask] 
               baseline_fitted_tpoint_df$sig_marks <- sig_marks[baseline_mask & point_mask]
             }
           }
@@ -1330,7 +1339,7 @@ plot.parameters <- function(
           
           # Baseline rate parameters
           if (violin) {
-            baseline_fitted_rate <- c(as.matrix(bs_params[sample(1:nrow(bs_params), downsample_size, replace = FALSE), baseline_mask & rate_mask]))
+            baseline_fitted_rate <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), baseline_mask & rate_mask]))
             params <- rep(param_names[baseline_mask & rate_mask], each = downsample_size)
             means <- rep(fitted_params[baseline_mask & rate_mask], each = downsample_size)
           } else {
@@ -1347,12 +1356,12 @@ plot.parameters <- function(
           )
           if (print_stats) {
             if (violin) {
-              baseline_fitted_rate_df$value_low <- rep(boot_ci[1,baseline_mask & rate_mask], each = downsample_size)
-              baseline_fitted_rate_df$value_high <- rep(boot_ci[2,baseline_mask & rate_mask], each = downsample_size)
+              baseline_fitted_rate_df$value_low <- rep(sample_ci[1,baseline_mask & rate_mask], each = downsample_size)
+              baseline_fitted_rate_df$value_high <- rep(sample_ci[2,baseline_mask & rate_mask], each = downsample_size)
               baseline_fitted_rate_df$sig_marks <- rep(sig_marks[baseline_mask & rate_mask], each = downsample_size)
             } else {
-              baseline_fitted_rate_df$value_low <- boot_ci[1,baseline_mask & rate_mask]
-              baseline_fitted_rate_df$value_high <- boot_ci[2,baseline_mask & rate_mask]
+              baseline_fitted_rate_df$value_low <- sample_ci[1,baseline_mask & rate_mask]
+              baseline_fitted_rate_df$value_high <- sample_ci[2,baseline_mask & rate_mask]
               baseline_fitted_rate_df$sig_marks <- sig_marks[baseline_mask & rate_mask]
             }
           }
@@ -1360,7 +1369,7 @@ plot.parameters <- function(
           
           # Baseline tslope parameters 
           if (violin) {
-            baseline_fitted_slope <- c(as.matrix(bs_params[sample(1:nrow(bs_params), downsample_size, replace = FALSE), baseline_mask & slope_mask]))
+            baseline_fitted_slope <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), baseline_mask & slope_mask]))
             params <- rep(param_names[baseline_mask & slope_mask], each = downsample_size)
             means <- rep(fitted_params[baseline_mask & slope_mask], each = downsample_size)
           } else {
@@ -1377,12 +1386,12 @@ plot.parameters <- function(
           )
           if (print_stats) {
             if (violin) {
-              baseline_fitted_slope_df$value_low <- rep(boot_ci[1,baseline_mask & slope_mask], each = downsample_size)
-              baseline_fitted_slope_df$value_high <- rep(boot_ci[2,baseline_mask & slope_mask], each = downsample_size)
+              baseline_fitted_slope_df$value_low <- rep(sample_ci[1,baseline_mask & slope_mask], each = downsample_size)
+              baseline_fitted_slope_df$value_high <- rep(sample_ci[2,baseline_mask & slope_mask], each = downsample_size)
               baseline_fitted_slope_df$sig_marks <- rep(sig_marks[baseline_mask & slope_mask], each = downsample_size)
             } else {
-              baseline_fitted_slope_df$value_low <- boot_ci[1,baseline_mask & slope_mask]
-              baseline_fitted_slope_df$value_high <- boot_ci[2,baseline_mask & slope_mask]
+              baseline_fitted_slope_df$value_low <- sample_ci[1,baseline_mask & slope_mask]
+              baseline_fitted_slope_df$value_high <- sample_ci[2,baseline_mask & slope_mask]
               baseline_fitted_slope_df$sig_marks <- sig_marks[baseline_mask & slope_mask]
             }
           }
@@ -1393,7 +1402,7 @@ plot.parameters <- function(
           
           # Random effects on tpoints
           if (violin) {
-            ranEff_fitted_point <- c(as.matrix(bs_params[sample(1:nrow(bs_params), downsample_size, replace = FALSE), ranEff_mask & pointR_mask]))
+            ranEff_fitted_point <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), ranEff_mask & pointR_mask]))
             params <- rep(param_names[ranEff_mask & pointR_mask], each = downsample_size)
             means <- rep(fitted_params[ranEff_mask & pointR_mask], each = downsample_size)
           } else {
@@ -1412,12 +1421,12 @@ plot.parameters <- function(
             )
             if (print_stats) {
               if (violin) {
-                ranEff_fitted_point_df$value_low <- rep(boot_ci[1,ranEff_mask & pointR_mask], each = downsample_size)
-                ranEff_fitted_point_df$value_high <- rep(boot_ci[2,ranEff_mask & pointR_mask], each = downsample_size)
+                ranEff_fitted_point_df$value_low <- rep(sample_ci[1,ranEff_mask & pointR_mask], each = downsample_size)
+                ranEff_fitted_point_df$value_high <- rep(sample_ci[2,ranEff_mask & pointR_mask], each = downsample_size)
                 ranEff_fitted_point_df$sig_marks <- rep(sig_marks[ranEff_mask & pointR_mask], each = downsample_size)
               } else {
-                ranEff_fitted_point_df$value_low <- boot_ci[1,ranEff_mask & pointR_mask]
-                ranEff_fitted_point_df$value_high <- boot_ci[2,ranEff_mask & pointR_mask]
+                ranEff_fitted_point_df$value_low <- sample_ci[1,ranEff_mask & pointR_mask]
+                ranEff_fitted_point_df$value_high <- sample_ci[2,ranEff_mask & pointR_mask]
                 ranEff_fitted_point_df$sig_marks <-sig_marks[ranEff_mask & pointR_mask]
               }
             }
@@ -1426,7 +1435,7 @@ plot.parameters <- function(
           
           # Random effects on rates
           if (violin) {
-            ranEff_fitted_rate <- c(as.matrix(bs_params[sample(1:nrow(bs_params), downsample_size, replace = FALSE), ranEff_mask & !pointR_mask]))
+            ranEff_fitted_rate <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), ranEff_mask & !pointR_mask]))
             params <- rep(param_names[ranEff_mask & !pointR_mask], each = downsample_size)
             means <- rep(fitted_params[ranEff_mask & !pointR_mask], each = downsample_size)
           } else {
@@ -1443,12 +1452,12 @@ plot.parameters <- function(
           )
           if (print_stats) {
             if (violin) {
-              ranEff_fitted_rate_df$value_low <- rep(boot_ci[1,ranEff_mask & !pointR_mask], each = downsample_size)
-              ranEff_fitted_rate_df$value_high <- rep(boot_ci[2,ranEff_mask & !pointR_mask], each = downsample_size)
+              ranEff_fitted_rate_df$value_low <- rep(sample_ci[1,ranEff_mask & !pointR_mask], each = downsample_size)
+              ranEff_fitted_rate_df$value_high <- rep(sample_ci[2,ranEff_mask & !pointR_mask], each = downsample_size)
               ranEff_fitted_rate_df$sig_marks <- rep(sig_marks[ranEff_mask & !pointR_mask], each = downsample_size)
             } else {
-              ranEff_fitted_rate_df$value_low <- boot_ci[1,ranEff_mask & !pointR_mask]
-              ranEff_fitted_rate_df$value_high <- boot_ci[2,ranEff_mask & !pointR_mask]
+              ranEff_fitted_rate_df$value_low <- sample_ci[1,ranEff_mask & !pointR_mask]
+              ranEff_fitted_rate_df$value_high <- sample_ci[2,ranEff_mask & !pointR_mask]
               ranEff_fitted_rate_df$sig_marks <- sig_marks[ranEff_mask & !pointR_mask]
             }
           }
@@ -1566,7 +1575,7 @@ plot.parameters <- function(
             
             # Add rows for rate effects
             if (violin) {
-              treatment_fitted <- c(as.matrix(bs_params[sample(1:nrow(bs_params), downsample_size, replace = FALSE), treatment_mask & rate_mask]))
+              treatment_fitted <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), treatment_mask & rate_mask]))
               params <- rep(param_names[treatment_mask & rate_mask], each = downsample_size)
               means <- rep(fitted_params[treatment_mask & rate_mask], each = downsample_size)
             } else {
@@ -1583,12 +1592,12 @@ plot.parameters <- function(
             )
             if (print_stats) {
               if (violin) {
-                treatment_fitted_df$value_low <- rep(boot_ci[1,treatment_mask & rate_mask], each = downsample_size)
-                treatment_fitted_df$value_high <- rep(boot_ci[2,treatment_mask & rate_mask], each = downsample_size)
+                treatment_fitted_df$value_low <- rep(sample_ci[1,treatment_mask & rate_mask], each = downsample_size)
+                treatment_fitted_df$value_high <- rep(sample_ci[2,treatment_mask & rate_mask], each = downsample_size)
                 treatment_fitted_df$sig_marks <- rep(sig_marks[treatment_mask & rate_mask], each = downsample_size)
               } else {
-                treatment_fitted_df$value_low <- boot_ci[1,treatment_mask & rate_mask]
-                treatment_fitted_df$value_high <- boot_ci[2,treatment_mask & rate_mask]
+                treatment_fitted_df$value_low <- sample_ci[1,treatment_mask & rate_mask]
+                treatment_fitted_df$value_high <- sample_ci[2,treatment_mask & rate_mask]
                 treatment_fitted_df$sig_marks <- sig_marks[treatment_mask & rate_mask]
               }
             }
@@ -1596,7 +1605,7 @@ plot.parameters <- function(
             
             # Add rows for slope effects
             if (violin) {
-              treatment_fitted <- c(as.matrix(bs_params[sample(1:nrow(bs_params), downsample_size, replace = FALSE), treatment_mask & slope_mask]))
+              treatment_fitted <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), treatment_mask & slope_mask]))
               params <- rep(param_names[treatment_mask & slope_mask], each = downsample_size)
               means <- rep(fitted_params[treatment_mask & slope_mask], each = downsample_size)
             } else {
@@ -1613,12 +1622,12 @@ plot.parameters <- function(
             )
             if (print_stats) {
               if (violin) {
-                treatment_fitted_df$value_low <- rep(boot_ci[1,treatment_mask & slope_mask], each = downsample_size)
-                treatment_fitted_df$value_high <- rep(boot_ci[2,treatment_mask & slope_mask], each = downsample_size)
+                treatment_fitted_df$value_low <- rep(sample_ci[1,treatment_mask & slope_mask], each = downsample_size)
+                treatment_fitted_df$value_high <- rep(sample_ci[2,treatment_mask & slope_mask], each = downsample_size)
                 treatment_fitted_df$sig_marks <- rep(sig_marks[treatment_mask & slope_mask], each = downsample_size)
               } else {
-                treatment_fitted_df$value_low <- boot_ci[1,treatment_mask & slope_mask]
-                treatment_fitted_df$value_high <- boot_ci[2,treatment_mask & slope_mask]
+                treatment_fitted_df$value_low <- sample_ci[1,treatment_mask & slope_mask]
+                treatment_fitted_df$value_high <- sample_ci[2,treatment_mask & slope_mask]
                 treatment_fitted_df$sig_marks <- sig_marks[treatment_mask & slope_mask]
               }
             }
@@ -1626,7 +1635,7 @@ plot.parameters <- function(
             
             # Add rows for point effects
             if (violin) {
-              treatment_fitted <- c(as.matrix(bs_params[sample(1:nrow(bs_params), downsample_size, replace = FALSE), treatment_mask & point_mask]))
+              treatment_fitted <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), treatment_mask & point_mask]))
               params <- rep(param_names[treatment_mask & point_mask], each = downsample_size)
               means <- rep(fitted_params[treatment_mask & point_mask], each = downsample_size)
             } else {
@@ -1643,12 +1652,12 @@ plot.parameters <- function(
             )
             if (print_stats) {
               if (violin) {
-                treatment_fitted_df$value_low <- rep(boot_ci[1,treatment_mask & point_mask], each = downsample_size)
-                treatment_fitted_df$value_high <- rep(boot_ci[2,treatment_mask & point_mask], each = downsample_size)
+                treatment_fitted_df$value_low <- rep(sample_ci[1,treatment_mask & point_mask], each = downsample_size)
+                treatment_fitted_df$value_high <- rep(sample_ci[2,treatment_mask & point_mask], each = downsample_size)
                 treatment_fitted_df$sig_marks <- rep(sig_marks[treatment_mask & point_mask], each = downsample_size)
               } else {
-                treatment_fitted_df$value_low <- boot_ci[1,treatment_mask & point_mask]
-                treatment_fitted_df$value_high <- boot_ci[2,treatment_mask & point_mask]
+                treatment_fitted_df$value_low <- sample_ci[1,treatment_mask & point_mask]
+                treatment_fitted_df$value_high <- sample_ci[2,treatment_mask & point_mask]
                 treatment_fitted_df$sig_marks <- sig_marks[treatment_mask & point_mask]
               }
             }
@@ -1713,8 +1722,8 @@ plot.parameters <- function(
             struc_df$value_high <- rep(NA, nrow(struc_df))
             for (n in names(wisp.results$struc.params)) {
               idx <- which(param_names == n)
-              struc_df$value_low[struc_df$parameter == n] <- boot_ci[1,idx]
-              struc_df$value_high[struc_df$parameter == n] <- boot_ci[2,idx]
+              struc_df$value_low[struc_df$parameter == n] <- sample_ci[1,idx]
+              struc_df$value_high[struc_df$parameter == n] <- sample_ci[2,idx]
             }
           }
           parameter_comparison_plots[["plot_struc"]] <- ggplot(struc_df, aes(x = parameter, y = value)) +
@@ -1773,7 +1782,7 @@ plot.struc.stats <- function(
     }
     
     plots.struc_stats <- list()
-    bs_fitted_params <- wisp.results$bs_params
+    bs_fitted_params <- wisp.results$sample.params
     
     # Warping factors, beta distributions
     if (verbose) snk.report...("Warping factors, beta distributions")

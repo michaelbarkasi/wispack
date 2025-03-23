@@ -103,7 +103,6 @@ class wspc {
       }; 
     IntegerMatrix degMat;                   // matrix of degrees for each parent (column) -- child (rows) pair
     NumericVector fitted_parameters;        // vector holding the model parameters
-    NumericVector fitted_parameters_seed;   // saved original seed of fitted parameters from which to jitter before fitting
     List param_names;                       // list holding the names of the model parameters as they appear in fitted_parameters
     
     // Secondary variables related to model parameters
@@ -174,6 +173,9 @@ class wspc {
     ~wspc();
     // R copy 
     wspc clone() const;
+    
+    // Clear Stan
+    void clear_stan_mem();
     
     // ***** computing predicted values from parameters 
     
@@ -279,6 +281,13 @@ class wspc {
         bool verbose
     );
     
+    // Markov-chain Monte Carlo (MCMC) simulation
+    Rcpp::NumericMatrix MCMC(
+        int n_steps,                        // Number of steps to take in random walk
+        double step_size,                   // Step size for random walk
+        bool verbose
+    );
+    
     // Resample (demo)
     Rcpp::NumericMatrix resample(
         int n_resample                      // total number of resamples to draw
@@ -298,8 +307,8 @@ class wspc {
         const bool verbose
     );
     
-    // Jitter parameter seed, for use before fitting 
-    Rcpp::NumericVector jitter_parameter_seed() const;
+    // Jitter parameters
+    Rcpp::NumericVector jitter_parameters(const NumericVector& initial_parameters) const;
     
     // ***** export data to R
     void import_fe_diff_ratio_Rt(const double& fe_diff_ratio, const bool& verbose);
