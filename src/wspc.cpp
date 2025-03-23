@@ -33,6 +33,7 @@ wspc::wspc(
     double LROfilter_ws_divisor_settings = settings["LROfilter_ws_divisor"];
     double tslope_initial_settings = settings["tslope_initial"];
     double wf_initial_settings = settings["wf_initial"];
+    double MCMC_prior_settings = settings["MCMC_prior"];
     int max_evals_settings = settings["max_evals"];
     unsigned int rng_seed_settings = settings["rng_seed"];
     for (int i = 0; i < struc_values.size(); i++) {struc_values[i] = struc_values_settings[i];}
@@ -44,6 +45,7 @@ wspc::wspc(
     LROfilter_ws_divisor = LROfilter_ws_divisor_settings;
     tslope_initial = tslope_initial_settings;
     wf_initial = wf_initial_settings;
+    MCMC_prior = MCMC_prior_settings;
     max_evals = max_evals_settings;
     rng_seed = rng_seed_settings;
     model_settings = Rcpp::clone(settings);
@@ -1047,7 +1049,7 @@ sdouble wspc::neg_loglik(
     }
     
     // Compute the log-likelihood of the tslope beta values, given the assumed normal distribution
-    // ... recall: slopes must be positive, but are fit and reported as a normal parameter
+    // ... recall: slopes must be positive, but are fit and reported as a normal parameter (in log space)
     int n_tslope = tslope_beta_values_no_ref.size();
     sdouble sd_tslope_effect = parameters[param_struc_idx["sd_tslope_effect"]];
     for (int i = 0; i < n_tslope; i++) {
@@ -1133,7 +1135,8 @@ sVec wspc::boundary_dist(
     sdouble f_rw;
     
     // Compute the boundary distance, for ...
-    // ... transition points (enforces tpoint buffer), and 
+    // ... inverse transition slopes (penalize extremely small or large slopes)
+    // ... transition points (enforces tpoint buffer)
     // ... Rsum (enforces positive predicted rates)
     for (int r : idx_mc_unique) {
       
@@ -1164,8 +1167,11 @@ sVec wspc::boundary_dist(
         sVec tpoint = compute_mc_tpoint_r(r, parameters);
         
         // Transition slopes can't be too extreme (large or small)
+        // ... since tslope is stored in log space, a slope of zero is really a slope of 1, 
+        //      and is unpenalized by this formula, while any deviation off that "neutral" 
+        //      value is penalized.
         for (int d = 0; d < deg; d++) {
-          sdouble slope_boundary = 1.0 / (spower(slog(tslope(d)), 2.0) + 1.0);
+          sdouble slope_boundary = 1.0 / (spower(tslope(d), 2.0) + 1.0);
           boundary_dist_vec(ctr) = slope_boundary;
           ctr++;
         }
@@ -1792,7 +1798,7 @@ Rcpp::NumericMatrix wspc::MCMC(
     RMW_steps.row(0) = fitted_parameters;
     
     // Set prior 
-    double prior = std::log(0.05);
+    double prior = std::log(MCMC_prior);
     
     // Run MCMC simulation, with Random-walk Metropolis algorithm
     int step = 0;

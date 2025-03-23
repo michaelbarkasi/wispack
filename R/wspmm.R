@@ -22,7 +22,7 @@ wisp <- function(
     # Settings used on R side
     use.median = TRUE,
     MCMC.burnin = 1e3,
-    MCMC.steps = 1e3,
+    MCMC.steps = 1e4,
     MCMC.step.size = 0.1,
     bootstraps.num = 0, 
     converged.resamples.only = FALSE,
@@ -41,6 +41,7 @@ wisp <- function(
       LROfilter_ws_divisor = 2.0,                 # divisor for filter window size in likelihood ratio outlier detection (bigger is smaller window)
       tslope_initial = 1.0,                       # initial value for tslope
       wf_initial = 0.1,                           # initial value for wfactor
+      MCMC_prior = 0.5,                           # probability of parameters found by full model fit, used as prior in MCMC
       max_evals = 1000,                           # maximum number of evaluations for optimization
       rng_seed = 42                               # seed for random number generator
     )
@@ -1873,7 +1874,7 @@ plot.struc.stats <- function(
     
     # tpoint effects, Gaussian distribution
     if (verbose) snk.report...("tpoint effects, Gaussian distribution")
-    tpoint_shape <- wisp.results$struc.params["sd_tpoint_effect"]
+    tpoint_shape <- wisp.results$computed_sd_tpoint_effect
     tpoint_effs_mask <- grepl("tpoint", wisp.results$param.names) & grepl("beta", wisp.results$param.names)
     if (any(tpoint_effs_mask)) {
       
@@ -1989,6 +1990,33 @@ plot.child.summary <- function(
       }
       
     }
+    
+  }
+
+# Method to plot random walks from MCMC simulations 
+plot.MCMC.walks <- function(
+    wisp.results
+  ) {
+    
+    # Grab sampled parameters
+    sampled_params <- wisp.results$sample.params
+    
+    # Take abs and log
+    sampled_params <- log(abs(sampled_params) + 1)
+    
+    # Make long-format data frame
+    walks <- data.frame(
+      value = c(sampled_params),
+      param = rep(1:ncol(sampled_params), each = nrow(sampled_params)),
+      step = rep(1:nrow(sampled_params), ncol(sampled_params))
+    )
+    
+    plot.walks <- ggplot(data = walks, 
+                   aes(x = step, y = value, group = param, color = param)) + 
+      geom_line() + 
+      ggtitle("Parameter Walks from MCMC Estimation") +
+      theme_minimal()
+    print(plot.walks)
     
   }
 
