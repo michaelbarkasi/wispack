@@ -21,9 +21,10 @@ wisp <- function(
     ),
     # Settings used on R side
     use.median = TRUE,
-    MCMC.burnin = 1e3,
+    MCMC.burnin = 0,
     MCMC.steps = 1e4,
     MCMC.step.size = 0.1,
+    MCMC.prior = 0.5,
     bootstraps.num = 0, 
     converged.resamples.only = FALSE,
     max.fork = 10,
@@ -41,7 +42,6 @@ wisp <- function(
       LROfilter_ws_divisor = 2.0,                 # divisor for filter window size in likelihood ratio outlier detection (bigger is smaller window)
       tslope_initial = 1.0,                       # initial value for tslope
       wf_initial = 0.1,                           # initial value for wfactor
-      MCMC_prior = 0.5,                           # probability of parameters found by full model fit, used as prior in MCMC
       max_evals = 1000,                           # maximum number of evaluations for optimization
       rng_seed = 42                               # seed for random number generator
     )
@@ -97,7 +97,12 @@ wisp <- function(
         bootstraps.num <- 0 
         MCMC.steps <- 1e4
       }
-    } 
+    } else if (bootstraps.num > 0) {
+      if (verbose) {
+        snk.report...("Forking available and bootstrap requested.")
+        snk.report...("If bootstrapping not desired, set bootstraps.num = 0")
+      }
+    }
     
     if (bootstraps.num == 0) {
       
@@ -106,6 +111,7 @@ wisp <- function(
       MCMC_walk <- cpp_model$MCMC(
         MCMC.steps + MCMC.burnin, 
         MCMC.step.size,
+        MCMC.prior,
         verbose 
       )
       MCMC_walk <- MCMC_walk[-c(2:MCMC.burnin),]
@@ -131,7 +137,7 @@ wisp <- function(
         pen.neg.value = sample_results[,n_params + 1],
         neg.loglik = sample_results[,n_params + 2], 
         success.code = sample_results[,n_params + 3],
-        num.evals = sample.stats[,n_params + 4]
+        num.evals = sample_results[,n_params + 4]
       )
     } else {
       n_params <- ncol(MCMC_walk)
@@ -201,8 +207,17 @@ wisp <- function(
     
     # Make plots of results ####
     
+    # Plot MCMC walks 
+    if (bootstraps.num == 0) {
+      plots.MCMC <- plot.MCMC.walks(
+        wisp.results = results
+      )
+    } else {
+      plots.MCMC <- NULL
+    }
+    
     # Plot structural parameter stats
-    plot.struc <- plot.struc.stats(
+    plots.struc <- plot.struc.stats(
       wisp.results = results,
       verbose = verbose
     )
@@ -228,7 +243,8 @@ wisp <- function(
       residuals = plots.residuals,
       ratecount = plots.ratecount,
       parameters = plots.parameters,
-      struc = plot.struc
+      MCMC = plots.MCMC,
+      struc = plots.struc
     )
     results[["plots"]] <- plots
     
