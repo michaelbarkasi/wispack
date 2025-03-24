@@ -25,29 +25,17 @@ wspc::wspc(
     
     // Extract settings
     NumericVector struc_values_settings = settings["struc_values"];
-    double buffer_factor_settings = settings["buffer_factor"];
-    double ctol_settings = settings["ctol"];
-    double max_penalty_at_distance_factor_settings = settings["max_penalty_at_distance_factor"];
-    double LROcutoff_settings = settings["LROcutoff"];
-    double LROwindow_factor_settings = settings["LROwindow_factor"];
-    double LROfilter_ws_divisor_settings = settings["LROfilter_ws_divisor"];
-    double tslope_initial_settings = settings["tslope_initial"];
-    double wf_initial_settings = settings["wf_initial"];
-    double MCMC_prior_settings = settings["MCMC_prior"];
-    int max_evals_settings = settings["max_evals"];
-    unsigned int rng_seed_settings = settings["rng_seed"];
     for (int i = 0; i < struc_values.size(); i++) {struc_values[i] = struc_values_settings[i];}
-    buffer_factor = sdouble(buffer_factor_settings);
-    ctol = ctol_settings;
-    max_penalty_at_distance_factor = sdouble(max_penalty_at_distance_factor_settings);
-    LROcutoff = LROcutoff_settings;
-    LROwindow_factor = LROwindow_factor_settings;
-    LROfilter_ws_divisor = LROfilter_ws_divisor_settings;
-    tslope_initial = tslope_initial_settings;
-    wf_initial = wf_initial_settings;
-    MCMC_prior = MCMC_prior_settings;
-    max_evals = max_evals_settings;
-    rng_seed = rng_seed_settings;
+    buffer_factor = sdouble((double)settings["buffer_factor"]);
+    ctol = (double)settings["ctol"];
+    max_penalty_at_distance_factor = sdouble((double)settings["max_penalty_at_distance_factor"]);
+    LROcutoff = (double)settings["LROcutoff"];
+    LROwindow_factor = (double)settings["LROwindow_factor"];
+    LROfilter_ws_divisor = (double)settings["LROfilter_ws_divisor"];
+    tslope_initial = (double)settings["tslope_initial"];
+    wf_initial = (double)settings["wf_initial"];
+    max_evals = (int)settings["max_evals"];
+    rng_seed = (unsigned int)settings["rng_seed"];
     model_settings = Rcpp::clone(settings);
     
     // Check structure of input data
@@ -1574,8 +1562,8 @@ void wspc::fit(
 
 // Fit model to bootstrap resample
 dVec wspc::bs_fit(
-    int bs_num,                  // A unique number for this resample
-    bool clear_stan              // Recover stan memory at end?
+    int bs_num,               // A unique number for this resample
+    bool clear_stan           // Recover stan memory at end?
   ) {
     
     // Set random number generator with unique seed based on resample ID
@@ -1644,8 +1632,8 @@ dVec wspc::bs_fit(
 
 // Fork bootstraps (parallel processing)
 Rcpp::NumericMatrix wspc::bs_batch(
-    int bs_num_max,              // Number of bootstraps to perform
-    int max_fork,                // Maximum number of forked processes per batch
+    int bs_num_max,           // Number of bootstraps to perform
+    int max_fork,             // Maximum number of forked processes per batch
     bool verbose
   ) {
     
@@ -1775,6 +1763,7 @@ Rcpp::NumericMatrix wspc::bs_batch(
 Rcpp::NumericMatrix wspc::MCMC(
     int n_steps,              // Number of steps to take in random walk
     double step_size,         // Step size for random walk
+    double MCMC_prior,        // Prior for MCMC simulation
     bool verbose
   ) {
     
@@ -1800,7 +1789,7 @@ Rcpp::NumericMatrix wspc::MCMC(
     // Set prior 
     double prior = std::log(MCMC_prior);
     
-    // Run MCMC simulation, with Random-walk Metropolis algorithm
+    // Run MCMC simulation
     int step = 0;
     int ctr = 0;
     double acceptance_rate = 1.0;
@@ -1809,6 +1798,8 @@ Rcpp::NumericMatrix wspc::MCMC(
     NumericVector params_current = RMW_steps.row(step);
     // Set prior as log likelihood for this initial point
     prior = -1.0 * bounded_nll(to_sVec(params_current)).val();
+    
+    // Take steps, Random-walk Metropolois algorithm
     while (step < n_steps - 1) {
       
       // Generate random step
@@ -1853,7 +1844,7 @@ Rcpp::NumericMatrix wspc::MCMC(
       }
       
       // Clear stan memory
-      if (ctr > 100) {clear_stan_mem();}
+      clear_stan_mem();
       
     }
     
@@ -1867,7 +1858,7 @@ Rcpp::NumericMatrix wspc::MCMC(
 
 // Resample (demo, not used in package)
 NumericMatrix wspc::resample(
-    int n_resample               // total number of resamples to draw
+    int n_resample            // total number of resamples to draw
   ) {
     
     NumericMatrix resamples(n_count_rows, n_resample);
