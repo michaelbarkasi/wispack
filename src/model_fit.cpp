@@ -239,7 +239,7 @@ sVec compute_mc(
     sVec mc_value(num_blocks);
     mc_value.setZero();
     
-    // Calculate value from betas (ref and fixed-effects)
+    // Calculate value from betas 
     for (int i = 0; i < i_max; i++) {
       sdouble wi = weight_row(i);
       sVec betai = betas.row(i); // Effects column
@@ -248,7 +248,7 @@ sVec compute_mc(
       }
     }
     
-    // Return updated model-component values 
+    // Return model-component values 
     return mc_value;
     
   }
