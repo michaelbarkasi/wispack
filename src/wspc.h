@@ -141,6 +141,7 @@ class wspc {
     double LROcutoff = 2.0;                 // cutoff (x sd) for likelihood ratio outlier detection
     double LROwindow_factor = 2.0;          // factor for window size in likelihood ratio outlier detection (bigger is bigger window)
     double LROfilter_ws_divisor = 2.0;      // divisor for filter window size in likelihood ratio outlier detection (bigger is smaller window)
+    double rise_threshold_factor = 0.8;     // amount of detected rise as fraction of total required to end run
     
     // Optimization settings
     int max_evals = 500;                    // max number of evaluations
@@ -732,9 +733,10 @@ sdouble get_beta_sd(
 
 // Function to estimate block rate and transition slopes from count series and change points
 std::vector<dVec> est_bkRates_tRuns(
-    const int& n_blocks,               // number of blocks
-    const NumericVector& count_series, // count series
-    const IntegerVector& cp_series     // found change points
+    const int& n_blocks,                // number of blocks
+    const NumericVector& count_series,  // count series
+    const IntegerVector& cp_series,     // found change points
+    const double& rise_threshold_factor // amount of detected rise as fraction of total required to end run
   );
 
 #endif // WSPC_H

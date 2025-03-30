@@ -32,6 +32,7 @@ wspc::wspc(
     LROcutoff = (double)settings["LROcutoff"];
     LROwindow_factor = (double)settings["LROwindow_factor"];
     LROfilter_ws_divisor = (double)settings["LROfilter_ws_divisor"];
+    rise_threshold_factor = (double)settings["rise_threshold_factor"];
     max_evals = (int)settings["max_evals"];
     rng_seed = (unsigned int)settings["rng_seed"];
     model_settings = Rcpp::clone(settings);
@@ -429,11 +430,12 @@ wspc::wspc(
             // ... grab counts 
             sVec these_counts = count_masked_array_good.col(si);
             // ... estimate slopes
-            std::vector<dVec> est_rate_runs = est_bkRates_tRuns(n_blocks, to_NumVec(these_counts), found_cp.column(s));
+            std::vector<dVec> est_rate_runs = est_bkRates_tRuns(n_blocks, to_NumVec(these_counts), found_cp.column(s), rise_threshold_factor);
             NumericVector est_run = to_NumVec(est_rate_runs[1]);
             for (int d = 0; d < deg; d++) {
               found_slopes(d, s) = 4.0/est_run[d];
               if (found_slopes(d, s) < 0.25) {found_slopes(d, s) = 0.25;}
+              vprint("Found slope: ", found_slopes(d, s));
               // ^ ... keep from initializing too close to zero
             }
           }
@@ -491,7 +493,7 @@ wspc::wspc(
               } else {
                 
                 // Estimate rate values as mean of count values in each block 
-                std::vector<dVec> est_rate_runs = est_bkRates_tRuns(n_blocks, count_log_avg, found_cp_trt_t);
+                std::vector<dVec> est_rate_runs = est_bkRates_tRuns(n_blocks, count_log_avg, found_cp_trt_t, rise_threshold_factor);
                 Rt_est = est_rate_runs[0];
                 run_estimates.row(t) = to_NumVec(est_rate_runs[1]);
                 RtVals.row(t) = to_sVec(Rt_est); 
@@ -531,6 +533,7 @@ wspc::wspc(
                 for (int d = 0; d < deg; d++) {
                   found_slope_trt(d, t) = 4.0/run_estimates(t, d); 
                   if (found_slope_trt(d, t) < 0.25) {found_slope_trt(d, t) = 0.25;}
+                  vprint("Found slope: ", found_slope_trt(d, t));
                   // ^ ... keep from initializing too close to zero
                   collected_slopes.push_back(found_slope_trt(d, t));
                 }
@@ -565,6 +568,7 @@ wspc::wspc(
     
     // Find and save mean slope 
     mean_tslope = (sdouble)vmean(collected_slopes);
+    if (verbose) {vprint("Mean estimated tslope: ", mean_tslope);}
    
     // Build default fixed-effects matrices in shell
     List beta = build_beta_shell(mc_list, treatment_lvls, parent_lvls, child_lvls, ref_values, RtEffs, tpointEffs, tslopeEffs, degMat);
@@ -770,13 +774,13 @@ sVec wspc::compute_warped_mc(
       }
     }
     
-    // Take exponential of slopes
-    // ... slopes must be positive, but fit and reported as a normal parameter, so here the exp is taken.
-    if (mc == "tslope") {
-      for (int bt = 0; bt < block_num; bt++) {
-        mc_vec(bt) = sexp(mc_vec(bt));
-      }
-    }
+    // // Take exponential of slopes
+    // // ... slopes must be positive, but fit and reported as a normal parameter, so here the exp is taken.
+    // if (mc == "tslope") {
+    //   for (int bt = 0; bt < block_num; bt++) {
+    //     mc_vec(bt) = sexp(mc_vec(bt));
+    //   }
+    // }
     
     // Apply warping factor 
     for (int bt = 0; bt < block_num; bt++) {
