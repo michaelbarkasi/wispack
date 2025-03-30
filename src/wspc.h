@@ -135,6 +135,7 @@ class wspc {
     sdouble mean_tslope = 0.0;                           // mean of tslope values, used in estimating sd of beta parameters for slope
     sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
     sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
+    sVec observed_mean_ran_eff;             // mean random effect values for each random effect level, observed in data
     sMat gamma_dispersion;                  // dispersion terms for "kernel" of gamma-Poisson model
     IntegerVector gd_child_idx;             // indexes of child levels in gamma_dispersion
     IntegerVector gd_parent_idx;            // indexes of parent levels in gamma_dispersion
@@ -142,6 +143,7 @@ class wspc {
     double LROwindow_factor = 2.0;          // factor for window size in likelihood ratio outlier detection (bigger is bigger window)
     double LROfilter_ws_divisor = 2.0;      // divisor for filter window size in likelihood ratio outlier detection (bigger is smaller window)
     double rise_threshold_factor = 0.8;     // amount of detected rise as fraction of total required to end run
+    double min_initialization_slope = 0.1;  // minimum slope for initialization of transition slopes
     
     // Optimization settings
     int max_evals = 500;                    // max number of evaluations
