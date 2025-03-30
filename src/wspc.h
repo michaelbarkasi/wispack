@@ -94,6 +94,7 @@ class wspc {
     IntegerVector count_not_na_idx;                      // indexes of non-NA rows in summed count data
     LogicalVector count_not_na_mask;        // mask of non-NA rows in summed count data
     List change_points;                     // list of found change points, structured by parent and child
+    List est_slopes;                        // list of estimated slopes, structured by parent and child
     
     // Variables related to model parameters
     CharacterVector mc_list = {             // list of model components
@@ -108,6 +109,7 @@ class wspc {
     // Secondary variables related to model parameters
     IntegerVector param_wfactor_point_idx;  // ... indexes of parameter vector for quick access of different kinds of model parameters
     IntegerVector param_wfactor_rate_idx;
+    IntegerVector param_wfactor_slope_idx;
     IntegerVector param_beta_Rt_idx;
     IntegerVector param_beta_Rt_idx_no_ref;
     IntegerVector param_beta_tslope_idx;
@@ -118,32 +120,30 @@ class wspc {
     IntegerVector param_struc_idx;
     List beta_idx;                          // ... lists giving the structured array indices for named parameters
     List wfactor_idx; 
-    IntegerVector gv_ranLr_int;             // ... indices (row and column) for random effect arrays 
-    IntegerVector gv_fixLr_int;  
-    NumericVector struc_values = {5.0, 5.0, 1.0};        // Initial values of structural parameters of model
+    IntegerVector gv_ran_idx;               // ... indices (row and column) for random effect arrays 
+    IntegerVector gv_fix_idx;  
+    NumericVector struc_values = {5.0, 5.0, 5.0};        // Initial values of structural parameters of model
     CharacterVector struc_names = {         // Names of structural parameters of model
       "beta_shape_point", 
       "beta_shape_rate",
-      "sd_tslope_effect"
+      "beta_shape_slope"
     };
     sdouble fe_difference_ratio_Rt = 1.05;               // ratio of count differences between one-off treatments across ran levels and count differences between same-treatments across ran levels
     sdouble fe_difference_ratio_tpoint = 1.05;           // same, but for tpoints instead of count
+    sdouble fe_difference_ratio_tslope = 1.05;           // same, but for tslopes instead of count
     sdouble mean_count_log = 1.0;                        // mean of log(count) values, used in estimating sd of beta parameters for rate
+    sdouble mean_tslope = 0.0;                           // mean of tslope values, used in estimating sd of beta parameters for slope
     sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
     sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
-    sVec observed_mean_ran_eff;             // mean random effect values for each random effect level, observed in data
     sMat gamma_dispersion;                  // dispersion terms for "kernel" of gamma-Poisson model
-    IntegerVector gd_child;                 // indexes of child levels in gamma_dispersion
-    IntegerVector gd_parent;                // indexes of parent levels in gamma_dispersion
+    IntegerVector gd_child_idx;             // indexes of child levels in gamma_dispersion
+    IntegerVector gd_parent_idx;            // indexes of parent levels in gamma_dispersion
     double LROcutoff = 2.0;                 // cutoff (x sd) for likelihood ratio outlier detection
     double LROwindow_factor = 2.0;          // factor for window size in likelihood ratio outlier detection (bigger is bigger window)
     double LROfilter_ws_divisor = 2.0;      // divisor for filter window size in likelihood ratio outlier detection (bigger is smaller window)
-    double tslope_initial = 1.0;            // initial value for transition slope
-    double wf_initial = 0.5;                // initial value for warping factor ... any sensible magnitude > 0.1 and < 0.75 should do? 
     
     // Optimization settings
     int max_evals = 500;                    // max number of evaluations
-    int initial_fits = 10;                  // number of initial fits to perform in search of best initial conditions
     double ctol = 5e-6;                     // convergence tolerance
     unsigned int rng_seed = 42u;            // seed for random number generator
     
@@ -158,8 +158,8 @@ class wspc {
     
     // Boundary penalty variables
     int boundary_vec_size = 0;                           // number of boundary components
-    sVec bp_coefs;                                       // Coefficients used to scale boundary penality so it's negligible when far from boundary, and infinity at boundary
-    sdouble max_penalty_at_distance_factor = 0.01;       // as fraction of initial neg_loglik, the max penalty when far from the boundary
+    sVec bp_coefs;                                       // coefficients used to scale boundary penality so it's negligible when far from boundary, and infinity at boundary
+    sdouble max_penalty_at_distance_factor = 0.01;       // the max penalty when far from the boundary, as fraction of initial neg_loglik
     sdouble max_penalty_at_distance = 1;                 // variable to hold the max penalty value, once computed
     
     // Variables for holding results 
@@ -180,23 +180,12 @@ class wspc {
     // ***** computing predicted values from parameters 
     
     // Compute model component values for rows of summed count data
-    // ... for Rt
-    sVec compute_mc_Rt_r(
-        const int& r,
-        const sVec& parameters,
-        const sdouble& f_rw
-    ) const;
-    
-    // ... tslope
-    sVec compute_mc_tslope_r(
-        const int& r,
-        const sVec& parameters
-    ) const;
-    
-    // ... tpoint
-    sVec compute_mc_tpoint_r(
-        const int& r,
-        const sVec& parameters
+    sVec compute_warped_mc(
+        const String& mc,          // Model component for which to compute values
+        const int& r,              // Row of summed count data for which to compute model component 
+        const sVec& parameters,    // Parameters to use in computation
+        const sdouble& wf,         // Warping factor to apply 
+        const sdouble& warp_bound  // Boundary constraining warped values
     ) const;
     
     // Predict log of rates
@@ -314,6 +303,7 @@ class wspc {
     // ***** export data to R
     void import_fe_diff_ratio_Rt(const double& fe_diff_ratio, const bool& verbose);
     void import_fe_diff_ratio_tpoint(const double& fe_diff_ratio, const bool& verbose);
+    void import_fe_diff_ratio_tslope(const double& fe_diff_ratio, const bool& verbose);
     Rcpp::List results(); 
     
     // ***** misc and debugging 
@@ -573,6 +563,7 @@ List build_beta_shell(
   const List& ref_values,
   const List& RtEffs,
   const List& tpointEffs,
+  const List& tslopeEffs,
   const IntegerMatrix& degs
   );
 
@@ -688,25 +679,6 @@ sdouble poly_sigmoid(
   const sVec& tpoint               // vector containing the point of each transition in the bin space
   );
 
-// Warping function for random effects on transition points
-sdouble point_warp(
-  const sdouble& b,                // Bin coordinate
-  const sdouble& bin_num,          // Max bin coordinate
-  const sdouble& f                 // warping factor
-  );
-
-// Warping function for random effects on count rate
-sdouble rate_warp(
-  const sdouble& rate,             // rate output by the poly-sigmoid
-  const sdouble& f                 // warping factor
-  );
-
-// Function for computing model components
-sVec compute_mc(
-  const sMat& betas,               // effects matrix, rows as interactions, columns as blocks/transitions
-  const sVec& weight_row           // row of weight matrix, elements as fixed effects
-  );
-
 // Inverse quadratic ramp function for boundary penalty
 sdouble boundary_penalty_transform(
   const sdouble& x,
@@ -749,6 +721,20 @@ IntegerMatrix LROcp_array(
     const int& ws,                  // Running window size
     const int& filter_ws,           // Size of window for taking rolling mean
     const double& out_mult          // Outlier multiplier
+  );
+
+// Function to derive sd of fixed effect from variance of random effect
+sdouble get_beta_sd(
+    const sdouble& beta_shape,      // shape parameter of the beta distribution
+    const sdouble& diff_ratio,      // estimated ratio of fixed effect to random effect
+    const sdouble& expected_value 
+  );
+
+// Function to estimate block rate and transition slopes from count series and change points
+std::vector<dVec> est_bkRates_tRuns(
+    const int& n_blocks,               // number of blocks
+    const NumericVector& count_series, // count series
+    const IntegerVector& cp_series     // found change points
   );
 
 #endif // WSPC_H

@@ -32,8 +32,6 @@ wspc::wspc(
     LROcutoff = (double)settings["LROcutoff"];
     LROwindow_factor = (double)settings["LROwindow_factor"];
     LROfilter_ws_divisor = (double)settings["LROfilter_ws_divisor"];
-    tslope_initial = (double)settings["tslope_initial"];
-    wf_initial = (double)settings["wf_initial"];
     max_evals = (int)settings["max_evals"];
     rng_seed = (unsigned int)settings["rng_seed"];
     model_settings = Rcpp::clone(settings);
@@ -47,9 +45,6 @@ wspc::wspc(
       if (col_names[i] != required_cols[i]) {
         Rcpp::stop("Input data is missing required column (or out of order): " + required_cols[i]);
       }
-    }
-    if (tslope_initial < 1.0) {
-      Rcpp::stop("tslope_initial must be greater than or equal to 1.0.");
     }
     vprint("Data structure check passed", verbose);
     
@@ -102,7 +97,8 @@ wspc::wspc(
       CharacterVector trt_given = treatment_components[tr];
       for (int f = 0; f < n_fix; f++) {
         CharacterVector lvls = fix_lvls[f];
-        effects_rows(tr, f) = lvls[0]; // Assume it's the reference level
+        effects_rows(tr, f) = lvls[0]; 
+        // ^ ... Assume it's the reference level
         for (String l : lvls) {
           // If treatment level found, replace
           if (any_true(eq_left_broadcast(trt_given, l))) {effects_rows(tr, f) = l;}
@@ -155,8 +151,6 @@ wspc::wspc(
     int bin_num_i = (int)bin_num.val();
     n_count_rows = bin_num_i * n_parent * n_child * n_ran * treatment_num;
     count_row_nums = Rcpp::seq(0, n_count_rows - 1);
-    observed_mean_ran_eff.resize(n_ran - 1); 
-    observed_mean_ran_eff.setZero(); 
     vprint("Grabbed size constants for summed count data, total rows: " + std::to_string(n_count_rows), verbose);
     
     // Create summed count data rows, initializations
@@ -270,27 +264,10 @@ wspc::wspc(
     // Resize gamma dispersion matrix (... fill in next step)
     gamma_dispersion.resize(n_child, n_parent);
     gamma_dispersion.setZero();
-    gd_child = IntegerVector(n_child);
-    gd_parent = IntegerVector(n_parent);
-    gd_child.names() = child_lvls;
-    gd_parent.names() = parent_lvls;
-    
-    // Find mean observed ran effect per ran level
-    for (int r = 1; r < n_ran; r++) {
-      LogicalVector ran_mask = eq_left_broadcast(ran, ran_lvls[r]) & count_not_na_mask;
-      IntegerVector ran_idx = Rwhich(ran_mask);
-      for (int i = 0; i < ran_idx.size(); i++) {
-        observed_mean_ran_eff[r - 1] += count_log(ran_idx(i)); 
-      }
-    }
-    sdouble ran_count_log_mean = 0.0; 
-    for (int r = 0; r < n_ran - 1; r++) {ran_count_log_mean += observed_mean_ran_eff[r];}
-    ran_count_log_mean /= n_ran - 1.0; 
-    for (int r = 0; r < n_ran - 1; r++) {
-      observed_mean_ran_eff[r] /= ran_count_log_mean;
-      observed_mean_ran_eff[r] -= 1.0;
-    }
-    vprint("Found mean observed ran effect per ran level", verbose);
+    gd_child_idx = IntegerVector(n_child);
+    gd_parent_idx = IntegerVector(n_parent);
+    gd_child_idx.names() = child_lvls;
+    gd_parent_idx.names() = parent_lvls;
     
     // Initialize matrix to hold degrees of each parent-child combination
     degMat = IntegerMatrix(n_child, n_parent);
@@ -312,15 +289,23 @@ wspc::wspc(
     // ... store tpoint effects in list
     List tpointEffs(n_parent);
     tpointEffs.names() = parent_lvls;
+    // ... store tslope effects in list 
+    List tslopeEffs(n_parent);
+    tslopeEffs.names() = parent_lvls;
     // ... store change points in list
     List found_cp_list(n_parent);
     found_cp_list.names() = parent_lvls;
+    // ... store tslopes in list 
+    List found_slopes_list(n_parent);
+    found_slopes_list.names() = parent_lvls;
+    // ... collect slopes to estimate mean slope
+    NumericVector collected_slopes;
     
     // Loop through parent levels
     for (int p = 0; p < n_parent; p++) {
       
       LogicalVector parent_mask = eq_left_broadcast(parent, parent_lvls[p]);
-      gd_parent[(String)parent_lvls[p]] = p;
+      gd_parent_idx[(String)parent_lvls[p]] = p;
       
       // Set up list for ref values
       ref_values[(String)parent_lvls[p]] = List(n_child);
@@ -331,9 +316,15 @@ wspc::wspc(
       // ... for tpoint effect values 
       tpointEffs[(String)parent_lvls[p]] = List(n_child);
       name_proxylist(tpointEffs[(String)parent_lvls[p]], child_lvls);
+      // ... for tslope effect values 
+      tslopeEffs[(String)parent_lvls[p]] = List(n_child);
+      name_proxylist(tslopeEffs[(String)parent_lvls[p]], child_lvls);
       // ... for change points 
       found_cp_list[(String)parent_lvls[p]] = List(n_child);
       name_proxylist(found_cp_list[(String)parent_lvls[p]], child_lvls);
+      // ... for tslopes 
+      found_slopes_list[(String)parent_lvls[p]] = List(n_child);
+      name_proxylist(found_slopes_list[(String)parent_lvls[p]], child_lvls);
       
       // Loop through child levels
       for (int c = 0; c < n_child; c++) { 
@@ -344,7 +335,7 @@ wspc::wspc(
         sVec count_pc_masked = masked_vec(count, pc_mask); 
         sdouble count_pc_mean = vmean(count_pc_masked);
         sdouble count_pc_var = vvar(count_pc_masked);
-        gd_child[(String)child_lvls[c]] = c;
+        gd_child_idx[(String)child_lvls[c]] = c;
         if (count_pc_var > count_pc_mean) {
           // Have: count_pc_var = count_pc_mean + count_pc_mean^2 * gdis
           // ... count_pc_var = count_pc_mean * (1 + count_pc_mean * gdis)
@@ -358,7 +349,7 @@ wspc::wspc(
         LogicalVector good_col(n_ran_trt);
         
         // Collect count values for each treatment-ran level interaction of this child-parent pair
-        NumericMatrix count_avg_mat(bin_num_i, treatment_num);
+        NumericMatrix count_log_avg_mat(bin_num_i, treatment_num);
         for (int t = 0; t < treatment_num; t++) {
           String trt = treatment_lvls[t];
          
@@ -367,16 +358,16 @@ wspc::wspc(
           LogicalVector mask = pc_mask & trt_mask;
          
           // Grab average counts for this treatment level (used later to set initial values)
-          dVec count_avg(bin_num_i); 
+          dVec count_log_avg(bin_num_i); 
           LogicalVector mask0 = count_not_na_mask & parent_mask & child_mask & trt_mask;
           sVec count_trt_masked = masked_vec(count_log, mask0);
           sVec bin_trt_masked = masked_vec(bin, mask0);
           for (int b = 0; b < bin_num_i; b++) {
             LogicalVector mask_b = eq_left_broadcast(to_NumVec(bin_trt_masked), (double)b + 1.0);
             sVec count_b = masked_vec(count_trt_masked, mask_b);
-            count_avg[b] = vmean(count_b).val();
+            count_log_avg[b] = vmean(count_b).val();
           }
-          count_avg_mat.column(t) = to_NumVec(count_avg);
+          count_log_avg_mat.column(t) = to_NumVec(count_log_avg);
           
           // Collect count values for each ran level and this treatment trt
           for (int r = 0; r < n_ran; r++) {
@@ -426,19 +417,33 @@ wspc::wspc(
         int n_blocks = deg + 1;
         degMat(c, p) = deg;
         
-        // Fill removed empty columns back into the found_cp matrix
+        // Fill columns into the found_cp matrix
         IntegerMatrix found_cp(deg, n_ran_trt);
+        NumericMatrix found_slopes(deg, n_ran_trt);
+        // ^ ... Rcpp should initialize these matrices with all zeros
         if (deg > 0) {
           for (int si = 0; si < good_col_idx.size(); si++) {
             int s = good_col_idx[si];
+            // ... grab change points
             found_cp.column(s) = found_cp_good.column(si);
+            // ... grab counts 
+            sVec these_counts = count_masked_array_good.col(si);
+            // ... estimate slopes
+            std::vector<dVec> est_rate_runs = est_bkRates_tRuns(n_blocks, to_NumVec(these_counts), found_cp.column(s));
+            NumericVector est_run = to_NumVec(est_rate_runs[1]);
+            for (int d = 0; d < deg; d++) {
+              found_slopes(d, s) = 4.0/est_run[d];
+              if (found_slopes(d, s) < 0.25) {found_slopes(d, s) = 0.25;}
+              // ^ ... keep from initializing too close to zero
+            }
           }
         }
         
         // Save
         assign_proxylist(found_cp_list[(String)parent_lvls[p]], (String)child_lvls[c], found_cp);
+        assign_proxylist(found_slopes_list[(String)parent_lvls[p]], (String)child_lvls[c], found_slopes);
         
-        // Extract treatment means 
+        // Extract treatment means for each change point
         NumericMatrix found_cp_trt(deg, treatment_num);
         for (int t = 0; t < treatment_num; t++) {
           for (int d = 0; d < deg; d++) {
@@ -459,47 +464,37 @@ wspc::wspc(
         placeholder_ref_values.names() = mc_list;
         NumericMatrix placeholder_RtEffs(treatment_num, n_blocks);
         NumericMatrix placeholder_tpointEffs(treatment_num, deg);
+        NumericMatrix placeholder_tslopeEffs(treatment_num, deg);
+        NumericMatrix run_estimates(treatment_num, deg);
         
         // Loop through model components (Rt, tslope, tpoint)
         for (String mc : mc_list) {
           
           // Mean rate per block
           if (mc == "Rt") {
-            dVec Rt_est(n_blocks); 
-            sMat RtVals(treatment_num, n_blocks);
-           
+            
             // Loop through treatments
+            sMat RtVals(treatment_num, n_blocks);
             for (int t = 0; t < treatment_num; t++) {
              
-              NumericVector count_avg = count_avg_mat.column(t);
+              NumericVector count_log_avg = count_log_avg_mat.column(t);
               NumericVector found_cp_trt_t_num = found_cp_trt.column(t);
               IntegerVector found_cp_trt_t(deg);
               for (int d = 0; d < deg; d++) {
                 found_cp_trt_t[d] = std::round(found_cp_trt_t_num[d]);
               }
               
+              dVec Rt_est(n_blocks); 
               if (n_blocks == 1) { // case when deg = 0
-                Rt_est[0] = vmean(count_avg);
+                Rt_est[0] = vmean(count_log_avg);
                 RtVals(t, 0) = (sdouble)Rt_est[0];
               } else {
                 
-                // Estimate rate values as mean of count values in each block
-                for (int bk = 0; bk < n_blocks; bk++) {
-                  int bin_start;
-                  int bin_end;
-                  if (bk == 0) {
-                    bin_start = 0;
-                    bin_end = found_cp_trt_t[bk];
-                  } else if (bk == deg) {
-                    bin_start = found_cp_trt_t[bk - 1] - 1;
-                    bin_end = bin_num_i - 1;
-                  } else {
-                    bin_start = found_cp_trt_t[bk - 1] - 1;
-                    bin_end = found_cp_trt_t[bk];
-                  }
-                  Rt_est[bk] = vmean_range(count_avg, bin_start, bin_end);
-                  RtVals(t, bk) = (sdouble)Rt_est[bk];
-                }
+                // Estimate rate values as mean of count values in each block 
+                std::vector<dVec> est_rate_runs = est_bkRates_tRuns(n_blocks, count_log_avg, found_cp_trt_t);
+                Rt_est = est_rate_runs[0];
+                run_estimates.row(t) = to_NumVec(est_rate_runs[1]);
+                RtVals.row(t) = to_sVec(Rt_est); 
                 
               }
               if (t == 0) {placeholder_ref_values[mc] = to_NumVec(Rt_est);}
@@ -520,20 +515,37 @@ wspc::wspc(
               // Grab reference values 
               placeholder_ref_values[mc] = found_cp_trt.column(0);
               
-              // Estimate fixed effects from treatments for each block, tpoint
-              // ... put into Eigen for solving and make rows trts, cols degrees
+              // Estimate fixed effects from treatments for each tpoint, point value
+              // ... put into Eigen for solving and make rows trts, cols tpoints
               sMat found_cp_trt_transposed = to_sMat(found_cp_trt).transpose(); 
               for (int d = 0; d < deg; d++) {
-                sVec beta_bk_tpoint = weight_rows.fullPivLu().solve(found_cp_trt_transposed.col(d));
-                placeholder_tpointEffs.column(d) = to_NumVec(beta_bk_tpoint);
+                sVec beta_d_tpoint = weight_rows.fullPivLu().solve(found_cp_trt_transposed.col(d));
+                placeholder_tpointEffs.column(d) = to_NumVec(beta_d_tpoint);
               }
               
             } else if (mc == "tslope") {
               
+              // Estimate tslopes for each treatment
+              NumericMatrix found_slope_trt(deg, treatment_num);
+              for (int t = 0; t < treatment_num; t++) {
+                for (int d = 0; d < deg; d++) {
+                  found_slope_trt(d, t) = 4.0/run_estimates(t, d); 
+                  if (found_slope_trt(d, t) < 0.25) {found_slope_trt(d, t) = 0.25;}
+                  // ^ ... keep from initializing too close to zero
+                  collected_slopes.push_back(found_slope_trt(d, t));
+                }
+              }
+              
               // Grab reference values 
-              NumericVector tslope_default(deg);
-              for (int tp = 0; tp < deg; tp++) {tslope_default[tp] = tslope_initial;}
-              placeholder_ref_values[mc] = tslope_default;
+              placeholder_ref_values[mc] = found_slope_trt.column(0);
+              
+              // Estimate fixed effects from treatments for each tslope, point slope
+              // ... put into Eigen for solving and make rows trts, cols tslopes
+              sMat found_slope_trt_transposed = to_sMat(found_slope_trt).transpose();
+              for (int d = 0; d < deg; d++) {
+                sVec beta_d_tslope = weight_rows.fullPivLu().solve(found_slope_trt_transposed.col(d));
+                placeholder_tslopeEffs.column(d) = to_NumVec(beta_d_tslope);
+              }
               
             }
           }
@@ -542,51 +554,35 @@ wspc::wspc(
         assign_proxylist(ref_values[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_ref_values);
         assign_proxylist(RtEffs[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_RtEffs);
         assign_proxylist(tpointEffs[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_tpointEffs);
+        assign_proxylist(tslopeEffs[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_tslopeEffs);
        
       }
     }
-    // ... save found change points 
+    // ... save found change points and slopes
     change_points = found_cp_list;
+    est_slopes = found_slopes_list;
     vprint("Estimated change points with LROcp and found initial parameter estimates for fixed-effect treatments", verbose); 
+    
+    // Find and save mean slope 
+    mean_tslope = (sdouble)vmean(collected_slopes);
    
     // Build default fixed-effects matrices in shell
-    List beta = build_beta_shell(mc_list, treatment_lvls, parent_lvls, child_lvls, ref_values, RtEffs, tpointEffs, degMat);
+    List beta = build_beta_shell(mc_list, treatment_lvls, parent_lvls, child_lvls, ref_values, RtEffs, tpointEffs, tslopeEffs, degMat);
     vprint("Built initial beta (ref and fixed-effects) matrices", verbose); 
     
     // Initialize random effect warping factors 
-    List wfactors = List(2);
-    CharacterVector wfactors_names = {"point", "rate"};
+    List wfactors = List(3);
+    CharacterVector wfactors_names = {"point", "rate", "slope"};
     wfactors.names() = wfactors_names;
-    double wf_initial_low = -1.0 * wf_initial;
-    NumericVector wfs = dseq(wf_initial_low, wf_initial, n_ran - 1); 
     
     // Loop through warping factors (point and rate)
     for (String wf : wfactors_names) {
-      
       // Initialize array to hold warping factors 
       NumericMatrix wf_array(n_ran, n_child);
-      
       // Loop through child levels
       for (int c = 0; c < n_child; c++) {
-        
-        if (wf == "rate") {
-          // Find mean count value for each random level
-          dVec ran_lvl_means(n_ran - 1);
-          LogicalVector child_mask = eq_left_broadcast(child, child_lvls[c]);
-          for (int r = 1; r < n_ran; r++) { // skip "none" 
-            LogicalVector r_mask = child_mask & eq_left_broadcast(ran, ran_lvls[r]);
-            ran_lvl_means[r - 1] = vmean(masked_vec(count, r_mask)).val();
-          }
-          IntegerVector sorted_idx = Rorder(ran_lvl_means);
-          NumericVector wfs_c = wfs[sorted_idx];
-          wfs_c.push_front(0.0);            // add "none"
-          wf_array.column(c) = wfs_c;
-        } else { 
-          NumericVector wfs_c(n_ran, 0.0);
-          // ^ ... revise later to initiate in correct direction, as in rate??
-          wf_array.column(c) = wfs_c;
-        } 
-        
+        NumericVector wfs_c(n_ran, 0.0);
+        wf_array.column(c) = wfs_c;
       } 
       wfactors[wf] = wf_array;
     } 
@@ -609,6 +605,7 @@ wspc::wspc(
     param_names = params["param_names"];
     param_wfactor_point_idx = params["param_wfactor_point_idx"]; 
     param_wfactor_rate_idx = params["param_wfactor_rate_idx"];
+    param_wfactor_slope_idx = params["param_wfactor_slope_idx"];
     param_beta_Rt_idx = params["param_beta_Rt_idx"];
     param_beta_Rt_idx_no_ref = params["param_beta_Rt_idx_no_ref"];
     param_beta_tslope_idx = params["param_beta_tslope_idx"];
@@ -623,13 +620,13 @@ wspc::wspc(
     if (verbose) {vprint("Number of parameters: ", (int)fitted_parameters.size());}
    
     // Construct grouping variable ids as indexes for warping factor matrices, by count row
-    gv_ranLr_int = IntegerVector(n_count_rows);
-    gv_fixLr_int = IntegerVector(n_count_rows);
+    gv_ran_idx = IntegerVector(n_count_rows);
+    gv_fix_idx = IntegerVector(n_count_rows);
     for (int r = 0; r < n_count_rows; r++) {
       CharacterVector::iterator it_ran = std::find(ran_lvls.begin(), ran_lvls.end(), ran[r]);
       CharacterVector::iterator it_fix = std::find(child_lvls.begin(), child_lvls.end(), child[r]);
-      gv_ranLr_int[r] = std::distance(ran_lvls.begin(), it_ran);
-      gv_fixLr_int[r] = std::distance(child_lvls.begin(), it_fix);
+      gv_ran_idx[r] = std::distance(ran_lvls.begin(), it_ran);
+      gv_fix_idx[r] = std::distance(child_lvls.begin(), it_fix);
     }
     vprint("Constructed grouping variable IDs", verbose);
     
@@ -643,10 +640,8 @@ wspc::wspc(
       int p_num = Rwhich(eq_left_broadcast(parent_lvls, parent[r]))[0];
       int deg = degMat(c_num, p_num);
       if (deg > 0){
-        // Add slots for the tpoint boundary distance at each tpoint
+        // Add slots for the boundary distance at each tpoint
         boundary_vec_size += deg + 1;
-        // Add slots for the tslope boundary distance at each tslope
-        boundary_vec_size += deg;
         // Add one slot for the R_sum boundary distance
         boundary_vec_size++;
       } else {
@@ -656,7 +651,8 @@ wspc::wspc(
     }
     boundary_vec_size += param_struc_idx.size() +  // Add slots for the structural parameter boundaries
       param_wfactor_point_idx.size()*2 +           // ... and for the warping factor boundaries
-      param_wfactor_rate_idx.size()*2; 
+      param_wfactor_rate_idx.size()*2 +
+      param_wfactor_slope_idx.size()*2; 
     vprint("Computed size of boundary vector: " + std::to_string(boundary_vec_size), verbose);
     
     // Initialize list to hold results from model fit
@@ -689,14 +685,15 @@ void wspc::clear_stan_mem() {
     double dbin_num = bin_num.val();
     double dfe_difference_ratio_Rt = fe_difference_ratio_Rt.val();
     double dfe_difference_ratio_tpoint = fe_difference_ratio_tpoint.val();
+    double dfe_difference_ratio_tslope = fe_difference_ratio_tslope.val();
     double dmean_count_log = mean_count_log.val();
+    double dmean_tslope = mean_tslope.val();
     double dbuffer_factor = buffer_factor.val();
     double dtpoint_buffer = tpoint_buffer.val();
     dVec dbin = to_dVec(bin);
     dVec dcount = to_dVec(count);
     dVec dcount_log = to_dVec(count_log);
     dVec dcount_tokenized = to_dVec(count_tokenized);
-    dVec dobserved_mean_ran_eff = to_dVec(observed_mean_ran_eff);
     NumericMatrix Numweights = to_NumMat(weights);
     NumericMatrix Numgamma_dispersion = to_NumMat(gamma_dispersion);
     
@@ -707,14 +704,15 @@ void wspc::clear_stan_mem() {
     bin_num = (sdouble)dbin_num;
     fe_difference_ratio_Rt = (sdouble)dfe_difference_ratio_Rt;
     fe_difference_ratio_tpoint = (sdouble)dfe_difference_ratio_tpoint;
+    fe_difference_ratio_tslope = (sdouble)dfe_difference_ratio_tslope;
     mean_count_log = (sdouble)dmean_count_log;
+    mean_tslope = (sdouble)dmean_tslope;
     buffer_factor = (sdouble)dbuffer_factor;
     tpoint_buffer = (sdouble)dtpoint_buffer;
     bin = to_sVec(dbin);
     count = to_sVec(dcount);
     count_log = to_sVec(dcount_log);
     count_tokenized = to_sVec(dcount_tokenized);
-    observed_mean_ran_eff = to_sVec(dobserved_mean_ran_eff);
     weights = to_sMat(Numweights);
     gamma_dispersion = to_sMat(Numgamma_dispersion);
     
@@ -726,72 +724,33 @@ void wspc::clear_stan_mem() {
  */
 
 // Compute model component values for rows of summed count data
-// ... for Rt
-sVec wspc::compute_mc_Rt_r(
-    const int& r,
-    const sVec& parameters,
-    const sdouble& f_rw
+sVec wspc::compute_warped_mc(
+    const String& mc,          // Model component for which to compute values
+    const int& r,              // Row of summed count data for which to compute model component 
+    const sVec& parameters,    // Parameters to use in computation
+    const sdouble& wf,         // Warping factor to apply 
+    const sdouble& warp_bound  // Boundary constraining warped values
   ) const {
     
     // Extract the parameter vector indexes for the current rate row, beta matrices
-    List beta_idx_Rt = Rcpp::as<List>(beta_idx["Rt"]);
-    List beta_idx_Rt_prt = Rcpp::as<List>(beta_idx_Rt[(String)parent[r]]);
-    IntegerVector betas_Rt_idx = beta_idx_Rt_prt[Rcpp::as<std::string>(child[r])];
+    List beta_idx_mc = Rcpp::as<List>(beta_idx[mc]);
+    List beta_idx_mc_prt = Rcpp::as<List>(beta_idx_mc[(String)parent[r]]);
+    IntegerVector betas_mc_idx = beta_idx_mc_prt[Rcpp::as<std::string>(child[r])];
     
     // Grab degree
     int c_num = Rwhich(eq_left_broadcast(child_lvls, child[r]))[0];
     int p_num = Rwhich(eq_left_broadcast(parent_lvls, parent[r]))[0];
     int deg = degMat(c_num, p_num);
+    int block_num = deg; 
+    if (mc == "Rt") {block_num++;}
     
     // Re-roll beta matrices
     int idx_r = 0;
-    sMat betas_Rt_r(treatment_num, deg + 1);
-    for (int t = 0; t < deg + 1; t++) {
-      for (int i = 0; i < treatment_num; i++) {
-        betas_Rt_r(i, t) = parameters(betas_Rt_idx[idx_r]);
-        idx_r++;
-      }
-    } 
-    
-    // Extract weight matrix row
-    sVec weight_row = weights.row(r).transpose();
-    
-    // Compute unwarped Rt
-    sVec Rt_vec = compute_mc(betas_Rt_r, weight_row);
-    
-    // Apply warping factor 
-    for (int bt = 0; bt < Rt_vec.size(); bt++) {
-      Rt_vec(bt) = rate_warp(Rt_vec(bt), f_rw);
-    }
-    
-    // Send out
-    return Rt_vec;
-    
-  }
-
-// ... tslope
-sVec wspc::compute_mc_tslope_r(
-    const int& r,
-    const sVec& parameters
-  ) const {
-    
-    // Extract the parameter vector indexes for the current rate row, beta matrices
-    List beta_idx_tslope = Rcpp::as<List>(beta_idx["tslope"]);
-    List beta_idx_tslope_prt = Rcpp::as<List>(beta_idx_tslope[Rcpp::as<std::string>(parent[r])]);
-    IntegerVector betas_tslope_idx = beta_idx_tslope_prt[Rcpp::as<std::string>(child[r])];
-    
-    // Grab degree
-    int c_num = Rwhich(eq_left_broadcast(child_lvls, child[r]))[0];
-    int p_num = Rwhich(eq_left_broadcast(parent_lvls, parent[r]))[0];
-    int deg = degMat(c_num, p_num);
-    
-    // Re-roll beta matrices
-    int idx_r = 0;
-    sMat betas_tslope_r(treatment_num, deg);
+    sMat betas_mc_r(treatment_num, block_num);
     if (deg > 0) {
-      for (int t = 0; t < deg; t++) {
+      for (int t = 0; t < block_num; t++) {
         for (int i = 0; i < treatment_num; i++) {
-          betas_tslope_r(i, t) = parameters(betas_tslope_idx[idx_r]);
+          betas_mc_r(i, t) = parameters(betas_mc_idx[idx_r]);
           idx_r++;
         }
       } 
@@ -800,59 +759,34 @@ sVec wspc::compute_mc_tslope_r(
     // Extract weight matrix row
     sVec weight_row = weights.row(r).transpose();
     
-    // Compute tslope
-    sVec tslope_vec = compute_mc(betas_tslope_r, weight_row);
+    // Compute unwarped model component value 
+    sVec mc_vec(block_num);
+    mc_vec.setZero();
+    for (int t = 0; t < treatment_num; t++) {
+      sdouble wi = weight_row(t);
+      sVec betai = betas_mc_r.row(t);
+      for (int bt = 0; bt < block_num; bt++) {
+        mc_vec(bt) += wi*betai(bt);
+      }
+    }
     
     // Take exponential of slopes
-    // ... slopes must be positive, but fit and reported as a normal parameter,
-    //      so here the exp is taken.
-    for (int i = 0; i < tslope_vec.size(); i++) {
-      tslope_vec(i) = sexp(tslope_vec(i));
+    // ... slopes must be positive, but fit and reported as a normal parameter, so here the exp is taken.
+    if (mc == "tslope") {
+      for (int bt = 0; bt < block_num; bt++) {
+        mc_vec(bt) = sexp(mc_vec(bt));
+      }
+    }
+    
+    // Apply warping factor 
+    for (int bt = 0; bt < block_num; bt++) {
+      mc_vec(bt) = mc_vec(bt) + wf * mc_vec(bt) * (1.0 - (mc_vec(bt) / warp_bound));
     }
     
     // Send out
-    return tslope_vec;
+    return mc_vec;
     
-  } 
-
-// ... tpoint
-sVec wspc::compute_mc_tpoint_r(
-    const int& r,
-    const sVec& parameters
-  ) const {
-    
-    // Extract the parameter vector indexes for the current rate row, beta matrices
-    List beta_idx_tpoint = Rcpp::as<List>(beta_idx["tpoint"]);
-    List beta_idx_tpoint_prt = Rcpp::as<List>(beta_idx_tpoint[Rcpp::as<std::string>(parent[r])]);
-    IntegerVector betas_tpoint_idx = beta_idx_tpoint_prt[Rcpp::as<std::string>(child[r])];
-    
-    // Grab degree
-    int c_num = Rwhich(eq_left_broadcast(child_lvls, child[r]))[0];
-    int p_num = Rwhich(eq_left_broadcast(parent_lvls, parent[r]))[0];
-    int deg = degMat(c_num, p_num);
-    
-    // Re-roll beta matrices
-    int idx_r = 0;
-    sMat betas_tpoint_r(treatment_num, deg);
-    if (deg > 0) {
-      for (int t = 0; t < deg; t++) {
-        for (int i = 0; i < treatment_num; i++) {
-          betas_tpoint_r(i, t) = parameters(betas_tpoint_idx[idx_r]);
-          idx_r++;
-        }
-      } 
-    }
-    
-    // Extract weight matrix row
-    sVec weight_row = weights.row(r).transpose();
-    
-    // Find tpoint and send out
-    sVec tpoint_vec = compute_mc(betas_tpoint_r, weight_row);
-    
-    // Send out 
-    return tpoint_vec;
-    
-  }  
+  }
 
 // Predict log of rates
 sVec wspc::predict_rates_log(
@@ -888,10 +822,13 @@ sVec wspc::predict_rates_log(
     // Grab warping indices and initiate variables to hold them
     NumericMatrix wfactor_idx_point = wfactor_idx["point"];
     NumericMatrix wfactor_idx_rate = wfactor_idx["rate"];
+    NumericMatrix wfactor_idx_slope = wfactor_idx["slope"];
     int f_pw_idx;
     int f_rw_idx;
+    int f_sw_idx;
     sdouble f_pw;
     sdouble f_rw;
+    sdouble f_sw;
     
     // Compute predicted rate for rows of the summed count data
     for (int r = 0; r < n_count_rows; r++) {
@@ -900,24 +837,27 @@ sVec wspc::predict_rates_log(
       if (count_not_na_mask[r] || all_rows) {
         
         // Grab warping factors
-        if (gv_ranLr_int[r] == 0) {
+        if (gv_ran_idx[r] == 0) {
           f_pw = 0.0;
           f_rw = 0.0; 
+          f_sw = 0.0;
         } else {
-          f_pw_idx = wfactor_idx_point(gv_ranLr_int[r], gv_fixLr_int[r]);
-          f_rw_idx = wfactor_idx_rate(gv_ranLr_int[r], gv_fixLr_int[r]);
+          f_pw_idx = wfactor_idx_point(gv_ran_idx[r], gv_fix_idx[r]);
+          f_rw_idx = wfactor_idx_rate(gv_ran_idx[r], gv_fix_idx[r]);
+          f_sw_idx = wfactor_idx_slope(gv_ran_idx[r], gv_fix_idx[r]);
           f_pw = parameters(f_pw_idx);
           f_rw = parameters(f_rw_idx); 
+          f_sw = parameters(f_sw_idx);
         } 
         
         // Only update predicted model components if r begins a new batch of unique values 
         int cnt = std::count(mc_unique_rows.begin(), mc_unique_rows.end(), r);
         if (cnt > 0) { 
           
-          // Compute model components for this row r
-          Rt = compute_mc_Rt_r(r, parameters, f_rw);   // returned already warped
-          tslope = compute_mc_tslope_r(r, parameters); // returned out of log space
-          tpoint = compute_mc_tpoint_r(r, parameters);
+          // Compute warped model components for this row r
+          Rt = compute_warped_mc("Rt", r, parameters, f_rw, inf_);        
+          tslope = compute_warped_mc("tslope", r, parameters, f_sw, inf_); 
+          tpoint = compute_warped_mc("tpoint", r, parameters, f_pw, bin_num);
           
         } 
         
@@ -927,7 +867,7 @@ sVec wspc::predict_rates_log(
         
         // Compute the actual poly-sigmoid!! 
         predicted_rates(r) = poly_sigmoid(
-          point_warp(bin(r), bin_num, f_pw),
+          bin(r),
           degMat(c_num, p_num),
           Rt,
           tslope,
@@ -958,9 +898,10 @@ sdouble wspc::neg_loglik(
     // Subset the wfactor and beta parameters
     sVec warping_factors_point = idx_vec(parameters, param_wfactor_point_idx);
     sVec warping_factors_rate = idx_vec(parameters, param_wfactor_rate_idx);
-    sVec tslope_beta_values_no_ref = idx_vec(parameters, param_beta_tslope_idx_no_ref);
-    sVec Rt_beta_values_no_ref = idx_vec(parameters, param_beta_Rt_idx_no_ref);
+    sVec warping_factors_slope = idx_vec(parameters, param_wfactor_slope_idx);
     sVec tpoint_beta_values_no_ref = idx_vec(parameters, param_beta_tpoint_idx_no_ref);
+    sVec Rt_beta_values_no_ref = idx_vec(parameters, param_beta_Rt_idx_no_ref);
+    sVec tslope_beta_values_no_ref = idx_vec(parameters, param_beta_tslope_idx_no_ref);
     
     // *****************************************************************************************************************
     // log-likelihood of warping factors (ensures warping factors fit a modelled beta distribution)
@@ -985,6 +926,16 @@ sdouble wspc::neg_loglik(
       );
     }
     
+    // Compute the log-likelihood of the slope warping factors, given the assumed beta distribution
+    sdouble beta_shape_slope = parameters[param_struc_idx["beta_shape_slope"]];
+    for (int i = 0; i < warping_factors_slope.size(); i++) {
+      sdouble wf = (warping_factors_slope(i) + 1.0)/2.0; // rescale
+      log_lik += slog(
+        spower(wf, beta_shape_slope - 1.0) * spower(1.0 - wf, beta_shape_slope - 1.0) /
+          (spower(stan::math::tgamma(beta_shape_slope), 2.0) / stan::math::tgamma(2.0 * beta_shape_slope))
+      );
+    }
+    
     // *****************************************************************************************************************
     // log-likelihood of warping factors means (ensures warping factors tend to be centered around zero)
     
@@ -1001,55 +952,33 @@ sdouble wspc::neg_loglik(
     sdouble sd_pw_r = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_rate.size()) * (2.0 * beta_shape_rate + 1.0))) * 2.0;
     log_lik += log_dNorm(pw_mean_r, 0.0, sd_pw_r);
     
-    // *****************************************************************************************************************
-    // log-likelihood of the estimated overall rate warp of that warping factor,
-    //  given the modelled child-specific rate warping factors for each random level, 
-    // ... idea: warping factors for a random level can vary between child levels, but the mean of these warping factors 
-    //      should still tend to line up with the observed mean random effect of that random level.
-    
-    // Compute the log-likelihood of the observed mean random rate effects, given these rate warping factors
-    int n_child = child_lvls.size();
-    int n_ran = ran_lvls.size(); 
-    sdouble sqrt_n_ran = ssqrt((sdouble)n_ran - 1.0);
-    // ... Grab warping indices and initiate variables to hold them
-    NumericMatrix wfactor_idx_rate = wfactor_idx["rate"];
-    sVec f_rw_row(n_child);
-    for (int r = 1; r < n_ran; r++) {
-      // ... Get rate-warp factors for this level (one per child)
-      for (int c = 0; c < n_child; c++) {f_rw_row(c) = parameters[(int)wfactor_idx_rate(r, c)];}
-      // ... find mean and scaled sd
-      sdouble modeled_mean = vmean(f_rw_row); 
-      sdouble modeled_sd = vsd(f_rw_row)/sqrt_n_ran; 
-      // ... add log-likelihood
-      log_lik += log_dNorm(observed_mean_ran_eff[r - 1], modeled_mean, modeled_sd);
-    }
+    // compute the log-likelihood of the mean of slope warping factors, given the expected normal distribution
+    // ... see above notes on the formula 
+    sdouble pw_mean_s = vmean(warping_factors_slope);
+    sdouble sd_pw_s = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_slope.size()) * (2.0 * beta_shape_slope + 1.0))) * 2.0;
+    log_lik += log_dNorm(pw_mean_s, 0.0, sd_pw_s);
     
     // *****************************************************************************************************************
     // log-likelihood of beta values
     
     // Compute the log-likelihood of the Rt beta values, given the normal distribution implied by the beta-rate shape and fe_difference_ratio ratio
-    sdouble expected_ran_effect_rate = 1.0 / ssqrt(4.0 * beta_shape_rate + 2.0);    // ... already includes the *= 2.0 rescaling to range from -1 to 1
-    sdouble eff_mult_rate = fe_difference_ratio_Rt - 1.0;
-    sdouble expected_Rt = mean_count_log;
-    sdouble sd_Rt_effect = eff_mult_rate * expected_Rt * expected_ran_effect_rate;
+    sdouble sd_Rt_effect = get_beta_sd(beta_shape_rate, fe_difference_ratio_Rt, mean_count_log);
     for (int i = 0; i < Rt_beta_values_no_ref.size(); i++) {
       log_lik += log_dNorm(Rt_beta_values_no_ref(i), 0.0, sd_Rt_effect);
     }
     
     // Compute the log-likelihood of the tslope beta values, given the assumed normal distribution
-    // ... recall: slopes must be positive, but are fit and reported as a normal parameter (in log space)
     int n_tslope = tslope_beta_values_no_ref.size();
-    sdouble sd_tslope_effect = parameters[param_struc_idx["sd_tslope_effect"]];
+    sdouble sd_tslope_effect; 
+    if (n_tslope > 0) {sd_tslope_effect = get_beta_sd(beta_shape_slope, fe_difference_ratio_tslope, mean_tslope);}
     for (int i = 0; i < n_tslope; i++) {
       log_lik += log_dNorm(tslope_beta_values_no_ref(i), 0.0, sd_tslope_effect); 
     }
     
     // Compute the log-likelihood of the tpoint beta values, given the assumed normal distribution
     int n_tpoint = tpoint_beta_values_no_ref.size();
-    sdouble expected_ran_effect_tpoint = 1.0 / ssqrt(4.0 * beta_shape_point + 2.0); // ... already includes the *= 2.0 rescaling to range from -1 to 1
-    sdouble eff_mult_tpoint = fe_difference_ratio_tpoint + 1.0;                     // ... note the different sign
-    sdouble expected_tpoint = bin_num / 2.0;
-    sdouble sd_tpoint_effect = (eff_mult_tpoint * expected_tpoint * expected_ran_effect_tpoint) / (2.0 + eff_mult_tpoint * expected_ran_effect_tpoint);
+    sdouble sd_tpoint_effect;
+    if (n_tpoint > 0) {sd_tpoint_effect = get_beta_sd(beta_shape_point, fe_difference_ratio_tpoint, bin_num/2.0);}
     for (int i = 0; i < n_tpoint; i++) {
       log_lik += log_dNorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect);
     }
@@ -1078,8 +1007,8 @@ sdouble wspc::neg_loglik(
         
         // Find gamma variance for this row
         // ... grab parent and child index numbers
-        int n_c = gd_child[(String)child[r]];
-        int n_p = gd_parent[(String)parent[r]];
+        int n_c = gd_child_idx[(String)child[r]];
+        int n_p = gd_parent_idx[(String)parent[r]];
         // ... pull predicted rate from log space
         sdouble prate_var = sexp(prate_log_var(r)) - 1.0;
         // ... estimate variance of rate outside log space
@@ -1117,52 +1046,47 @@ sVec wspc::boundary_dist(
     // Grab warping indices and initiate variables to hold them
     NumericMatrix wfactor_idx_point = wfactor_idx["point"];
     NumericMatrix wfactor_idx_rate = wfactor_idx["rate"];
+    NumericMatrix wfactor_idx_slope = wfactor_idx["slope"];
     int f_pw_idx;
     int f_rw_idx;
+    int f_sw_idx;
     sdouble f_pw;
     sdouble f_rw;
+    sdouble f_sw;
     
     // Compute the boundary distance, for ...
-    // ... inverse transition slopes (penalize extremely small or large slopes)
     // ... transition points (enforces tpoint buffer)
     // ... Rsum (enforces positive predicted rates)
     for (int r : idx_mc_unique) {
       
       // Grab warping factors
-      if (gv_ranLr_int[r] == 0) {
+      if (gv_ran_idx[r] == 0) {
         f_pw = 0.0;
         f_rw = 0.0; 
+        f_sw = 0.0;
       } else {
-        f_pw_idx = wfactor_idx_point(gv_ranLr_int[r], gv_fixLr_int[r]);
-        f_rw_idx = wfactor_idx_rate(gv_ranLr_int[r], gv_fixLr_int[r]);
+        f_pw_idx = wfactor_idx_point(gv_ran_idx[r], gv_fix_idx[r]);
+        f_rw_idx = wfactor_idx_rate(gv_ran_idx[r], gv_fix_idx[r]);
+        f_sw_idx = wfactor_idx_slope(gv_ran_idx[r], gv_fix_idx[r]);
         f_pw = parameters(f_pw_idx);
         f_rw = parameters(f_rw_idx); 
+        f_sw = parameters(f_sw_idx);
       } 
       
       // Compute Rt for this row r
       // ... note: Not computing rate for all rows, just ones with unique model components
       // ... this reduces number of rows to compute by a factor of bin_num, which is significant
-      sVec Rt = compute_mc_Rt_r(r, parameters, f_rw);
+      sVec Rt = compute_warped_mc("Rt", r, parameters, f_rw, inf_);
       
       // Grab degree for this row
       int deg = Rt.size() - 1;
       
-      // Compute tslope, t-point, and R_sum boundary distances
+      // Compute t-point and R_sum boundary distances
       if (deg > 0){
         
         // Compute tslope and tpoint for this row r
-        sVec tslope = compute_mc_tslope_r(r, parameters); 
-        sVec tpoint = compute_mc_tpoint_r(r, parameters);
-        
-        // Transition slopes can't be too extreme (large or small)
-        // ... since tslope is stored in log space, a slope of zero is really a slope of 1, 
-        //      and is unpenalized by this formula, while any deviation off that "neutral" 
-        //      value is penalized.
-        for (int d = 0; d < deg; d++) {
-          sdouble slope_boundary = 1.0 / (spower(tslope(d), 2.0) + 1.0);
-          boundary_dist_vec(ctr) = slope_boundary;
-          ctr++;
-        }
+        sVec tslope = compute_warped_mc("tslope", r, parameters, f_sw, inf_); 
+        sVec tpoint = compute_warped_mc("tpoint", r, parameters, f_pw, bin_num);
         
         // Find tpoint boundary distances
         // WARNING: this code is duplicated in test_tpoint
@@ -1171,7 +1095,7 @@ sVec wspc::boundary_dist(
           if (bt == 0) {
             tpoint_ext(bt) = 0.0;
           } else if (bt <= deg) {
-            tpoint_ext(bt) = point_warp(tpoint(bt - 1), bin_num, f_pw);
+            tpoint_ext(bt) = tpoint(bt - 1);
           } else { 
             tpoint_ext(bt) = bin_num;
           } 
@@ -1213,27 +1137,26 @@ sVec wspc::boundary_dist(
       
     } 
     
-    // Compute parameter boundary distance, w factors point
-    for (int p : param_wfactor_point_idx) {
-      // All warping factors must be between -1 and 1
-      sdouble dist_low = parameters(p) + 1.0;
-      boundary_dist_vec(ctr) = dist_low; 
-      ctr++;
-      sdouble dist_high = 1.0 - parameters(p);
-      boundary_dist_vec(ctr) = dist_high;
-      ctr++; 
-    } 
+    // Compute parameter boundary distance, w factors
+    std::vector<IntegerVector> param_wfactor_idx = {
+      param_wfactor_point_idx,
+      param_wfactor_rate_idx,
+      param_wfactor_slope_idx
+    };
     
-    // Compute parameter boundary distance, w factors rate
-    for (int p : param_wfactor_rate_idx) {
-      // All warping factors must be between -1 and 1
-      sdouble dist_low = parameters(p) + 1.0;
-      boundary_dist_vec(ctr) = dist_low;
-      ctr++;
-      sdouble dist_high = 1.0 - parameters(p);
-      boundary_dist_vec(ctr) = dist_high;
-      ctr++; 
-    } 
+    for (IntegerVector idx_vec : param_wfactor_idx) {
+      
+      for (int p : idx_vec) {
+        // All warping factors must be between -1 and 1
+        sdouble dist_low = parameters(p) + 1.0;
+        boundary_dist_vec(ctr) = dist_low; 
+        ctr++;
+        sdouble dist_high = 1.0 - parameters(p);
+        boundary_dist_vec(ctr) = dist_high;
+        ctr++; 
+      } 
+      
+    }
     
     // Compute parameter boundary distance, structural parameters
     for (int p : param_struc_idx) {
@@ -1276,10 +1199,10 @@ bool wspc::test_tpoints(
       if (cnt > 0) { 
         
         // Grab warping factors
-        if (gv_ranLr_int[r] == 0) {
+        if (gv_ran_idx[r] == 0) {
           f_pw = 0.0;
         } else {
-          f_pw_idx = wfactor_idx_point(gv_ranLr_int[r], gv_fixLr_int[r]);
+          f_pw_idx = wfactor_idx_point(gv_ran_idx[r], gv_fix_idx[r]);
           f_pw = parameters(f_pw_idx);
         }
         
@@ -1290,7 +1213,7 @@ bool wspc::test_tpoints(
         if (deg > 0) {
           
           // Compute tpoints for this row r
-          tpoint = compute_mc_tpoint_r(r, parameters);
+          tpoint = compute_warped_mc("tpoint", r, parameters, f_pw, bin_num);
           
           // Find tpoint boundary distances
           // WARNING: this code is duplicated from boundary_dist
@@ -1299,7 +1222,7 @@ bool wspc::test_tpoints(
             if (bt == 0) {
               tpoint_ext(bt) = 0.0;
             } else if (bt <= deg) {
-              tpoint_ext(bt) = point_warp(tpoint(bt - 1), bin_num, f_pw);
+              tpoint_ext(bt) = tpoint(bt - 1);
             } else { 
               tpoint_ext(bt) = bin_num;
             } 
@@ -2156,6 +2079,14 @@ void wspc::import_fe_diff_ratio_tpoint(
     fe_difference_ratio_tpoint = (sdouble)fe_diff_ratio;
   }
 
+void wspc::import_fe_diff_ratio_tslope(
+    const double& fe_diff_ratio,
+    const bool& verbose
+  ) {
+    vprint("Imported fe_difference_ratio_tslope: " + std::to_string(fe_diff_ratio), verbose);
+    fe_difference_ratio_tslope = (sdouble)fe_diff_ratio;
+  }
+
 Rcpp::List wspc::results() {
     
     NumericVector predicted_rates_out(n_count_rows);
@@ -2238,17 +2169,14 @@ Rcpp::List wspc::results() {
       } 
     }
     
-    // Recompute sd_Rt_effect
-    sdouble expected_ran_effect_rate = 1.0 / ssqrt(4.0 * struc_values["beta_shape_rate"] + 2.0);    // ... already includes the *= 2.0 rescaling to range from -1 to 1
-    sdouble eff_mult_rate = fe_difference_ratio_Rt - 1.0;
-    sdouble expected_Rt = mean_count_log;
-    sdouble sd_Rt_effect = eff_mult_rate * expected_Rt * expected_ran_effect_rate;
-    
-    // Recompute sd_tpoint_effect
-    sdouble expected_ran_effect_tpoint = 1.0 / ssqrt(4.0 * struc_values["beta_shape_point"] + 2.0); // ... already includes the *= 2.0 rescaling to range from -1 to 1
-    sdouble eff_mult_tpoint = fe_difference_ratio_tpoint + 1.0;                                     // ... note the different sign
-    sdouble expected_tpoint = bin_num / 2.0;
-    sdouble sd_tpoint_effect = (eff_mult_tpoint * expected_tpoint * expected_ran_effect_tpoint) / (2.0 + eff_mult_tpoint * expected_ran_effect_tpoint);
+    // Recompute beta standard deviations
+    sdouble sd_Rt_effect = get_beta_sd(struc_values["beta_shape_rate"], fe_difference_ratio_Rt, mean_count_log);
+    int n_tpoint = param_beta_tpoint_idx_no_ref.size();
+    sdouble sd_tpoint_effect = 0.0;
+    if (n_tpoint > 0) {sd_tpoint_effect = get_beta_sd(struc_values["beta_shape_point"], fe_difference_ratio_tpoint, bin_num/2.0);}
+    int n_tslope = param_beta_tslope_idx_no_ref.size();
+    sdouble sd_tslope_effect = 0.0; 
+    if (n_tslope > 0) {sd_tslope_effect = get_beta_sd(struc_values["beta_shape_slope"], fe_difference_ratio_tslope, mean_tslope);}
     
     // Reformat gamma dispersion parameters 
     NumericMatrix g_dispersion = to_NumMat(gamma_dispersion);
@@ -2270,7 +2198,9 @@ Rcpp::List wspc::results() {
       _["token.pool"] = token_pool_list,
       _["computed_sd_Rt_effect"] = sd_Rt_effect.val(),
       _["computed_sd_tpoint_effect"] = sd_tpoint_effect.val(),
+      _["computed_sd_tslope_effect"] = sd_tslope_effect.val(),
       _["change.points"] = change_points,
+      _["est.slopes"] = est_slopes, 
       _["settings"] = model_settings
     );
     
@@ -2348,5 +2278,6 @@ RCPP_MODULE(wspc) {
     .method("resample", &wspc::resample)
     .method("import_fe_diff_ratio_Rt", &wspc::import_fe_diff_ratio_Rt)
     .method("import_fe_diff_ratio_tpoint", &wspc::import_fe_diff_ratio_tpoint)
+    .method("import_fe_diff_ratio_tslope", &wspc::import_fe_diff_ratio_tslope)
     .method("results", &wspc::results);
   }

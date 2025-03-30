@@ -93,6 +93,7 @@ List build_beta_shell(
     const List& ref_values,
     const List& RtEffs,
     const List& tpointEffs,
+    const List& tslopeEffs,
     const IntegerMatrix& degs
   ) {
     
@@ -129,6 +130,9 @@ List build_beta_shell(
             
             List tpointEffs_prt = tpointEffs[p];
             NumericMatrix tpointEffs_Mat = tpointEffs_prt[c];
+            
+            List tslopeEffs_prt = tslopeEffs[p];
+            NumericMatrix tslopeEffs_Mat = tslopeEffs_prt[c];
            
             for (int t = 0; t < treat_num; t++) {
               for (int i = 0; i < col_num; i++) {
@@ -144,9 +148,9 @@ List build_beta_shell(
                   } else if (mc =="tpoint") {
                     // use estimated tpoint effect for non-ref treatment levels 
                     bta(t, i) = tpointEffs_Mat(t, i);
-                  } else {
+                  } else if (mc == "tslope") {
                     // Seed with zero effect for tslope
-                    bta(t, i) = 0.0; 
+                    bta(t, i) = tslopeEffs_Mat(t, i); 
                   }
                 }
               }
@@ -191,6 +195,7 @@ List make_parameter_vector(
     int idx = 0;
     iVec param_wfactor_point_idx; 
     iVec param_wfactor_rate_idx;
+    iVec param_wfactor_slope_idx;
     iVec param_beta_Rt_idx;
     iVec param_beta_Rt_idx_no_ref;
     iVec param_beta_tslope_idx;
@@ -297,9 +302,11 @@ List make_parameter_vector(
     // For make
     NumericMatrix wfactor_point = wfactor["point"];
     NumericMatrix wfactor_rate = wfactor["rate"];
+    NumericMatrix wfactor_slope = wfactor["slope"];
     // For map
     NumericMatrix wfactor_idx_point = clone(wfactor_point); 
     NumericMatrix wfactor_idx_rate = clone(wfactor_rate); 
+    NumericMatrix wfactor_idx_slope = clone(wfactor_slope);
     
     for (int c = 0; c < n_child; c++) {
       // Intentionally skip the first level, which is "none"
@@ -320,17 +327,26 @@ List make_parameter_vector(
         param_wfactor_rate_idx.push_back(idx);
         wfactor_idx_rate(r, c) = idx; 
         idx++;
+        // ... Slope warp
+        CharacterVector param_name_slope = CharacterVector::create("wfactor", "slope", r_name, "X", c_name);
+        param_names.push_back(param_name_slope);
+        param_wfactor_slope_idx.push_back(idx);
+        wfactor_idx_slope(r, c) = idx;
+        idx++;
        
         // Make
         // ... Point warp
         param_vector.push_back(wfactor_point(r, c));
         // ... Rate warp
         param_vector.push_back(wfactor_rate(r, c));
+        // ... Slope warp
+        param_vector.push_back(wfactor_slope(r, c));
         
       }
     } 
     wfactor_idx["point"] = wfactor_idx_point;
     wfactor_idx["rate"] = wfactor_idx_rate; 
+    wfactor_idx["slope"] = wfactor_idx_slope;
     
     // Add structural parameters to the end
     for (int i = 0; i < struc_names.length(); i++) {
@@ -351,6 +367,7 @@ List make_parameter_vector(
       _["param_names"] = param_names,
       _["param_wfactor_point_idx"] = wrap(param_wfactor_point_idx),
       _["param_wfactor_rate_idx"] = wrap(param_wfactor_rate_idx),
+      _["param_wfactor_slope_idx"] = wrap(param_wfactor_slope_idx),
       _["param_beta_Rt_idx"] = wrap(param_beta_Rt_idx),
       _["param_beta_Rt_idx_no_ref"] = wrap(param_beta_Rt_idx_no_ref),
       _["param_beta_tslope_idx"] = wrap(param_beta_tslope_idx),

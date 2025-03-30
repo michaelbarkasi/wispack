@@ -40,8 +40,6 @@ wisp <- function(
       LROcutoff = 2.0,                            # cutoff for LROcp
       LROwindow_factor = 2.0,                     # controls size of window used in LROcp algorithm (window = LROwindow_factor * bin_num * buffer_factor)
       LROfilter_ws_divisor = 2.0,                 # divisor for filter window size in likelihood ratio outlier detection (bigger is smaller window)
-      tslope_initial = 1.0,                       # initial value for tslope
-      wf_initial = 0.1,                           # initial value for wfactor
       max_evals = 1000,                           # maximum number of evaluations for optimization
       rng_seed = 42                               # seed for random number generator
     )
@@ -83,6 +81,7 @@ wisp <- function(
     )
     cpp_model$import_fe_diff_ratio_Rt(fe_diff_ratio$diff.ratio.c, verbose)
     cpp_model$import_fe_diff_ratio_tpoint(fe_diff_ratio$diff.ratio.tp, verbose)
+    cpp_model$import_fe_diff_ratio_tslope(fe_diff_ratio$diff.ratio.ts, verbose)
     
     # Estimate model parameters with MCMC or bootstrapping ####
     if (verbose) {
@@ -747,6 +746,7 @@ analyze.diff <- function(
         dimnames = list(child = children, parent = parents)
       )
       tpoints <- wisp.results$change.points
+      tslopes <- wisp.results$est.slopes
       
       # Make full count data matrices
       data0 <- array(
@@ -780,7 +780,7 @@ analyze.diff <- function(
       max_deg <- max(degs)
       max_blocks <- max_deg + 1
       
-      # Make tpoint matrices 
+      # Make tpoint and tslope matrices 
       datat <- array(
         NA,
         dim = c(
@@ -790,23 +790,37 @@ analyze.diff <- function(
         ),
         dimnames = list(tp = 1:max_deg, child = children, parent = parents, ran = c("none", ran_lvls), fixedeffect = trts)
       )
+      datas <- array(
+        NA,
+        dim = c(
+          max_deg, n_children, n_parents,
+          n_ran_lvls + 1,
+          n_trts
+        ),
+        dimnames = list(ts = 1:max_deg, child = children, parent = parents, ran = c("none", ran_lvls), fixedeffect = trts)
+      )
       for (p in parents) {
         for (g in children) {
           for (m in ran_lvls) {
             for (t in trt_lvls_in_ran[[m]]) {
               t_num <- which(trts == t)
               m_num <- which(c("none", ran_lvls) == m)
-              tpoints_array_col_num <- (t_num - 1) * (n_ran_lvls + 1) + m_num
+              array_col_num <- (t_num - 1) * (n_ran_lvls + 1) + m_num
               tpoints_pg <- tpoints[[p]][[g]]
+              tslopes_pg <- tslopes[[p]][[g]]
               if (length(tpoints_pg) > 0) {
-                tpoints_pg_this <- tpoints_pg[, tpoints_array_col_num]
+                tpoints_pg_this <- tpoints_pg[, array_col_num]
+                tslopes_pg_this <- tslopes_pg[, array_col_num]
                 # Randomly nudge 
-                jit <- sample((-3):3, 1)
-                tpoints_pg_this <- tpoints_pg_this + jit
-                # Ensure in bounds
+                jit1 <- sample((-3):3, 1)
+                tpoints_pg_this <- tpoints_pg_this + jit1
+                jit2 <- runif(1, min = 0.75, max = 1.25)
+                tslopes_pg_this <- tslopes_pg_this * jit2
+                # Ensure in bounds and save
                 if (any(tpoints_pg_this < 3)) tpoints_pg_this[tpoints_pg_this < 3] <- 3
                 if (any(tpoints_pg_this > n_bins - 2)) tpoints_pg_this[tpoints_pg_this > n_bins - 2] <- n_bins - 2
                 datat[1:degs[g, p], g, p, m, t] <- tpoints_pg_this
+                datas[1:degs[g, p], g, p, m, t] <- tslopes_pg_this
               }
             }
           }
@@ -852,7 +866,8 @@ analyze.diff <- function(
       return(
         list(
           count_data = data,
-          tpoint_data = datat
+          tpoint_data = datat,
+          tslope_data = datas
         )
       )
       
@@ -932,12 +947,14 @@ analyze.diff <- function(
     n_runs <- 100
     diff.ratio.c_i <- rep(0, n_runs)
     diff.ratio.tp_i <- rep(0, n_runs)
+    diff.ratio.ts_i <- rep(0, n_runs)
     for (i in 1:n_runs) {
       
       # Make data matrices with random nudge of tpoints
       data.both <- make_data_matrices(count.type)
       data.c <- data.both$count_data
       data.tp <- data.both$tpoint_data
+      data.ts <- data.both$tslope_data
       
       # For reach treatment level of each fixed effect, find normalized differences between random levels
       ran.diffs.c <- find_norm_diffs(data.c, TRUE)
@@ -948,25 +965,33 @@ analyze.diff <- function(
       oneoff.diffs.tp <- find_norm_diffs(data.tp, FALSE)
       diff.ratio.tp <- mean(oneoff.diffs.tp)/mean(ran.diffs.tp)
       
+      ran.diffs.ts <- find_norm_diffs(data.ts, TRUE)
+      oneoff.diffs.ts <- find_norm_diffs(data.ts, FALSE)
+      diff.ratio.ts <- mean(oneoff.diffs.ts)/mean(ran.diffs.ts)
+      
       # Mathematically, this must be greater than zero, or model fitting will fail
       # ... from a physical point of view, even if the true effect is zero, it will 
       #      be measured as non-zero due to noise, so we should expect this to be greater than 1. 
       if (diff.ratio.c < 1.05) {diff.ratio.c <- 1.05}
       if (diff.ratio.tp < 1.05) {diff.ratio.tp <- 1.05}
+      if (diff.ratio.ts < 1.05) {diff.ratio.ts <- 1.05}
       
       diff.ratio.c_i[i] <- diff.ratio.c
       diff.ratio.tp_i[i] <- diff.ratio.tp
+      diff.ratio.ts_i[i] <- diff.ratio.ts
       
     }
     
     # Take means 
     diff.ratio.c <- mean(diff.ratio.c_i)
     diff.ratio.tp <- mean(diff.ratio.tp_i)
+    diff.ratio.ts <- mean(diff.ratio.ts_i)
     
     return(
       list(
         diff.ratio.c = diff.ratio.c,
-        diff.ratio.tp = diff.ratio.tp
+        diff.ratio.tp = diff.ratio.tp,
+        diff.ratio.ts = diff.ratio.ts
       )
     )
     
