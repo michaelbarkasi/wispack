@@ -427,11 +427,11 @@ sdouble get_beta_sd(
 
 // Function to estimate block rate and transition slopes from count series and change points
 std::vector<dVec> est_bkRates_tRuns(
-    const int& n_blocks,               // number of blocks
-    const NumericVector& count_series, // count series
-    const IntegerVector& cp_series     // found change points
+    const int& n_blocks,                // number of blocks
+    const NumericVector& count_series,  // count series
+    const IntegerVector& cp_series,     // found change points
+    const double& rise_threshold_factor // amount of detected rise as fraction of total required to end run
   ) {
-    
     int deg = n_blocks - 1;
     int bin_num_i = count_series.size();
     dVec Rt_est(n_blocks); 
@@ -456,11 +456,27 @@ std::vector<dVec> est_bkRates_tRuns(
       Rt_est[bk] = vmean_range(count_series, bin_start, bin_end);
       // ... estimate run, number of blocks needed to complete rate transition
       if (bk > 0) {
-        double run_cutoff = 0.9;
         int bb = 0;
-        while (vmean_range(count_series, bin_start - bb, bin_start) < run_cutoff * Rt_est[bk - 1] && bb < block_sizes[bk - 1]) {bb--;}
         int bf = 0;
-        while (vmean_range(count_series, bin_start, bin_start + bf) < run_cutoff * Rt_est[bk] && bf < block_sizes[bk]) {bf++;}
+        double rise_found = 0.0;
+        double rise_threshold = (Rt_est[bk] - Rt_est[bk - 1]) * rise_threshold_factor;
+        double sign = 1.0;
+        if (rise_threshold < 0) {sign = -1.0;}
+        bool go_forward = true;
+        while (
+            rise_found * sign < rise_threshold * sign && 
+            (bb < block_sizes[bk - 1] || bf < block_sizes[bk]) 
+        ) {
+          double Rt_back = vmean_range(count_series, bin_start - bb, bin_start);
+          double Rt_forward = vmean_range(count_series, bin_start, bin_start + bf);
+          rise_found = Rt_forward - Rt_back;
+          if (go_forward) {
+            if (bf < block_sizes[bk]) {bf++;}
+          } else {
+            if (bb < block_sizes[bk - 1]) {bb++;}
+          }
+          go_forward = !go_forward;
+        }
         int run_length = bb + bf;
         if (run_length == 0) {run_length++;} // ... ensure at least one value in run
         run_estimates[bk - 1] = (double)run_length;

@@ -40,6 +40,7 @@ wisp <- function(
       LROcutoff = 2.0,                            # cutoff for LROcp
       LROwindow_factor = 2.0,                     # controls size of window used in LROcp algorithm (window = LROwindow_factor * bin_num * buffer_factor)
       LROfilter_ws_divisor = 2.0,                 # divisor for filter window size in likelihood ratio outlier detection (bigger is smaller window)
+      rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
       max_evals = 1000,                           # maximum number of evaluations for optimization
       rng_seed = 42                               # seed for random number generator
     )

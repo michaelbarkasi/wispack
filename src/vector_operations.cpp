@@ -70,6 +70,7 @@ double vmean_range(
     const int& start,
     const int& end
   ) {
+    if (start == end) {return x[start];}
     double sum = 0.0;
     int ctr = 0;
     for (int i = start; i < end; i++) {
@@ -87,6 +88,7 @@ sdouble vmean_range(
     const int& start,
     const int& end
   ) {
+    if (start == end) {return x[start];}
     sdouble sum = 0.0;
     int ctr = 0;
     for (int i = start; i < end; i++) {
@@ -104,6 +106,7 @@ double vmean_range(
     const int& start,
     const int& end
   ) {
+    if (start == end) {return x[start];}
     double sum = 0.0;
     int ctr = 0;
     for (int i = start; i < end; i++) {
