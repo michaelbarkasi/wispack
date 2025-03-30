@@ -2235,6 +2235,19 @@ Rcpp::List wspc::results() {
     int n_tslope = param_beta_tslope_idx_no_ref.size();
     sdouble sd_tslope_effect = 0.0; 
     if (n_tslope > 0) {sd_tslope_effect = get_beta_sd(struc_values["beta_shape_slope"], fe_difference_ratio_tslope, mean_tslope);}
+    NumericVector struc_values_ext(struc_values.size() + 3);
+    CharacterVector struc_names_ext(struc_names.size() + 3);
+    for (int i = 0; i < struc_values.size(); i++) {
+      struc_values_ext[i] = struc_values[i];
+      struc_names_ext[i] = struc_names[i];
+    }
+    struc_values_ext[struc_values.size()] = sd_Rt_effect.val();
+    struc_values_ext[struc_values.size() + 1] = sd_tpoint_effect.val();
+    struc_values_ext[struc_values.size() + 2] = sd_tslope_effect.val();
+    struc_names_ext[struc_names.size()] = "computed_sd_Rt_effect";
+    struc_names_ext[struc_names.size() + 1] = "computed_sd_tpoint_effect";
+    struc_names_ext[struc_names.size() + 2] = "computed_sd_tslope_effect";
+    struc_values_ext.names() = struc_names_ext;
     
     // Reformat gamma dispersion parameters 
     NumericMatrix g_dispersion = to_NumMat(gamma_dispersion);
@@ -2251,12 +2264,9 @@ Rcpp::List wspc::results() {
       _["fix"] = fixed_effects,
       _["treatment"] = treat,
       _["grouping.variables"] = grouping_variables,
-      _["struc.params"] = struc_values,
+      _["struc.params"] = struc_values_ext,
       _["param.idx0"] = param_idx, // "0" to indicate this goes out w/ C++ zero-based indexing
       _["token.pool"] = token_pool_list,
-      _["computed_sd_Rt_effect"] = sd_Rt_effect.val(),
-      _["computed_sd_tpoint_effect"] = sd_tpoint_effect.val(),
-      _["computed_sd_tslope_effect"] = sd_tslope_effect.val(),
       _["change.points"] = change_points,
       _["est.slopes"] = est_slopes, 
       _["settings"] = model_settings
