@@ -1282,6 +1282,8 @@ plot.parameters <- function(
     rate_mask <- grepl("Rt", param_names)
     slope_mask <- grepl("tslope", param_names)
     pointR_mask <- grepl("wfactor_point", param_names) # for random effect on point
+    rateR_mask <- grepl("wfactor_Rt", param_names) # for random effect on rate
+    slopeR_mask <- grepl("wfactor_tslope", param_names) # for random effect on slope
     legpos <- "none"
     
     # Format parameter names for nice printing
@@ -1478,13 +1480,13 @@ plot.parameters <- function(
           
           # Random effects on rates
           if (violin) {
-            ranEff_fitted_rate <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), ranEff_mask & !pointR_mask]))
-            params <- rep(param_names[ranEff_mask & !pointR_mask], each = downsample_size)
-            means <- rep(fitted_params[ranEff_mask & !pointR_mask], each = downsample_size)
+            ranEff_fitted_rate <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), ranEff_mask & rateR_mask]))
+            params <- rep(param_names[ranEff_mask & rateR_mask], each = downsample_size)
+            means <- rep(fitted_params[ranEff_mask & rateR_mask], each = downsample_size)
           } else {
-            ranEff_fitted_rate <- fitted_params[ranEff_mask & !pointR_mask]
-            params <- param_names[ranEff_mask & !pointR_mask]
-            means <- fitted_params[ranEff_mask & !pointR_mask]
+            ranEff_fitted_rate <- fitted_params[ranEff_mask & rateR_mask]
+            params <- param_names[ranEff_mask & rateR_mask]
+            means <- fitted_params[ranEff_mask & rateR_mask]
           }
           ranEff_fitted_rate_df <- data.frame(
             means = means, 
@@ -1495,16 +1497,46 @@ plot.parameters <- function(
           )
           if (print_stats) {
             if (violin) {
-              ranEff_fitted_rate_df$value_low <- rep(sample_ci[1,ranEff_mask & !pointR_mask], each = downsample_size)
-              ranEff_fitted_rate_df$value_high <- rep(sample_ci[2,ranEff_mask & !pointR_mask], each = downsample_size)
-              ranEff_fitted_rate_df$sig_marks <- rep(sig_marks[ranEff_mask & !pointR_mask], each = downsample_size)
+              ranEff_fitted_rate_df$value_low <- rep(sample_ci[1,ranEff_mask & rateR_mask], each = downsample_size)
+              ranEff_fitted_rate_df$value_high <- rep(sample_ci[2,ranEff_mask & rateR_mask], each = downsample_size)
+              ranEff_fitted_rate_df$sig_marks <- rep(sig_marks[ranEff_mask & rateR_mask], each = downsample_size)
             } else {
-              ranEff_fitted_rate_df$value_low <- sample_ci[1,ranEff_mask & !pointR_mask]
-              ranEff_fitted_rate_df$value_high <- sample_ci[2,ranEff_mask & !pointR_mask]
-              ranEff_fitted_rate_df$sig_marks <- sig_marks[ranEff_mask & !pointR_mask]
+              ranEff_fitted_rate_df$value_low <- sample_ci[1,ranEff_mask & rateR_mask]
+              ranEff_fitted_rate_df$value_high <- sample_ci[2,ranEff_mask & rateR_mask]
+              ranEff_fitted_rate_df$sig_marks <- sig_marks[ranEff_mask & rateR_mask]
             }
           }
           ranEff_df <- rbind(ranEff_df, ranEff_fitted_rate_df) 
+          
+          # Random effects on slopes
+          if (violin) {
+            ranEff_fitted_slope <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), ranEff_mask & slopeR_mask]))
+            params <- rep(param_names[ranEff_mask & slopeR_mask], each = downsample_size)
+            means <- rep(fitted_params[ranEff_mask & slopeR_mask], each = downsample_size)
+          } else {
+            ranEff_fitted_slope <- fitted_params[ranEff_mask & slopeR_mask]
+            params <- param_names[ranEff_mask & slopeR_mask]
+            means <- fitted_params[ranEff_mask & slopeR_mask]
+          }
+          ranEff_fitted_slope_df <- data.frame(
+            means = means, 
+            value = ranEff_fitted_slope, 
+            parameter = params, 
+            type = rep("slope", length(ranEff_fitted_slope)),
+            child = rep(gv_lvl, length(ranEff_fitted_slope))
+          )
+          if (print_stats) {
+            if (violin) {
+              ranEff_fitted_slope_df$value_low <- rep(sample_ci[1,ranEff_mask & slopeR_mask], each = downsample_size)
+              ranEff_fitted_slope_df$value_high <- rep(sample_ci[2,ranEff_mask & slopeR_mask], each = downsample_size)
+              ranEff_fitted_slope_df$sig_marks <- rep(sig_marks[ranEff_mask & slopeR_mask], each = downsample_size)
+            } else {
+              ranEff_fitted_slope_df$value_low <- sample_ci[1,ranEff_mask & slopeR_mask]
+              ranEff_fitted_slope_df$value_high <- sample_ci[2,ranEff_mask & slopeR_mask]
+              ranEff_fitted_slope_df$sig_marks <- sig_marks[ranEff_mask & slopeR_mask]
+            }
+          }
+          ranEff_df <- rbind(ranEff_df, ranEff_fitted_slope_df)
           
         }
         
@@ -1760,6 +1792,8 @@ plot.parameters <- function(
             value = wisp.results$struc.params, 
             parameter = names(wisp.results$struc.params)
           )
+          # ... remove derived structural parameters (last three)
+          struc_df <- struc_df[-c((nrow(struc_df)-2):nrow(struc_df)),]
           if (print_stats) {
             struc_df$value_low <- rep(NA, nrow(struc_df))
             struc_df$value_high <- rep(NA, nrow(struc_df))
@@ -1831,12 +1865,16 @@ plot.struc.stats <- function(
     if (verbose) snk.report...("Warping factors, beta distributions")
     shape_point <- wisp.results$struc.params["beta_shape_point"]
     shape_rate <- wisp.results$struc.params["beta_shape_rate"]
+    shape_slope <- wisp.results$struc.params["beta_shape_slope"]
     rates <- seq(0,1,0.01)
     data <- data.frame(
       rate = rates*2 - 1,
       probability_point = dbeta(rates, shape_point, shape_point),
-      probability_rate = dbeta(rates, shape_rate, shape_rate)
+      probability_rate = dbeta(rates, shape_rate, shape_rate),
+      probability_slope = dbeta(rates, shape_slope, shape_slope)
     )
+    
+    # ... for point
     wfactors_point_mask <- grepl("wfactor_point", wisp.results$param.names)
     wfactors_point <- c(bs_fitted_params[,wfactors_point_mask])
     data$probability_point <- data$probability_point / max(data$probability_point)
@@ -1848,6 +1886,7 @@ plot.struc.stats <- function(
       labs(title = "Beta distribution model of random point effects", x = "Warping factor, point", y = "Density") +
       theme_minimal() 
     
+    # ... for rate
     wfactors_rate_mask <- grepl("wfactor_rate", wisp.results$param.names)
     wfactors_rate <- c(bs_fitted_params[,wfactors_rate_mask])
     data$probability_rate <- data$probability_rate /max(data$probability_rate)
@@ -1859,14 +1898,28 @@ plot.struc.stats <- function(
       labs(title = "Beta distribution model of random rate effects", x = "Warping factor, rate", y = "Density") +
       theme_minimal() 
     
+    # ... for slope 
+    wfactors_slope_mask <- grepl("wfactor_slope", wisp.results$param.names)
+    wfactors_slope <- c(bs_fitted_params[,wfactors_slope_mask])
+    data$probability_slope <- data$probability_slope / max(data$probability_slope)
+    plot_wfactor_slope_struc_stats <- ggplot() +
+      geom_histogram(
+        data = data.frame(vals = wfactors_slope), aes(x = vals, y = after_stat(ndensity)),
+        bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
+      geom_line(aes(x = rate, y = probability_slope), data = data, linewidth = 1.2, na.rm = TRUE) +
+      labs(title = "Beta distribution model of random slope effects", x = "Warping factor, slope", y = "Density") +
+      theme_minimal()
+    
     if (verbose) print(plot_wfactor_point_struc_stats)
     plots.struc_stats[["plot_wfactor_point_struc_stats"]] <- plot_wfactor_point_struc_stats
     if (verbose) print(plot_wfactor_rate_struc_stats)
     plots.struc_stats[["plot_wfactor_rate_struc_stats"]] <- plot_wfactor_rate_struc_stats
+    if (verbose) print(plot_wfactor_slope_struc_stats)
+    plots.struc_stats[["plot_wfactor_slope_struc_stats"]] <- plot_wfactor_slope_struc_stats
     
     # Rate effects, Gaussian distribution
     if (verbose) snk.report...("Rate effects, Gaussian distribution")
-    Rt_shape <- wisp.results$computed_sd_Rt_effect
+    Rt_shape <- wisp.results$struc.params["computed_sd_Rt_effect"]
     rate_effs_mask <- grepl("Rt", wisp.results$param.names) & grepl("beta", wisp.results$param.names)
     rate_effects <- c(bs_fitted_params[,rate_effs_mask])
     rates <- seq(min(rate_effects), max(rate_effects), length.out = 100)
@@ -1889,7 +1942,7 @@ plot.struc.stats <- function(
     
     # Slope effects, Gaussian distribution
     if (verbose) snk.report...("Slope effects, Gaussian distribution")
-    tslope_shape <- wisp.results$struc.params["sd_tslope_effect"]
+    tslope_shape <- wisp.results$struc.params["computed_sd_tslope_effect"]
     tslope_effs_mask <- grepl("tslope", wisp.results$param.names) & grepl("beta", wisp.results$param.names)
     if (any(tslope_effs_mask)) {
       
@@ -1916,7 +1969,7 @@ plot.struc.stats <- function(
     
     # tpoint effects, Gaussian distribution
     if (verbose) snk.report...("tpoint effects, Gaussian distribution")
-    tpoint_shape <- wisp.results$computed_sd_tpoint_effect
+    tpoint_shape <- wisp.results$struc.params["computed_sd_tpoint_effect"]
     tpoint_effs_mask <- grepl("tpoint", wisp.results$param.names) & grepl("beta", wisp.results$param.names)
     if (any(tpoint_effs_mask)) {
       
