@@ -186,73 +186,6 @@ sdouble poly_sigmoid(
     
   }
 
-// Warping function for random effects on transition points
-sdouble point_warp(
-    const sdouble& b,        // Bin coordinate
-    const sdouble& bin_num,  // Max bin coordinate
-    const sdouble& f         // warping factor
-  ) {
-   
-    /*
-    * The main poly-sigmoid itself is "warped" via two functions: 
-    *  - a point-warp function which warps bin coordinates, and 
-    *  - a rate-warp function which warps the rate value output by the poly-sigmoid.
-    *  
-    *  In terms of modelling, the fixed-effects are built into the poly-sigmoid function, 
-    *   while the random effects are modelled via "warping factors" which control these two warping functions. 
-    */
-   
-    return b - f * b * (1.0 - (b / bin_num));
-    
-  } 
-
-// Warping function for random effects on count rate
-sdouble rate_warp(
-    const sdouble& rate,     // rate output by the poly-sigmoid
-    const sdouble& f         // warping factor
-  ) {
-    // See description in point-warp function
-    sdouble warped_rate;
-    if (std::isinf(rate)) {
-      warped_rate = rate;
-    } else { 
-      warped_rate = rate + (f*rate);
-    }
-    return warped_rate;
-  }
-
-// Function for computing model components
-sVec compute_mc(
-    const sMat& betas,       // effects matrix, rows as interactions, columns as blocks/transitions
-    const sVec& weight_row   // row of weight matrix, elements as fixed effects
-  ) {
-    
-    /*
-    * This function computes the model components, starting with the baseline value 
-    *  and then adding the fixed effects based on the inputted weights. 
-    */
-    
-    int i_max = betas.rows();
-    int num_blocks = betas.cols();
-    
-    // Initialize mc_value as zero
-    sVec mc_value(num_blocks);
-    mc_value.setZero();
-    
-    // Calculate value from betas 
-    for (int i = 0; i < i_max; i++) {
-      sdouble wi = weight_row(i);
-      sVec betai = betas.row(i); // Effects column
-      for (int bt = 0; bt < num_blocks; bt++) {
-        mc_value(bt) += wi*betai(bt);
-      }
-    }
-    
-    // Return model-component values 
-    return mc_value;
-    
-  }
-
 // Inverse quadratic ramp function for boundary penalty
 sdouble boundary_penalty_transform(
     const sdouble& x,
@@ -479,4 +412,64 @@ IntegerMatrix LROcp_array(
     }
     
   } 
+
+// Function to derive sd of fixed effect from variance of random effect
+sdouble get_beta_sd(
+    const sdouble& beta_shape, // shape parameter of the beta distribution
+    const sdouble& diff_ratio, // estimated ratio of fixed effect to random effect
+    const sdouble& expected_value 
+  ) {
+    sdouble expected_ran_effect = 1.0 / ssqrt(4.0 * beta_shape + 2.0);       // ... already includes the *= 2.0 rescaling to range from -1 to 1
+    sdouble eff_mult = diff_ratio - 1.0;                                     // ... note the different sign
+    sdouble sd_beta_effect = (eff_mult * expected_value * expected_ran_effect) / (2.0 + eff_mult * expected_ran_effect);
+    return sd_beta_effect;
+  }
+
+// Function to estimate block rate and transition slopes from count series and change points
+std::vector<dVec> est_bkRates_tRuns(
+    const int& n_blocks,               // number of blocks
+    const NumericVector& count_series, // count series
+    const IntegerVector& cp_series     // found change points
+  ) {
+    
+    int deg = n_blocks - 1;
+    int bin_num_i = count_series.size();
+    dVec Rt_est(n_blocks); 
+    dVec run_estimates(n_blocks - 1);
+    NumericVector block_sizes(n_blocks);
+    for (int bk = 0; bk < n_blocks; bk++) {
+      // ... find bins which bound this block
+      int bin_start;
+      int bin_end;
+      if (bk == 0) {
+        bin_start = 0;
+        bin_end = cp_series[bk];
+      } else if (bk == deg) {
+        bin_start = cp_series[bk - 1] - 1;
+        bin_end = bin_num_i - 1;
+      } else {
+        bin_start = cp_series[bk - 1] - 1;
+        bin_end = cp_series[bk];
+      }
+      block_sizes[bk] = bin_end - bin_start;
+      // ... take mean of count values in this range
+      Rt_est[bk] = vmean_range(count_series, bin_start, bin_end);
+      // ... estimate run, number of blocks needed to complete rate transition
+      if (bk > 0) {
+        double run_cutoff = 0.9;
+        int bb = 0;
+        while (vmean_range(count_series, bin_start - bb, bin_start) < run_cutoff * Rt_est[bk - 1] && bb < block_sizes[bk - 1]) {bb--;}
+        int bf = 0;
+        while (vmean_range(count_series, bin_start, bin_start + bf) < run_cutoff * Rt_est[bk] && bf < block_sizes[bk]) {bf++;}
+        int run_length = bb + bf;
+        if (run_length == 0) {run_length++;} // ... ensure at least one value in run
+        run_estimates[bk - 1] = (double)run_length;
+      }
+    }
+    std::vector<dVec> out(2); 
+    out[0] = Rt_est;
+    out[1] = run_estimates;
+    return(out);
+    
+  }
 
