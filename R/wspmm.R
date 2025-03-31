@@ -42,7 +42,8 @@ wisp <- function(
       LROfilter_ws_divisor = 2.0,                 # divisor for filter window size in likelihood ratio outlier detection (bigger is smaller window)
       rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
       max_evals = 1000,                           # maximum number of evaluations for optimization
-      rng_seed = 42                               # seed for random number generator
+      rng_seed = 42,                              # seed for random number generator
+      nll_effect_weight = 0.5                     # weight of effect log likelihood in total log likelihood calculation
     )
   ) {
     
@@ -226,8 +227,8 @@ wisp <- function(
     if (verbose) snk.report...("Making rate-count plots")
     plots.ratecount <- plot.ratecount(
       wisp.results = results,
-      pred.type = "pred.log",
-      count.type = "count.log",
+      pred.type = "pred",
+      count.type = "count",
       dim.boundaries = dim.bounds
     )
     
@@ -1282,8 +1283,8 @@ plot.parameters <- function(
     rate_mask <- grepl("Rt", param_names)
     slope_mask <- grepl("tslope", param_names)
     pointR_mask <- grepl("wfactor_point", param_names) # for random effect on point
-    rateR_mask <- grepl("wfactor_Rt", param_names) # for random effect on rate
-    slopeR_mask <- grepl("wfactor_tslope", param_names) # for random effect on slope
+    rateR_mask <- grepl("wfactor_rate", param_names) # for random effect on rate
+    slopeR_mask <- grepl("wfactor_slope", param_names) # for random effect on slope
     legpos <- "none"
     
     # Format parameter names for nice printing
@@ -1603,12 +1604,12 @@ plot.parameters <- function(
         }
         
         parameter_comparison_plots[[plot_name]] <- parameter_comparison_plots[[plot_name]] +
-          facet_wrap(~ interaction(child,type), scales = "free") +
+          facet_wrap(~ interaction(child, type), scales = "free") +
           theme_minimal() +
           labs(title = title_ran) +
           theme(legend.position = legpos) +
           theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-          scale_fill_manual(values = c("point" = "#c356ea", "rate" = "#ffc100")) 
+          scale_fill_manual(values = c("point" = "#c356ea", "rate" = "#ffc100", "slope" = "#00a99d")) 
         
         if (print_stats) {
           parameter_comparison_plots[[plot_name]] <- parameter_comparison_plots[[plot_name]] + 
