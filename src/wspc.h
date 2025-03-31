@@ -93,8 +93,6 @@ class wspc {
     std::vector<IntegerVector> extrapolation_pool;       // list of summed-count indexes giving summed count rows from which to extrapolate
     IntegerVector count_not_na_idx;                      // indexes of non-NA rows in summed count data
     LogicalVector count_not_na_mask;        // mask of non-NA rows in summed count data
-    List change_points;                     // list of found change points, structured by parent and child
-    List est_slopes;                        // list of estimated slopes, structured by parent and child
     
     // Variables related to model parameters
     CharacterVector mc_list = {             // list of model components
@@ -106,7 +104,7 @@ class wspc {
     NumericVector fitted_parameters;        // vector holding the model parameters
     List param_names;                       // list holding the names of the model parameters as they appear in fitted_parameters
     
-    // Secondary variables related to model parameters
+    // Indices for managing parameters vector
     IntegerVector param_wfactor_point_idx;  // ... indexes of parameter vector for quick access of different kinds of model parameters
     IntegerVector param_wfactor_rate_idx;
     IntegerVector param_wfactor_slope_idx;
@@ -122,42 +120,48 @@ class wspc {
     List wfactor_idx; 
     IntegerVector gv_ran_idx;               // ... indices (row and column) for random effect arrays 
     IntegerVector gv_fix_idx;  
+    
+    // Structural parameters
+    sVec observed_mean_ran_eff;             // mean random effect values for each random effect level, observed in data
+    sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
+    sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
     NumericVector struc_values = {5.0, 5.0, 5.0};        // Initial values of structural parameters of model
     CharacterVector struc_names = {         // Names of structural parameters of model
       "beta_shape_point", 
       "beta_shape_rate",
       "beta_shape_slope"
     };
+    
+    // Variables for deriving structure of beta parameters
     sdouble fe_difference_ratio_Rt = 1.05;               // ratio of count differences between one-off treatments across ran levels and count differences between same-treatments across ran levels
     sdouble fe_difference_ratio_tpoint = 1.05;           // same, but for tpoints instead of count
     sdouble fe_difference_ratio_tslope = 1.05;           // same, but for tslopes instead of count
     sdouble mean_count_log = 1.0;                        // mean of log(count) values, used in estimating sd of beta parameters for rate
     sdouble mean_tslope = 0.0;                           // mean of tslope values, used in estimating sd of beta parameters for slope
-    sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
-    sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
-    sVec observed_mean_ran_eff;             // mean random effect values for each random effect level, observed in data
-    sMat gamma_dispersion;                  // dispersion terms for "kernel" of gamma-Poisson model
-    IntegerVector gd_child_idx;             // indexes of child levels in gamma_dispersion
-    IntegerVector gd_parent_idx;            // indexes of parent levels in gamma_dispersion
+    sVec warp_bounds;                                    // warping bounds for each model component
+    IntegerVector warp_bounds_idx = IntegerVector::create(0, 1, 2);
+    List change_points;                     // list of found change points, structured by parent and child
+    List est_slopes;                        // list of estimated slopes, structured by parent and child
+    
+    // Variables for initial degree estimation
     double LROcutoff = 2.0;                 // cutoff (x sd) for likelihood ratio outlier detection
     double LROwindow_factor = 2.0;          // factor for window size in likelihood ratio outlier detection (bigger is bigger window)
     double LROfilter_ws_divisor = 2.0;      // divisor for filter window size in likelihood ratio outlier detection (bigger is smaller window)
     double rise_threshold_factor = 0.8;     // amount of detected rise as fraction of total required to end run
     double min_initialization_slope = 0.1;  // minimum slope for initialization of transition slopes
     
-    // Optimization settings
+    // Model settings and results 
+    List model_settings;
+    List optim_results; 
+    
+    // Variables for optimization
     int max_evals = 500;                    // max number of evaluations
     double ctol = 5e-6;                     // convergence tolerance
     unsigned int rng_seed = 42u;            // seed for random number generator
-    
-    // Other settings 
-    List model_settings;
-    
-    /*
-     * Basic idea: there will be a number of relevant distances to a boundary. Want to transform
-     *  these distances so that they go to infinity as they approach zero, yet while they are 
-     *  sufficiently far from zero ("at distance"), they are not too large.
-     */
+    sMat gamma_dispersion;                  // dispersion terms for "kernel" of gamma-Poisson model
+    IntegerVector gd_child_idx;             // indexes of child levels in gamma_dispersion
+    IntegerVector gd_parent_idx;            // indexes of parent levels in gamma_dispersion
+    sdouble nll_effect_weight = 0.5;        // weight of effect log likelihood in total log likelihood calculation
     
     // Boundary penalty variables
     int boundary_vec_size = 0;                           // number of boundary components
@@ -165,9 +169,12 @@ class wspc {
     sdouble max_penalty_at_distance_factor = 0.01;       // the max penalty when far from the boundary, as fraction of initial neg_loglik
     sdouble max_penalty_at_distance = 1;                 // variable to hold the max penalty value, once computed
     
-    // Variables for holding results 
-    List optim_results;                                  // results from optimization
-   
+    /*
+     * Basic idea of boundary penalty: there will be a number of relevant distances to a boundary. Want to transform
+     *  these distances so that they go to infinity as they approach zero, yet while they are 
+     *  sufficiently far from zero ("at distance"), they are not too large.
+     */
+    
     // Methods *********************************************************************************************************
    
     // Constructor
@@ -187,8 +194,7 @@ class wspc {
         const String& mc,          // Model component for which to compute values
         const int& r,              // Row of summed count data for which to compute model component 
         const sVec& parameters,    // Parameters to use in computation
-        const sdouble& wf,         // Warping factor to apply 
-        const sdouble& warp_bound  // Boundary constraining warped values
+        const sdouble& wf          // Warping factor to apply 
     ) const;
     
     // Predict log of rates
@@ -197,9 +203,24 @@ class wspc {
         const bool& all_rows 
     ) const;
     
+    // Recompute mean estimated slope
+    sdouble estimate_mean_slope(
+        const sVec& parameters
+    ) const;
+    
     // ***** computing objective function (i.e., fitting model and parameter boundary distances)
     
-    // Compute neg_loglik of the model under the given parameters
+    // Compute neg_loglik of observations under the given parameters
+    sdouble neg_loglik_observations(
+        const sVec& parameters
+    ) const;
+    
+    // Compute neg_loglik of effect parameters under the given structural parameters
+    sdouble neg_loglik_effect_parameters(
+        const sVec& parameters
+    ) const;
+    
+    // Compute weighted total neg_loglik 
     sdouble neg_loglik(
         const sVec& parameters
     ) const;
@@ -634,6 +655,12 @@ double log_dNorm0(
     const double& sd               // standard deviation
   );
 
+// Log of density of beta distribution, assuming equal shape parameters 
+sdouble log_dbeta1(
+    const sdouble& x,        // value to evaluate
+    const sdouble& shape     // shape parameter (same for both)
+  );
+
 // Log of density of gamma distribution
 sdouble log_dGamma(
     const sdouble& x,              // value to evaluate
@@ -730,7 +757,8 @@ IntegerMatrix LROcp_array(
 sdouble get_beta_sd(
     const sdouble& beta_shape,      // shape parameter of the beta distribution
     const sdouble& diff_ratio,      // estimated ratio of fixed effect to random effect
-    const sdouble& expected_value 
+    const sdouble& expected_value,  // expected value of the model component (e.g., mean of rates, slopes, or transition points)
+    const sdouble& warp_bound       // upper bound on model component value
   );
 
 // Function to estimate block rate and transition slopes from count series and change points

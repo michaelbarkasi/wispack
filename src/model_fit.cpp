@@ -58,6 +58,14 @@ double log_dNorm0(
     return -((x - mu) * (x - mu)) / (2.0 * sd * sd);
   }
 
+// Log of density of beta distribution, assuming equal shape parameters 
+sdouble log_dbeta1(
+    const sdouble& x,        // value to evaluate
+    const sdouble& shape     // shape parameter (same for both)
+  ) {
+    return slog((spower(x, shape - 1.0) * spower(1.0 - x, shape - 1.0)) / (spower(stan::math::tgamma(shape), 2.0) / stan::math::tgamma(2.0 * shape)));
+  }
+
 // Log of density of gamma distribution
 sdouble log_dGamma(
     const sdouble& x,              // value to evaluate
@@ -415,13 +423,17 @@ IntegerMatrix LROcp_array(
 
 // Function to derive sd of fixed effect from variance of random effect
 sdouble get_beta_sd(
-    const sdouble& beta_shape, // shape parameter of the beta distribution
-    const sdouble& diff_ratio, // estimated ratio of fixed effect to random effect
-    const sdouble& expected_value 
+    const sdouble& beta_shape,     // shape parameter of the beta distribution
+    const sdouble& diff_ratio,     // estimated ratio of fixed effect to random effect
+    const sdouble& expected_value, // expected value of the model component (e.g., mean of rates, slopes, or transition points)
+    const sdouble& warp_bound      // upper bound on model component value
   ) {
-    sdouble expected_ran_effect = 1.0 / ssqrt(4.0 * beta_shape + 2.0);       // ... already includes the *= 2.0 rescaling to range from -1 to 1
-    sdouble eff_mult = diff_ratio - 1.0;                                     // ... note the different sign
-    sdouble sd_beta_effect = (eff_mult * expected_value * expected_ran_effect) / (2.0 + eff_mult * expected_ran_effect);
+    sdouble expected_ran_effect = 1.0 / ssqrt(4.0 * beta_shape + 2.0);       // This is the sd of the beta distribution; ... already includes the *= 2.0 rescaling to range from -1 to 1
+    sdouble eff_mult = diff_ratio - 1.0;                                     
+    sdouble unbounded_sd_beta_effect = eff_mult * expected_value * expected_ran_effect;
+    sdouble bound_scalar = 1.0 - expected_value / warp_bound;
+    sdouble bound_divisor = 1 + unbounded_sd_beta_effect / warp_bound;
+    sdouble sd_beta_effect = unbounded_sd_beta_effect * bound_scalar / bound_divisor;
     return sd_beta_effect;
   }
 

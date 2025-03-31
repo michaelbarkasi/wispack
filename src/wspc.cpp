@@ -35,6 +35,7 @@ wspc::wspc(
     rise_threshold_factor = (double)settings["rise_threshold_factor"];
     max_evals = (int)settings["max_evals"];
     rng_seed = (unsigned int)settings["rng_seed"];
+    nll_effect_weight = sdouble((double)settings["nll_effect_weight"]);
     model_settings = Rcpp::clone(settings);
     
     // Check structure of input data
@@ -53,8 +54,13 @@ wspc::wspc(
     count_tokenized = to_sVec(Rcpp::as<NumericVector>(count_data["count"]));
     vprint("Saving tokenized count", verbose);
     
-    // Find max bins
+    // Find max bins and set warp bounds
     bin_num = smax(to_sVec(Rcpp::as<NumericVector>(count_data["bin"])));
+    warp_bounds.resize(3); 
+    for (int i = 0; i < 3; i++) {warp_bounds[i] = inf_;}  // initialize to infinity
+    warp_bounds_idx.names() = CharacterVector::create("Rt", "tslope", "tpoint");
+    int warp_bound_tpoint_idx = warp_bounds_idx["tpoint"]; 
+    warp_bounds[warp_bound_tpoint_idx] = bin_num;  // set tpoint bound to max bin
     vprint("Found max bin: " + std::to_string(bin_num.val()), verbose);
     
     // Extract fixed effects 
@@ -585,9 +591,9 @@ wspc::wspc(
     est_slopes = found_slopes_list;
     vprint("Estimated change points with LROcp and found initial parameter estimates for fixed-effect treatments", verbose); 
     
-    // Find and save mean slope 
+    // Find and save initial mean slope estimate
     mean_tslope = (sdouble)vmean(collected_slopes);
-    if (verbose) {vprint("Mean estimated tslope: ", mean_tslope);}
+    if (verbose) {vprint("Initial mean estimated tslope: ", mean_tslope);}
    
     // Build default fixed-effects matrices in shell
     List beta = build_beta_shell(mc_list, treatment_lvls, parent_lvls, child_lvls, ref_values, RtEffs, tpointEffs, tslopeEffs, degMat);
@@ -755,8 +761,7 @@ sVec wspc::compute_warped_mc(
     const String& mc,          // Model component for which to compute values
     const int& r,              // Row of summed count data for which to compute model component 
     const sVec& parameters,    // Parameters to use in computation
-    const sdouble& wf,         // Warping factor to apply 
-    const sdouble& warp_bound  // Boundary constraining warped values
+    const sdouble& wf          // Warping factor to apply 
   ) const {
     
     // Extract the parameter vector indexes for the current rate row, beta matrices
@@ -806,8 +811,9 @@ sVec wspc::compute_warped_mc(
     // }
     
     // Apply warping factor 
+    int warp_bound_idx = warp_bounds_idx[mc];
     for (int bt = 0; bt < block_num; bt++) {
-      mc_vec(bt) = mc_vec(bt) + wf * mc_vec(bt) * (1.0 - (mc_vec(bt) / warp_bound));
+      mc_vec(bt) = mc_vec(bt) + wf * mc_vec(bt) * (1.0 - (mc_vec(bt) / warp_bounds[warp_bound_idx]));
     }
     
     // Send out
@@ -882,9 +888,9 @@ sVec wspc::predict_rates_log(
         if (cnt > 0) { 
           
           // Compute warped model components for this row r
-          Rt = compute_warped_mc("Rt", r, parameters, f_rw, inf_);        
-          tslope = compute_warped_mc("tslope", r, parameters, f_sw, inf_); 
-          tpoint = compute_warped_mc("tpoint", r, parameters, f_pw, bin_num);
+          Rt = compute_warped_mc("Rt", r, parameters, f_rw);        
+          tslope = compute_warped_mc("tslope", r, parameters, f_sw); 
+          tpoint = compute_warped_mc("tpoint", r, parameters, f_pw);
           
         } 
         
@@ -903,9 +909,87 @@ sVec wspc::predict_rates_log(
         
       }
       
-    } 
+    }
     
     return predicted_rates;
+    
+  }
+
+// Recompute mean estimated slope
+sdouble wspc::estimate_mean_slope(
+    const sVec& parameters
+  ) const {
+    
+    iVec mc_unique_rows = Rcpp::as<iVec>(idx_mc_unique);
+    
+    // Initialize variables to hold model components
+    sVec Rt; 
+    sVec tslope;
+    sVec tpoint;
+    
+    // Grab warping indices and initiate variables to hold them
+    NumericMatrix wfactor_idx_point = wfactor_idx["point"];
+    NumericMatrix wfactor_idx_rate = wfactor_idx["rate"];
+    NumericMatrix wfactor_idx_slope = wfactor_idx["slope"];
+    int f_pw_idx;
+    int f_rw_idx;
+    int f_sw_idx;
+    sdouble f_pw;
+    sdouble f_rw;
+    sdouble f_sw;
+    
+    sdouble new_tslope_mean = 0.0; 
+    int new_ctr = 0;
+    
+    // Compute predicted rate for rows of the summed count data
+    for (int r = 0; r < n_count_rows; r++) {
+      
+      // Skip rows with NA values in count, if requested
+      if (count_not_na_mask[r]) {
+        
+        // Grab warping factors
+        if (gv_ran_idx[r] == 0) {
+          f_pw = 0.0;
+          f_rw = 0.0; 
+          f_sw = 0.0;
+        } else {
+          f_pw_idx = wfactor_idx_point(gv_ran_idx[r], gv_fix_idx[r]);
+          f_rw_idx = wfactor_idx_rate(gv_ran_idx[r], gv_fix_idx[r]);
+          f_sw_idx = wfactor_idx_slope(gv_ran_idx[r], gv_fix_idx[r]);
+          f_pw = parameters(f_pw_idx);
+          f_rw = parameters(f_rw_idx); 
+          f_sw = parameters(f_sw_idx);
+        } 
+        
+        // Only update predicted model components if r begins a new batch of unique values 
+        int cnt = std::count(mc_unique_rows.begin(), mc_unique_rows.end(), r);
+        if (cnt > 0) { 
+          
+          // Compute warped model components for this row r
+          Rt = compute_warped_mc("Rt", r, parameters, f_rw);        
+          tslope = compute_warped_mc("tslope", r, parameters, f_sw); 
+          tpoint = compute_warped_mc("tpoint", r, parameters, f_pw);
+          
+          // Update estimate of new mean 
+          for (int d = 0; d < tslope.size(); d++) {
+            new_tslope_mean += tslope(d);
+            new_ctr++;
+          }
+          
+        } 
+        
+      }
+      
+    }
+    
+    // Update mean tslope estimate 
+    if (new_ctr > 0) {
+      new_tslope_mean /= new_ctr;
+    } else {
+      new_tslope_mean = mean_tslope; // ... use initially computed default
+    }
+    
+    return new_tslope_mean;
     
   }
 
@@ -914,133 +998,13 @@ sVec wspc::predict_rates_log(
  * Computing objective function (i.e., fitting model and parameter boundary distances)
  */
 
-// Compute neg_loglik of the model under the given parameters
-sdouble wspc::neg_loglik(
+// Compute neg_loglik of observations under the given parameters
+sdouble wspc::neg_loglik_observations(
     const sVec& parameters
   ) const {
    
     // Initialize variable to hold (what will become) nll
     sdouble log_lik = 0.0;
-    
-    // Subset the wfactor and beta parameters
-    sVec warping_factors_point = idx_vec(parameters, param_wfactor_point_idx);
-    sVec warping_factors_rate = idx_vec(parameters, param_wfactor_rate_idx);
-    sVec warping_factors_slope = idx_vec(parameters, param_wfactor_slope_idx);
-    sVec tpoint_beta_values_no_ref = idx_vec(parameters, param_beta_tpoint_idx_no_ref);
-    sVec Rt_beta_values_no_ref = idx_vec(parameters, param_beta_Rt_idx_no_ref);
-    sVec tslope_beta_values_no_ref = idx_vec(parameters, param_beta_tslope_idx_no_ref);
-    
-    // *****************************************************************************************************************
-    // log-likelihood of warping factors (ensures warping factors fit a modelled beta distribution)
-    
-    // Compute the log-likelihood of the point warping factors, given the assumed beta distribution
-    sdouble beta_shape_point = parameters[param_struc_idx["beta_shape_point"]];
-    for (int i = 0; i < warping_factors_point.size(); i++) {
-      sdouble wf = (warping_factors_point(i) + 1.0)/2.0; // rescale
-      log_lik += slog(
-        spower(wf, beta_shape_point - 1.0) * spower(1.0 - wf, beta_shape_point - 1.0) /
-          (spower(stan::math::tgamma(beta_shape_point), 2.0) / stan::math::tgamma(2.0 * beta_shape_point))
-      );
-    }
-    
-    // Compute the log-likelihood of the rate warping factors, given the assumed beta distribution
-    sdouble beta_shape_rate = parameters[param_struc_idx["beta_shape_rate"]];
-    for (int i = 0; i < warping_factors_rate.size(); i++) {
-      sdouble wf = (warping_factors_rate(i) + 1.0)/2.0; // rescale
-      log_lik += slog(
-        spower(wf, beta_shape_rate - 1.0) * spower(1.0 - wf, beta_shape_rate - 1.0) /
-          (spower(stan::math::tgamma(beta_shape_rate), 2.0) / stan::math::tgamma(2.0 * beta_shape_rate))
-      );
-    }
-    
-    // Compute the log-likelihood of the slope warping factors, given the assumed beta distribution
-    sdouble beta_shape_slope = parameters[param_struc_idx["beta_shape_slope"]];
-    for (int i = 0; i < warping_factors_slope.size(); i++) {
-      sdouble wf = (warping_factors_slope(i) + 1.0)/2.0; // rescale
-      log_lik += slog(
-        spower(wf, beta_shape_slope - 1.0) * spower(1.0 - wf, beta_shape_slope - 1.0) /
-          (spower(stan::math::tgamma(beta_shape_slope), 2.0) / stan::math::tgamma(2.0 * beta_shape_slope))
-      );
-    }
-    
-    // *****************************************************************************************************************
-    // log-likelihood of warping factors means (ensures warping factors tend to be centered around zero)
-    
-    // Compute the log-likelihood of the mean of point warping factors, given the expected normal distribution
-    // ... the relevant probability distribution is a normal distribution of mean zero, sd = sqrt(1/((4*m)*(2*s + 1)))
-    // ... as the actual warping factors are scaled to range from -1 to 1, the expected sd is twice the above formula
-    sdouble pw_mean_p = vmean(warping_factors_point); 
-    sdouble sd_pw_p = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_point.size()) * (2.0 * beta_shape_point + 1.0))) * 2.0;
-    log_lik += log_dNorm(pw_mean_p, 0.0, sd_pw_p);
-    
-    // Compute the log-likelihood of the mean of rate warping factors, given the expected normal distribution
-    // ... see above notes on the formula
-    sdouble pw_mean_r = vmean(warping_factors_rate); 
-    sdouble sd_pw_r = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_rate.size()) * (2.0 * beta_shape_rate + 1.0))) * 2.0;
-    log_lik += log_dNorm(pw_mean_r, 0.0, sd_pw_r);
-    
-    // compute the log-likelihood of the mean of slope warping factors, given the expected normal distribution
-    // ... see above notes on the formula 
-    sdouble pw_mean_s = vmean(warping_factors_slope);
-    sdouble sd_pw_s = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_slope.size()) * (2.0 * beta_shape_slope + 1.0))) * 2.0;
-    log_lik += log_dNorm(pw_mean_s, 0.0, sd_pw_s);
-    
-    // *****************************************************************************************************************
-    // log-likelihood of the estimated overall rate warp of that warping factor,
-    //  given the modelled child-specific rate warping factors for each random level, 
-    // ... idea: warping factors for a random level can vary between child levels, but the mean of these warping factors 
-    //      should still tend to line up with the observed mean random effect of that random level.
-    
-    // Compute the log-likelihood of the observed mean random rate effects, given these rate warping factors
-    int n_child = child_lvls.size();
-    int n_ran = ran_lvls.size(); 
-    sdouble sqrt_n_ran = ssqrt((sdouble)n_ran - 1.0);
-    // ... Grab warping indices and initiate variables to hold them
-    NumericMatrix wfactor_idx_rate = wfactor_idx["rate"];
-    sVec f_rw_row(n_child);
-    for (int r = 1; r < n_ran; r++) {
-      // ... Get rate-warp factors for this level (one per child)
-      for (int c = 0; c < n_child; c++) {f_rw_row(c) = parameters[(int)wfactor_idx_rate(r, c)];}
-      // ... find mean and scaled sd
-      sdouble modeled_mean = vmean(f_rw_row); 
-      sdouble modeled_sd = vsd(f_rw_row)/sqrt_n_ran; 
-      // ... add log-likelihood
-      log_lik += log_dNorm(observed_mean_ran_eff[r - 1], modeled_mean, modeled_sd);
-    }
-    
-    // *****************************************************************************************************************
-    // log-likelihood of beta values
-    
-    // Compute the log-likelihood of the Rt beta values, given the normal distribution implied by the beta-rate shape and fe_difference_ratio ratio
-    sdouble sd_Rt_effect = get_beta_sd(beta_shape_rate, fe_difference_ratio_Rt, mean_count_log);
-    for (int i = 0; i < Rt_beta_values_no_ref.size(); i++) {
-      log_lik += log_dNorm(Rt_beta_values_no_ref(i), 0.0, sd_Rt_effect);
-    }
-    
-    // Compute the log-likelihood of the tslope beta values, given the assumed normal distribution
-    int n_tslope = tslope_beta_values_no_ref.size();
-    sdouble sd_tslope_effect; 
-    if (n_tslope > 0) {sd_tslope_effect = get_beta_sd(beta_shape_slope, fe_difference_ratio_tslope, mean_tslope);}
-    for (int i = 0; i < n_tslope; i++) {
-      log_lik += log_dNorm(tslope_beta_values_no_ref(i), 0.0, sd_tslope_effect); 
-    }
-    
-    // Compute the log-likelihood of the tpoint beta values, given the assumed normal distribution
-    int n_tpoint = tpoint_beta_values_no_ref.size();
-    sdouble sd_tpoint_effect;
-    if (n_tpoint > 0) {sd_tpoint_effect = get_beta_sd(beta_shape_point, fe_difference_ratio_tpoint, bin_num/2.0);}
-    for (int i = 0; i < n_tpoint; i++) {
-      log_lik += log_dNorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect);
-    }
-    
-    // Check for zero likelihood
-    if (std::isinf(log_lik) || std::isnan(log_lik)) {
-      // A nan most likely means sd_tpoint_effect when negative
-      return inf_;
-    }
-    
-    // *****************************************************************************************************************
-    // log-likelihood of observed counts, given predicted rates
     
     // Predict rates under these parameters
     sVec prate_log_var = predict_rates_log(
@@ -1076,6 +1040,7 @@ sdouble wspc::neg_loglik(
     // Take negative and average, the latter so we're looking at values in the same range, regardless of data size
     sdouble negloglik = -log_lik / count_not_na_idx.size();
     
+    // Check for infinities (zero likelihood)
     if (std::isinf(negloglik) || negloglik > inf_) {
       negloglik = inf_;
     }
@@ -1083,6 +1048,164 @@ sdouble wspc::neg_loglik(
     return negloglik;
     
   } 
+
+// Compute neg_loglik of effect parameters under the given structural parameters
+sdouble wspc::neg_loglik_effect_parameters(
+    const sVec& parameters
+  ) const {
+    
+    // Initialize variable to hold (what will become) nll
+    sdouble log_lik = 0.0;
+    int ctr = 0;
+    
+    // Subset the wfactor and beta parameters
+    sVec warping_factors_point = idx_vec(parameters, param_wfactor_point_idx);
+    sVec warping_factors_rate = idx_vec(parameters, param_wfactor_rate_idx);
+    sVec warping_factors_slope = idx_vec(parameters, param_wfactor_slope_idx);
+    sVec tpoint_beta_values_no_ref = idx_vec(parameters, param_beta_tpoint_idx_no_ref);
+    sVec Rt_beta_values_no_ref = idx_vec(parameters, param_beta_Rt_idx_no_ref);
+    sVec tslope_beta_values_no_ref = idx_vec(parameters, param_beta_tslope_idx_no_ref);
+    
+    // *****************************************************************************************************************
+    // log-likelihood of warping factors (ensures warping factors fit a modelled beta distribution)
+    
+    // Compute the log-likelihood of the point warping factors, given the assumed beta distribution
+    sdouble beta_shape_point = parameters[param_struc_idx["beta_shape_point"]];
+    for (int i = 0; i < warping_factors_point.size(); i++) {
+      sdouble wf = (warping_factors_point(i) + 1.0)/2.0; // rescale
+      log_lik += log_dbeta1(wf, beta_shape_point);
+      ctr++;
+    }
+    
+    // Compute the log-likelihood of the rate warping factors, given the assumed beta distribution
+    sdouble beta_shape_rate = parameters[param_struc_idx["beta_shape_rate"]];
+    for (int i = 0; i < warping_factors_rate.size(); i++) {
+      sdouble wf = (warping_factors_rate(i) + 1.0)/2.0; // rescale
+      log_lik += log_dbeta1(wf, beta_shape_rate);
+      ctr++;
+    }
+    
+    // Compute the log-likelihood of the slope warping factors, given the assumed beta distribution
+    sdouble beta_shape_slope = parameters[param_struc_idx["beta_shape_slope"]];
+    for (int i = 0; i < warping_factors_slope.size(); i++) {
+      sdouble wf = (warping_factors_slope(i) + 1.0)/2.0; // rescale
+      log_lik += log_dbeta1(wf, beta_shape_slope);
+      ctr++;
+    }
+    
+    // *****************************************************************************************************************
+    // log-likelihood of warping factors means (ensures warping factors tend to be centered around zero)
+    
+    // Compute the log-likelihood of the mean of point warping factors, given the expected normal distribution
+    // ... the relevant probability distribution is a normal distribution of mean zero, sd = sqrt(1/((4*m)*(2*s + 1)))
+    // ... as the actual warping factors are scaled to range from -1 to 1, the expected sd is twice the above formula
+    sdouble pw_mean_p = vmean(warping_factors_point); 
+    sdouble sd_pw_p = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_point.size()) * (2.0 * beta_shape_point + 1.0))) * 2.0;
+    log_lik += log_dNorm(pw_mean_p, 0.0, sd_pw_p);
+    ctr++;
+    
+    // Compute the log-likelihood of the mean of rate warping factors, given the expected normal distribution
+    // ... see above notes on the formula
+    sdouble pw_mean_r = vmean(warping_factors_rate); 
+    sdouble sd_pw_r = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_rate.size()) * (2.0 * beta_shape_rate + 1.0))) * 2.0;
+    log_lik += log_dNorm(pw_mean_r, 0.0, sd_pw_r);
+    ctr++;
+    
+    // compute the log-likelihood of the mean of slope warping factors, given the expected normal distribution
+    // ... see above notes on the formula 
+    sdouble pw_mean_s = vmean(warping_factors_slope);
+    sdouble sd_pw_s = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_slope.size()) * (2.0 * beta_shape_slope + 1.0))) * 2.0;
+    log_lik += log_dNorm(pw_mean_s, 0.0, sd_pw_s);
+    ctr++;
+    
+    // *****************************************************************************************************************
+    // log-likelihood of the estimated overall rate warp of that warping factor,
+    //  given the modelled child-specific rate warping factors for each random level, 
+    // ... idea: warping factors for a random level can vary between child levels, but the mean of these warping factors 
+    //      should still tend to line up with the observed mean random effect of that random level.
+    
+    // Compute the log-likelihood of the observed mean random rate effects, given these rate warping factors
+    int n_child = child_lvls.size();
+    int n_ran = ran_lvls.size(); 
+    sdouble sqrt_n_ran = ssqrt((sdouble)n_ran - 1.0);
+    // ... Grab warping indices and initiate variables to hold them
+    NumericMatrix wfactor_idx_rate = wfactor_idx["rate"];
+    sVec f_rw_row(n_child);
+    for (int r = 1; r < n_ran; r++) {
+      // ... Get rate-warp factors for this level (one per child)
+      for (int c = 0; c < n_child; c++) {f_rw_row(c) = parameters[(int)wfactor_idx_rate(r, c)];}
+      // ... find mean and scaled sd
+      sdouble modeled_mean = vmean(f_rw_row); 
+      sdouble modeled_sd = vsd(f_rw_row)/sqrt_n_ran; 
+      // ... add log-likelihood
+      log_lik += log_dNorm(observed_mean_ran_eff[r - 1], modeled_mean, modeled_sd);
+      ctr++;
+    }
+    
+    // *****************************************************************************************************************
+    // log-likelihood of beta values
+    
+    // Compute the log-likelihood of the Rt beta values, given the normal distribution implied by the beta-rate shape and fe_difference_ratio ratio
+    int warp_bound_Rt_idx = warp_bounds_idx["Rt"];
+    sdouble sd_Rt_effect = get_beta_sd(beta_shape_rate, fe_difference_ratio_Rt, mean_count_log, warp_bounds[warp_bound_Rt_idx]);
+    for (int i = 0; i < Rt_beta_values_no_ref.size(); i++) {
+      log_lik += log_dNorm(Rt_beta_values_no_ref(i), 0.0, sd_Rt_effect);
+      ctr++;
+    }
+    
+    // Compute the log-likelihood of the tslope beta values, given the assumed normal distribution
+    int n_tslope = tslope_beta_values_no_ref.size();
+    sdouble sd_tslope_effect; 
+    int warp_bound_tslope_idx = warp_bounds_idx["tslope"];
+    if (n_tslope > 0) {
+      sdouble new_mean_tslope = estimate_mean_slope(parameters);
+      sd_tslope_effect = get_beta_sd(beta_shape_slope, fe_difference_ratio_tslope, new_mean_tslope, warp_bounds[warp_bound_tslope_idx]);
+    }
+    for (int i = 0; i < n_tslope; i++) {
+      log_lik += log_dNorm(tslope_beta_values_no_ref(i), 0.0, sd_tslope_effect); 
+      ctr++;
+    }
+    
+    // Compute the log-likelihood of the tpoint beta values, given the assumed normal distribution
+    int n_tpoint = tpoint_beta_values_no_ref.size();
+    sdouble sd_tpoint_effect;
+    int warp_bound_tpoint_idx = warp_bounds_idx["tpoint"];
+    if (n_tpoint > 0) {sd_tpoint_effect = get_beta_sd(beta_shape_point, fe_difference_ratio_tpoint, bin_num/2.0, warp_bounds[warp_bound_tpoint_idx]);}
+    for (int i = 0; i < n_tpoint; i++) {
+      log_lik += log_dNorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect);
+      ctr++;
+    }
+    
+    // Take negative and average, the latter so we're looking at values in the same range, regardless of data size
+    sdouble negloglik = -log_lik / ctr;
+    
+    // Check for zero likelihood
+    if (std::isinf(log_lik) || negloglik > inf_ || std::isnan(log_lik)) {
+      // A nan most likely means sd_tpoint_effect when negative
+      return inf_;
+    }
+    
+    return negloglik;
+    
+  } 
+
+// Compute weighted total neg_loglik 
+sdouble wspc::neg_loglik(
+    const sVec& parameters
+  ) const {
+    
+    // Compute neg_loglik of observations
+    sdouble nll_obs = neg_loglik_observations(parameters);
+    
+    // Compute neg_loglik of effect parameters 
+    sdouble nll_effect = neg_loglik_effect_parameters(parameters);
+    
+    // Take weighted average of two components 
+    sdouble nll = nll_effect_weight * nll_effect + (1.0 - nll_effect_weight) * nll_obs;
+    
+    return nll;
+    
+  }
 
 // Compute boundary distances
 sVec wspc::boundary_dist(
@@ -1127,7 +1250,7 @@ sVec wspc::boundary_dist(
       // Compute Rt for this row r
       // ... note: Not computing rate for all rows, just ones with unique model components
       // ... this reduces number of rows to compute by a factor of bin_num, which is significant
-      sVec Rt = compute_warped_mc("Rt", r, parameters, f_rw, inf_);
+      sVec Rt = compute_warped_mc("Rt", r, parameters, f_rw);
       
       // Grab degree for this row
       int deg = Rt.size() - 1;
@@ -1136,8 +1259,8 @@ sVec wspc::boundary_dist(
       if (deg > 0){
         
         // Compute tslope and tpoint for this row r
-        sVec tslope = compute_warped_mc("tslope", r, parameters, f_sw, inf_); 
-        sVec tpoint = compute_warped_mc("tpoint", r, parameters, f_pw, bin_num);
+        sVec tslope = compute_warped_mc("tslope", r, parameters, f_sw); 
+        sVec tpoint = compute_warped_mc("tpoint", r, parameters, f_pw);
         
         // Transition slopes most be positive
         for (int d = 0; d < deg; d++) {
@@ -1184,7 +1307,7 @@ sVec wspc::boundary_dist(
         // ... need Rt(0) > Rsum, i.e., this difference should be positive
         boundary_dist_vec(ctr) = R_sum_boundary_dist;
         ctr++;
-        
+         
       } else {
         
         // ... trivial to check if rate (Rt) is positive
@@ -1271,7 +1394,7 @@ bool wspc::test_tpoints(
         if (deg > 0) {
           
           // Compute tpoints for this row r
-          tpoint = compute_warped_mc("tpoint", r, parameters, f_pw, bin_num);
+          tpoint = compute_warped_mc("tpoint", r, parameters, f_pw);
           
           // Find tpoint boundary distances
           // WARNING: this code is duplicated from boundary_dist
@@ -1351,7 +1474,7 @@ sdouble wspc::bounded_nll(
     const sVec& parameters
   ) const {
     
-    // Compute neg_loglik
+    // Compute weighted negative log-likelihood
     sdouble bnll = neg_loglik(parameters);
     
     // Compute boundary distance
@@ -1471,9 +1594,10 @@ void wspc::fit(
     sVec initial_params_var = to_sVec(fitted_parameters);
     max_penalty_at_distance = neg_loglik(initial_params_var) * max_penalty_at_distance_factor;
     sdouble coefs_square = static_cast<double>(boundary_vec_size)/max_penalty_at_distance;
+    sdouble coefs = ssqrt(coefs_square);
     bp_coefs = boundary_dist(initial_params_var);
     for (int i = 0; i < boundary_vec_size - 1; i++) {
-      bp_coefs(i) = ssqrt(coefs_square)/bp_coefs(i);
+      bp_coefs(i) = coefs/bp_coefs(i);
     } 
     
     // Grab initial parameters
@@ -1901,8 +2025,12 @@ void wspc::set_parameters(
      */
     
     // Ensure provided parameters are feasible (i.e., don't predict negative rates) 
-    List feasibility_results = check_parameter_feasibility(to_sVec(parameters), verbose);
+    sVec parameters_var = to_sVec(parameters);
+    List feasibility_results = check_parameter_feasibility(parameters_var, verbose);
     bool feasible = feasibility_results["feasible"];
+    
+    // Update mean slope
+    mean_tslope = estimate_mean_slope(parameters_var);
     
     // Stop if not feasible 
     if (!feasible) {
@@ -2228,13 +2356,16 @@ Rcpp::List wspc::results() {
     }
     
     // Recompute beta standard deviations
-    sdouble sd_Rt_effect = get_beta_sd(struc_values["beta_shape_rate"], fe_difference_ratio_Rt, mean_count_log);
+    int warp_bound_Rt_idx = warp_bounds_idx["Rt"];
+    sdouble sd_Rt_effect = get_beta_sd(struc_values["beta_shape_rate"], fe_difference_ratio_Rt, mean_count_log, warp_bounds[warp_bound_Rt_idx]);
     int n_tpoint = param_beta_tpoint_idx_no_ref.size();
     sdouble sd_tpoint_effect = 0.0;
-    if (n_tpoint > 0) {sd_tpoint_effect = get_beta_sd(struc_values["beta_shape_point"], fe_difference_ratio_tpoint, bin_num/2.0);}
+    int warp_bound_tpoint_idx = warp_bounds_idx["tpoint"];
+    if (n_tpoint > 0) {sd_tpoint_effect = get_beta_sd(struc_values["beta_shape_point"], fe_difference_ratio_tpoint, bin_num/2.0, warp_bounds[warp_bound_tpoint_idx]);}
     int n_tslope = param_beta_tslope_idx_no_ref.size();
     sdouble sd_tslope_effect = 0.0; 
-    if (n_tslope > 0) {sd_tslope_effect = get_beta_sd(struc_values["beta_shape_slope"], fe_difference_ratio_tslope, mean_tslope);}
+    int warp_bound_tslope_idx = warp_bounds_idx["tslope"];
+    if (n_tslope > 0) {sd_tslope_effect = get_beta_sd(struc_values["beta_shape_slope"], fe_difference_ratio_tslope, mean_tslope, warp_bounds[warp_bound_tslope_idx]);}
     NumericVector struc_values_ext(struc_values.size() + 3);
     CharacterVector struc_names_ext(struc_names.size() + 3);
     for (int i = 0; i < struc_values.size(); i++) {
