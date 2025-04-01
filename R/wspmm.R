@@ -577,6 +577,68 @@ analyze.residuals <- function(
     wisp.results$count.data.summed$residuals.log <- wisp.results$count.data.summed$pred.log - wisp.results$count.data.summed$count.log
     # ... positive residuals mean we overshot, negative residuals mean undershooting
     
+    qq_convolved <- function(
+      gp, 
+      resids = wisp.results$count.data.summed$residuals.log,
+      parents = wisp.results$count.data.summed$parent,
+      child = wisp.results$count.data.summed$child,
+      dispersion.matrix = wisp.results$gamma.dispersion
+    ) {
+      
+      clean_parents <- parents[ !is.na(resids)]
+      clean_child <- child[ !is.na(resids)]
+      resids <- resids[!is.na(resids)] 
+      n <- length(resids)
+      sd_resid <- sd(resids)
+      mean_resid <- mean(resids)
+      dispersion <- rep(NA, n)
+      for (j in colnames(dispersion.matrix)) {
+        for (i in rownames(dispersion.matrix)) {
+          mask <- clean_parents == j & clean_child == i
+          dispersion[mask] <- dispersion.matrix[i, j]
+        }
+      }
+      resid_order <- order(resids)
+      resids <- resids[resid_order]
+      dispersion <- dispersion[resid_order]
+      
+      qnorm_dgamma_sd <- function(norm_obs, norm_mean, X, gamma_expected, gamma_variance) {
+        gamma_shape <- gamma_expected * gamma_expected / gamma_variance
+        out <- qnorm(norm_obs, mean = norm_mean, sd = X) * dgamma(x = X, shape = gamma_shape, rate = gamma_shape / gamma_expected)
+        return(out)
+      }
+      
+      convolved_quantile <- rep(NA, n)
+      for (i in 1:n) {
+        this_quantile <- integrate(
+          f = qnorm_dgamma_sd, 
+          lower = 0,
+          upper = Inf, 
+          norm_obs = (i - 0.5)/n, 
+          norm_mean = 0,
+          gamma_expected = sd_resid,
+          gamma_variance = dispersion[i]
+        )$value
+        convolved_quantile[i] <- this_quantile
+      }
+      
+      df <- data.frame(convolved_quantile, resids)
+      
+      # Create the ggplot
+      resid_plot <- ggplot(df, aes(x = convolved_quantile, y = resids)) +
+        geom_point(color = "steelblue", size = 2) +  
+        geom_abline(intercept = mean_resid, slope = sd_resid, color = "black", linewidth = 0.8, linetype = "dashed") +  
+        labs(
+          x = "Ordered Log-residuals",
+          y = "Theoretical gamma-convolved Quantiles",
+          title = paste0("Q-Q Plot of Log-residuals (", gp, ")")
+        ) +
+        theme_minimal()
+      
+      return(resid_plot)
+      
+    }
+    
     if (verbose) snk.report...("Making masks")
     # Grab masks for subsets of interest
     mask_list <- list()
@@ -610,12 +672,19 @@ analyze.residuals <- function(
         theme_minimal()
       
       # qq-plot
-      qq_resids_plot <- ggplot(df_wide, aes(sample = residuals)) +
-        stat_qq(color = "steelblue", size = 1) +  # Q-Q points
-        stat_qq_line(color = "black", linetype = "dashed") +  # Reference line
-        labs(x = "Theoretical Quantiles", y = "Sample Quantiles", 
-             title = paste0("Q-Q Plot of Log-residuals (", gp, ")")) +
-        theme_minimal()
+      qq_resids_plot <- qq_convolved(
+        gp = gp,
+        resids = df_wide$residuals.log,
+        parents = df_wide$parent,
+        child = df_wide$child,
+        dispersion.matrix = wisp.results$gamma.dispersion
+      )
+      # qq_resids_plot <- ggplot(df_wide, aes(sample = residuals)) +
+      #   stat_qq(color = "steelblue", size = 1) +  # Q-Q points
+      #   stat_qq_line(color = "black", linetype = "dashed") +  # Reference line
+      #   labs(x = "Theoretical Quantiles", y = "Sample Quantiles", 
+      #        title = paste0("Q-Q Plot of Log-residuals (", gp, ")")) +
+      #   theme_minimal()
       
       # Save separately then combine
       plots.residuals[[paste0(gp,"_hist")]] <- hist_resids_plot
