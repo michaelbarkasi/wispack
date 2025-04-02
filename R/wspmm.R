@@ -33,7 +33,7 @@ wisp <- function(
     print.child.summaries = TRUE,
     # Setting to pass to C++ model
     model.settings = list(
-      struc_values = c(5.0, 5.0, 1.0),            # values of structural parameters to test
+      struc_values = c(0.1, 0.1, 0.1),            # values of structural parameters to test
       buffer_factor = 0.05,                       # buffer factor for penalizing distance from structural parameter values
       ctol = 1e-6,                                # convergence tolerance
       max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from structural parameter values
@@ -1939,9 +1939,9 @@ plot.struc.stats <- function(
     rates <- seq(0,1,0.01)
     data <- data.frame(
       rate = rates*2 - 1,
-      probability_point = dbeta(rates, shape_point, shape_point),
-      probability_rate = dbeta(rates, shape_rate, shape_rate),
-      probability_slope = dbeta(rates, shape_slope, shape_slope)
+      probability_point = dnorm(rates, 0.0, shape_point),
+      probability_rate = dnorm(rates, 0.0, shape_rate),
+      probability_slope = dnorm(rates, 0.0, shape_slope)
     )
     
     # ... for point
