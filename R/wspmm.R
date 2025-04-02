@@ -1882,13 +1882,13 @@ plot.parameters <- function(
           if (print_stats) {
             parameter_comparison_plots[["plot_struc"]] <- parameter_comparison_plots[["plot_struc"]] +
               geom_errorbar(
-                data = struc_df[struc_df$parameter != "buffer_factor", ],
+                data = struc_df,
                 aes(ymin = value_low, ymax = value_high),
                 width = 0.2, 
                 na.rm = TRUE) 
             # ... all structural values must be above zero ...
             # geom_text(
-            #   data = struc_df[struc_df$parameter != "buffer_factor", ], 
+            #   data = struc_df, 
             #   aes(x = parameter, 
             #       y = value_high + star_gap_factor*(value_high-value_low), 
             #       label = sig_marks,
@@ -1933,20 +1933,15 @@ plot.struc.stats <- function(
     
     # Warping factors, beta distributions
     if (verbose) snk.report...("Warping factors, beta distributions")
-    shape_point <- wisp.results$struc.params["beta_shape_point"]
-    shape_rate <- wisp.results$struc.params["beta_shape_rate"]
-    shape_slope <- wisp.results$struc.params["beta_shape_slope"]
-    rates <- seq(0,1,0.01)
-    data <- data.frame(
-      rate = rates*2 - 1,
-      probability_point = dnorm(rates, 0.0, shape_point),
-      probability_rate = dnorm(rates, 0.0, shape_rate),
-      probability_slope = dnorm(rates, 0.0, shape_slope)
-    )
     
     # ... for point
     wfactors_point_mask <- grepl("wfactor_point", wisp.results$param.names)
     wfactors_point <- c(bs_fitted_params[,wfactors_point_mask])
+    shape_point <- wisp.results$struc.params["beta_shape_point"]
+    data <- data.frame(
+      rate = wfactors_point,
+      probability_point = dnorm(wfactors_point, 0.0, shape_point)
+    )
     data$probability_point <- data$probability_point / max(data$probability_point)
     plot_wfactor_point_struc_stats <- ggplot() +
       geom_histogram(
@@ -1959,7 +1954,12 @@ plot.struc.stats <- function(
     # ... for rate
     wfactors_rate_mask <- grepl("wfactor_rate", wisp.results$param.names)
     wfactors_rate <- c(bs_fitted_params[,wfactors_rate_mask])
-    data$probability_rate <- data$probability_rate /max(data$probability_rate)
+    shape_rate <- wisp.results$struc.params["beta_shape_rate"]
+    data <- data.frame(
+      rate = wfactors_rate,
+      probability_rate = dnorm(wfactors_rate, 0.0, shape_rate)
+    )
+    data$probability_rate <- data$probability_rate / max(data$probability_rate)
     plot_wfactor_rate_struc_stats <- ggplot() +
       geom_histogram(
         data = data.frame(vals = wfactors_rate), aes(x = vals, y = after_stat(ndensity)),
@@ -1971,6 +1971,11 @@ plot.struc.stats <- function(
     # ... for slope 
     wfactors_slope_mask <- grepl("wfactor_slope", wisp.results$param.names)
     wfactors_slope <- c(bs_fitted_params[,wfactors_slope_mask])
+    shape_slope <- wisp.results$struc.params["beta_shape_slope"]
+    data <- data.frame(
+      rate = wfactors_slope,
+      probability_slope = dnorm(wfactors_slope, 0.0, shape_slope)
+    )
     data$probability_slope <- data$probability_slope / max(data$probability_slope)
     plot_wfactor_slope_struc_stats <- ggplot() +
       geom_histogram(
