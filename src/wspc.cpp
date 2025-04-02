@@ -813,7 +813,7 @@ sVec wspc::compute_warped_mc(
     // Apply warping factor 
     int warp_bound_idx = warp_bounds_idx[mc];
     for (int bt = 0; bt < block_num; bt++) {
-      mc_vec(bt) = mc_vec(bt) + wf * mc_vec(bt) * (1.0 - (mc_vec(bt) / warp_bounds[warp_bound_idx]));
+      mc_vec(bt) = mc_vec(bt) + (sexp(wf) - 1.0) * mc_vec(bt) * (1.0 - (mc_vec(bt) / warp_bounds[warp_bound_idx]));
     }
     
     // Send out
@@ -1072,24 +1072,21 @@ sdouble wspc::neg_loglik_effect_parameters(
     // Compute the log-likelihood of the point warping factors, given the assumed beta distribution
     sdouble beta_shape_point = parameters[param_struc_idx["beta_shape_point"]];
     for (int i = 0; i < warping_factors_point.size(); i++) {
-      sdouble wf = (warping_factors_point(i) + 1.0)/2.0; // rescale
-      log_lik += log_dbeta1(wf, beta_shape_point);
+      log_lik += log_dNorm(warping_factors_point(i), 0.0, beta_shape_point);
       ctr++;
     }
     
     // Compute the log-likelihood of the rate warping factors, given the assumed beta distribution
     sdouble beta_shape_rate = parameters[param_struc_idx["beta_shape_rate"]];
     for (int i = 0; i < warping_factors_rate.size(); i++) {
-      sdouble wf = (warping_factors_rate(i) + 1.0)/2.0; // rescale
-      log_lik += log_dbeta1(wf, beta_shape_rate);
+      log_lik += log_dNorm(warping_factors_rate(i), 0.0, beta_shape_rate);
       ctr++;
     }
     
     // Compute the log-likelihood of the slope warping factors, given the assumed beta distribution
     sdouble beta_shape_slope = parameters[param_struc_idx["beta_shape_slope"]];
     for (int i = 0; i < warping_factors_slope.size(); i++) {
-      sdouble wf = (warping_factors_slope(i) + 1.0)/2.0; // rescale
-      log_lik += log_dbeta1(wf, beta_shape_slope);
+      log_lik += log_dNorm(warping_factors_slope(i), 0.0, beta_shape_slope);
       ctr++;
     }
     
@@ -1100,22 +1097,19 @@ sdouble wspc::neg_loglik_effect_parameters(
     // ... the relevant probability distribution is a normal distribution of mean zero, sd = sqrt(1/((4*m)*(2*s + 1)))
     // ... as the actual warping factors are scaled to range from -1 to 1, the expected sd is twice the above formula
     sdouble pw_mean_p = vmean(warping_factors_point); 
-    sdouble sd_pw_p = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_point.size()) * (2.0 * beta_shape_point + 1.0))) * 2.0;
-    log_lik += log_dNorm(pw_mean_p, 0.0, sd_pw_p);
+    log_lik += log_dNorm(pw_mean_p, 0.0, beta_shape_point/(sdouble)warping_factors_point.size());
     ctr++;
     
     // Compute the log-likelihood of the mean of rate warping factors, given the expected normal distribution
     // ... see above notes on the formula
     sdouble pw_mean_r = vmean(warping_factors_rate); 
-    sdouble sd_pw_r = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_rate.size()) * (2.0 * beta_shape_rate + 1.0))) * 2.0;
-    log_lik += log_dNorm(pw_mean_r, 0.0, sd_pw_r);
+    log_lik += log_dNorm(pw_mean_r, 0.0, beta_shape_rate/(sdouble)warping_factors_rate.size());
     ctr++;
     
     // compute the log-likelihood of the mean of slope warping factors, given the expected normal distribution
     // ... see above notes on the formula 
     sdouble pw_mean_s = vmean(warping_factors_slope);
-    sdouble sd_pw_s = ssqrt(1.0 / ((4.0 * (sdouble)warping_factors_slope.size()) * (2.0 * beta_shape_slope + 1.0))) * 2.0;
-    log_lik += log_dNorm(pw_mean_s, 0.0, sd_pw_s);
+    log_lik += log_dNorm(pw_mean_s, 0.0, beta_shape_slope/(sdouble)warping_factors_slope.size());
     ctr++;
     
     // *****************************************************************************************************************
