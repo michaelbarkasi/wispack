@@ -813,7 +813,7 @@ sVec wspc::compute_warped_mc(
     // Apply warping factor 
     int warp_bound_idx = warp_bounds_idx[mc];
     for (int bt = 0; bt < block_num; bt++) {
-      mc_vec(bt) = mc_vec(bt) + wf * mc_vec(bt) * (1.0 - (mc_vec(bt) / warp_bounds[warp_bound_idx]));
+      mc_vec(bt) = mc_vec(bt) + (sexp(wf) - 1.0) * mc_vec(bt) * (1.0 - (mc_vec(bt) / warp_bounds[warp_bound_idx]));
     }
     
     // Send out
