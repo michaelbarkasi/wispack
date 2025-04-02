@@ -680,10 +680,6 @@ wspc::wspc(
         boundary_vec_size++;
       } 
     }
-    boundary_vec_size += param_struc_idx.size() +  // Add slots for the structural parameter boundaries
-      param_wfactor_point_idx.size()*2 +           // ... and for the warping factor boundaries
-      param_wfactor_rate_idx.size()*2 +
-      param_wfactor_slope_idx.size()*2; 
     vprint("Computed size of boundary vector: " + std::to_string(boundary_vec_size), verbose);
     
     // Initialize list to hold results from model fit
@@ -801,14 +797,6 @@ sVec wspc::compute_warped_mc(
         mc_vec(bt) += wi*betai(bt);
       }
     }
-    
-    // // Take exponential of slopes
-    // // ... slopes must be positive, but fit and reported as a normal parameter, so here the exp is taken.
-    // if (mc == "tslope") {
-    //   for (int bt = 0; bt < block_num; bt++) {
-    //     mc_vec(bt) = sexp(mc_vec(bt));
-    //   }
-    // }
     
     // Apply warping factor 
     int warp_bound_idx = warp_bounds_idx[mc];
@@ -928,14 +916,8 @@ sdouble wspc::estimate_mean_slope(
     sVec tpoint;
     
     // Grab warping indices and initiate variables to hold them
-    NumericMatrix wfactor_idx_point = wfactor_idx["point"];
-    NumericMatrix wfactor_idx_rate = wfactor_idx["rate"];
     NumericMatrix wfactor_idx_slope = wfactor_idx["slope"];
-    int f_pw_idx;
-    int f_rw_idx;
     int f_sw_idx;
-    sdouble f_pw;
-    sdouble f_rw;
     sdouble f_sw;
     
     sdouble new_tslope_mean = 0.0; 
@@ -949,15 +931,9 @@ sdouble wspc::estimate_mean_slope(
         
         // Grab warping factors
         if (gv_ran_idx[r] == 0) {
-          f_pw = 0.0;
-          f_rw = 0.0; 
           f_sw = 0.0;
         } else {
-          f_pw_idx = wfactor_idx_point(gv_ran_idx[r], gv_fix_idx[r]);
-          f_rw_idx = wfactor_idx_rate(gv_ran_idx[r], gv_fix_idx[r]);
           f_sw_idx = wfactor_idx_slope(gv_ran_idx[r], gv_fix_idx[r]);
-          f_pw = parameters(f_pw_idx);
-          f_rw = parameters(f_rw_idx); 
           f_sw = parameters(f_sw_idx);
         } 
         
@@ -965,10 +941,8 @@ sdouble wspc::estimate_mean_slope(
         int cnt = std::count(mc_unique_rows.begin(), mc_unique_rows.end(), r);
         if (cnt > 0) { 
           
-          // Compute warped model components for this row r
-          Rt = compute_warped_mc("Rt", r, parameters, f_rw);        
+          // Compute warped model components for this row r     
           tslope = compute_warped_mc("tslope", r, parameters, f_sw); 
-          tpoint = compute_warped_mc("tpoint", r, parameters, f_pw);
           
           // Update estimate of new mean 
           for (int d = 0; d < tslope.size(); d++) {
@@ -1071,6 +1045,7 @@ sdouble wspc::neg_loglik_effect_parameters(
     
     // Compute the log-likelihood of the point warping factors, given the assumed beta distribution
     sdouble beta_shape_point = parameters[param_struc_idx["beta_shape_point"]];
+    beta_shape_point = sexp(beta_shape_point);
     for (int i = 0; i < warping_factors_point.size(); i++) {
       log_lik += log_dNorm(warping_factors_point(i), 0.0, beta_shape_point);
       ctr++;
@@ -1078,6 +1053,7 @@ sdouble wspc::neg_loglik_effect_parameters(
     
     // Compute the log-likelihood of the rate warping factors, given the assumed beta distribution
     sdouble beta_shape_rate = parameters[param_struc_idx["beta_shape_rate"]];
+    beta_shape_rate = sexp(beta_shape_rate); 
     for (int i = 0; i < warping_factors_rate.size(); i++) {
       log_lik += log_dNorm(warping_factors_rate(i), 0.0, beta_shape_rate);
       ctr++;
@@ -1085,6 +1061,7 @@ sdouble wspc::neg_loglik_effect_parameters(
     
     // Compute the log-likelihood of the slope warping factors, given the assumed beta distribution
     sdouble beta_shape_slope = parameters[param_struc_idx["beta_shape_slope"]];
+    beta_shape_slope = sexp(beta_shape_slope);
     for (int i = 0; i < warping_factors_slope.size(); i++) {
       log_lik += log_dNorm(warping_factors_slope(i), 0.0, beta_shape_slope);
       ctr++;
@@ -1311,35 +1288,6 @@ sVec wspc::boundary_dist(
       }
       
     } 
-    
-    // Compute parameter boundary distance, w factors
-    std::vector<IntegerVector> param_wfactor_idx = {
-      param_wfactor_point_idx,
-      param_wfactor_rate_idx,
-      param_wfactor_slope_idx
-    };
-    
-    for (IntegerVector idx_vec : param_wfactor_idx) {
-      
-      for (int p : idx_vec) {
-        // All warping factors must be between -1 and 1
-        sdouble dist_low = parameters(p) + 1.0;
-        boundary_dist_vec(ctr) = dist_low; 
-        ctr++;
-        sdouble dist_high = 1.0 - parameters(p);
-        boundary_dist_vec(ctr) = dist_high;
-        ctr++; 
-      } 
-      
-    }
-    
-    // Compute parameter boundary distance, structural parameters
-    for (int p : param_struc_idx) {
-      // All structural parameters must be > zero.
-      sdouble dist_low = parameters(p);
-      boundary_dist_vec(ctr) = dist_low;
-      ctr++;
-    }
     
     // Check for nan
     for (int i = 0; i < boundary_vec_size; i++) {
@@ -1847,6 +1795,25 @@ Rcpp::NumericMatrix wspc::bs_batch(
       
     }
     
+    // // Transform the wfactors and their structural parameters 
+    // std::vector<IntegerVector> param_wfactor_idx = {
+    //   param_wfactor_point_idx,
+    //   param_wfactor_rate_idx,
+    //   param_wfactor_slope_idx
+    // };
+    // for (IntegerVector idx_vec : param_wfactor_idx) {
+    //   for (int i : idx_vec) {
+    //     for (int r = 0; r < r_num; r++) {
+    //       bs_results(r, i) = std::exp(bs_results(r, i)) - 1.0; 
+    //     }
+    //   }
+    // }
+    // for (int i : param_struc_idx) {
+    //   for (int r = 0; r < r_num; r++) {
+    //     bs_results(r, i) = std::exp(bs_results(r, i)); 
+    //   }
+    // }
+    
     vprint("All complete!", verbose); 
     
     // Clear stan memory
@@ -2351,19 +2318,19 @@ Rcpp::List wspc::results() {
     
     // Recompute beta standard deviations
     int warp_bound_Rt_idx = warp_bounds_idx["Rt"];
-    sdouble sd_Rt_effect = get_beta_sd(struc_values["beta_shape_rate"], fe_difference_ratio_Rt, mean_count_log, warp_bounds[warp_bound_Rt_idx]);
+    sdouble sd_Rt_effect = get_beta_sd(sexp((sdouble)struc_values["beta_shape_rate"]), fe_difference_ratio_Rt, mean_count_log, warp_bounds[warp_bound_Rt_idx]);
     int n_tpoint = param_beta_tpoint_idx_no_ref.size();
     sdouble sd_tpoint_effect = 0.0;
     int warp_bound_tpoint_idx = warp_bounds_idx["tpoint"];
-    if (n_tpoint > 0) {sd_tpoint_effect = get_beta_sd(struc_values["beta_shape_point"], fe_difference_ratio_tpoint, bin_num/2.0, warp_bounds[warp_bound_tpoint_idx]);}
+    if (n_tpoint > 0) {sd_tpoint_effect = get_beta_sd((sdouble)sexp(struc_values["beta_shape_point"]), fe_difference_ratio_tpoint, bin_num/2.0, warp_bounds[warp_bound_tpoint_idx]);}
     int n_tslope = param_beta_tslope_idx_no_ref.size();
     sdouble sd_tslope_effect = 0.0; 
     int warp_bound_tslope_idx = warp_bounds_idx["tslope"];
-    if (n_tslope > 0) {sd_tslope_effect = get_beta_sd(struc_values["beta_shape_slope"], fe_difference_ratio_tslope, mean_tslope, warp_bounds[warp_bound_tslope_idx]);}
+    if (n_tslope > 0) {sd_tslope_effect = get_beta_sd(sexp((sdouble)struc_values["beta_shape_slope"]), fe_difference_ratio_tslope, mean_tslope, warp_bounds[warp_bound_tslope_idx]);}
     NumericVector struc_values_ext(struc_values.size() + 3);
     CharacterVector struc_names_ext(struc_names.size() + 3);
     for (int i = 0; i < struc_values.size(); i++) {
-      struc_values_ext[i] = struc_values[i];
+      struc_values_ext[i] = std::exp(struc_values[i]);
       struc_names_ext[i] = struc_names[i];
     }
     struc_values_ext[struc_values.size()] = sd_Rt_effect.val();
