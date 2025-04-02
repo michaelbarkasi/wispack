@@ -125,7 +125,7 @@ class wspc {
     sVec observed_mean_ran_eff;             // mean random effect values for each random effect level, observed in data
     sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
     sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
-    NumericVector struc_values = {0.1, 0.1, 0.1};        // Initial values of structural parameters of model
+    NumericVector struc_values = {5.0, 5.0, 5.0};        // Initial values of structural parameters of model
     CharacterVector struc_names = {         // Names of structural parameters of model
       "beta_shape_point", 
       "beta_shape_rate",
