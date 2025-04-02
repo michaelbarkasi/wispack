@@ -428,7 +428,7 @@ sdouble get_beta_sd(
     const sdouble& expected_value, // expected value of the model component (e.g., mean of rates, slopes, or transition points)
     const sdouble& warp_bound      // upper bound on model component value
   ) {
-    sdouble expected_ran_effect = beta_shape;       // This is the sd of the beta distribution
+    sdouble expected_ran_effect = 1.0 / ssqrt(4.0 * beta_shape + 2.0);       // This is the sd of the beta distribution; ... already includes the *= 2.0 rescaling to range from -1 to 1
     sdouble eff_mult = diff_ratio - 1.0;                                     
     sdouble unbounded_sd_beta_effect = eff_mult * expected_value * expected_ran_effect;
     sdouble bound_scalar = 1.0 - expected_value / warp_bound;
