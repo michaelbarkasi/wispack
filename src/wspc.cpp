@@ -1044,26 +1044,26 @@ sdouble wspc::neg_loglik_effect_parameters(
     // log-likelihood of warping factors (ensures warping factors fit a modelled beta distribution)
     
     // Compute the log-likelihood of the point warping factors, given the assumed beta distribution
-    sdouble beta_shape_point = parameters[param_struc_idx["beta_shape_point"]];
-    beta_shape_point = sexp(beta_shape_point);
+    sdouble logsd_raneff_point = parameters[param_struc_idx["logsd_raneff_point"]];
+    sdouble sd_raneff_point = sexp(logsd_raneff_point);
     for (int i = 0; i < warping_factors_point.size(); i++) {
-      log_lik += log_dNorm(warping_factors_point(i), 0.0, beta_shape_point);
+      log_lik += log_dNorm(warping_factors_point(i), 0.0, sd_raneff_point);
       ctr++;
     }
     
     // Compute the log-likelihood of the rate warping factors, given the assumed beta distribution
-    sdouble beta_shape_rate = parameters[param_struc_idx["beta_shape_rate"]];
-    beta_shape_rate = sexp(beta_shape_rate); 
+    sdouble logsd_raneff_rate = parameters[param_struc_idx["logsd_raneff_rate"]];
+    sdouble sd_raneff_rate = sexp(logsd_raneff_rate); 
     for (int i = 0; i < warping_factors_rate.size(); i++) {
-      log_lik += log_dNorm(warping_factors_rate(i), 0.0, beta_shape_rate);
+      log_lik += log_dNorm(warping_factors_rate(i), 0.0, sd_raneff_rate);
       ctr++;
     }
     
     // Compute the log-likelihood of the slope warping factors, given the assumed beta distribution
-    sdouble beta_shape_slope = parameters[param_struc_idx["beta_shape_slope"]];
-    beta_shape_slope = sexp(beta_shape_slope);
+    sdouble logsd_raneff_slope = parameters[param_struc_idx["logsd_raneff_slope"]];
+    sdouble sd_raneff_slope = sexp(logsd_raneff_slope);
     for (int i = 0; i < warping_factors_slope.size(); i++) {
-      log_lik += log_dNorm(warping_factors_slope(i), 0.0, beta_shape_slope);
+      log_lik += log_dNorm(warping_factors_slope(i), 0.0, sd_raneff_slope);
       ctr++;
     }
     
@@ -1074,19 +1074,19 @@ sdouble wspc::neg_loglik_effect_parameters(
     // ... the relevant probability distribution is a normal distribution of mean zero, sd = sqrt(1/((4*m)*(2*s + 1)))
     // ... as the actual warping factors are scaled to range from -1 to 1, the expected sd is twice the above formula
     sdouble pw_mean_p = vmean(warping_factors_point); 
-    log_lik += log_dNorm(pw_mean_p, 0.0, beta_shape_point/(sdouble)warping_factors_point.size());
+    log_lik += log_dNorm(pw_mean_p, 0.0, sd_raneff_point/(sdouble)warping_factors_point.size());
     ctr++;
     
     // Compute the log-likelihood of the mean of rate warping factors, given the expected normal distribution
     // ... see above notes on the formula
     sdouble pw_mean_r = vmean(warping_factors_rate); 
-    log_lik += log_dNorm(pw_mean_r, 0.0, beta_shape_rate/(sdouble)warping_factors_rate.size());
+    log_lik += log_dNorm(pw_mean_r, 0.0, sd_raneff_rate/(sdouble)warping_factors_rate.size());
     ctr++;
     
     // compute the log-likelihood of the mean of slope warping factors, given the expected normal distribution
     // ... see above notes on the formula 
     sdouble pw_mean_s = vmean(warping_factors_slope);
-    log_lik += log_dNorm(pw_mean_s, 0.0, beta_shape_slope/(sdouble)warping_factors_slope.size());
+    log_lik += log_dNorm(pw_mean_s, 0.0, sd_raneff_slope/(sdouble)warping_factors_slope.size());
     ctr++;
     
     // *****************************************************************************************************************
@@ -1116,32 +1116,32 @@ sdouble wspc::neg_loglik_effect_parameters(
     // *****************************************************************************************************************
     // log-likelihood of beta values
     
-    // Compute the log-likelihood of the Rt beta values, given the normal distribution implied by the beta-rate shape and fe_difference_ratio ratio
+    // Compute the log-likelihood of the Rt beta values, given the normal distribution implied by the Rt raneff sd and Rt fe_difference_ratio 
     int warp_bound_Rt_idx = warp_bounds_idx["Rt"];
-    sdouble sd_Rt_effect = get_beta_sd(beta_shape_rate, fe_difference_ratio_Rt, mean_count_log, warp_bounds[warp_bound_Rt_idx]);
+    sdouble sd_Rt_effect = get_beta_sd(sd_raneff_rate, fe_difference_ratio_Rt, mean_count_log, warp_bounds[warp_bound_Rt_idx]);
     for (int i = 0; i < Rt_beta_values_no_ref.size(); i++) {
       log_lik += log_dNorm(Rt_beta_values_no_ref(i), 0.0, sd_Rt_effect);
       ctr++;
     }
     
-    // Compute the log-likelihood of the tslope beta values, given the assumed normal distribution
+    // Compute the log-likelihood of the tslope beta values, given the normal distribution implied by the slope raneff sd and slope fe_difference_ratio
     int n_tslope = tslope_beta_values_no_ref.size();
     sdouble sd_tslope_effect; 
     int warp_bound_tslope_idx = warp_bounds_idx["tslope"];
     if (n_tslope > 0) {
       sdouble new_mean_tslope = estimate_mean_slope(parameters);
-      sd_tslope_effect = get_beta_sd(beta_shape_slope, fe_difference_ratio_tslope, new_mean_tslope, warp_bounds[warp_bound_tslope_idx]);
+      sd_tslope_effect = get_beta_sd(sd_raneff_slope, fe_difference_ratio_tslope, new_mean_tslope, warp_bounds[warp_bound_tslope_idx]);
     }
     for (int i = 0; i < n_tslope; i++) {
       log_lik += log_dNorm(tslope_beta_values_no_ref(i), 0.0, sd_tslope_effect); 
       ctr++;
     }
     
-    // Compute the log-likelihood of the tpoint beta values, given the assumed normal distribution
+    // Compute the log-likelihood of the tpoint beta values, given the normal distribution implied by the point raneff sd and point fe_difference_ratio
     int n_tpoint = tpoint_beta_values_no_ref.size();
     sdouble sd_tpoint_effect;
     int warp_bound_tpoint_idx = warp_bounds_idx["tpoint"];
-    if (n_tpoint > 0) {sd_tpoint_effect = get_beta_sd(beta_shape_point, fe_difference_ratio_tpoint, bin_num/2.0, warp_bounds[warp_bound_tpoint_idx]);}
+    if (n_tpoint > 0) {sd_tpoint_effect = get_beta_sd(sd_raneff_point, fe_difference_ratio_tpoint, bin_num/2.0, warp_bounds[warp_bound_tpoint_idx]);}
     for (int i = 0; i < n_tpoint; i++) {
       log_lik += log_dNorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect);
       ctr++;
@@ -2318,27 +2318,29 @@ Rcpp::List wspc::results() {
     
     // Recompute beta standard deviations
     int warp_bound_Rt_idx = warp_bounds_idx["Rt"];
-    sdouble sd_Rt_effect = get_beta_sd(sexp((sdouble)struc_values["beta_shape_rate"]), fe_difference_ratio_Rt, mean_count_log, warp_bounds[warp_bound_Rt_idx]);
+    sdouble sd_Rt_effect = get_beta_sd(sexp((sdouble)struc_values["logsd_raneff_rate"]), fe_difference_ratio_Rt, mean_count_log, warp_bounds[warp_bound_Rt_idx]);
     int n_tpoint = param_beta_tpoint_idx_no_ref.size();
     sdouble sd_tpoint_effect = 0.0;
     int warp_bound_tpoint_idx = warp_bounds_idx["tpoint"];
-    if (n_tpoint > 0) {sd_tpoint_effect = get_beta_sd((sdouble)sexp(struc_values["beta_shape_point"]), fe_difference_ratio_tpoint, bin_num/2.0, warp_bounds[warp_bound_tpoint_idx]);}
+    if (n_tpoint > 0) {sd_tpoint_effect = get_beta_sd((sdouble)sexp(struc_values["logsd_raneff_point"]), fe_difference_ratio_tpoint, bin_num/2.0, warp_bounds[warp_bound_tpoint_idx]);}
     int n_tslope = param_beta_tslope_idx_no_ref.size();
     sdouble sd_tslope_effect = 0.0; 
     int warp_bound_tslope_idx = warp_bounds_idx["tslope"];
-    if (n_tslope > 0) {sd_tslope_effect = get_beta_sd(sexp((sdouble)struc_values["beta_shape_slope"]), fe_difference_ratio_tslope, mean_tslope, warp_bounds[warp_bound_tslope_idx]);}
-    NumericVector struc_values_ext(struc_values.size() + 3);
-    CharacterVector struc_names_ext(struc_names.size() + 3);
-    for (int i = 0; i < struc_values.size(); i++) {
+    if (n_tslope > 0) {sd_tslope_effect = get_beta_sd(sexp((sdouble)struc_values["logsd_raneff_slope"]), fe_difference_ratio_tslope, mean_tslope, warp_bounds[warp_bound_tslope_idx]);}
+    int n_struc = struc_values.size();
+    NumericVector struc_values_ext(n_struc + 3);
+    CharacterVector struc_names_ext(n_struc + 3);
+    for (int i = 0; i < n_struc; i++) {
       struc_values_ext[i] = std::exp(struc_values[i]);
       struc_names_ext[i] = struc_names[i];
+      struc_names_ext[i].replace_first("log", "");
     }
-    struc_values_ext[struc_values.size()] = sd_Rt_effect.val();
-    struc_values_ext[struc_values.size() + 1] = sd_tpoint_effect.val();
-    struc_values_ext[struc_values.size() + 2] = sd_tslope_effect.val();
-    struc_names_ext[struc_names.size()] = "computed_sd_Rt_effect";
-    struc_names_ext[struc_names.size() + 1] = "computed_sd_tpoint_effect";
-    struc_names_ext[struc_names.size() + 2] = "computed_sd_tslope_effect";
+    struc_values_ext[n_struc] = sd_Rt_effect.val();
+    struc_values_ext[n_struc + 1] = sd_tpoint_effect.val();
+    struc_values_ext[n_struc + 2] = sd_tslope_effect.val();
+    struc_names_ext[n_struc] = "computed_sd_Rt_effect";
+    struc_names_ext[n_struc + 1] = "computed_sd_tpoint_effect";
+    struc_names_ext[n_struc + 2] = "computed_sd_tslope_effect";
     struc_values_ext.names() = struc_names_ext;
     
     // Reformat gamma dispersion parameters 

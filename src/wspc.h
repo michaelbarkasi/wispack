@@ -127,9 +127,9 @@ class wspc {
     sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
     NumericVector struc_values = {0.1, 0.1, 0.1};        // Initial values of structural parameters of model
     CharacterVector struc_names = {         // Names of structural parameters of model
-      "beta_shape_point", 
-      "beta_shape_rate",
-      "beta_shape_slope"
+      "logsd_raneff_point", 
+      "logsd_raneff_rate",
+      "logsd_raneff_slope"
     };
     
     // Variables for deriving structure of beta parameters
@@ -755,7 +755,7 @@ IntegerMatrix LROcp_array(
 
 // Function to derive sd of fixed effect from variance of random effect
 sdouble get_beta_sd(
-    const sdouble& beta_shape,      // shape parameter of the beta distribution
+    const sdouble& sd_raneff,       // standard deviation of the ran effect
     const sdouble& diff_ratio,      // estimated ratio of fixed effect to random effect
     const sdouble& expected_value,  // expected value of the model component (e.g., mean of rates, slopes, or transition points)
     const sdouble& warp_bound       // upper bound on model component value
