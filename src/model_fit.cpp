@@ -423,12 +423,12 @@ IntegerMatrix LROcp_array(
 
 // Function to derive sd of fixed effect from variance of random effect
 sdouble get_beta_sd(
-    const sdouble& beta_shape,     // shape parameter of the beta distribution
+    const sdouble& sd_raneff,      // standard deviation of the ran effect
     const sdouble& diff_ratio,     // estimated ratio of fixed effect to random effect
     const sdouble& expected_value, // expected value of the model component (e.g., mean of rates, slopes, or transition points)
     const sdouble& warp_bound      // upper bound on model component value
   ) {
-    sdouble expected_ran_effect = beta_shape;       // This is the sd of the beta distribution
+    sdouble expected_ran_effect = sd_raneff;       
     sdouble eff_mult = diff_ratio - 1.0;                                     
     sdouble unbounded_sd_beta_effect = eff_mult * expected_value * expected_ran_effect;
     sdouble bound_scalar = 1.0 - expected_value / warp_bound;
