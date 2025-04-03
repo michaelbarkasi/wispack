@@ -2332,8 +2332,8 @@ Rcpp::List wspc::results() {
     CharacterVector struc_names_ext(n_struc + 3);
     for (int i = 0; i < n_struc; i++) {
       struc_values_ext[i] = std::exp(struc_values[i]);
-      struc_names_ext[i] = struc_names[i];
-      struc_names_ext[i].replace_first("log", "");
+      String this_struc_name = struc_names[i]; 
+      struc_names_ext[i] = this_struc_name.replace_first("log", "");
     }
     struc_values_ext[n_struc] = sd_Rt_effect.val();
     struc_values_ext[n_struc + 1] = sd_tpoint_effect.val();
