@@ -454,6 +454,19 @@ sdouble warping_gradient_diff(
     
   };
 
+// Derivative of warping_gradient_diff with respect to beta
+sdouble warping_gradient_diff_slope(
+    const sdouble& mc_value,        // value of the model component before warping
+    const sdouble& mc_value_bound,  // bound on the model component value
+    const sdouble& beta             // fixed effect (beta)
+  ) {
+    
+    sdouble s_beta = (mc_value_bound + mc_value + beta) / (2.0 * mc_value_bound);
+    sdouble transcendental_component = (1.0 - 2.0 * s_beta) * slog(s_beta / (1.0 - s_beta)); 
+    return((1/(2.0*mc_value_bound)) * (transcendental_component + 1.0));
+    
+  };
+
 // Function to derive sd of fixed effect from variance of random effect
 sdouble get_beta_sd(
     const sdouble& diff_ratio,     // estimated ratio of fixed effect to random effect
@@ -462,47 +475,25 @@ sdouble get_beta_sd(
   ) {    
     
     // Set search parameters 
-    const int max_iter = 100; 
-    const double tol = 1e-7;
-    
-    // Initiate betas
-    sdouble beta_lower = -1e3;
-    sdouble beta_upper = 1e3;
-    
-    // Evaluate formula
-    sdouble fx_lower = warping_gradient_diff(diff_ratio, expected_value, warp_bound, beta_lower);
-    sdouble fx_upper = warping_gradient_diff(diff_ratio, expected_value, warp_bound, beta_upper);
-    vprint("-------", true); 
-    vprint("fx_lower: ", fx_lower);
-    vprint("fx_upper: ", fx_upper);
-    // Run checks 
-    if (abs(fx_lower) < tol) {return beta_lower;}
-    else if (abs(fx_upper) < tol) {return beta_upper;}
-    else if (fx_lower * fx_upper > tol) {return 0.0;} // Both initial covariance values lie on same side of zero crossing
-    
-    // Run bisection
-    sdouble fx = inf_;
-    sdouble beta_mid;
     int iter = 0;
-    while (abs(fx) > tol && iter < max_iter) {
+    const int max_iter = 1000; 
+    const double tol = 1e-7;
+    sdouble expected_warp = 0.5;
+    sdouble beta_prior = diff_ratio * (expected_warp - 1.0); 
+    
+    // Initial value of warping_gradient_diff
+    sdouble fx = warping_gradient_diff(diff_ratio, expected_value, warp_bound, beta_prior);
+    sdouble beta = beta_prior;
+    
+    while ((fx*fx).val() > tol && iter < max_iter) {
       
-      // Find midpoint
-      beta_mid = (beta_lower + beta_upper)/2.0;
-      fx = warping_gradient_diff(diff_ratio, expected_value, warp_bound, beta_mid);
-      
-      // Update bounds
-      if (fx > 0.0) {
-        beta_lower = beta_mid;
-      } else {
-        beta_upper = beta_mid;
-      } 
-      
-      // Update iteration
+      beta -= fx / warping_gradient_diff_slope(expected_value, warp_bound, beta);
+      fx = warping_gradient_diff(diff_ratio, expected_value, warp_bound, beta);
       iter++;
       
     }
     
-    return beta_mid; 
+    return beta; 
    
   }
 

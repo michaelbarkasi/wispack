@@ -141,6 +141,7 @@ class wspc {
     sdouble fe_difference_ratio_tslope = 1.05;           // same, but for tslopes instead of count
     sdouble mean_count_log = 1.0;                        // mean of log(count) values, used in estimating sd of beta parameters for rate
     sdouble mean_tslope = 0.0;                           // mean of tslope values, used in estimating sd of beta parameters for slope
+    sdouble inf_warp = 1e3;                              // pseudo-infinity value for warping (representing no warp boundary)
     sVec warp_bounds;                                    // warping bounds for each model component
     IntegerVector warp_bounds_idx = IntegerVector::create(0, 1, 2);
     List change_points;                     // list of found change points, structured by parent and child
@@ -765,7 +766,14 @@ IntegerMatrix LROcp_array(
 
 // Formula for estimating expected beta from diff_ratio
 sdouble warping_gradient_diff(
-    const sdouble& diff_ratio,     // estimated ratio of fixed effect to random effect
+    const sdouble& diff_ratio,      // estimated ratio of fixed effect to random effect
+    const sdouble& mc_value,        // value of the model component before warping
+    const sdouble& mc_value_bound,  // bound on the model component value
+    const sdouble& beta             // fixed effect (beta)
+  );
+
+// Derivative of warping_gradient_diff with respect to beta
+sdouble warping_gradient_diff_slope(
     const sdouble& mc_value,        // value of the model component before warping
     const sdouble& mc_value_bound,  // bound on the model component value
     const sdouble& beta             // fixed effect (beta)
