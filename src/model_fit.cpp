@@ -436,7 +436,7 @@ IntegerMatrix LROcp_array(
 
 // Formula for estimating expected beta from diff_ratio
 sdouble warping_gradient_diff(
-    const sdouble& diff_ratio,     // estimated ratio of fixed effect to random effect
+    const sdouble& diff_ratio,      // estimated ratio of fixed effect to random effect
     const sdouble& mc_value,        // value of the model component before warping
     const sdouble& mc_value_bound,  // bound on the model component value
     const sdouble& beta             // fixed effect (beta)
@@ -472,7 +472,9 @@ sdouble get_beta_sd(
     // Evaluate formula
     sdouble fx_lower = warping_gradient_diff(diff_ratio, expected_value, warp_bound, beta_lower);
     sdouble fx_upper = warping_gradient_diff(diff_ratio, expected_value, warp_bound, beta_upper);
-    
+    vprint("-------", true); 
+    vprint("fx_lower: ", fx_lower);
+    vprint("fx_upper: ", fx_upper);
     // Run checks 
     if (abs(fx_lower) < tol) {return beta_lower;}
     else if (abs(fx_upper) < tol) {return beta_upper;}
