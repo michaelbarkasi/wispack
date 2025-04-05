@@ -141,6 +141,19 @@ sdouble poisson_gamma_integral(
     
   }
 
+// Warping function for model components 
+sdouble warp_mc(
+    const sdouble& s,        // value to warp
+    const sdouble& b,        // bound on this value 
+    const sdouble& w         // warping parameter
+  ) {
+    sdouble sb = (b + s)/(2.0*b); 
+    sdouble ew = sexp(w);
+    sdouble sew = spower(sb, ew);
+    sdouble s_warped = sew / (sew + spower(1.0 - sb, ew));
+    return (b * (2.0 * s_warped - 1.0));
+  }
+
 // Numerically stable implementation of sigmoid function
 sdouble sigmoid_stable(
     const sdouble& x
@@ -421,20 +434,74 @@ IntegerMatrix LROcp_array(
     
   } 
 
+// Formula for estimating expected beta from diff_ratio
+sdouble warping_gradient_diff(
+    const sdouble& diff_ratio,     // estimated ratio of fixed effect to random effect
+    const sdouble& mc_value,        // value of the model component before warping
+    const sdouble& mc_value_bound,  // bound on the model component value
+    const sdouble& beta             // fixed effect (beta)
+  ) {
+    
+    /*
+     * This formula is derived from (FixEff + RanEff)/RanEff, where FixEff = dW/dB and 
+     *   RanEff = dW/dw, where B is beta (fixed effect) and w is the warping parameter
+     *   (random effect). Specifically, diff_ratio = (FixEff + RanEff)/RanEff = (dW/dB + dW/dw)/dW/dw
+     */
+    
+    sdouble s_beta = (mc_value_bound + mc_value + beta) / (2.0 * mc_value_bound);
+    sdouble transcendental_component = s_beta * (1.0 - s_beta) * slog(s_beta / (1.0 - s_beta)); 
+    return(transcendental_component - 1.0 / (2.0 * mc_value_bound * (diff_ratio - 1.0)));
+    
+  };
+
 // Function to derive sd of fixed effect from variance of random effect
 sdouble get_beta_sd(
-    const sdouble& sd_raneff,      // standard deviation of the ran effect
     const sdouble& diff_ratio,     // estimated ratio of fixed effect to random effect
     const sdouble& expected_value, // expected value of the model component (e.g., mean of rates, slopes, or transition points)
     const sdouble& warp_bound      // upper bound on model component value
-  ) {
-    sdouble expected_ran_effect = sd_raneff;       
-    sdouble eff_mult = diff_ratio - 1.0;                                     
-    sdouble unbounded_sd_beta_effect = eff_mult * expected_value * expected_ran_effect;
-    sdouble bound_scalar = 1.0 - expected_value / warp_bound;
-    sdouble bound_divisor = 1 + unbounded_sd_beta_effect / warp_bound;
-    sdouble sd_beta_effect = unbounded_sd_beta_effect * bound_scalar / bound_divisor;
-    return sd_beta_effect;
+  ) {    
+    
+    // Set search parameters 
+    const int max_iter = 100; 
+    const double tol = 1e-7;
+    
+    // Initiate betas
+    sdouble beta_lower = -1e3;
+    sdouble beta_upper = 1e3;
+    
+    // Evaluate formula
+    sdouble fx_lower = warping_gradient_diff(diff_ratio, expected_value, warp_bound, beta_lower);
+    sdouble fx_upper = warping_gradient_diff(diff_ratio, expected_value, warp_bound, beta_upper);
+    
+    // Run checks 
+    if (abs(fx_lower) < tol) {return beta_lower;}
+    else if (abs(fx_upper) < tol) {return beta_upper;}
+    else if (fx_lower * fx_upper > tol) {return 0.0;} // Both initial covariance values lie on same side of zero crossing
+    
+    // Run bisection
+    sdouble fx = inf_;
+    sdouble beta_mid;
+    int iter = 0;
+    while (abs(fx) > tol && iter < max_iter) {
+      
+      // Find midpoint
+      beta_mid = (beta_lower + beta_upper)/2.0;
+      fx = warping_gradient_diff(diff_ratio, expected_value, warp_bound, beta_mid);
+      
+      // Update bounds
+      if (fx > 0.0) {
+        beta_lower = beta_mid;
+      } else {
+        beta_upper = beta_mid;
+      } 
+      
+      // Update iteration
+      iter++;
+      
+    }
+    
+    return beta_mid; 
+   
   }
 
 // Function to estimate block rate and transition slopes from count series and change points

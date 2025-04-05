@@ -801,7 +801,8 @@ sVec wspc::compute_warped_mc(
     // Apply warping factor 
     int warp_bound_idx = warp_bounds_idx[mc];
     for (int bt = 0; bt < block_num; bt++) {
-      mc_vec(bt) = mc_vec(bt) + (sexp(wf) - 1.0) * mc_vec(bt) * (1.0 - (mc_vec(bt) / warp_bounds[warp_bound_idx]));
+      //mc_vec(bt) = mc_vec(bt) + (sexp(wf) - 1.0) * mc_vec(bt) * (1.0 - (mc_vec(bt) / warp_bounds[warp_bound_idx]));
+      mc_vec(bt) = warp_mc(mc_vec(bt), warp_bounds[warp_bound_idx], wf);
     }
     
     // Send out
@@ -1117,8 +1118,6 @@ sdouble wspc::neg_loglik_effect_parameters(
     // log-likelihood of beta values
     
     // Compute the log-likelihood of the Rt beta values, given the normal distribution implied by the Rt raneff sd and Rt fe_difference_ratio 
-    int warp_bound_Rt_idx = warp_bounds_idx["Rt"];
-    sdouble sd_Rt_effect = get_beta_sd(sd_raneff_rate, fe_difference_ratio_Rt, mean_count_log, warp_bounds[warp_bound_Rt_idx]);
     for (int i = 0; i < Rt_beta_values_no_ref.size(); i++) {
       log_lik += log_dNorm(Rt_beta_values_no_ref(i), 0.0, sd_Rt_effect);
       ctr++;
@@ -1126,11 +1125,10 @@ sdouble wspc::neg_loglik_effect_parameters(
     
     // Compute the log-likelihood of the tslope beta values, given the normal distribution implied by the slope raneff sd and slope fe_difference_ratio
     int n_tslope = tslope_beta_values_no_ref.size();
-    sdouble sd_tslope_effect; 
     int warp_bound_tslope_idx = warp_bounds_idx["tslope"];
     if (n_tslope > 0) {
       sdouble new_mean_tslope = estimate_mean_slope(parameters);
-      sd_tslope_effect = get_beta_sd(sd_raneff_slope, fe_difference_ratio_tslope, new_mean_tslope, warp_bounds[warp_bound_tslope_idx]);
+      sdouble sd_tslope_effect = get_beta_sd(fe_difference_ratio_tslope, new_mean_tslope, warp_bounds[warp_bound_tslope_idx]);
     }
     for (int i = 0; i < n_tslope; i++) {
       log_lik += log_dNorm(tslope_beta_values_no_ref(i), 0.0, sd_tslope_effect); 
@@ -1139,9 +1137,6 @@ sdouble wspc::neg_loglik_effect_parameters(
     
     // Compute the log-likelihood of the tpoint beta values, given the normal distribution implied by the point raneff sd and point fe_difference_ratio
     int n_tpoint = tpoint_beta_values_no_ref.size();
-    sdouble sd_tpoint_effect;
-    int warp_bound_tpoint_idx = warp_bounds_idx["tpoint"];
-    if (n_tpoint > 0) {sd_tpoint_effect = get_beta_sd(sd_raneff_point, fe_difference_ratio_tpoint, bin_num/2.0, warp_bounds[warp_bound_tpoint_idx]);}
     for (int i = 0; i < n_tpoint; i++) {
       log_lik += log_dNorm(tpoint_beta_values_no_ref(i), 0.0, sd_tpoint_effect);
       ctr++;
@@ -2216,6 +2211,9 @@ void wspc::import_fe_diff_ratio_Rt(
   ) {
     vprint("Imported fe_difference_ratio_Rt: " + std::to_string(fe_diff_ratio), verbose);
     fe_difference_ratio_Rt = (sdouble)fe_diff_ratio;
+    // Set expected rate effect
+    int warp_bound_Rt_idx = warp_bounds_idx["Rt"];
+    sd_Rt_effect = get_beta_sd(fe_difference_ratio_Rt, mean_count_log, warp_bounds[warp_bound_Rt_idx]);
   }
 
 void wspc::import_fe_diff_ratio_tpoint(
@@ -2224,6 +2222,9 @@ void wspc::import_fe_diff_ratio_tpoint(
   ) {
     vprint("Imported fe_difference_ratio_tpoint: " + std::to_string(fe_diff_ratio), verbose);
     fe_difference_ratio_tpoint = (sdouble)fe_diff_ratio;
+    // Set expected t-point effect
+    int warp_bound_tpoint_idx = warp_bounds_idx["tpoint"];
+    sd_tpoint_effect = get_beta_sd(fe_difference_ratio_tpoint, bin_num/2.0, warp_bounds[warp_bound_tpoint_idx]);
   }
 
 void wspc::import_fe_diff_ratio_tslope(
@@ -2317,16 +2318,9 @@ Rcpp::List wspc::results() {
     }
     
     // Recompute beta standard deviations
-    int warp_bound_Rt_idx = warp_bounds_idx["Rt"];
-    sdouble sd_Rt_effect = get_beta_sd(sexp((sdouble)struc_values["logsd_raneff_rate"]), fe_difference_ratio_Rt, mean_count_log, warp_bounds[warp_bound_Rt_idx]);
-    int n_tpoint = param_beta_tpoint_idx_no_ref.size();
-    sdouble sd_tpoint_effect = 0.0;
-    int warp_bound_tpoint_idx = warp_bounds_idx["tpoint"];
-    if (n_tpoint > 0) {sd_tpoint_effect = get_beta_sd((sdouble)sexp(struc_values["logsd_raneff_point"]), fe_difference_ratio_tpoint, bin_num/2.0, warp_bounds[warp_bound_tpoint_idx]);}
     int n_tslope = param_beta_tslope_idx_no_ref.size();
-    sdouble sd_tslope_effect = 0.0; 
     int warp_bound_tslope_idx = warp_bounds_idx["tslope"];
-    if (n_tslope > 0) {sd_tslope_effect = get_beta_sd(sexp((sdouble)struc_values["logsd_raneff_slope"]), fe_difference_ratio_tslope, mean_tslope, warp_bounds[warp_bound_tslope_idx]);}
+    if (n_tslope > 0) {sd_tslope_effect = get_beta_sd(fe_difference_ratio_tslope, mean_tslope, warp_bounds[warp_bound_tslope_idx]);}
     int n_struc = struc_values.size();
     NumericVector struc_values_ext(n_struc + 3);
     CharacterVector struc_names_ext(n_struc + 3);
