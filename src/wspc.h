@@ -131,6 +131,9 @@ class wspc {
       "logsd_raneff_rate",
       "logsd_raneff_slope"
     };
+    sdouble sd_Rt_effect;
+    sdouble sd_tslope_effect; 
+    sdouble sd_tpoint_effect;
     
     // Variables for deriving structure of beta parameters
     sdouble fe_difference_ratio_Rt = 1.05;               // ratio of count differences between one-off treatments across ran levels and count differences between same-treatments across ran levels
@@ -695,6 +698,13 @@ sdouble poisson_gamma_integral(
     sdouble v
   );
 
+// Warping function for model components 
+sdouble warp_mc(
+    const sdouble& x,        // value to warp
+    const sdouble& b,        // bound on this value 
+    const sdouble& w         // warping parameter
+  );
+
 // Numerically stable implementation of sigmoid function
 sdouble sigmoid_stable(
   const sdouble& x
@@ -753,9 +763,16 @@ IntegerMatrix LROcp_array(
     const double& out_mult          // Outlier multiplier
   );
 
+// Formula for estimating expected beta from diff_ratio
+sdouble warping_gradient_diff(
+    const sdouble& diff_ratio,     // estimated ratio of fixed effect to random effect
+    const sdouble& mc_value,        // value of the model component before warping
+    const sdouble& mc_value_bound,  // bound on the model component value
+    const sdouble& beta             // fixed effect (beta)
+  );
+
 // Function to derive sd of fixed effect from variance of random effect
 sdouble get_beta_sd(
-    const sdouble& sd_raneff,       // standard deviation of the ran effect
     const sdouble& diff_ratio,      // estimated ratio of fixed effect to random effect
     const sdouble& expected_value,  // expected value of the model component (e.g., mean of rates, slopes, or transition points)
     const sdouble& warp_bound       // upper bound on model component value
