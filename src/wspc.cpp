@@ -57,7 +57,7 @@ wspc::wspc(
     // Find max bins and set warp bounds
     bin_num = smax(to_sVec(Rcpp::as<NumericVector>(count_data["bin"])));
     warp_bounds.resize(3); 
-    for (int i = 0; i < 3; i++) {warp_bounds[i] = inf_;}  // initialize to infinity
+    for (int i = 0; i < 3; i++) {warp_bounds[i] = 1e2;}  // initialize to infinity
     warp_bounds_idx.names() = CharacterVector::create("Rt", "tslope", "tpoint");
     int warp_bound_tpoint_idx = warp_bounds_idx["tpoint"]; 
     warp_bounds[warp_bound_tpoint_idx] = bin_num;  // set tpoint bound to max bin
@@ -1129,6 +1129,7 @@ sdouble wspc::neg_loglik_effect_parameters(
     if (n_tslope > 0) {
       sdouble new_mean_tslope = estimate_mean_slope(parameters);
       sdouble sd_tslope_effect = get_beta_sd(fe_difference_ratio_tslope, new_mean_tslope, warp_bounds[warp_bound_tslope_idx]);
+      if (sd_tslope_effect < 0) {sd_tslope_effect *= -1.0;}
     }
     for (int i = 0; i < n_tslope; i++) {
       log_lik += log_dNorm(tslope_beta_values_no_ref(i), 0.0, sd_tslope_effect); 
@@ -2214,6 +2215,8 @@ void wspc::import_fe_diff_ratio_Rt(
     // Set expected rate effect
     int warp_bound_Rt_idx = warp_bounds_idx["Rt"];
     sd_Rt_effect = get_beta_sd(fe_difference_ratio_Rt, mean_count_log, warp_bounds[warp_bound_Rt_idx]);
+    if (sd_Rt_effect < 0) {sd_Rt_effect *= -1.0;}
+    vprint("compute sd_Rt_effect: " + std::to_string(sd_Rt_effect.val()), verbose);
   }
 
 void wspc::import_fe_diff_ratio_tpoint(
@@ -2225,6 +2228,8 @@ void wspc::import_fe_diff_ratio_tpoint(
     // Set expected t-point effect
     int warp_bound_tpoint_idx = warp_bounds_idx["tpoint"];
     sd_tpoint_effect = get_beta_sd(fe_difference_ratio_tpoint, bin_num/2.0, warp_bounds[warp_bound_tpoint_idx]);
+    if (sd_tpoint_effect < 0) {sd_tpoint_effect *= -1.0;}
+    vprint("compute sd_tpoint_effect: " + std::to_string(sd_tpoint_effect.val()), verbose);
   }
 
 void wspc::import_fe_diff_ratio_tslope(
@@ -2233,6 +2238,11 @@ void wspc::import_fe_diff_ratio_tslope(
   ) {
     vprint("Imported fe_difference_ratio_tslope: " + std::to_string(fe_diff_ratio), verbose);
     fe_difference_ratio_tslope = (sdouble)fe_diff_ratio;
+    // Set (initial) expected t-point effect 
+    int warp_bound_tslope_idx = warp_bounds_idx["tslope"];
+    sd_tslope_effect = get_beta_sd(fe_difference_ratio_tslope, mean_tslope, warp_bounds[warp_bound_tslope_idx]);
+    if (sd_tslope_effect < 0) {sd_tslope_effect *= -1.0;}
+    vprint("compute sd_tslope_effect: " + std::to_string(sd_tslope_effect.val()), verbose);
   }
 
 Rcpp::List wspc::results() {
@@ -2321,6 +2331,7 @@ Rcpp::List wspc::results() {
     int n_tslope = param_beta_tslope_idx_no_ref.size();
     int warp_bound_tslope_idx = warp_bounds_idx["tslope"];
     if (n_tslope > 0) {sd_tslope_effect = get_beta_sd(fe_difference_ratio_tslope, mean_tslope, warp_bounds[warp_bound_tslope_idx]);}
+    if (sd_tslope_effect < 0) {sd_tslope_effect *= -1.0;}
     int n_struc = struc_values.size();
     NumericVector struc_values_ext(n_struc + 3);
     CharacterVector struc_names_ext(n_struc + 3);

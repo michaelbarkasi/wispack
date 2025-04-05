@@ -131,9 +131,9 @@ class wspc {
       "logsd_raneff_rate",
       "logsd_raneff_slope"
     };
-    sdouble sd_Rt_effect;
-    sdouble sd_tslope_effect; 
-    sdouble sd_tpoint_effect;
+    sdouble sd_Rt_effect = 1.0;
+    sdouble sd_tslope_effect = 1.0; 
+    sdouble sd_tpoint_effect = 1.0;
     
     // Variables for deriving structure of beta parameters
     sdouble fe_difference_ratio_Rt = 1.05;               // ratio of count differences between one-off treatments across ran levels and count differences between same-treatments across ran levels
