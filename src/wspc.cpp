@@ -36,6 +36,7 @@ wspc::wspc(
     max_evals = (int)settings["max_evals"];
     rng_seed = (unsigned int)settings["rng_seed"];
     nll_effect_weight = sdouble((double)settings["nll_effect_weight"]);
+    inf_warp = sdouble((double)settings["inf_warp"]);
     model_settings = Rcpp::clone(settings);
     
     // Check structure of input data
@@ -57,7 +58,7 @@ wspc::wspc(
     // Find max bins and set warp bounds
     bin_num = smax(to_sVec(Rcpp::as<NumericVector>(count_data["bin"])));
     warp_bounds.resize(3); 
-    for (int i = 0; i < 3; i++) {warp_bounds[i] = 1e2;}  // initialize to infinity
+    for (int i = 0; i < 3; i++) {warp_bounds[i] = inf_warp;}  // initialize to infinity (no bounds)
     warp_bounds_idx.names() = CharacterVector::create("Rt", "tslope", "tpoint");
     int warp_bound_tpoint_idx = warp_bounds_idx["tpoint"]; 
     warp_bounds[warp_bound_tpoint_idx] = bin_num;  // set tpoint bound to max bin

@@ -43,7 +43,8 @@ wisp <- function(
       rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
       max_evals = 1000,                           # maximum number of evaluations for optimization
       rng_seed = 42,                              # seed for random number generator
-      nll_effect_weight = 0.5                     # weight of effect log likelihood in total log likelihood calculation
+      nll_effect_weight = 0.5,                    # weight of effect log likelihood in total log likelihood calculation
+      inf_warp = 1e3                              # pseudo infinity value larger than any possible possible parameter value, representing unbound warping
     )
   ) {
     
@@ -1857,17 +1858,20 @@ plot.parameters <- function(
         }
         
         # Make structural parameter plots ####
+        struc_param_names <- names(wisp.results$struc.params)
+        struc_param_names <- struc_param_names[!grepl("computed", struc_param_names)]
         if (length(child.lvl) == 0 && all(names(parameter_comparison_plots) != "plot_struc")) {
           struc_df <- data.frame(
             value = wisp.results$struc.params, 
-            parameter = names(wisp.results$struc.params)
+            parameter = struc_param_names
           )
           # ... remove derived structural parameters (last three)
           struc_df <- struc_df[-c((nrow(struc_df)-2):nrow(struc_df)),]
           if (print_stats) {
             struc_df$value_low <- rep(NA, nrow(struc_df))
             struc_df$value_high <- rep(NA, nrow(struc_df))
-            for (n in names(wisp.results$struc.params)) {
+            for (n in struc_param_names) {
+              n <- paste0("log", n)
               idx <- which(param_names == n)
               struc_df$value_low[struc_df$parameter == n] <- sample_ci[1,idx]
               struc_df$value_high[struc_df$parameter == n] <- sample_ci[2,idx]
@@ -1937,7 +1941,7 @@ plot.struc.stats <- function(
     # ... for point
     wfactors_point_mask <- grepl("wfactor_point", wisp.results$param.names)
     wfactors_point <- c(bs_fitted_params[,wfactors_point_mask])
-    shape_point <- wisp.results$struc.params["beta_shape_point"]
+    shape_point <- wisp.results$struc.params["sd_raneff_point"]
     data <- data.frame(
       rate = wfactors_point,
       probability_point = dnorm(wfactors_point, 0.0, shape_point)
@@ -1954,7 +1958,7 @@ plot.struc.stats <- function(
     # ... for rate
     wfactors_rate_mask <- grepl("wfactor_rate", wisp.results$param.names)
     wfactors_rate <- c(bs_fitted_params[,wfactors_rate_mask])
-    shape_rate <- wisp.results$struc.params["beta_shape_rate"]
+    shape_rate <- wisp.results$struc.params["sd_raneff_rate"]
     data <- data.frame(
       rate = wfactors_rate,
       probability_rate = dnorm(wfactors_rate, 0.0, shape_rate)
@@ -1971,7 +1975,7 @@ plot.struc.stats <- function(
     # ... for slope 
     wfactors_slope_mask <- grepl("wfactor_slope", wisp.results$param.names)
     wfactors_slope <- c(bs_fitted_params[,wfactors_slope_mask])
-    shape_slope <- wisp.results$struc.params["beta_shape_slope"]
+    shape_slope <- wisp.results$struc.params["sd_raneff_slope"]
     data <- data.frame(
       rate = wfactors_slope,
       probability_slope = dnorm(wfactors_slope, 0.0, shape_slope)
