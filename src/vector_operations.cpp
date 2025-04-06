@@ -458,6 +458,36 @@ iVec idx_vec(
     return mvec;
   }
 
+// ... overload
+CharacterVector idx_vec(
+    CharacterVector vec,
+    Rcpp::IntegerVector idx
+  ) {
+    int m1 = Rcpp::max(idx);
+    if (vec.size() <= m1) {Rcpp::stop("Index out of bounds.");}
+    int m2 = Rcpp::min(idx); 
+    if (m2 < 0) {Rcpp::stop("Index out of bounds.");}
+    int n = idx.size();
+    CharacterVector mvec = CharacterVector(n);
+    for (int i = 0; i < n; i++) {mvec[i] = vec[idx[i]];}
+    return mvec;
+  }
+
+// Find matches in character vector
+IntegerVector grep_cpp(
+    CharacterVector V, 
+    std::string pattern
+  ) {
+    IntegerVector idx;
+    for (int i = 0; i < V.size(); i++) {
+      std::string str = Rcpp::as<std::string>(V[i]);
+      if (str.find(pattern) != std::string::npos) {
+        idx.push_back(i); 
+      }
+    }
+    return idx;
+  }
+
 // Sequence generation *************************************************************************************************
 
 // Sequence of doubles
