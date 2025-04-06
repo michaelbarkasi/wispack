@@ -434,69 +434,6 @@ IntegerMatrix LROcp_array(
     
   } 
 
-// Formula for estimating expected beta from diff_ratio
-sdouble warping_gradient_diff(
-    const sdouble& diff_ratio,      // estimated ratio of fixed effect to random effect
-    const sdouble& mc_value,        // value of the model component before warping
-    const sdouble& mc_value_bound,  // bound on the model component value
-    const sdouble& beta             // fixed effect (beta)
-  ) {
-    
-    /*
-     * This formula is derived from (FixEff + RanEff)/RanEff, where FixEff = dW/dB and 
-     *   RanEff = dW/dw, where B is beta (fixed effect) and w is the warping parameter
-     *   (random effect). Specifically, diff_ratio = (FixEff + RanEff)/RanEff = (dW/dB + dW/dw)/dW/dw
-     */
-    
-    sdouble s_beta = (mc_value_bound + mc_value + beta) / (2.0 * mc_value_bound);
-    sdouble transcendental_component = s_beta * (1.0 - s_beta) * slog(s_beta / (1.0 - s_beta)); 
-    return(transcendental_component - 1.0 / (2.0 * mc_value_bound * (diff_ratio - 1.0)));
-    
-  };
-
-// Derivative of warping_gradient_diff with respect to beta
-sdouble warping_gradient_diff_slope(
-    const sdouble& mc_value,        // value of the model component before warping
-    const sdouble& mc_value_bound,  // bound on the model component value
-    const sdouble& beta             // fixed effect (beta)
-  ) {
-    
-    sdouble s_beta = (mc_value_bound + mc_value + beta) / (2.0 * mc_value_bound);
-    sdouble transcendental_component = (1.0 - 2.0 * s_beta) * slog(s_beta / (1.0 - s_beta)); 
-    return((1/(2.0*mc_value_bound)) * (transcendental_component + 1.0));
-    
-  };
-
-// Function to derive sd of fixed effect from variance of random effect
-sdouble get_beta_sd(
-    const sdouble& diff_ratio,     // estimated ratio of fixed effect to random effect
-    const sdouble& expected_value, // expected value of the model component (e.g., mean of rates, slopes, or transition points)
-    const sdouble& warp_bound      // upper bound on model component value
-  ) {    
-    
-    // Set search parameters 
-    int iter = 0;
-    const int max_iter = 1000; 
-    const double tol = 1e-7;
-    sdouble expected_warp = 0.5;
-    sdouble beta_prior = diff_ratio * (expected_warp - 1.0); 
-    
-    // Initial value of warping_gradient_diff
-    sdouble fx = warping_gradient_diff(diff_ratio, expected_value, warp_bound, beta_prior);
-    sdouble beta = beta_prior;
-    
-    while ((fx*fx).val() > tol && iter < max_iter) {
-      
-      beta -= fx / warping_gradient_diff_slope(expected_value, warp_bound, beta);
-      fx = warping_gradient_diff(diff_ratio, expected_value, warp_bound, beta);
-      iter++;
-      
-    }
-    
-    return beta; 
-   
-  }
-
 // Function to estimate block rate and transition slopes from count series and change points
 std::vector<dVec> est_bkRates_tRuns(
     const int& n_blocks,                // number of blocks

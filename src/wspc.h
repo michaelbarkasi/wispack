@@ -52,7 +52,7 @@ class wspc {
     
     // Data sizes
     int n_count_rows;                       // number of rows in summed count data frame
-    int treatment_num;                      // number of treatment combinations (including "none", i.e., the reference)
+    int treatment_num;                      // number of treatment combinations (including the reference, i.e. no treatment)
     sdouble bin_num;                        // max bin (i.e., number of bins)
     IntegerVector count_row_nums;           // sequence of integers from 0 to n_count_rows - 1
     
@@ -88,7 +88,6 @@ class wspc {
     // Variables to help with data manipulation
     sMat weights;                           // weight matrix, rows as rows of summed count data, columns as treatments (first column is reference)
     IntegerVector idx_mc_unique;            // count data rows at which model component values will change
-    IntegerMatrix bs_bin_ranges;            // bin ranges for bootstrapping (three columns: max back, max up, range)
     std::vector<IntegerVector> token_pool;               // list of token count indexes associated with each summed count row
     std::vector<IntegerVector> extrapolation_pool;       // list of summed-count indexes giving summed count rows from which to extrapolate
     IntegerVector count_not_na_idx;                      // indexes of non-NA rows in summed count data
@@ -103,49 +102,17 @@ class wspc {
     IntegerMatrix degMat;                   // matrix of degrees for each parent (column) -- child (rows) pair
     NumericVector fitted_parameters;        // vector holding the model parameters
     List param_names;                       // list holding the names of the model parameters as they appear in fitted_parameters
+    sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
+    sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
+    sdouble inf_warp = 1e3;                 // pseudo-infinity value for warping (representing no warp boundary)
+    sVec warp_bounds;                       // warping bounds for each model component
+    IntegerVector warp_bounds_idx = IntegerVector::create(0, 1, 2);
     
     // Indices for managing parameters vector
-    IntegerVector param_wfactor_point_idx;  // ... indexes of parameter vector for quick access of different kinds of model parameters
-    IntegerVector param_wfactor_rate_idx;
-    IntegerVector param_wfactor_slope_idx;
-    IntegerVector param_beta_Rt_idx;
-    IntegerVector param_beta_Rt_idx_no_ref;
-    IntegerVector param_beta_tslope_idx;
-    IntegerVector param_beta_tslope_idx_no_ref;
-    IntegerVector param_beta_tpoint_idx;
-    IntegerVector param_beta_tpoint_idx_no_ref;
-    IntegerVector param_ref_values_tpoint_idx;
-    IntegerVector param_struc_idx;
     List beta_idx;                          // ... lists giving the structured array indices for named parameters
     List wfactor_idx; 
     IntegerVector gv_ran_idx;               // ... indices (row and column) for random effect arrays 
     IntegerVector gv_fix_idx;  
-    
-    // Structural parameters
-    //sVec observed_mean_ran_eff;             // mean random effect values for each random effect level, observed in data
-    sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
-    sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
-    NumericVector struc_values = {0.1, 0.1, 0.1};        // Initial values of structural parameters of model
-    CharacterVector struc_names = {         // Names of structural parameters of model
-      "logsd_raneff_point", 
-      "logsd_raneff_rate",
-      "logsd_raneff_slope"
-    };
-    sdouble sd_Rt_effect = 1.0;
-    sdouble sd_tslope_effect = 1.0; 
-    sdouble sd_tpoint_effect = 1.0;
-    
-    // Variables for deriving structure of beta parameters
-    sdouble fe_difference_ratio_Rt = 1.05;               // ratio of count differences between one-off treatments across ran levels and count differences between same-treatments across ran levels
-    sdouble fe_difference_ratio_tpoint = 1.05;           // same, but for tpoints instead of count
-    sdouble fe_difference_ratio_tslope = 1.05;           // same, but for tslopes instead of count
-    sdouble mean_count_log = 1.0;                        // mean of log(count) values, used in estimating sd of beta parameters for rate
-    sdouble mean_tslope = 0.0;                           // mean of tslope values, used in estimating sd of beta parameters for slope
-    sdouble inf_warp = 1e3;                              // pseudo-infinity value for warping (representing no warp boundary)
-    sVec warp_bounds;                                    // warping bounds for each model component
-    IntegerVector warp_bounds_idx = IntegerVector::create(0, 1, 2);
-    List change_points;                     // list of found change points, structured by parent and child
-    List est_slopes;                        // list of estimated slopes, structured by parent and child
     
     // Variables for initial degree estimation
     double LROcutoff = 2.0;                 // cutoff (x sd) for likelihood ratio outlier detection
@@ -165,7 +132,6 @@ class wspc {
     sMat gamma_dispersion;                  // dispersion terms for "kernel" of gamma-Poisson model
     IntegerVector gd_child_idx;             // indexes of child levels in gamma_dispersion
     IntegerVector gd_parent_idx;            // indexes of parent levels in gamma_dispersion
-    sdouble nll_effect_weight = 0.5;        // weight of effect log likelihood in total log likelihood calculation
     
     // Boundary penalty variables
     int boundary_vec_size = 0;                           // number of boundary components
@@ -202,29 +168,14 @@ class wspc {
     ) const;
     
     // Predict log of rates
-    sVec predict_rates_log(
+    sVec predict_rates(
         const sVec& parameters,
         const bool& all_rows 
     ) const;
     
-    // Recompute mean estimated slope
-    sdouble estimate_mean_slope(
-        const sVec& parameters
-    ) const;
-    
     // ***** computing objective function (i.e., fitting model and parameter boundary distances)
     
-    // Compute neg_loglik of observations under the given parameters
-    sdouble neg_loglik_observations(
-        const sVec& parameters
-    ) const;
-    
-    // Compute neg_loglik of effect parameters under the given structural parameters
-    sdouble neg_loglik_effect_parameters(
-        const sVec& parameters
-    ) const;
-    
-    // Compute weighted total neg_loglik 
+    // Compute weighted total neg_loglik of observations under the given parameters
     sdouble neg_loglik(
         const sVec& parameters
     ) const;
@@ -325,13 +276,7 @@ class wspc {
         const bool verbose
     );
     
-    // Jitter parameters
-    Rcpp::NumericVector jitter_parameters(const NumericVector& initial_parameters) const;
-    
     // ***** export data to R
-    void import_fe_diff_ratio_Rt(const double& fe_diff_ratio, const bool& verbose);
-    void import_fe_diff_ratio_tpoint(const double& fe_diff_ratio, const bool& verbose);
-    void import_fe_diff_ratio_tslope(const double& fe_diff_ratio, const bool& verbose);
     Rcpp::List results(); 
     
     // ***** misc and debugging 
@@ -599,13 +544,11 @@ List build_beta_shell(
 List make_parameter_vector(
   const List& beta, 
   const List& wfactor, 
-  const NumericVector& struc,
   const CharacterVector& prt_lvls, 
   const CharacterVector& cld_lvls, 
   const CharacterVector& rn_lvls, 
   const CharacterVector& mc_list, 
   const CharacterVector& treatment_lvls,
-  const CharacterVector& struc_names,
   const IntegerMatrix& degs
   );
 
@@ -762,28 +705,6 @@ IntegerMatrix LROcp_array(
     const int& ws,                  // Running window size
     const int& filter_ws,           // Size of window for taking rolling mean
     const double& out_mult          // Outlier multiplier
-  );
-
-// Formula for estimating expected beta from diff_ratio
-sdouble warping_gradient_diff(
-    const sdouble& diff_ratio,      // estimated ratio of fixed effect to random effect
-    const sdouble& mc_value,        // value of the model component before warping
-    const sdouble& mc_value_bound,  // bound on the model component value
-    const sdouble& beta             // fixed effect (beta)
-  );
-
-// Derivative of warping_gradient_diff with respect to beta
-sdouble warping_gradient_diff_slope(
-    const sdouble& mc_value,        // value of the model component before warping
-    const sdouble& mc_value_bound,  // bound on the model component value
-    const sdouble& beta             // fixed effect (beta)
-  );
-
-// Function to derive sd of fixed effect from variance of random effect
-sdouble get_beta_sd(
-    const sdouble& diff_ratio,      // estimated ratio of fixed effect to random effect
-    const sdouble& expected_value,  // expected value of the model component (e.g., mean of rates, slopes, or transition points)
-    const sdouble& warp_bound       // upper bound on model component value
   );
 
 // Function to estimate block rate and transition slopes from count series and change points

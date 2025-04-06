@@ -171,13 +171,11 @@ List build_beta_shell(
 List make_parameter_vector(
     const List& beta, 
     const List& wfactor, 
-    const NumericVector& struc,
     const CharacterVector& prt_lvls, 
     const CharacterVector& cld_lvls, 
     const CharacterVector& rn_lvls, 
     const CharacterVector& mc_list, 
     const CharacterVector& treatment_lvls,
-    const CharacterVector& struc_names,
     const IntegerMatrix& degs
   ) {
     
@@ -193,17 +191,6 @@ List make_parameter_vector(
     
     // Initialize vectors to hold indexes (faster to use std and wrap at end)
     int idx = 0;
-    iVec param_wfactor_point_idx; 
-    iVec param_wfactor_rate_idx;
-    iVec param_wfactor_slope_idx;
-    iVec param_beta_Rt_idx;
-    iVec param_beta_Rt_idx_no_ref;
-    iVec param_beta_tslope_idx;
-    iVec param_beta_tslope_idx_no_ref;
-    iVec param_beta_tpoint_idx;
-    iVec param_beta_tpoint_idx_no_ref;
-    iVec param_ref_values_tpoint_idx;
-    iVec param_struc_idx;
     List beta_idx = clone(beta);
     List wfactor_idx = clone(wfactor); 
     
@@ -263,20 +250,7 @@ List make_parameter_vector(
                 // Add name
                 param_names.push_back(param_name);
                
-                // Collect indices
-                if (mc == "Rt") {
-                  param_beta_Rt_idx.push_back(idx);
-                  if (i > 0) {param_beta_Rt_idx_no_ref.push_back(idx);}
-                } else if (mc == "tslope") {   
-                  param_beta_tslope_idx.push_back(idx);
-                  if (i > 0) {param_beta_tslope_idx_no_ref.push_back(idx);}
-                } else if (mc == "tpoint") {   
-                  param_beta_tpoint_idx.push_back(idx);
-                  if (i > 0) {param_beta_tpoint_idx_no_ref.push_back(idx);}
-                  if (i == 0) {
-                    param_ref_values_tpoint_idx.push_back(idx);
-                  }
-                }   
+                // Collect indices 
                 beta_idx_mc_prt_cld.push_back(idx);
                 idx++;  
                 
@@ -318,19 +292,16 @@ List make_parameter_vector(
         // ... Point warp
         CharacterVector param_name_point = CharacterVector::create("wfactor", "point", r_name, "X", c_name);
         param_names.push_back(param_name_point);
-        param_wfactor_point_idx.push_back(idx);
         wfactor_idx_point(r, c) = idx;
         idx++;
         // ... Rate warp
         CharacterVector param_name_rate = CharacterVector::create("wfactor", "rate", r_name, "X", c_name);
         param_names.push_back(param_name_rate);
-        param_wfactor_rate_idx.push_back(idx);
         wfactor_idx_rate(r, c) = idx; 
         idx++;
         // ... Slope warp
         CharacterVector param_name_slope = CharacterVector::create("wfactor", "slope", r_name, "X", c_name);
         param_names.push_back(param_name_slope);
-        param_wfactor_slope_idx.push_back(idx);
         wfactor_idx_slope(r, c) = idx;
         idx++;
        
@@ -348,34 +319,10 @@ List make_parameter_vector(
     wfactor_idx["rate"] = wfactor_idx_rate; 
     wfactor_idx["slope"] = wfactor_idx_slope;
     
-    // Add structural parameters to the end
-    for (int i = 0; i < struc_names.length(); i++) {
-      
-      // Map
-      CharacterVector struc_name = CharacterVector::create(struc_names[i]);
-      param_names.push_back(struc_name);
-      param_struc_idx.push_back(idx);
-      idx++;
-      // Make
-      param_vector.push_back(struc[i]);
-      
-    } 
-    
     // Pack up parameter vector and mappings
     List params = List::create(
       _["param_vec"] = Rcpp::wrap(param_vector),
       _["param_names"] = param_names,
-      _["param_wfactor_point_idx"] = wrap(param_wfactor_point_idx),
-      _["param_wfactor_rate_idx"] = wrap(param_wfactor_rate_idx),
-      _["param_wfactor_slope_idx"] = wrap(param_wfactor_slope_idx),
-      _["param_beta_Rt_idx"] = wrap(param_beta_Rt_idx),
-      _["param_beta_Rt_idx_no_ref"] = wrap(param_beta_Rt_idx_no_ref),
-      _["param_beta_tslope_idx"] = wrap(param_beta_tslope_idx),
-      _["param_beta_tslope_idx_no_ref"] = wrap(param_beta_tslope_idx_no_ref),
-      _["param_beta_tpoint_idx"] = wrap(param_beta_tpoint_idx),
-      _["param_beta_tpoint_idx_no_ref"] = wrap(param_beta_tpoint_idx_no_ref),
-      _["param_ref_values_tpoint_idx"] = wrap(param_ref_values_tpoint_idx),
-      _["param_struc_idx"] = wrap(param_struc_idx), 
       _["beta_idx"] = beta_idx,
       _["wfactor_idx"] = wfactor_idx
     );
