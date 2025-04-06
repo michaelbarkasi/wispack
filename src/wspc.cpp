@@ -34,6 +34,7 @@ wspc::wspc(
     max_evals = (int)settings["max_evals"];
     rng_seed = (unsigned int)settings["rng_seed"];
     inf_warp = sdouble((double)settings["inf_warp"]);
+    effect_dist_weight = (double)settings["effect_dist_weight"];
     model_settings = Rcpp::clone(settings);
     
     // Check structure of input data
@@ -580,10 +581,16 @@ wspc::wspc(
     // Extract parameter vector information
     fitted_parameters = params["param_vec"];
     param_names = params["param_names"];
+    param_wfactor_rate_idx = params["param_wfactor_rate_idx"];
+    param_wfactor_point_idx = params["param_wfactor_point_idx"]; 
+    param_wfactor_slope_idx = params["param_wfactor_slope_idx"];
+    param_beta_Rt_idx = params["param_beta_Rt_idx"];
+    param_beta_tslope_idx = params["param_beta_tslope_idx"];
+    param_beta_tpoint_idx = params["param_beta_tpoint_idx"];
     beta_idx = params["beta_idx"];
     wfactor_idx = params["wfactor_idx"];
     if (verbose) {vprint("Number of parameters: ", (int)fitted_parameters.size());}
-   
+    
     // Construct grouping variable ids as indexes for warping factor matrices, by count row
     gv_ran_idx = IntegerVector(n_count_rows);
     gv_fix_idx = IntegerVector(n_count_rows);
@@ -836,6 +843,44 @@ sdouble wspc::neg_loglik(
     // Initialize variable to hold (what will become) nll
     sdouble log_lik = 0.0;
     
+    // Find likelihood of effect parameters, assuming a normal distribution centered on zero
+    // ... wfactor rate 
+    sVec wfactor_rate = idx_vec(parameters, param_wfactor_rate_idx);
+    sdouble wfactor_rate_sd = vsd(wfactor_rate);
+    if (wfactor_rate_sd <= 0) {wfactor_rate_sd = 0.1;}
+    for (sdouble e : wfactor_rate) {log_lik += log_dNorm(e, 0.0, wfactor_rate_sd);}
+    // ... wfactor point
+    sVec wfactor_point = idx_vec(parameters, param_wfactor_point_idx);
+    sdouble wfactor_point_sd = vsd(wfactor_point);
+    if (wfactor_point_sd <= 0) {wfactor_point_sd = 0.1;}
+    for (sdouble e : wfactor_point) {log_lik += log_dNorm(e, 0.0, wfactor_point_sd);}
+    // ... wfactor slope
+    sVec wfactor_slope = idx_vec(parameters, param_wfactor_slope_idx);
+    sdouble wfactor_slope_sd = vsd(wfactor_slope);
+    if (wfactor_slope_sd <= 0) {wfactor_slope_sd = 0.1;}
+    for (sdouble e : wfactor_slope) {log_lik += log_dNorm(e, 0.0, wfactor_slope_sd);}
+    // ... beta Rt
+    sVec beta_Rt = idx_vec(parameters, param_beta_Rt_idx);
+    sdouble beta_Rt_sd = vsd(beta_Rt);
+    if (beta_Rt_sd <= 0) {beta_Rt_sd = 0.1;}
+    for (sdouble e : beta_Rt) {log_lik += log_dNorm(e, 0.0, beta_Rt_sd);}
+    // ... beta tpoint
+    sVec beta_tpoint = idx_vec(parameters, param_beta_tpoint_idx);
+    sdouble beta_tpoint_sd = vsd(beta_tpoint);
+    if (beta_tpoint_sd <= 0) {beta_tpoint_sd = 0.1;}
+    for (sdouble e : beta_tpoint) {log_lik += log_dNorm(e, 0.0, beta_tpoint_sd);}
+    // ... beta tslope
+    sVec beta_tslope = idx_vec(parameters, param_beta_tslope_idx);
+    sdouble beta_tslope_sd = vsd(beta_tslope);
+    if (beta_tslope_sd <= 0) {beta_tslope_sd = 0.1;}
+    for (sdouble e : beta_tslope) {log_lik += log_dNorm(e, 0.0, beta_tslope_sd);}
+    
+    sdouble log_lik_effectdist = -log_lik / (sdouble)(
+      wfactor_rate.size() + wfactor_point.size() + wfactor_slope.size() +
+      beta_Rt.size() + beta_tpoint.size() + beta_tslope.size()
+    );
+    log_lik = 0.0; 
+    
     // Predict rates under these parameters
     sVec predicted_rates_log_var = predict_rates(
       parameters, // model parameters for generating prediction
@@ -869,6 +914,8 @@ sdouble wspc::neg_loglik(
     
     // Take negative and average, the latter so we're looking at values in the same range, regardless of data size
     sdouble negloglik = -log_lik / count_not_na_idx.size();
+    
+    negloglik = (1.0 - effect_dist_weight) * negloglik + effect_dist_weight * log_lik_effectdist;
     
     // Check for infinities (zero likelihood)
     if (std::isinf(negloglik) || negloglik > inf_) {

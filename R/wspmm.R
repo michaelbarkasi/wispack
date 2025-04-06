@@ -42,7 +42,8 @@ wisp <- function(
       rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
       max_evals = 1000,                           # maximum number of evaluations for optimization
       rng_seed = 42,                              # seed for random number generator
-      inf_warp = 1e3                              # pseudo infinity value larger than any possible possible parameter value, representing unbound warping
+      inf_warp = 1e3,                             # pseudo infinity value larger than any possible possible parameter value, representing unbound warping
+      effect_dist_weight = 0.001                  # weight for effect distribution likelihood
     )
   ) {
     

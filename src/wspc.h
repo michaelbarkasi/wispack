@@ -109,6 +109,12 @@ class wspc {
     IntegerVector warp_bounds_idx = IntegerVector::create(0, 1, 2);
     
     // Indices for managing parameters vector
+    IntegerVector param_wfactor_point_idx;  // ... indexes of parameter vector for quick access of different kinds of model parameters
+    IntegerVector param_wfactor_rate_idx;
+    IntegerVector param_wfactor_slope_idx;
+    IntegerVector param_beta_Rt_idx;
+    IntegerVector param_beta_tslope_idx;
+    IntegerVector param_beta_tpoint_idx;
     List beta_idx;                          // ... lists giving the structured array indices for named parameters
     List wfactor_idx; 
     IntegerVector gv_ran_idx;               // ... indices (row and column) for random effect arrays 
@@ -132,6 +138,7 @@ class wspc {
     sMat gamma_dispersion;                  // dispersion terms for "kernel" of gamma-Poisson model
     IntegerVector gd_child_idx;             // indexes of child levels in gamma_dispersion
     IntegerVector gd_parent_idx;            // indexes of parent levels in gamma_dispersion
+    sdouble effect_dist_weight = 0.001;     // weight for effect distribution likelihood
     
     // Boundary penalty variables
     int boundary_vec_size = 0;                           // number of boundary components
@@ -444,6 +451,11 @@ sVec idx_vec(sVec vec, Rcpp::IntegerVector idx);
 dVec idx_vec(dVec vec, Rcpp::IntegerVector idx);
 // ... overload 
 iVec idx_vec(iVec vec, Rcpp::IntegerVector idx);
+// ... overload
+CharacterVector idx_vec(CharacterVector vec, Rcpp::IntegerVector idx);
+
+// Find matches in character vector
+IntegerVector grep_cpp(CharacterVector V, std::string pattern);
 
 // Sequence generation
 // -------------------
@@ -640,6 +652,13 @@ sdouble poisson_gamma_integral(
     sdouble y, 
     sdouble r, 
     sdouble v
+  );
+
+// Function to set warping ratios 
+sdouble warp_ratio(
+    const sdouble& basis,    // parameterizing coordinate to set the warp
+    const sdouble& b,        // bound on this value 
+    const sdouble& w         // warping parameter
   );
 
 // Warping function for model components 

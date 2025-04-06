@@ -191,6 +191,12 @@ List make_parameter_vector(
     
     // Initialize vectors to hold indexes (faster to use std and wrap at end)
     int idx = 0;
+    iVec param_wfactor_point_idx; 
+    iVec param_wfactor_rate_idx;
+    iVec param_wfactor_slope_idx;
+    iVec param_beta_Rt_idx;        // ... Excluding ref level (same below)
+    iVec param_beta_tslope_idx;
+    iVec param_beta_tpoint_idx;
     List beta_idx = clone(beta);
     List wfactor_idx = clone(wfactor); 
     
@@ -251,6 +257,15 @@ List make_parameter_vector(
                 param_names.push_back(param_name);
                
                 // Collect indices 
+                if (i > 0) {
+                  if (mc == "Rt") {
+                    param_beta_Rt_idx.push_back(idx);
+                  } else if (mc == "tslope") {   
+                    param_beta_tslope_idx.push_back(idx);
+                  } else if (mc == "tpoint") {   
+                    param_beta_tpoint_idx.push_back(idx);
+                  }   
+                }
                 beta_idx_mc_prt_cld.push_back(idx);
                 idx++;  
                 
@@ -292,16 +307,19 @@ List make_parameter_vector(
         // ... Point warp
         CharacterVector param_name_point = CharacterVector::create("wfactor", "point", r_name, "X", c_name);
         param_names.push_back(param_name_point);
+        param_wfactor_point_idx.push_back(idx);
         wfactor_idx_point(r, c) = idx;
         idx++;
         // ... Rate warp
         CharacterVector param_name_rate = CharacterVector::create("wfactor", "rate", r_name, "X", c_name);
         param_names.push_back(param_name_rate);
+        param_wfactor_rate_idx.push_back(idx);
         wfactor_idx_rate(r, c) = idx; 
         idx++;
         // ... Slope warp
         CharacterVector param_name_slope = CharacterVector::create("wfactor", "slope", r_name, "X", c_name);
         param_names.push_back(param_name_slope);
+        param_wfactor_slope_idx.push_back(idx);
         wfactor_idx_slope(r, c) = idx;
         idx++;
        
@@ -323,6 +341,12 @@ List make_parameter_vector(
     List params = List::create(
       _["param_vec"] = Rcpp::wrap(param_vector),
       _["param_names"] = param_names,
+      _["param_wfactor_point_idx"] = wrap(param_wfactor_point_idx),
+      _["param_wfactor_rate_idx"] = wrap(param_wfactor_rate_idx),
+      _["param_wfactor_slope_idx"] = wrap(param_wfactor_slope_idx),
+      _["param_beta_Rt_idx"] = wrap(param_beta_Rt_idx),
+      _["param_beta_tslope_idx"] = wrap(param_beta_tslope_idx),
+      _["param_beta_tpoint_idx"] = wrap(param_beta_tpoint_idx),
       _["beta_idx"] = beta_idx,
       _["wfactor_idx"] = wfactor_idx
     );

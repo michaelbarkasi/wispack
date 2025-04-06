@@ -141,17 +141,34 @@ sdouble poisson_gamma_integral(
     
   }
 
+// Generic warping function with bound 
+sdouble warp_ratio(
+    const sdouble& basis,    // parameterizing coordinate to set the warp
+    const sdouble& b,        // bound on this value 
+    const sdouble& w         // warping parameter
+  ) {
+    return(1.0 - spower(sexp(w*w), -basis/b));
+  }
+
 // Warping function for model components 
 sdouble warp_mc(
     const sdouble& s,        // value to warp
     const sdouble& b,        // bound on this value 
     const sdouble& w         // warping parameter
   ) {
-    sdouble sb = (b + s)/(2.0*b); 
-    sdouble ew = sexp(w);
-    sdouble sew = spower(sb, ew);
-    sdouble s_warped = sew / (sew + spower(1.0 - sb, ew));
-    return (b * (2.0 * s_warped - 1.0));
+    sdouble basis;           // parameterizing coordinate to set the warp
+    sdouble magnitude;       // value by which to warp
+    sdouble direction;       // direction of the warp
+    if (w > 0.0) {
+      basis = s;
+      magnitude = b - s;
+      direction = 1.0;
+    } else {
+      basis = b - s;
+      magnitude = s;
+      direction = -1.0;
+    }
+    return(s + direction * warp_ratio(basis, b, w) * magnitude);
   }
 
 // Numerically stable implementation of sigmoid function
