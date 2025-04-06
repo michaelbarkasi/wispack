@@ -20,7 +20,7 @@ wisp <- function(
       fixedeffects = c()
     ),
     # Settings used on R side
-    use.median = TRUE,
+    use.median = FALSE,
     MCMC.burnin = 0,
     MCMC.steps = 1e4,
     MCMC.step.size = 0.1,
@@ -33,7 +33,6 @@ wisp <- function(
     print.child.summaries = TRUE,
     # Setting to pass to C++ model
     model.settings = list(
-      struc_values = c(0.1, 0.1, 0.1),            # values of structural parameters to test
       buffer_factor = 0.05,                       # buffer factor for penalizing distance from structural parameter values
       ctol = 1e-6,                                # convergence tolerance
       max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from structural parameter values
@@ -43,7 +42,6 @@ wisp <- function(
       rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
       max_evals = 1000,                           # maximum number of evaluations for optimization
       rng_seed = 42,                              # seed for random number generator
-      nll_effect_weight = 0.5,                    # weight of effect log likelihood in total log likelihood calculation
       inf_warp = 1e3                              # pseudo infinity value larger than any possible possible parameter value, representing unbound warping
     )
   ) {
@@ -76,15 +74,6 @@ wisp <- function(
       model.settings,
       verbose
     )
-    
-    # Return initial values and compute effect difference ratio 
-    fe_diff_ratio <- analyze.diff(
-      wisp.results = cpp_model$results(),
-      count.type = "count.log"
-    )
-    cpp_model$import_fe_diff_ratio_Rt(fe_diff_ratio$diff.ratio.c, verbose)
-    cpp_model$import_fe_diff_ratio_tpoint(fe_diff_ratio$diff.ratio.tp, verbose)
-    cpp_model$import_fe_diff_ratio_tslope(fe_diff_ratio$diff.ratio.ts, verbose)
     
     # Estimate model parameters with MCMC or bootstrapping ####
     if (verbose) {
@@ -218,8 +207,8 @@ wisp <- function(
       plots.MCMC <- NULL
     }
     
-    # Plot structural parameter stats
-    plots.struc <- plot.struc.stats(
+    # Plot structural parameter distribution
+    plots.effect.dist <- plot.effect.dist(
       wisp.results = results,
       verbose = verbose
     )
@@ -246,7 +235,7 @@ wisp <- function(
       ratecount = plots.ratecount,
       parameters = plots.parameters,
       MCMC = plots.MCMC,
-      struc = plots.struc
+      effect.dist = plots.effect.dist
     )
     results[["plots"]] <- plots
     
@@ -329,10 +318,9 @@ sample.stats <- function(
       
       # Grabbing indexes of parameters to test
       fitted_params_names <- wisp.results$param.names
-      struc_mask <- !grepl("baseline|beta_tslope|beta_tpoint|wfactor", fitted_params_names) 
       baseline_mask <- grepl("baseline", fitted_params_names) & !grepl("tpoint", fitted_params_names)     # mask for baseline rate and tslope values
       tslope_mask <- grepl("tslope", fitted_params_names)                                                 # mask for tslope values
-      beta_w_mask <- grepl("beta_Rt|beta_tslope|beta_tpoint|wfactor", fitted_params_names)                # only want to test fixed-effect and wfactor parameters (no baseline or structural parameters)
+      beta_w_mask <- grepl("beta_Rt|beta_tslope|beta_tpoint|wfactor", fitted_params_names)                # only want to test fixed-effect and wfactor parameters (no baseline parameters)
       empty_w_mask <- colSums(sample_results) == 0                                                        # Can only be zero for point wfactors of degree-zero children (which must be zero)
       test_mask <- beta_w_mask & !empty_w_mask
       
@@ -733,342 +721,6 @@ analyze.residuals <- function(
     
   }
 
-analyze.diff <- function(
-    wisp.results,
-    count.type     # character, either "count", "pred", "count.log", or "pred.log"
-  ) {
-    
-    # Grab count data frame
-    count_data <- wisp.results$count.data.summed
-    
-    # Grab random effects levels 
-    ran_lvls <- wisp.results$grouping.variables$ran.lvls[-c(1)] # remove "none" level
-    n_ran_lvls <- length(ran_lvls)
-    
-    # Get treatment levels instanced by each ran level
-    trts <- wisp.results$treatment$names
-    trts_comps <- wisp.results$treatment$components
-    names(trts_comps) <- trts
-    n_trts <- length(trts)
-    trt_lvls_in_ran <- list()
-    for (m in ran_lvls) {
-      mask <- count_data$ran == m & !is.na(count_data$count)
-      trt_lvls_in_ran[[m]] <- unique(count_data$treatment[mask])
-    }
-    
-    # Grab fixed effects levels
-    fix <- wisp.results$fix
-    names(fix$lvls) <- fix$name
-    names(fix$ref.lvl) <- fix$name
-    names(fix$treat.lvl) <- fix$name
-    n_fix <- length(fix$name)
-    
-    # Make treatment component array
-    trt_comp_array <- array(
-      as.character(NA),
-      dim = c(n_trts, n_fix),
-      dimnames = list(trts, fix$name)
-    )
-    for (t in trts) {
-      if (t == "ref") {
-        trt_comp_array[t,] <- fix$ref.lvl
-      } else {
-        for (fe in fix$name) {
-          if (any(trts_comps[[t]] %in% fix$lvls[[fe]])) {
-            trt_comp_array[t, fe] <- fix$treat.lvl[[fe]]
-          } else {
-            trt_comp_array[t, fe] <- fix$ref.lvl[fe]
-          }
-        }
-      }
-    }
-    
-    # Identify which treatment pairs differ only on one component 
-    trt_oneoff_array <- array(
-      FALSE,
-      dim = c(n_trts, n_trts),
-      dimnames = list(trts, trts)
-    )
-    for (ti in 1:(n_trts - 1)) {
-      for (tj in (ti + 1):n_trts) {
-        if (sum(trt_comp_array[ti,] != trt_comp_array[tj,]) == 1) {
-          trt_oneoff_array[ti,tj] <- TRUE
-          trt_oneoff_array[tj,ti] <- TRUE
-        }
-      }
-    }
-    
-    # Function to make data matrices 
-    # ... will randomly nudge the provided tpoints
-    make_data_matrices <- function(
-      count_type 
-    ) {
-      
-      # Grab prelim info
-      parents <- wisp.results$grouping.variables$parent.lvls
-      n_parents <- length(parents)
-      children <- wisp.results$grouping.variables$child.lvls
-      n_children <- length(children)
-      bins <- unique(count_data$bin)
-      n_bins <- length(bins)
-      param_names <- names(wisp.results$fitted.parameters)
-      degs <- array( 
-        0,
-        dim = c(n_children, n_parents),
-        dimnames = list(child = children, parent = parents)
-      )
-      tpoints <- wisp.results$change.points
-      tslopes <- wisp.results$est.slopes
-      
-      # Make full count data matrices
-      data0 <- array(
-        NA, 
-        dim = c(
-          n_bins, n_children, n_parents,
-          n_ran_lvls,
-          n_trts
-        ),
-        dimnames = list(bin = bins, child = children, parent = parents, ran = ran_lvls, fixedeffect = trts)
-      )
-      for (m in ran_lvls) {
-        for (t in trt_lvls_in_ran[[m]]) {
-          for (g in children) {
-            for (p in parents) {
-              mask <- count_data$ran == m & count_data$treatment == t & count_data$child == g & count_data$parent == p
-              if (sum(mask) == n_bins) data0[, g, p, m, t] <- count_data[,count_type][mask]
-            }
-          }
-        }
-      }
-      
-      # Find t-points and degrees for each parent-child pair
-      for (p in parents) {
-        for (g in children) {
-          degs[g, p] <- 0
-          tpoints_pg <- tpoints[[p]][[g]]
-          if (length(tpoints_pg) > 0) degs[g, p] <- nrow(tpoints_pg)
-        }
-      }
-      max_deg <- max(degs)
-      max_blocks <- max_deg + 1
-      
-      # Make tpoint and tslope matrices 
-      datat <- array(
-        NA,
-        dim = c(
-          max_deg, n_children, n_parents,
-          n_ran_lvls + 1,
-          n_trts
-        ),
-        dimnames = list(tp = 1:max_deg, child = children, parent = parents, ran = c("none", ran_lvls), fixedeffect = trts)
-      )
-      datas <- array(
-        NA,
-        dim = c(
-          max_deg, n_children, n_parents,
-          n_ran_lvls + 1,
-          n_trts
-        ),
-        dimnames = list(ts = 1:max_deg, child = children, parent = parents, ran = c("none", ran_lvls), fixedeffect = trts)
-      )
-      for (p in parents) {
-        for (g in children) {
-          for (m in ran_lvls) {
-            for (t in trt_lvls_in_ran[[m]]) {
-              t_num <- which(trts == t)
-              m_num <- which(c("none", ran_lvls) == m)
-              array_col_num <- (t_num - 1) * (n_ran_lvls + 1) + m_num
-              tpoints_pg <- tpoints[[p]][[g]]
-              tslopes_pg <- tslopes[[p]][[g]]
-              if (length(tpoints_pg) > 0) {
-                tpoints_pg_this <- tpoints_pg[, array_col_num]
-                tslopes_pg_this <- tslopes_pg[, array_col_num]
-                # Randomly nudge 
-                jit1 <- sample((-3):3, 1)
-                tpoints_pg_this <- tpoints_pg_this + jit1
-                jit2 <- runif(1, min = 0.75, max = 1.25)
-                tslopes_pg_this <- tslopes_pg_this * jit2
-                # Ensure in bounds and save
-                if (any(tpoints_pg_this < 3)) tpoints_pg_this[tpoints_pg_this < 3] <- 3
-                if (any(tpoints_pg_this > n_bins - 2)) tpoints_pg_this[tpoints_pg_this > n_bins - 2] <- n_bins - 2
-                datat[1:degs[g, p], g, p, m, t] <- tpoints_pg_this
-                datas[1:degs[g, p], g, p, m, t] <- tslopes_pg_this
-              }
-            }
-          }
-        }
-      }
-      
-      # Collapse full count data matrices down to blocks
-      data <- array(
-        NA, 
-        dim = c(
-          max_blocks, n_children, n_parents,
-          n_ran_lvls,
-          n_trts
-        ),
-        dimnames = list(bin = 1:max_blocks, child = children, parents, ran = ran_lvls, fixedeffect = trts)
-      )
-      for (m in ran_lvls) {
-        for (t in trt_lvls_in_ran[[m]]) {
-          if (length(data0[, , , m, t]) > 0) {
-            for (g in children) {
-              for (p in parents) {
-                if (degs[g, p] == 0) {
-                  data[1, g, p, m, t] <- mean(data0[, g, p, m, t])
-                } else {
-                  tpoints_pgtm <- datat[, g, p, m, t]
-                  for (i in 1:(degs[g, p] + 1)) {
-                    if (i == 1) {
-                      row_batch <- 1:(tpoints_pgtm[i] - 1) 
-                    } else if (i > degs[g, p]) {
-                      row_batch <- tpoints_pgtm[i - 1]:n_bins
-                    } else {
-                      row_batch <- tpoints_pgtm[i - 1]:(tpoints_pgtm[i] - 1) 
-                    }
-                    data[i, g, p, m, t] <- mean(data0[row_batch, g, p, m, t])
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      
-      return(
-        list(
-          count_data = data,
-          tpoint_data = datat,
-          tslope_data = datas
-        )
-      )
-      
-    }
-    
-    # Function for finding normalized differences between random levels
-    find_norm_diffs <- function(
-      data,
-      random # If not random, then one-off
-    ) {
-      
-      # Initialize array to track which random levels and treatments have been compared
-      running_tally <- array(
-        as.character(NA),
-        dim = c(2, 4)
-      )
-      
-      # Initialize variable to hold normalized differences
-      norm_diffs <- c()
-      
-      # ... then for each treatment level
-      for (t1 in trts) {
-        for (t2 in trts) {
-          
-          if (random) {
-            if (t1 != t2) next
-          } else if (!trt_oneoff_array[t1, t2]) {
-            next 
-          }
-          
-          # For each unique random-level pair 
-          for (m1 in ran_lvls) {
-            if (t1 %in% trt_lvls_in_ran[[m1]]) {
-              for (m2 in ran_lvls) {
-                
-                # Looking at variation between random levels, so don't compare levels to themselves
-                if (t2 %in% trt_lvls_in_ran[[m2]] && m1 != m2) {
-                  
-                  # Grab random levels and treatments for this comparison
-                  this_row <- c(m1, m2, t1, t2)
-                  
-                  # Check if these random levels and treatments have been compared and skip if so
-                  if (any(apply(running_tally, 1, function(x) all(this_row %in% x)))) {
-                    next
-                  } else {
-                    
-                    # Grab data matrices for each random level and treatment level
-                    values1 <- data[, , , m1, t1]
-                    values2 <- data[, , , m2, t2]
-                    
-                    # Find the difference between these two random levels and associated treatments 
-                    diffs <- abs(values1 - values2)
-                    
-                    # If this is a legit comparison (no NA), normalize the differences and add to the list
-                    if (sum(!is.na(c(diffs))) > 0) {
-                      diffs <- diffs/values1
-                      diffs <- na.omit(c(diffs))
-                      diffs <- diffs[is.finite(diffs)]
-                      norm_diffs <- c(norm_diffs, diffs)
-                      running_tally <- rbind(running_tally, this_row)
-                    }
-                    
-                  }
-                  
-                }
-              }
-            }
-          }
-        }
-      }
-      
-      return(norm_diffs)
-      
-    }
-    
-    # Run analysis a bunch and take means 
-    n_runs <- 100
-    diff.ratio.c_i <- rep(0, n_runs)
-    diff.ratio.tp_i <- rep(0, n_runs)
-    diff.ratio.ts_i <- rep(0, n_runs)
-    for (i in 1:n_runs) {
-      
-      # Make data matrices with random nudge of tpoints
-      data.both <- make_data_matrices(count.type)
-      data.c <- data.both$count_data
-      data.tp <- data.both$tpoint_data
-      data.ts <- data.both$tslope_data
-      
-      # For reach treatment level of each fixed effect, find normalized differences between random levels
-      ran.diffs.c <- find_norm_diffs(data.c, TRUE)
-      oneoff.diffs.c <- find_norm_diffs(data.c, FALSE)
-      diff.ratio.c <- mean(oneoff.diffs.c)/mean(ran.diffs.c)
-      
-      ran.diffs.tp <- find_norm_diffs(data.tp, TRUE)
-      oneoff.diffs.tp <- find_norm_diffs(data.tp, FALSE)
-      diff.ratio.tp <- mean(oneoff.diffs.tp)/mean(ran.diffs.tp)
-      
-      ran.diffs.ts <- find_norm_diffs(data.ts, TRUE)
-      oneoff.diffs.ts <- find_norm_diffs(data.ts, FALSE)
-      diff.ratio.ts <- mean(oneoff.diffs.ts)/mean(ran.diffs.ts)
-      
-      # Mathematically, this must be greater than zero, or model fitting will fail
-      # ... from a physical point of view, even if the true effect is zero, it will 
-      #      be measured as non-zero due to noise, so we should expect this to be greater than 1. 
-      if (diff.ratio.c < 1.05) {diff.ratio.c <- 1.05}
-      if (diff.ratio.tp < 1.05) {diff.ratio.tp <- 1.05}
-      if (diff.ratio.ts < 1.05) {diff.ratio.ts <- 1.05}
-      
-      diff.ratio.c_i[i] <- diff.ratio.c
-      diff.ratio.tp_i[i] <- diff.ratio.tp
-      diff.ratio.ts_i[i] <- diff.ratio.ts
-      
-    }
-    
-    # Take means 
-    diff.ratio.c <- mean(diff.ratio.c_i)
-    diff.ratio.tp <- mean(diff.ratio.tp_i)
-    diff.ratio.ts <- mean(diff.ratio.ts_i)
-    
-    return(
-      list(
-        diff.ratio.c = diff.ratio.c,
-        diff.ratio.tp = diff.ratio.tp,
-        diff.ratio.ts = diff.ratio.ts
-      )
-    )
-    
-  }
-
 # Plotting methods #####################################################################################################
 
 # Method for plotting model and data
@@ -1369,9 +1021,7 @@ plot.parameters <- function(
     }
     param_names <- gsub(paste0("wfactor_"), "", param_names)
     param_names <- gsub(paste0("_X"), "", param_names)
-    param_names <- gsub(paste0("beta_shape"), "bshape", param_names) # protect struc parameters
     param_names <- gsub(paste0("beta_"), "", param_names)
-    param_names <- gsub(paste0("bshape"), "beta_shape", param_names) # put back
     param_names <- gsub(paste0("Tns/Blk"), "T/B", param_names)
     treatment_names_rev <- as.character(wisp.results$treatment$names)
     treatment_names_rev <- treatment_names_rev[length(treatment_names_rev):1]
@@ -1857,54 +1507,6 @@ plot.parameters <- function(
           
         }
         
-        # Make structural parameter plots ####
-        struc_param_names <- names(wisp.results$struc.params)
-        struc_param_names <- struc_param_names[!grepl("computed", struc_param_names)]
-        if (length(child.lvl) == 0 && all(names(parameter_comparison_plots) != "plot_struc")) {
-          struc_df <- data.frame(
-            value = wisp.results$struc.params, 
-            parameter = struc_param_names
-          )
-          # ... remove derived structural parameters (last three)
-          struc_df <- struc_df[-c((nrow(struc_df)-2):nrow(struc_df)),]
-          if (print_stats) {
-            struc_df$value_low <- rep(NA, nrow(struc_df))
-            struc_df$value_high <- rep(NA, nrow(struc_df))
-            for (n in struc_param_names) {
-              n <- paste0("log", n)
-              idx <- which(param_names == n)
-              struc_df$value_low[struc_df$parameter == n] <- sample_ci[1,idx]
-              struc_df$value_high[struc_df$parameter == n] <- sample_ci[2,idx]
-            }
-          }
-          parameter_comparison_plots[["plot_struc"]] <- ggplot(struc_df, aes(x = parameter, y = value)) +
-            geom_bar(stat = "identity", fill = "cadetblue1", na.rm = TRUE) +
-            theme_minimal() +
-            labs(title = "Structural parameters") +
-            theme(legend.position = "none") +
-            theme(axis.text.x = element_text(angle = 90, hjust = 1))
-          if (print_stats) {
-            parameter_comparison_plots[["plot_struc"]] <- parameter_comparison_plots[["plot_struc"]] +
-              geom_errorbar(
-                data = struc_df,
-                aes(ymin = value_low, ymax = value_high),
-                width = 0.2, 
-                na.rm = TRUE) 
-            # ... all structural values must be above zero ...
-            # geom_text(
-            #   data = struc_df, 
-            #   aes(x = parameter, 
-            #       y = value_high + star_gap_factor*(value_high-value_low), 
-            #       label = sig_marks,
-            #       size = sig_marks_size),
-            #       size.unit = sig_marks_unit
-            #   )  +
-            # scale_y_continuous(
-            #   expand = expansion(mult = c(0, expand_factor))
-            # )
-          }
-        }
-        
         # Print and return raw plots ####
         
         if (print.plots) {
@@ -1922,157 +1524,112 @@ plot.parameters <- function(
   }
 
 # Method for plotting structural parameter distributions
-plot.struc.stats <- function(
+plot.effect.dist <- function(
     wisp.results,
     verbose = TRUE 
   ) {
     
     if (verbose) {
-      snk.report("Printing structural summary distributions")
+      snk.report("Printing effect distributions")
       snk.horizontal_rule(reps = snk.simple_break_reps)
     }
     
-    plots.struc_stats <- list()
+    plots.effects_dist <- list()
     bs_fitted_params <- wisp.results$sample.params
     
-    # Warping factors, beta distributions
-    if (verbose) snk.report...("Warping factors, beta distributions")
+    # Warping factor distributions
+    if (verbose) snk.report...("Warping factors distributions")
     
     # ... for point
     wfactors_point_mask <- grepl("wfactor_point", wisp.results$param.names)
     wfactors_point <- c(bs_fitted_params[,wfactors_point_mask])
-    shape_point <- wisp.results$struc.params["sd_raneff_point"]
-    data <- data.frame(
-      rate = wfactors_point,
-      probability_point = dnorm(wfactors_point, 0.0, shape_point)
-    )
-    data$probability_point <- data$probability_point / max(data$probability_point)
-    plot_wfactor_point_struc_stats <- ggplot() +
+    plot_wfactor_point_effects_dist <- ggplot() +
       geom_histogram(
         data = data.frame(vals = wfactors_point), aes(x = vals, y = after_stat(ndensity)),
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
-      geom_line(aes(x = rate, y = probability_point), data = data, linewidth = 1.2, na.rm = TRUE) +
-      labs(title = "Beta distribution model of random point effects", x = "Warping factor, point", y = "Density") +
+      labs(title = "Distribution of random point effects (warping factors)", x = "Warping factor, point", y = "Density") +
       theme_minimal() 
     
     # ... for rate
     wfactors_rate_mask <- grepl("wfactor_rate", wisp.results$param.names)
     wfactors_rate <- c(bs_fitted_params[,wfactors_rate_mask])
-    shape_rate <- wisp.results$struc.params["sd_raneff_rate"]
-    data <- data.frame(
-      rate = wfactors_rate,
-      probability_rate = dnorm(wfactors_rate, 0.0, shape_rate)
-    )
-    data$probability_rate <- data$probability_rate / max(data$probability_rate)
-    plot_wfactor_rate_struc_stats <- ggplot() +
+    plot_wfactor_rate_effects_dist <- ggplot() +
       geom_histogram(
         data = data.frame(vals = wfactors_rate), aes(x = vals, y = after_stat(ndensity)),
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
-      geom_line(aes(x = rate, y = probability_rate), data = data, linewidth = 1.2, na.rm = TRUE) +
-      labs(title = "Beta distribution model of random rate effects", x = "Warping factor, rate", y = "Density") +
+      labs(title = "Distribution of random rate effects (warping factors)", x = "Warping factor, rate", y = "Density") +
       theme_minimal() 
     
     # ... for slope 
     wfactors_slope_mask <- grepl("wfactor_slope", wisp.results$param.names)
     wfactors_slope <- c(bs_fitted_params[,wfactors_slope_mask])
-    shape_slope <- wisp.results$struc.params["sd_raneff_slope"]
-    data <- data.frame(
-      rate = wfactors_slope,
-      probability_slope = dnorm(wfactors_slope, 0.0, shape_slope)
-    )
-    data$probability_slope <- data$probability_slope / max(data$probability_slope)
-    plot_wfactor_slope_struc_stats <- ggplot() +
+    plot_wfactor_slope_effects_dist <- ggplot() +
       geom_histogram(
         data = data.frame(vals = wfactors_slope), aes(x = vals, y = after_stat(ndensity)),
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
-      geom_line(aes(x = rate, y = probability_slope), data = data, linewidth = 1.2, na.rm = TRUE) +
-      labs(title = "Beta distribution model of random slope effects", x = "Warping factor, slope", y = "Density") +
+      labs(title = "Distribution of random slope effects (warping factors)", x = "Warping factor, slope", y = "Density") +
       theme_minimal()
     
-    if (verbose) print(plot_wfactor_point_struc_stats)
-    plots.struc_stats[["plot_wfactor_point_struc_stats"]] <- plot_wfactor_point_struc_stats
-    if (verbose) print(plot_wfactor_rate_struc_stats)
-    plots.struc_stats[["plot_wfactor_rate_struc_stats"]] <- plot_wfactor_rate_struc_stats
-    if (verbose) print(plot_wfactor_slope_struc_stats)
-    plots.struc_stats[["plot_wfactor_slope_struc_stats"]] <- plot_wfactor_slope_struc_stats
+    if (verbose) print(plot_wfactor_point_effects_dist)
+    plots.effects_dist[["plot_wfactor_point_effects_dist"]] <- plot_wfactor_point_effects_dist
+    if (verbose) print(plot_wfactor_rate_effects_dist)
+    plots.effects_dist[["plot_wfactor_rate_effects_dist"]] <- plot_wfactor_rate_effects_dist
+    if (verbose) print(plot_wfactor_slope_effects_dist)
+    plots.effects_dist[["plot_wfactor_slope_effects_dist"]] <- plot_wfactor_slope_effects_dist
     
-    # Rate effects, Gaussian distribution
-    if (verbose) snk.report...("Rate effects, Gaussian distribution")
-    Rt_shape <- wisp.results$struc.params["computed_sd_Rt_effect"]
+    # Rate effects distribution
+    if (verbose) snk.report...("Rate effects distribution")
     rate_effs_mask <- grepl("Rt", wisp.results$param.names) & grepl("beta", wisp.results$param.names)
     rate_effects <- c(bs_fitted_params[,rate_effs_mask])
-    rates <- seq(min(rate_effects), max(rate_effects), length.out = 100)
-    data <- data.frame(
-      rate = rates,
-      probability = dnorm(rates, 0, Rt_shape)
-    )
-    data$probability <- data$probability / max(data$probability)
-    plot_rate_effects_struc_stats <- ggplot() +
+    plot_rate_effects_effects_dist <- ggplot() +
       geom_histogram(
         data = data.frame(vals = rate_effects), aes(x = vals, y = after_stat(ndensity)),
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
-      geom_line(aes(x = rate, y = probability), data = data, linewidth = 1.2, na.rm = TRUE) +
       xlim(min(rate_effects),max(rate_effects)) +
-      labs(title = "Gaussian distribution model of fixed rate effects", x = "Rate effect", y = "Density") +
+      labs(title = "Distribution of fixed rate effects", x = "Rate effect", y = "Density") +
       theme_minimal() 
     
-    if (verbose) print(plot_rate_effects_struc_stats)
-    plots.struc_stats[["plot_rate_effects_struc_stats"]] <- plot_rate_effects_struc_stats
+    if (verbose) print(plot_rate_effects_effects_dist)
+    plots.effects_dist[["plot_rate_effects_effects_dist"]] <- plot_rate_effects_effects_dist
     
-    # Slope effects, Gaussian distribution
-    if (verbose) snk.report...("Slope effects, Gaussian distribution")
-    tslope_shape <- wisp.results$struc.params["computed_sd_tslope_effect"]
+    # Slope effects distribution
+    if (verbose) snk.report...("Slope effects distribution")
     tslope_effs_mask <- grepl("tslope", wisp.results$param.names) & grepl("beta", wisp.results$param.names)
     if (any(tslope_effs_mask)) {
       
       tslope_effects <- c(bs_fitted_params[,tslope_effs_mask])
-      rates <- seq(min(tslope_effects), max(tslope_effects), length.out = 100)
-      data <- data.frame(
-        rate = rates,
-        probability = dnorm(rates, 0, tslope_shape)
-      )
-      data$probability <- data$probability / max(data$probability)
-      plot_slope_effects_struc_stats <- ggplot() +
+      plot_slope_effects_effects_dist <- ggplot() +
         geom_histogram(
           data = data.frame(vals = tslope_effects), aes(x = vals, y = after_stat(ndensity)),
           bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
-        geom_line(aes(x = rate, y = probability), data = data, linewidth = 1.2, na.rm = TRUE) +
-        xlim(min(tslope_effects),max(tslope_effects)) +
-        labs(title = "Gaussian distribution model of fixed slope effects", x = "t-slope effect", y = "Density") +
+        xlim(min(tslope_effects), max(tslope_effects)) +
+        labs(title = "Distribution of fixed slope effects", x = "t-slope effect", y = "Density") +
         theme_minimal() 
       
-      if (verbose) print(plot_slope_effects_struc_stats)
-      plots.struc_stats[["plot_slope_effects_struc_stats"]] <- plot_slope_effects_struc_stats
+      if (verbose) print(plot_slope_effects_effects_dist)
+      plots.effects_dist[["plot_slope_effects_effects_dist"]] <- plot_slope_effects_effects_dist
       
     }
     
-    # tpoint effects, Gaussian distribution
-    if (verbose) snk.report...("tpoint effects, Gaussian distribution")
-    tpoint_shape <- wisp.results$struc.params["computed_sd_tpoint_effect"]
+    # Point effects distribution
+    if (verbose) snk.report...("tpoint effects distribution")
     tpoint_effs_mask <- grepl("tpoint", wisp.results$param.names) & grepl("beta", wisp.results$param.names)
     if (any(tpoint_effs_mask)) {
       
       tpoint_effects <- c(bs_fitted_params[,tpoint_effs_mask])
-      rates <- seq(min(tpoint_effects), max(tpoint_effects), length.out = 100)
-      data <- data.frame(
-        rate = rates,
-        probability = dnorm(rates, 0, tpoint_shape)
-      )
-      data$probability <- data$probability / max(data$probability)
-      plot_tpoint_effects_struc_stats <- ggplot() +
+      plot_tpoint_effects_effects_dist <- ggplot() +
         geom_histogram(
           data = data.frame(vals = tpoint_effects), aes(x = vals, y = after_stat(ndensity)),
           bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
-        geom_line(aes(x = rate, y = probability), data = data, linewidth = 1.2, na.rm = TRUE) +
-        labs(title = "Gaussian distribution model of fixed t-point effects", x = "t-point effect", y = "Density") +
+        labs(title = "Distribution of fixed t-point effects", x = "t-point effect", y = "Density") +
         theme_minimal() 
       
-      if (verbose) print(plot_tpoint_effects_struc_stats)
-      plots.struc_stats[["plot_tpoint_effects_struc_stats"]] <- plot_tpoint_effects_struc_stats
+      if (verbose) print(plot_tpoint_effects_effects_dist)
+      plots.effects_dist[["plot_tpoint_effects_effects_dist"]] <- plot_tpoint_effects_effects_dist
       
     }
     
-    return(plots.struc_stats)
+    return(plots.effects_dist)
     
   }
 
