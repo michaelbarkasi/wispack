@@ -395,10 +395,6 @@ sdouble vsd(const sVec& x);
 // ... overload 
 double vsd(const NumericVector& x); 
 
-// Estimate variation after x -> log(x + 1) transform 
-// ... critical (!!) for Gaussian kernel of Poisson distribution
-sdouble delta_var_est(const sdouble& var, const sdouble& mu);
-
 // Component-wise operations
 // -------------------------
 
@@ -652,6 +648,13 @@ sdouble poisson_gamma_integral(
     sdouble y, 
     sdouble r, 
     sdouble v
+  );
+
+// Estimate variation after x -> log(x + 1) transform 
+// ... critical (!!) for Gaussian kernel of Poisson distribution
+sdouble delta_var_est(
+    const sdouble& var, 
+    const sdouble& mu
   );
 
 // Function to set warping ratios 
