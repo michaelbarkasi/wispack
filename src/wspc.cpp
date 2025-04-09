@@ -875,10 +875,13 @@ sdouble wspc::neg_loglik(
     if (beta_tslope_sd <= 0) {beta_tslope_sd = 0.1;}
     for (sdouble e : beta_tslope) {log_lik += log_dNorm(e, 0.0, beta_tslope_sd);}
     
+    // Compute the log-likelihood of the effects
     sdouble log_lik_effectdist = -log_lik / (sdouble)(
       wfactor_rate.size() + wfactor_point.size() + wfactor_slope.size() +
       beta_Rt.size() + beta_tpoint.size() + beta_tslope.size()
     );
+    
+    // Reset log_lik to zero for computing log-likelihood of the observations
     log_lik = 0.0; 
     
     // Predict rates under these parameters

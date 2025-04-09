@@ -141,6 +141,18 @@ sdouble poisson_gamma_integral(
     
   }
 
+// Estimate variation after x -> log(x + 1) transform 
+// ... critical (!!) for Gaussian kernel of Poisson distribution
+sdouble delta_var_est(
+    const sdouble& var,
+    const sdouble& mu
+  ) {
+    // For a random variable X with variance var and mean mu, 
+    // ... estimate the variance of log(X + 1) using the delta method 
+    //      applied to the first-order Taylor series of g(x) = log(x + 1) around mu.
+    return var / ((mu + 1) * (mu + 1));
+  }
+
 // Generic warping function with bound 
 sdouble warp_ratio(
     const sdouble& basis,    // parameterizing coordinate to set the warp
