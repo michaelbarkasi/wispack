@@ -1029,7 +1029,7 @@ sVec wspc::boundary_dist(
         // ... need Rt(0) > Rsum, i.e., this difference should be positive
         boundary_dist_vec(ctr) = R_sum_boundary_dist;
         ctr++;
-         
+        
       } else {
         
         // ... trivial to check if rate (Rt) is positive
