@@ -42,7 +42,7 @@ wisp <- function(
       rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
       max_evals = 1000,                           # maximum number of evaluations for optimization
       rng_seed = 42,                              # seed for random number generator
-      warp_precision = 1e-9,                      # precision for calculations in warp function
+      warp_precision = 1e-7,                      # precision for calculations in warp function
       effect_dist_weight = 0.001                  # weight for effect distribution likelihood
     )
   ) {
@@ -63,6 +63,9 @@ wisp <- function(
     new_names <- c(required_cols, old_names[fe_cols])
     data <- cbind(count.data.raw[,ordered_cols], count.data.raw[,fe_cols])
     colnames(data) <- new_names
+    
+    # Add inf_warp 
+    model.settings$inf_warp <- model.settings$warp_precision / .Machine$double.eps
     
     # Initialize cpp model ####
     if (verbose) {
