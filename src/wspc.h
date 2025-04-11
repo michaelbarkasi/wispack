@@ -37,6 +37,7 @@ typedef int IndexType;
 // Constants ***********************************************************************************************************
 
 const sdouble inf_ = 1e100;   // pseudo-infinity value for optimization
+const sdouble eps_ = (sdouble)std::numeric_limits<double>::epsilon(); // machine epsilon
 
 // Main class **********************************************************************************************************
 
@@ -104,7 +105,8 @@ class wspc {
     List param_names;                       // list holding the names of the model parameters as they appear in fitted_parameters
     sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
     sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
-    sdouble inf_warp = 1e3;                 // pseudo-infinity value for warping (representing no warp boundary)
+    sdouble warp_precision = 1e-9;          // precision surviving in calculations of warping
+    sdouble inf_warp = warp_precision/eps_;           // pseudo-infinity value for warping (representing no warp boundary)
     sVec warp_bounds;                       // warping bounds for each model component
     IntegerVector warp_bounds_idx = IntegerVector::create(0, 1, 2);
     
