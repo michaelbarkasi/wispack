@@ -33,14 +33,17 @@ wspc::wspc(
     rise_threshold_factor = (double)settings["rise_threshold_factor"];
     max_evals = (int)settings["max_evals"];
     rng_seed = (unsigned int)settings["rng_seed"];
-    warp_precision = (sdouble)((double)settings["warp_precision"]);
+    warp_precision = (sdouble)settings["warp_precision"];
+    inf_warp = (sdouble)settings["inf_warp"];
     effect_dist_weight = (double)settings["effect_dist_weight"];
     model_settings = Rcpp::clone(settings);
+    
+    // Report warp_inf 
+    const sdouble eps_ = std::numeric_limits<double>::epsilon(); // machine epsilon
     vprint("warp_precision: ", warp_precision);
     vprint("eps_: ", eps_);
-    // Update warp_inf 
-    inf_warp = warp_precision/eps_;
     vprint("inf_warp: ", inf_warp);
+    
     // Check structure of input data
     CharacterVector col_names = count_data.names();
     CharacterVector required_cols = CharacterVector::create("count", "bin", "parent", "child", "ran");
