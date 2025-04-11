@@ -33,10 +33,14 @@ wspc::wspc(
     rise_threshold_factor = (double)settings["rise_threshold_factor"];
     max_evals = (int)settings["max_evals"];
     rng_seed = (unsigned int)settings["rng_seed"];
-    inf_warp = sdouble((double)settings["inf_warp"]);
+    warp_precision = (sdouble)((double)settings["warp_precision"]);
     effect_dist_weight = (double)settings["effect_dist_weight"];
     model_settings = Rcpp::clone(settings);
-    
+    vprint("warp_precision: ", warp_precision);
+    vprint("eps_: ", eps_);
+    // Update warp_inf 
+    inf_warp = warp_precision/eps_;
+    vprint("inf_warp: ", inf_warp);
     // Check structure of input data
     CharacterVector col_names = count_data.names();
     CharacterVector required_cols = CharacterVector::create("count", "bin", "parent", "child", "ran");
@@ -1015,19 +1019,7 @@ sVec wspc::boundary_dist(
         }
         
         // Find R_sum boundary distance
-        // ... Rates (Rt) must be positive, which happens iff Rt(0) - Rsum > 0.
-        // ... Need to use this equivalent condition because we're not computing the 
-        //      rate for every row, i.e., not computing for rows which differ only by 
-        //      bin number, and this condition is independent of bin number. (Recall that 
-        //      the variable "bin_num" is total number of bins, not the number of the bin 
-        //      represented by a given row.) 
-        sdouble Rsum = 0.0;
-        for (int d = 0; d < deg; d++) {
-          Rsum += (Rt(d) - Rt(d+1)) / (1.0 + sexp(-tslope(d)*(bin_num - tpoint(d))));
-        } 
-        sdouble R_sum_boundary_dist = Rt(0) - Rsum; 
-        // ... need Rt(0) > Rsum, i.e., this difference should be positive
-        boundary_dist_vec(ctr) = R_sum_boundary_dist;
+        boundary_dist_vec(ctr) = -poly_sigmoid(bin_num, deg, -Rt, tslope, tpoint);
         ctr++;
         
       } else {
