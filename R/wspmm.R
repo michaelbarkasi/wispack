@@ -249,7 +249,6 @@ wisp <- function(
         wisp.results = results,
         these.parents = NULL,
         these.childs = NULL,
-        log.scale = TRUE,
         verbose = TRUE
       )
     }
@@ -1642,7 +1641,6 @@ plot.child.summary <- function(
     wisp.results,
     these.parents = NULL,
     these.childs = NULL,
-    log.scale = TRUE,
     verbose = TRUE
   ) {
     
