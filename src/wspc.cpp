@@ -350,7 +350,7 @@ wspc::wspc(
         NumericMatrix count_log_avg_mat(bin_num_i, treatment_num);
         for (int t = 0; t < treatment_num; t++) {
           String trt = treatment_lvls[t];
-         
+          
           // Make mask for treatment rows of this parent-child pair
           LogicalVector trt_mask = eq_left_broadcast(treatment, trt);
           LogicalVector mask = pc_mask & trt_mask;
@@ -713,7 +713,7 @@ sVec wspc::compute_warped_mc(
     // Re-roll beta matrices
     int idx_r = 0;
     sMat betas_mc_r(treatment_num, block_num);
-    if (deg > 0) {
+    if (block_num > 0) {
       for (int t = 0; t < block_num; t++) {
         for (int i = 0; i < treatment_num; i++) {
           betas_mc_r(i, t) = parameters(betas_mc_idx[idx_r]);
