@@ -662,10 +662,17 @@ void wspc::clear_stan_mem() {
     double dbin_num = bin_num.val();
     double dbuffer_factor = buffer_factor.val();
     double dtpoint_buffer = tpoint_buffer.val();
+    double dwarp_precision = warp_precision.val();
+    double dinf_warp = inf_warp.val();
+    double deffect_dist_weight = effect_dist_weight.val();
+    double dmax_penalty_at_distance_factor = max_penalty_at_distance_factor.val();
+    double dmax_penalty_at_distance = max_penalty_at_distance.val();
     dVec dbin = to_dVec(bin);
     dVec dcount = to_dVec(count);
     dVec dcount_log = to_dVec(count_log);
     dVec dcount_tokenized = to_dVec(count_tokenized);
+    dVec dbp_coefs = to_dVec(bp_coefs);
+    dVec dwarp_bounds = to_dVec(warp_bounds);
     NumericMatrix Numweights = to_NumMat(weights);
     NumericMatrix Numgamma_dispersion = to_NumMat(gamma_dispersion);
     
@@ -676,10 +683,17 @@ void wspc::clear_stan_mem() {
     bin_num = (sdouble)dbin_num;
     buffer_factor = (sdouble)dbuffer_factor;
     tpoint_buffer = (sdouble)dtpoint_buffer;
+    warp_precision = (sdouble)dwarp_precision;
+    inf_warp = (sdouble)dinf_warp;
+    effect_dist_weight = (sdouble)deffect_dist_weight;
+    max_penalty_at_distance_factor = (sdouble)dmax_penalty_at_distance_factor;
+    max_penalty_at_distance = (sdouble)dmax_penalty_at_distance;
     bin = to_sVec(dbin);
     count = to_sVec(dcount);
     count_log = to_sVec(dcount_log);
     count_tokenized = to_sVec(dcount_tokenized);
+    bp_coefs = to_sVec(dbp_coefs);
+    warp_bounds = to_sVec(dwarp_bounds);
     weights = to_sMat(Numweights);
     gamma_dispersion = to_sMat(Numgamma_dispersion);
     
@@ -1169,7 +1183,7 @@ sdouble wspc::bounded_nll(
     sVec bd = boundary_dist(parameters);
     
     // Add boundary penalty
-    for (int i = 0; i < bd.size(); i++) {
+    for (int i = 0; i < boundary_vec_size; i++) {
       bnll += boundary_penalty_transform(bd(i), bp_coefs(i));
     }
     
@@ -1562,7 +1576,7 @@ Rcpp::NumericMatrix wspc::MCMC(
     
     // Reset initial parameters to check their feasibility 
     set_parameters(fitted_parameters, verbose);
-   
+    
     // Fit full model 
     vprint("Performing initial fit of full data", verbose);
     fit(
@@ -1585,6 +1599,7 @@ Rcpp::NumericMatrix wspc::MCMC(
     // Run MCMC simulation
     int step = 0;
     int ctr = 0;
+    int last_viable_step = 0;
     double acceptance_rate = 1.0;
     IntegerVector tracker = iseq(n_steps/10, n_steps - 1, 10);
     // Grab current point (model parameters) in random walk
@@ -1595,29 +1610,62 @@ Rcpp::NumericMatrix wspc::MCMC(
     // Take steps, Random-walk Metropolois algorithm
     while (step < n_steps - 1) {
       
+      vprint("----------", true); 
+      vprint("Try: ", ctr);
+      vprint("Step: ", step);
+      
       // Generate random step
+      // ... initiate vector to hold new parameters
       NumericVector params_next(n_params);
-      sVec bd_current = boundary_dist(to_sVec(params_current));
-      for (int i = 0; i < n_params; i++) {
-        double normalized_step_size = step_size * std::abs(params_current(i)) + step_size;
-        double bd_transformed = boundary_penalty_transform(bd_current(i), bp_coefs(i)).val();
-        double bounded_step_size = step_size / (1.0 + bd_transformed);
-        if (bounded_step_size <= 0.0) {
-          bounded_step_size = 0.0001;
+      // ... test boundary distance
+      sVec bd_current_vec = boundary_dist(to_sVec(params_current));
+      sdouble bd_current_min = smin(bd_current_vec); 
+      vprint("bd_current_min: ", bd_current_min);
+      sdouble bd_current_transformed = 0.0;
+      if (bd_current_min > 0.0) {
+        // ... add boundary penalty
+        for (int i = 0; i < boundary_vec_size; i++) {
+          bd_current_transformed += boundary_penalty_transform(bd_current_vec(i), bp_coefs(i));
         }
-        params_next(i) = R::rnorm(params_current(i), bounded_step_size);
+        bd_current_transformed += 1.0;
+        vprint("bd_current_transformed: ", bd_current_transformed);
+        // ... take next step
+        for (int i = 0; i < n_params; i++) {
+          double normalized_step_size = step_size * std::abs(params_current(i));
+          double bounded_step_size = step_size / bd_current_transformed.val();
+          if (bounded_step_size <= 0.0) {
+            // ... not analytically possible, but in case of numerical error
+            params_next(i) = params_current(i);
+          } else {
+            params_next(i) = R::rnorm(params_current(i), bounded_step_size);
+          }
+          if (std::isnan(params_next(i))) {
+            vprint("---", true);
+            vprint("NaN in params_next!", verbose);
+            vprint("params_current(i): ", params_current(i));
+            vprint("step_size: ", step_size);
+            vprint("normalized_step_size: ", normalized_step_size);
+            vprint("bounded_step_size: ", bounded_step_size);
+            vprint("-", true);
+          }
+        }
+      } else {
+        params_next = RMW_steps.row(last_viable_step);
       }
       
       // Compute posterior for this random step
       double posterior = -1.0 * bounded_nll(to_sVec(params_next)).val() + prior;
-      
+      vprint("prior: ", prior);
+      vprint("posterior: ", posterior);
       // Calculate acceptance probability 
       double acceptance = std::exp(posterior - prior);
       if (acceptance > 1.0) {acceptance = 1.0;}
       if (std::isnan(acceptance)) {acceptance = 0.0;}
-     
+      
+      vprint("acceptance: ", acceptance);
       // Accept or reject the proposed step
       double ran_draw = R::runif(0.0, 1.0); 
+      vprint("ran_draw: ", ran_draw);
       if (ran_draw < acceptance) {
         // Tracker
         if (any_true(eq_left_broadcast(tracker, step))) {
@@ -1626,6 +1674,7 @@ Rcpp::NumericMatrix wspc::MCMC(
         }
         // Advance step
         step++;
+        vprint("Advancing step: ", step);
         // Save new parameters
         RMW_steps.row(step) = params_next;
         // Set new parameters as current 
@@ -1639,9 +1688,17 @@ Rcpp::NumericMatrix wspc::MCMC(
       
       // Check for infinite loop
       acceptance_rate = static_cast<double>(step)/static_cast<double>(ctr);
-      if (ctr > 200 && acceptance_rate < 0.01) {
+      if (ctr > 200) {
+        if (acceptance_rate < 0.01) {
+          // ... go back to last viable step
+          step = last_viable_step;
+          params_current = RMW_steps.row(last_viable_step);
+          vprint("Infinite loop suspected, resetting parameters to last viable set.", verbose);
+        } else {
+          // ... update last viable step
+          last_viable_step = step;
+        }
         ctr = 0;
-        vprint("Infinite loop suspected", verbose);
         //Rcpp::stop("Acceptance rate too low; Infinite loop detected!");
       }
       
