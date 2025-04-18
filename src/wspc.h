@@ -261,7 +261,6 @@ class wspc {
     Rcpp::NumericMatrix MCMC(
         int n_steps,                        // Number of steps to take in random walk
         double step_size,                   // Step size for random walk
-        double MCMC_prior,                  // Prior for MCMC simulation
         bool verbose
     );
     
