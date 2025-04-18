@@ -337,10 +337,26 @@ List make_parameter_vector(
     wfactor_idx["rate"] = wfactor_idx_rate; 
     wfactor_idx["slope"] = wfactor_idx_slope;
     
+    // Reformat parameter names as single strings
+    int n_params = param_names.size();
+    CharacterVector param_names_clean(n_params);
+    for (int n = 0; n < n_params; n++) {
+      CharacterVector name_comps = Rcpp::as<CharacterVector>(param_names[n]);
+      int m = name_comps.size();
+      if (m == 0) {Rcpp::stop("Empty parameter name!");}
+      String name = name_comps[0]; 
+      if (m > 1) {
+        for (int i = 1; i < m; i++) {
+          name += "_" + name_comps[i];
+        }
+      }
+      param_names_clean[n] = name;
+    } 
+    
     // Pack up parameter vector and mappings
     List params = List::create(
       _["param_vec"] = Rcpp::wrap(param_vector),
-      _["param_names"] = param_names,
+      _["param_names"] = param_names_clean,
       _["param_wfactor_point_idx"] = wrap(param_wfactor_point_idx),
       _["param_wfactor_rate_idx"] = wrap(param_wfactor_rate_idx),
       _["param_wfactor_slope_idx"] = wrap(param_wfactor_slope_idx),

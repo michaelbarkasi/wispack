@@ -101,7 +101,7 @@ class wspc {
       }; 
     IntegerMatrix degMat;                   // matrix of degrees for each parent (column) -- child (rows) pair
     NumericVector fitted_parameters;        // vector holding the model parameters
-    List param_names;                       // list holding the names of the model parameters as they appear in fitted_parameters
+    CharacterVector param_names;            // list holding the names of the model parameters as they appear in fitted_parameters
     sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
     sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
     sdouble warp_precision;                 // precision surviving in calculations of warping

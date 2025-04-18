@@ -1593,12 +1593,21 @@ Rcpp::NumericMatrix wspc::MCMC(
     prior = -1.0 * bounded_nll(to_sVec(params_current)).val();
     
     // Take steps, Random-walk Metropolois algorithm
+    bool check_feasibility = true;
     while (step < n_steps - 1) {
       
       // Generate random step
       NumericVector params_next(n_params);
       for (int i = 0; i < n_params; i++) {
         params_next(i) = R::rnorm(params_current(i), step_size * std::abs(params_current(i)) + step_size);
+      }
+      
+      if (check_feasibility) {
+        
+        List feasibility_results = check_parameter_feasibility(to_sVec(params_next), true); 
+        params_next = Rcpp::as<NumericVector>(feasibility_results["parameters"]);
+        check_feasibility = false;
+        
       }
       
       // Compute posterior for this random step
@@ -1633,7 +1642,10 @@ Rcpp::NumericMatrix wspc::MCMC(
       // Check for infinite loop
       acceptance_rate = static_cast<double>(step)/static_cast<double>(ctr);
       if (ctr > 200 && acceptance_rate < 0.01) {
-        Rcpp::stop("Acceptance rate too low; Infinite loop detected!");
+        check_feasibility = true;
+        ctr = 0;
+        vprint("Infinite loop suspected, initiating feasibility check", verbose);
+        //Rcpp::stop("Acceptance rate too low; Infinite loop detected!");
       }
       
       // Clear stan memory
@@ -1887,24 +1899,8 @@ Rcpp::List wspc::results() {
       _["treatment"] = treatment
     );
     
-    // Reformat parameter names for R
-    int n_params = param_names.size();
-    CharacterVector param_names_clean(n_params);
-    for (int n = 0; n < n_params; n++) {
-      CharacterVector name_comps = Rcpp::as<CharacterVector>(param_names[n]);
-      int m = name_comps.size();
-      if (m == 0) {Rcpp::stop("Empty parameter name!");}
-      String name = name_comps[0]; 
-      if (m > 1) {
-        for (int i = 1; i < m; i++) {
-          name += "_" + name_comps[i];
-        }
-      }
-      param_names_clean[n] = name;
-    }
-    
     // Add parameter names to fitted parameter vector 
-    fitted_parameters.names() = param_names_clean;
+    fitted_parameters.names() = param_names;
     
     // Collect fixed-effect names and levels 
     fix_ref.names() = fix_names;
@@ -1953,7 +1949,7 @@ Rcpp::List wspc::results() {
       _["count.data.summed"] = count_data_summed,
       _["fitted.parameters"] = fitted_parameters,
       _["gamma.dispersion"] = g_dispersion,
-      _["param.names"] = param_names_clean,
+      _["param.names"] = param_names,
       _["fix"] = fixed_effects,
       _["treatment"] = treat,
       _["grouping.variables"] = grouping_variables,
