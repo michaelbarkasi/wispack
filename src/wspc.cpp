@@ -1593,21 +1593,19 @@ Rcpp::NumericMatrix wspc::MCMC(
     prior = -1.0 * bounded_nll(to_sVec(params_current)).val();
     
     // Take steps, Random-walk Metropolois algorithm
-    bool check_feasibility = true;
     while (step < n_steps - 1) {
       
       // Generate random step
       NumericVector params_next(n_params);
+      sVec bd_current = boundary_dist(to_sVec(params_current));
       for (int i = 0; i < n_params; i++) {
-        params_next(i) = R::rnorm(params_current(i), step_size * std::abs(params_current(i)) + step_size);
-      }
-      
-      if (check_feasibility) {
-        
-        List feasibility_results = check_parameter_feasibility(to_sVec(params_next), true); 
-        params_next = Rcpp::as<NumericVector>(feasibility_results["parameters"]);
-        check_feasibility = false;
-        
+        double normalized_step_size = step_size * std::abs(params_current(i)) + step_size;
+        double bd_transformed = boundary_penalty_transform(bd_current(i), bp_coefs(i)).val();
+        double bounded_step_size = step_size / (1.0 + bd_transformed);
+        if (bounded_step_size <= 0.0) {
+          bounded_step_size = 0.0001;
+        }
+        params_next(i) = R::rnorm(params_current(i), bounded_step_size);
       }
       
       // Compute posterior for this random step
@@ -1642,9 +1640,8 @@ Rcpp::NumericMatrix wspc::MCMC(
       // Check for infinite loop
       acceptance_rate = static_cast<double>(step)/static_cast<double>(ctr);
       if (ctr > 200 && acceptance_rate < 0.01) {
-        check_feasibility = true;
         ctr = 0;
-        vprint("Infinite loop suspected, initiating feasibility check", verbose);
+        vprint("Infinite loop suspected", verbose);
         //Rcpp::stop("Acceptance rate too low; Infinite loop detected!");
       }
       
