@@ -1570,7 +1570,6 @@ Rcpp::NumericMatrix wspc::bs_batch(
 Rcpp::NumericMatrix wspc::MCMC(
     int n_steps,              // Number of steps to take in random walk
     double step_size,         // Step size for random walk
-    double MCMC_prior,        // Prior for MCMC simulation
     bool verbose
   ) {
     
@@ -1593,26 +1592,20 @@ Rcpp::NumericMatrix wspc::MCMC(
     // Save current parameters as first step of RMW
     RMW_steps.row(0) = fitted_parameters;
     
-    // Set prior 
-    double prior = std::log(MCMC_prior);
-    
     // Run MCMC simulation
     int step = 0;
     int ctr = 0;
+    int inf_loop_ctr = 0;
     int last_viable_step = 0;
     double acceptance_rate = 1.0;
     IntegerVector tracker = iseq(n_steps/10, n_steps - 1, 10);
     // Grab current point (model parameters) in random walk
     NumericVector params_current = RMW_steps.row(step);
     // Set prior as log likelihood for this initial point
-    prior = -1.0 * bounded_nll(to_sVec(params_current)).val();
+    double prior = -1.0 * bounded_nll(to_sVec(params_current)).val();
     
     // Take steps, Random-walk Metropolois algorithm
     while (step < n_steps - 1) {
-      
-      vprint("----------", true); 
-      vprint("Try: ", ctr);
-      vprint("Step: ", step);
       
       // Generate random step
       // ... initiate vector to hold new parameters
@@ -1620,33 +1613,25 @@ Rcpp::NumericMatrix wspc::MCMC(
       // ... test boundary distance
       sVec bd_current_vec = boundary_dist(to_sVec(params_current));
       sdouble bd_current_min = smin(bd_current_vec); 
-      vprint("bd_current_min: ", bd_current_min);
       sdouble bd_current_transformed = 0.0;
+      // ... if above boundary, scale step to boundary distance
       if (bd_current_min > 0.0) {
-        // ... add boundary penalty
+        // ... transform boundary penalty
         for (int i = 0; i < boundary_vec_size; i++) {
           bd_current_transformed += boundary_penalty_transform(bd_current_vec(i), bp_coefs(i));
         }
         bd_current_transformed += 1.0;
-        vprint("bd_current_transformed: ", bd_current_transformed);
-        // ... take next step
+        // ... for each parameter
         for (int i = 0; i < n_params; i++) {
+          // ... calculate step size
           double normalized_step_size = step_size * std::abs(params_current(i));
           double bounded_step_size = step_size / bd_current_transformed.val();
           if (bounded_step_size <= 0.0) {
             // ... not analytically possible, but in case of numerical error
             params_next(i) = params_current(i);
           } else {
+            // ... take next step
             params_next(i) = R::rnorm(params_current(i), bounded_step_size);
-          }
-          if (std::isnan(params_next(i))) {
-            vprint("---", true);
-            vprint("NaN in params_next!", verbose);
-            vprint("params_current(i): ", params_current(i));
-            vprint("step_size: ", step_size);
-            vprint("normalized_step_size: ", normalized_step_size);
-            vprint("bounded_step_size: ", bounded_step_size);
-            vprint("-", true);
           }
         }
       } else {
@@ -1655,17 +1640,13 @@ Rcpp::NumericMatrix wspc::MCMC(
       
       // Compute posterior for this random step
       double posterior = -1.0 * bounded_nll(to_sVec(params_next)).val() + prior;
-      vprint("prior: ", prior);
-      vprint("posterior: ", posterior);
       // Calculate acceptance probability 
       double acceptance = std::exp(posterior - prior);
       if (acceptance > 1.0) {acceptance = 1.0;}
       if (std::isnan(acceptance)) {acceptance = 0.0;}
       
-      vprint("acceptance: ", acceptance);
       // Accept or reject the proposed step
       double ran_draw = R::runif(0.0, 1.0); 
-      vprint("ran_draw: ", ran_draw);
       if (ran_draw < acceptance) {
         // Tracker
         if (any_true(eq_left_broadcast(tracker, step))) {
@@ -1674,7 +1655,6 @@ Rcpp::NumericMatrix wspc::MCMC(
         }
         // Advance step
         step++;
-        vprint("Advancing step: ", step);
         // Save new parameters
         RMW_steps.row(step) = params_next;
         // Set new parameters as current 
@@ -1683,12 +1663,13 @@ Rcpp::NumericMatrix wspc::MCMC(
         prior = posterior;
       } 
       
-      // Advance general counter
+      // Advance counters
       ctr++; 
+      inf_loop_ctr++;
       
       // Check for infinite loop
       acceptance_rate = static_cast<double>(step)/static_cast<double>(ctr);
-      if (ctr > 200) {
+      if (inf_loop_ctr > 200) {
         if (acceptance_rate < 0.01) {
           // ... go back to last viable step
           step = last_viable_step;
@@ -1698,7 +1679,7 @@ Rcpp::NumericMatrix wspc::MCMC(
           // ... update last viable step
           last_viable_step = step;
         }
-        ctr = 0;
+        inf_loop_ctr = 0;
         //Rcpp::stop("Acceptance rate too low; Infinite loop detected!");
       }
       
@@ -1709,7 +1690,7 @@ Rcpp::NumericMatrix wspc::MCMC(
     
     // Report acceptance rate
     vprint("All complete!", verbose); 
-    if (verbose) {vprint("Acceptance rate: ", acceptance_rate);}
+    if (verbose) {vprint("Acceptance rate (aim for 0.2-0.3): ", acceptance_rate);}
     
     return RMW_steps;
     

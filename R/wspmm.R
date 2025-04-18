@@ -23,8 +23,7 @@ wisp <- function(
     use.median = FALSE,
     MCMC.burnin = 0,
     MCMC.steps = 1e4,
-    MCMC.step.size = 0.1,
-    MCMC.prior = 0.5,
+    MCMC.step.size = 0.05,
     bootstraps.num = 0, 
     converged.resamples.only = FALSE,
     max.fork = 10,
@@ -106,7 +105,6 @@ wisp <- function(
       MCMC_walk <- cpp_model$MCMC(
         MCMC.steps + MCMC.burnin, 
         MCMC.step.size,
-        MCMC.prior,
         verbose 
       )
       MCMC_walk <- MCMC_walk[-c(2:MCMC.burnin),]
@@ -1733,6 +1731,10 @@ plot.MCMC.walks <- function(
     
     # Grab sampled parameters
     sampled_params <- wisp.results$sample.params
+    
+    # Down-sample 
+    these_rows <- as.integer(seq(1, nrow(sampled_params), length.out = 1000))
+    sampled_params <- sampled_params[these_rows,]
     
     # Take abs and log
     sampled_params <- log(abs(sampled_params) + 1)
