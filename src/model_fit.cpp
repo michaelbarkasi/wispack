@@ -276,22 +276,22 @@ dVec series_lik(
         double mean_i = vmean(series_i);
         double sd_i = vsd(series_i);
         for (int j = 0; j < ws; j++) {
-          lik[i] += dNorm(series_i[j], mean_i, sd_i);
+          lik[i] += log_dNorm(series_i[j], mean_i, sd_i);
         }
       } else {
         double mean_i1 = vmean(series_i1);
         double sd_i1 = vsd(series_i1);
         for (int j = 0; j < ws/2; j++) {
-          lik[i] += dNorm(series_i[j], mean_i1, sd_i1);
+          lik[i] += log_dNorm(series_i[j], mean_i1, sd_i1);
         }
         double mean_i2 = vmean(series_i2);
         double sd_i2 = vsd(series_i2);
         for (int j = ws/2; j < ws; j++) {
-          lik[i] += dNorm(series_i[j], mean_i2, sd_i2);
+          lik[i] += log_dNorm(series_i[j], mean_i2, sd_i2);
         }
       }
       
-      lik[i] = lik[i] / (double)ws;
+      //lik[i] = lik[i] / (double)ws;
       
       // Check for nan's and replace with 1
       if (std::isnan(lik[i])) {lik[i] = 1.0;}
@@ -363,27 +363,10 @@ dVec LROcp_ratio(
     // ... expected value is 1. Expect lik_null to be 
     // ... smaller than lik_cp (i.e., less likely, a worse fit), 
     // ... so expect this value to be 1 or larger. 
-    dVec lik_ratio = vdivide(lik_cp, lik_null);
+    dVec lik_ratio = vsubtract(lik_cp, lik_null);
+    vprintV(lik_ratio,true);
     
     return lik_ratio;
-    
-  }
-
-// Likelihood ratio outlier change-point detection, single-series
-IntegerVector LROcp(
-    const dVec& series,           // 1D vector of points to test for change points
-    const int& ws,                // Running window size
-    const int& filter_ws,         // Size of window for taking rolling mean
-    const double& out_mult        // Outlier multiplier
-  ) {
-    
-    // Find the likelihood ratios of change points for the series
-    dVec lik_ratio = LROcp_ratio(series, ws, filter_ws);
-    
-    // Use LROcp on this series to estimate change points 
-    IntegerVector found_cp = LROcp_find(series, ws, out_mult);
-    
-    return found_cp;
     
   }
 
@@ -414,27 +397,16 @@ IntegerMatrix LROcp_array(
       // Find the likelihood ratios of change points for this series
       dVec lik_ratio = LROcp_ratio(series, ws, filter_ws);
       
-      // Square the likelihood ratios so DTW-DBA algorithm more heavily weights peaks when aligning series
-      //NumericVector lik_ratio2 = to_NumVec(vmult(lik_ratio, lik_ratio));
-      
       // Save in array 
       lik_ratio_array.column(s) = to_NumVec(lik_ratio);
       
     }
     
-    // Find the centroid of lik_ratio_array
-    // ... calling function from dtwclust package in R
-    //int dtw_window = ws / 2;
-    //Function find_centroid("find_centroid");   
-    //NumericVector centroid = find_centroid(lik_ratio_array, dtw_window);
-    
+    // Find centroid
     NumericVector centroid(n_samples);
     for (int i = 0; i < n_samples; i++) {
       centroid[i] = vmean(lik_ratio_array.row(i));
     }
-    
-    // Take centroid out of squared space
-    //centroid = vsqrt(centroid);
     
     // Use LROcp on this series to estimate change points 
     IntegerVector found_cp = LROcp_find(to_dVec(centroid), ws, out_mult);
