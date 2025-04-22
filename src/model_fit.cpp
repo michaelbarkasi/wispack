@@ -308,7 +308,7 @@ dVec series_loglik(
 
 // Likelihood ratio outlier change-point detection
 IntegerVector LROcp_find(
-    const dVec& lik_ratio,        // 1D vector of points to test for change points
+    const dVec& loglik_ratio,     // 1D vector of points to test for change points
     const int& ws,                // Running window size
     const double& out_mult        // Outlier multiplier
   ) {
@@ -316,20 +316,20 @@ IntegerVector LROcp_find(
     //Find change points
     iVec fcp;
     int last_cp = 0;
-    double lik_ratio_mean = vmean(lik_ratio);
-    double lik_ratio_sd = vsd(lik_ratio);
-    double lik_max = lik_ratio_mean + out_mult * lik_ratio_sd;
-    int n_nll = lik_ratio.size();
+    double loglik_ratio_mean = vmean(loglik_ratio);
+    double loglik_ratio_sd = vsd(loglik_ratio);
+    double loglik_max = loglik_ratio_mean + out_mult * loglik_ratio_sd;
+    int n_nll = loglik_ratio.size();
     for (int i = 0; i < n_nll; i++) {
       if (
-          lik_ratio[i] > lik_max && 
-            i < (lik_ratio.size() - ws/2) &&  // can't be too close to end
-            i > ws/2                          // can't be too close to beginning
+          loglik_ratio[i] > loglik_max && 
+            i < (loglik_ratio.size() - ws/2) &&   // can't be too close to end
+            i > ws/2                              // can't be too close to beginning
       ) {
-        if (i - last_cp > int(ws/2)) {        // can't be too close to last change point
+        if (i - last_cp > int(ws/2)) {            // can't be too close to last change point
           fcp.push_back(i);
           last_cp = i;
-        } else if (lik_ratio[i] > lik_ratio[last_cp]) {
+        } else if (loglik_ratio[i] > loglik_ratio[last_cp]) {
           // If too close to last change point, check if this ratio is larger
           fcp[fcp.size() - 1] = i;
         }
@@ -355,18 +355,21 @@ dVec LROcp_logRatio(
   ) {
     
     // Compute the null likelihood at each bin (no change point)
-    dVec lik_null = series_loglik(series, ws, filter_ws, true);
+    dVec loglik_null = series_loglik(series, ws, filter_ws, true);
     
     // Compute the change-point likelihood at each bin
-    dVec lik_cp = series_loglik(series, ws, filter_ws, false);
+    dVec loglik_cp = series_loglik(series, ws, filter_ws, false);
     
-    // Find the nll ratio at each bin 
-    // ... expected value is log(1). Expect lik_null to be 
-    // ... smaller than lik_cp (i.e., less likely, a worse fit), 
-    // ... so expect this value to be 1 or larger. 
-    dVec lik_ratio = vsubtract(lik_cp, lik_null);
+    // Find the loglik ratio at each bin 
+    // ... Expect lik_null to be smaller than lik_cp (i.e., less likely, a worse fit), 
+    // ... so expect loglik_null to be smaller (e.g., a negative number of greater magnitude) 
+    // ... than loglik_cp. So, loglik_cp - loglik_null should be positive, with a minimum of 
+    // ... zero, i.e., the log of the ratio 1/1, which is 0. Importantly, the *larger* this 
+    // ... number, the *better* the cp hypothesis fits the data. So, a larger ratio is still 
+    // ... better, even though we're in log space. 
+    dVec loglik_ratio = vsubtract(loglik_cp, loglik_null);
     
-    return lik_ratio;
+    return loglik_ratio;
     
   }
 
@@ -386,7 +389,7 @@ IntegerMatrix LROcp_array(
     
     int n_series = series_array.cols();
     int n_samples = series_array.rows();
-    NumericMatrix lik_ratio_array(n_samples, n_series);
+    NumericMatrix loglik_ratio_array(n_samples, n_series);
     
     // Convert series_array of raw (or log) count values into an array of likelihood ratios
     for (int s = 0; s < n_series; s++) {
@@ -395,17 +398,17 @@ IntegerMatrix LROcp_array(
       dVec series = to_dVec(series_array.col(s));
       
       // Find the likelihood ratios of change points for this series
-      dVec lik_ratio = LROcp_logRatio(series, ws, filter_ws);
+      dVec loglik_ratio = LROcp_logRatio(series, ws, filter_ws);
       
       // Save in array 
-      lik_ratio_array.column(s) = to_NumVec(lik_ratio);
+      loglik_ratio_array.column(s) = to_NumVec(loglik_ratio);
       
     }
     
     // Find centroid
     NumericVector centroid(n_samples);
     for (int i = 0; i < n_samples; i++) {
-      centroid[i] = vmean(lik_ratio_array.row(i));
+      centroid[i] = vmean(loglik_ratio_array.row(i));
     }
     
     // Use LROcp on this series to estimate change points 
@@ -416,7 +419,7 @@ IntegerMatrix LROcp_array(
       // Project found_cp back to original series 
       // ... these will be one-based indices that need to be subtracted back to zero-based
       Function project_cp("project_cp");
-      IntegerMatrix found_cp_array = project_cp(found_cp, centroid, lik_ratio_array);
+      IntegerMatrix found_cp_array = project_cp(found_cp, centroid, loglik_ratio_array);
       // ... ^ in this matrix, rows are change points (by deg), columns are trt x ran interactions
      
       for (int i = 0; i < found_cp_array.ncol(); i++) {
