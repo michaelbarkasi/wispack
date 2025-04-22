@@ -126,7 +126,7 @@ class wspc {
     double LROwindow_factor = 2.0;          // factor for window size in likelihood ratio outlier detection (bigger is bigger window)
     double LROfilter_ws_divisor = 2.0;      // divisor for filter window size in likelihood ratio outlier detection (bigger is smaller window)
     double rise_threshold_factor = 0.8;     // amount of detected rise as fraction of total required to end run
-    double min_initialization_slope = 0.1;  // minimum slope for initialization of transition slopes
+    double min_initialization_slope = 0.9;  // minimum slope for initialization of transition slopes
     
     // Model settings and results 
     List model_settings;
@@ -139,7 +139,6 @@ class wspc {
     sMat gamma_dispersion;                  // dispersion terms for "kernel" of gamma-Poisson model
     IntegerVector gd_child_idx;             // indexes of child levels in gamma_dispersion
     IntegerVector gd_parent_idx;            // indexes of parent levels in gamma_dispersion
-    sdouble effect_dist_weight = 0.001;     // weight for effect distribution likelihood
     
     // Boundary penalty variables
     int boundary_vec_size = 0;                           // number of boundary components
