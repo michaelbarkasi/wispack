@@ -35,7 +35,6 @@ wspc::wspc(
     rng_seed = (unsigned int)settings["rng_seed"];
     warp_precision = (sdouble)settings["warp_precision"];
     inf_warp = (sdouble)settings["inf_warp"];
-    effect_dist_weight = (double)settings["effect_dist_weight"];
     model_settings = Rcpp::clone(settings);
     
     // Report warp_inf 
@@ -655,7 +654,6 @@ void wspc::clear_stan_mem() {
     double dtpoint_buffer = tpoint_buffer.val();
     double dwarp_precision = warp_precision.val();
     double dinf_warp = inf_warp.val();
-    double deffect_dist_weight = effect_dist_weight.val();
     double dmax_penalty_at_distance_factor = max_penalty_at_distance_factor.val();
     dVec dbin = to_dVec(bin);
     dVec dcount = to_dVec(count);
@@ -675,7 +673,6 @@ void wspc::clear_stan_mem() {
     tpoint_buffer = (sdouble)dtpoint_buffer;
     warp_precision = (sdouble)dwarp_precision;
     inf_warp = (sdouble)dinf_warp;
-    effect_dist_weight = (sdouble)deffect_dist_weight;
     max_penalty_at_distance_factor = (sdouble)dmax_penalty_at_distance_factor;
     bin = to_sVec(dbin);
     count = to_sVec(dcount);
@@ -853,47 +850,6 @@ sdouble wspc::neg_loglik(
     // Initialize variable to hold (what will become) nll
     sdouble log_lik = 0.0;
     
-    // Find likelihood of effect parameters, assuming a normal distribution centered on zero
-    // ... wfactor rate 
-    sVec wfactor_rate = idx_vec(parameters, param_wfactor_rate_idx);
-    sdouble wfactor_rate_sd = vsd(wfactor_rate);
-    if (wfactor_rate_sd <= 0) {wfactor_rate_sd = 0.1;}
-    for (sdouble e : wfactor_rate) {log_lik += log_dNorm(e, 0.0, wfactor_rate_sd);}
-    // ... wfactor point
-    sVec wfactor_point = idx_vec(parameters, param_wfactor_point_idx);
-    sdouble wfactor_point_sd = vsd(wfactor_point);
-    if (wfactor_point_sd <= 0) {wfactor_point_sd = 0.1;}
-    for (sdouble e : wfactor_point) {log_lik += log_dNorm(e, 0.0, wfactor_point_sd);}
-    // ... wfactor slope
-    sVec wfactor_slope = idx_vec(parameters, param_wfactor_slope_idx);
-    sdouble wfactor_slope_sd = vsd(wfactor_slope);
-    if (wfactor_slope_sd <= 0) {wfactor_slope_sd = 0.1;}
-    for (sdouble e : wfactor_slope) {log_lik += log_dNorm(e, 0.0, wfactor_slope_sd);}
-    // ... beta Rt
-    sVec beta_Rt = idx_vec(parameters, param_beta_Rt_idx);
-    sdouble beta_Rt_sd = vsd(beta_Rt);
-    if (beta_Rt_sd <= 0) {beta_Rt_sd = 0.1;}
-    for (sdouble e : beta_Rt) {log_lik += log_dNorm(e, 0.0, beta_Rt_sd);}
-    // ... beta tpoint
-    sVec beta_tpoint = idx_vec(parameters, param_beta_tpoint_idx);
-    sdouble beta_tpoint_sd = vsd(beta_tpoint);
-    if (beta_tpoint_sd <= 0) {beta_tpoint_sd = 0.1;}
-    for (sdouble e : beta_tpoint) {log_lik += log_dNorm(e, 0.0, beta_tpoint_sd);}
-    // ... beta tslope
-    sVec beta_tslope = idx_vec(parameters, param_beta_tslope_idx);
-    sdouble beta_tslope_sd = vsd(beta_tslope);
-    if (beta_tslope_sd <= 0) {beta_tslope_sd = 0.1;}
-    for (sdouble e : beta_tslope) {log_lik += log_dNorm(e, 0.0, beta_tslope_sd);}
-    
-    // Compute the log-likelihood of the effects
-    sdouble log_lik_effectdist = -log_lik / (sdouble)(
-      wfactor_rate.size() + wfactor_point.size() + wfactor_slope.size() +
-      beta_Rt.size() + beta_tpoint.size() + beta_tslope.size()
-    );
-    
-    // Reset log_lik to zero for computing log-likelihood of the observations
-    log_lik = 0.0; 
-    
     // Predict rates under these parameters
     sVec predicted_rates_log_var = predict_rates(
       parameters, // model parameters for generating prediction
@@ -925,9 +881,8 @@ sdouble wspc::neg_loglik(
       
     }
     
-    // Take negative and average, the latter so we're looking at values in the same range, regardless of data size
-    sdouble negloglik = -log_lik / count_not_na_idx.size();
-    negloglik = (1.0 - effect_dist_weight) * negloglik + effect_dist_weight * log_lik_effectdist;
+    // Take negative
+    sdouble negloglik = -log_lik;
     
     // Check for infinities (zero likelihood)
     if (std::isinf(negloglik) || negloglik > sdouble(inf_)) {
@@ -1588,11 +1543,13 @@ Rcpp::NumericMatrix wspc::MCMC(
     IntegerVector tracker = iseq(n_steps/10, n_steps - 1, 10);
     // Grab current point (model parameters) in random walk
     NumericVector params_current = RMW_steps.row(step);
-    // Set prior as log likelihood for this initial point
-    double prior = -1.0 * bounded_nll(to_sVec(params_current)).val();
     
     // Take steps, Random-walk Metropolois algorithm
     while (step < n_steps - 1) {
+      
+      // Initialize priors 
+      double prior_current = 0.0;
+      double prior_next = 0.0;
       
       // Generate random step
       // ... initiate vector to hold new parameters
@@ -1611,7 +1568,7 @@ Rcpp::NumericMatrix wspc::MCMC(
         // ... for each parameter
         for (int i = 0; i < n_params; i++) {
           // ... calculate step size
-          double normalized_step_size = step_size * std::abs(params_current(i));
+          double normalized_step_size = step_size * std::abs(params_current(i)) + step_size;
           double bounded_step_size = normalized_step_size / bd_current_transformed.val();
           if (bounded_step_size <= 0.0) {
             // ... not analytically possible, but in case of numerical error
@@ -1620,16 +1577,24 @@ Rcpp::NumericMatrix wspc::MCMC(
             // ... take next step
             params_next(i) = R::rnorm(params_current(i), bounded_step_size);
           }
+          // While looping, compute priors for this random step
+          prior_current += log_dNorm(params_current(i), 0.0, 1.0);
+          prior_next += log_dNorm(params_next(i), 0.0, 1.0);
         }
       } else {
-        params_next = RMW_steps.row(last_viable_step);
+        params_current = RMW_steps.row(last_viable_step);
         step = last_viable_step;
+        continue;
       }
       
-      // Compute posterior for this random step
-      double posterior = -1.0 * bounded_nll(to_sVec(params_next)).val() + prior;
+      // Compute posteriors for this random step
+      double loglik_current = -bounded_nll(to_sVec(params_current)).val();
+      double loglik_next = -bounded_nll(to_sVec(params_next)).val();
       // Calculate acceptance probability 
-      double acceptance = std::exp(posterior - prior);
+      double acceptance = std::exp(
+        (loglik_next + prior_next) - 
+        (loglik_current + prior_current) 
+      );
       if (acceptance > 1.0) {acceptance = 1.0;}
       if (std::isnan(acceptance)) {acceptance = 0.0;}
       
@@ -1647,8 +1612,6 @@ Rcpp::NumericMatrix wspc::MCMC(
         RMW_steps.row(step) = params_next;
         // Set new parameters as current 
         params_current = params_next;
-        // Update prior
-        prior = posterior;
       } 
       
       // Advance counters

@@ -41,8 +41,7 @@ wisp <- function(
       rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
       max_evals = 1000,                           # maximum number of evaluations for optimization
       rng_seed = 42,                              # seed for random number generator
-      warp_precision = 1e-7,                      # precision for calculations in warp function
-      effect_dist_weight = 0.001                  # weight for effect distribution likelihood
+      warp_precision = 1e-7                       # precision for calculations in warp function
     )
   ) {
     
@@ -107,8 +106,10 @@ wisp <- function(
         MCMC.step.size,
         verbose 
       )
-      MCMC_walk <- MCMC_walk[-c(2:MCMC.burnin),]
-     
+      if (MCMC.burnin > 0) {
+        MCMC_walk <- MCMC_walk[-c(2:(2+MCMC.burnin-1)),]
+      }
+      
     } else {
       
       # Run bootstrap fits in parallel with forking
@@ -348,6 +349,7 @@ sample.stats <- function(
             #   ... As there are multiple cells per bin, perhaps the cutoff shouldn't be 1, but the number of cells (so avg is 1)??
           }
         }
+        if (is.na(p_values[n]) && (test_mask[n] || baseline_mask[n])) stop("Problem with p-value calculation, NA")
       }
       
       # Sanity check
