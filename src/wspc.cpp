@@ -417,7 +417,6 @@ wspc::wspc(
         
         // Fill columns into the found_cp matrix
         IntegerMatrix found_cp(deg, n_ran_trt);
-        NumericMatrix found_slopes(deg, n_ran_trt);
         // ^ ... Rcpp should initialize these matrices with all zeros
         if (deg > 0) {
           for (int si = 0; si < good_col_idx.size(); si++) {
@@ -426,14 +425,6 @@ wspc::wspc(
             found_cp.column(s) = found_cp_good.column(si);
             // ... grab counts 
             sVec these_counts = count_masked_array_good.col(si);
-            // ... estimate slopes
-            std::vector<dVec> est_rate_runs = est_bkRates_tRuns(n_blocks, to_NumVec(these_counts), found_cp.column(s), rise_threshold_factor);
-            NumericVector est_run = to_NumVec(est_rate_runs[1]);
-            for (int d = 0; d < deg; d++) {
-              found_slopes(d, s) = 4.0/est_run[d];
-              if (found_slopes(d, s) < min_initialization_slope) {found_slopes(d, s) = min_initialization_slope;}
-              // ^ ... keep from initializing too close to zero
-            }
           }
         }
         
@@ -666,7 +657,6 @@ void wspc::clear_stan_mem() {
     double dinf_warp = inf_warp.val();
     double deffect_dist_weight = effect_dist_weight.val();
     double dmax_penalty_at_distance_factor = max_penalty_at_distance_factor.val();
-    double dmax_penalty_at_distance = max_penalty_at_distance.val();
     dVec dbin = to_dVec(bin);
     dVec dcount = to_dVec(count);
     dVec dcount_log = to_dVec(count_log);
@@ -687,7 +677,6 @@ void wspc::clear_stan_mem() {
     inf_warp = (sdouble)dinf_warp;
     effect_dist_weight = (sdouble)deffect_dist_weight;
     max_penalty_at_distance_factor = (sdouble)dmax_penalty_at_distance_factor;
-    max_penalty_at_distance = (sdouble)dmax_penalty_at_distance;
     bin = to_sVec(dbin);
     count = to_sVec(dcount);
     count_log = to_sVec(dcount_log);
@@ -915,7 +904,7 @@ sdouble wspc::neg_loglik(
     for (int r : count_not_na_idx) {
       
       if (std::isinf(predicted_rates_log_var(r)) || predicted_rates_log_var(r) < 0.0 || std::isnan(predicted_rates_log_var(r))) {
-        return inf_;
+        return sdouble(inf_);
       } else {
         
         // Find gamma variance for this row
@@ -938,12 +927,11 @@ sdouble wspc::neg_loglik(
     
     // Take negative and average, the latter so we're looking at values in the same range, regardless of data size
     sdouble negloglik = -log_lik / count_not_na_idx.size();
-    
     negloglik = (1.0 - effect_dist_weight) * negloglik + effect_dist_weight * log_lik_effectdist;
     
     // Check for infinities (zero likelihood)
-    if (std::isinf(negloglik) || negloglik > inf_) {
-      negloglik = inf_;
+    if (std::isinf(negloglik) || negloglik > sdouble(inf_)) {
+      negloglik = sdouble(inf_);
     }
     
     return negloglik;
@@ -1294,7 +1282,7 @@ void wspc::fit(
     
     // Set boundary-penalty coefficients 
     sVec initial_params_var = to_sVec(fitted_parameters);
-    max_penalty_at_distance = neg_loglik(initial_params_var) * max_penalty_at_distance_factor;
+    sdouble max_penalty_at_distance = neg_loglik(initial_params_var) * max_penalty_at_distance_factor;
     sdouble coefs_square = static_cast<double>(boundary_vec_size)/max_penalty_at_distance;
     sdouble coefs = ssqrt(coefs_square);
     bp_coefs = boundary_dist(initial_params_var);
@@ -1314,12 +1302,11 @@ void wspc::fit(
     
     // Find and print initial neg_loglik and total objective values
     if (verbose) {
-      sVec ip = to_sVec(fitted_parameters);
-      sdouble initial_nll = neg_loglik(ip);
+      sdouble initial_nll = neg_loglik(initial_params_var);
       vprint("Initial neg_loglik: ", initial_nll);
-      sdouble initial_obj = bounded_nll(ip);
+      sdouble initial_obj = bounded_nll(initial_params_var);
       vprint("Initial neg_loglik with penalty: ", initial_obj);
-      sdouble mb_dist = min_boundary_dist(ip);
+      sdouble mb_dist = min_boundary_dist(initial_params_var);
       vprint("Initial min boundary distance: ", mb_dist);
     } 
     
@@ -1636,6 +1623,7 @@ Rcpp::NumericMatrix wspc::MCMC(
         }
       } else {
         params_next = RMW_steps.row(last_viable_step);
+        step = last_viable_step;
       }
       
       // Compute posterior for this random step
@@ -1680,7 +1668,6 @@ Rcpp::NumericMatrix wspc::MCMC(
           last_viable_step = step;
         }
         inf_loop_ctr = 0;
-        //Rcpp::stop("Acceptance rate too low; Infinite loop detected!");
       }
       
       // Clear stan memory
