@@ -259,12 +259,12 @@ dVec series_loglik(
     
     int n = series0.size();
     dVec series = roll_mean(series0, filter_ws);
-    dVec lik(n); // length out should equal length in
+    dVec loglik(n); // length out should equal length in
     
-    // Compute mean likelihood of an observation within each window
+    // Compute joint log-likelihood of observations within each window
     for (int i = 0; i <= (n - ws); i++) {
      
-      lik[i] = 0.0;
+      loglik[i] = 0.0;
       // ... series values in window
       dVec series_i(series.begin() + i, series.begin() + (i + ws));
       // ... series values in first half of window
@@ -276,35 +276,33 @@ dVec series_loglik(
         double mean_i = vmean(series_i);
         double sd_i = vsd(series_i);
         for (int j = 0; j < ws; j++) {
-          lik[i] += log_dNorm(series_i[j], mean_i, sd_i);
+          loglik[i] += log_dNorm(series_i[j], mean_i, sd_i);
         }
       } else {
         double mean_i1 = vmean(series_i1);
         double sd_i1 = vsd(series_i1);
         for (int j = 0; j < ws/2; j++) {
-          lik[i] += log_dNorm(series_i[j], mean_i1, sd_i1);
+          loglik[i] += log_dNorm(series_i[j], mean_i1, sd_i1);
         }
         double mean_i2 = vmean(series_i2);
         double sd_i2 = vsd(series_i2);
         for (int j = ws/2; j < ws; j++) {
-          lik[i] += log_dNorm(series_i[j], mean_i2, sd_i2);
+          loglik[i] += log_dNorm(series_i[j], mean_i2, sd_i2);
         }
       }
       
-      //lik[i] = lik[i] / (double)ws;
-      
       // Check for nan's and replace with 1
-      if (std::isnan(lik[i])) {lik[i] = 1.0;}
+      if (std::isnan(loglik[i])) {loglik[i] = 1.0;}
      
     }
    
     // Fill in the last part of the vector with the mean
-    double lik_mean = vmean(lik);
+    double loglik_mean = vmean(loglik);
     for (int i = n - ws + 1; i < n; i++) {
-      lik[i] = lik_mean;
+      loglik[i] = loglik_mean;
     }
     
-    return lik;
+    return loglik;
     
   }
 
@@ -363,7 +361,7 @@ dVec LROcp_logRatio(
     dVec lik_cp = series_loglik(series, ws, filter_ws, false);
     
     // Find the nll ratio at each bin 
-    // ... expected value is 1. Expect lik_null to be 
+    // ... expected value is log(1). Expect lik_null to be 
     // ... smaller than lik_cp (i.e., less likely, a worse fit), 
     // ... so expect this value to be 1 or larger. 
     dVec lik_ratio = vsubtract(lik_cp, lik_null);

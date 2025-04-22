@@ -1612,7 +1612,7 @@ Rcpp::NumericMatrix wspc::MCMC(
         for (int i = 0; i < n_params; i++) {
           // ... calculate step size
           double normalized_step_size = step_size * std::abs(params_current(i));
-          double bounded_step_size = step_size / bd_current_transformed.val();
+          double bounded_step_size = normalized_step_size / bd_current_transformed.val();
           if (bounded_step_size <= 0.0) {
             // ... not analytically possible, but in case of numerical error
             params_next(i) = params_current(i);
