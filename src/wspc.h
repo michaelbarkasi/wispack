@@ -124,9 +124,8 @@ class wspc {
     // Variables for initial degree estimation
     double LROcutoff = 2.0;                 // cutoff (x sd) for likelihood ratio outlier detection
     double LROwindow_factor = 2.0;          // factor for window size in likelihood ratio outlier detection (bigger is bigger window)
-    double LROfilter_ws_divisor = 2.0;      // divisor for filter window size in likelihood ratio outlier detection (bigger is smaller window)
     double rise_threshold_factor = 0.8;     // amount of detected rise as fraction of total required to end run
-    double min_initialization_slope = 0.9;  // minimum slope for initialization of transition slopes
+    double min_initialization_slope = 0.25; // minimum slope for initialization of transition slopes
     
     // Model settings and results 
     List model_settings;
@@ -693,7 +692,6 @@ sdouble boundary_penalty_transform(
 dVec series_loglik(
   const dVec& series0,             // 1D vector of points for which to take negative log-likelihood of a change-point
   const int& ws,                   // Running window size
-  const int& filter_ws,            // Size of window for taking rolling mean
   const bool& null                 // If true, compute likelihood of data assuming no transitions; otherwise, assuming transition
   );
 
@@ -707,15 +705,13 @@ IntegerVector LROcp_find(
 // Compute likelihood ratios of change points for a series
 dVec LROcp_logRatio(
     const dVec& series,           // 1D vector of points to test for change points
-    const int& ws,                // Running window size
-    const int& filter_ws          // Size of window for taking rolling mean
+    const int& ws                 // Running window size
   );
 
 // Likelihood ratio outlier change-point detection, array input and output
 IntegerMatrix LROcp_array(
     const sMat& series_array,       // 2D matrix of points to test for change points
     const int& ws,                  // Running window size
-    const int& filter_ws,           // Size of window for taking rolling mean
     const double& out_mult          // Outlier multiplier
   );
 
