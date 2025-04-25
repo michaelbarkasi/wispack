@@ -29,7 +29,6 @@ wspc::wspc(
     max_penalty_at_distance_factor = sdouble((double)settings["max_penalty_at_distance_factor"]);
     LROcutoff = (double)settings["LROcutoff"];
     LROwindow_factor = (double)settings["LROwindow_factor"];
-    LROfilter_ws_divisor = (double)settings["LROfilter_ws_divisor"];
     rise_threshold_factor = (double)settings["rise_threshold_factor"];
     max_evals = (int)settings["max_evals"];
     rng_seed = (unsigned int)settings["rng_seed"];
@@ -287,7 +286,6 @@ wspc::wspc(
     
     // Compute running and filter window sizes for LRO change-point detection
     int ws = static_cast<int>(std::round(LROwindow_factor * (double)bin_num_i * buffer_factor.val()));
-    int filter_ws = std::round((double)ws/LROfilter_ws_divisor);
     int n_ran_trt = n_ran * treatment_num;
     
     // Estimate degree of each parent-child combination at baseline using LRO change-point detection 
@@ -405,7 +403,6 @@ wspc::wspc(
         IntegerMatrix found_cp_good = LROcp_array(
           count_masked_array_good,    // 2D matrix of points to test for change points (columns as series, rows as bins)
           ws,                         // running window size 
-          filter_ws,                  // size of window for taking rolling mean
           LROcutoff                   // points more than this times sd considered outliers
         );
         

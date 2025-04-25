@@ -252,13 +252,12 @@ sdouble boundary_penalty_transform(
 dVec series_loglik(
     const dVec& series0,          // 1D vector of points for which to take likelihood of a change-point
     const int& ws,                // Running window size
-    const int& filter_ws,         // Size of window for taking rolling mean
     const bool& null              // If true, compute likelihood of data assuming no transitions; otherwise, assuming transition
   ) {
     // Assumes points are normally distributed about their process rate
     
     int n = series0.size();
-    dVec series = series0; //roll_mean(series0, filter_ws);
+    dVec series = series0; 
     dVec loglik(n); // length out should equal length in
     
     // Compute joint log-likelihood of observations within each window
@@ -350,15 +349,14 @@ IntegerVector LROcp_find(
 // Compute likelihood ratios of change points for a series
 dVec LROcp_logRatio(
     const dVec& series,           // 1D vector of points to test for change points
-    const int& ws,                // Running window size
-    const int& filter_ws          // Size of window for taking rolling mean
+    const int& ws                 // Running window size
   ) {
     
     // Compute the null likelihood at each bin (no change point)
-    dVec loglik_null = series_loglik(series, ws, filter_ws, true);
+    dVec loglik_null = series_loglik(series, ws, true);
     
     // Compute the change-point likelihood at each bin
-    dVec loglik_cp = series_loglik(series, ws, filter_ws, false);
+    dVec loglik_cp = series_loglik(series, ws, false);
     
     // Find the loglik ratio at each bin 
     // ... Expect lik_null to be smaller than lik_cp (i.e., less likely, a worse fit), 
@@ -377,7 +375,6 @@ dVec LROcp_logRatio(
 IntegerMatrix LROcp_array(
     const sMat& series_array,     // 2D matrix of points to test for change points
     const int& ws,                // Running window size
-    const int& filter_ws,         // Size of window for taking rolling mean
     const double& out_mult        // Outlier multiplier
   ) {
     // The test here will treat each column of the matrix as a separate series. 
@@ -398,7 +395,7 @@ IntegerMatrix LROcp_array(
       dVec series = to_dVec(series_array.col(s));
       
       // Find the likelihood ratios of change points for this series
-      dVec loglik_ratio = LROcp_logRatio(series, ws, filter_ws);
+      dVec loglik_ratio = LROcp_logRatio(series, ws);
       
       // Save in array 
       loglik_ratio_array.column(s) = to_NumVec(loglik_ratio);
