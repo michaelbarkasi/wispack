@@ -258,7 +258,7 @@ dVec series_loglik(
     // Assumes points are normally distributed about their process rate
     
     int n = series0.size();
-    dVec series = roll_mean(series0, filter_ws);
+    dVec series = series0; //roll_mean(series0, filter_ws);
     dVec loglik(n); // length out should equal length in
     
     // Compute joint log-likelihood of observations within each window
@@ -425,8 +425,8 @@ IntegerMatrix LROcp_array(
       for (int i = 0; i < found_cp_array.ncol(); i++) {
         found_cp_array.column(i) = found_cp_array.column(i) - 1;
         for (int k = 0; k < found_cp_array.nrow(); k++) {
-          if (found_cp_array(k, i) < filter_ws) {found_cp_array(k, i) = filter_ws;}
-          if (found_cp_array(k, i) > n_samples - filter_ws) {found_cp_array(k, i) = n_samples - filter_ws;}
+          if (found_cp_array(k, i) < ws) {found_cp_array(k, i) = ws;}
+          if (found_cp_array(k, i) > n_samples - ws) {found_cp_array(k, i) = n_samples - ws;}
         }
       }
       return found_cp_array;
