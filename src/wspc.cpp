@@ -221,6 +221,7 @@ wspc::wspc(
               ran(idx) = ran_lvls[r];
               treatment(idx) = treatment_lvls[t];
               weights.row(idx) = weight_rows.row(t);
+              // ^ ... weights is a matrix saying whether the effect from a given treatment level should apply when computing the effect of another treatment level.
               
               // Find token pool
               LogicalVector token_mask = treatment_mask & bin_masks.column(b);

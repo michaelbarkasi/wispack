@@ -442,8 +442,10 @@ std::vector<dVec> est_bkRates_tRuns(
     const IntegerVector& cp_series,     // found change points
     const double& rise_threshold_factor // amount of detected rise as fraction of total required to end run
   ) {
+    // Grab bin number and series length
     int deg = n_blocks - 1;
     int bin_num_i = count_series.size();
+    // Initialize vectors for block rate and run estimates
     dVec Rt_est(n_blocks); 
     dVec run_estimates(n_blocks - 1);
     NumericVector block_sizes(n_blocks);
@@ -464,10 +466,10 @@ std::vector<dVec> est_bkRates_tRuns(
       block_sizes[bk] = bin_end - bin_start;
       // ... take mean of count values in this range
       Rt_est[bk] = vmean_range(count_series, bin_start, bin_end);
-      // ... estimate run, number of blocks needed to complete rate transition
+      // ... estimate run, number of bins needed to complete rate transition
       if (bk > 0) {
-        int bb = 0;
-        int bf = 0;
+        int bb = 0; // count of bins stepped back
+        int bf = 0; // count of bins stepped forward
         double rise_found = 0.0;
         double rise_threshold = (Rt_est[bk] - Rt_est[bk - 1]) * rise_threshold_factor;
         double sign = 1.0;
