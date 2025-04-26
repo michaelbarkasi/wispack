@@ -1519,7 +1519,7 @@ Rcpp::NumericMatrix wspc::MCMC(
     // Fit full model 
     vprint("Performing initial fit of full data", verbose);
     fit(
-      false, // don't bother setting parameters
+      true,  // set fitted parameters
       false  // don't print anything
     );
     double pnll = optim_results["penalized_neg_loglik"]; 
