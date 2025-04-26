@@ -260,21 +260,13 @@ wisp <- function(
 # Helper function for computing p_values from bootstraps or MCMC samples
 pvalues.samples <- function(
     mu.B,    # vector of bootstrapped or MCMC estimates
-    mu.obs,  # observed value, either mean of mu.B or actual observation
-    lower.tail.only = FALSE
+    mu.obs  # observed value, either mean of mu.B or actual observation
   ) {
-    
-    if (lower.tail.only) return(mean((mu.B - mean(mu.B)) + mu.obs <= 0))
-    else return(mean(abs(mu.B - mean(mu.B)) >= abs(mu.obs)))
-    
-    # Basic idea (two-tailed): Instead of centering data > bootstrapping > estimate parameter, bootstrap > estimate parameter > center data
-    
-    # Basic idea (one-tailed): Want to test if mu.obs < 0, based on variation of values in mu.B < mu.obs
-    # ... "(mu.B - mean(mu.B))" is < 0 iff the bs is less than the mean
-    # ... If "(mu.B - mean(mu.B)) + mu.obs" is < 0 and mu.obs > 0, then "(mu.B - mean(mu.B))" is undersized by amount greater than mu.obs's distance from 0
-    # ... If "(mu.B - mean(mu.B)) + mu.obs" is < 0 and mu.obs < 0, then "(mu.B - mean(mu.B))" is not oversized by amount greater than mu.obs's distance from 0
-    # ... Idea for p value: Want to quantify the number of bs that are either undersized more than the obs exceeds 0, or not oversized enough to compensate for the distance of mu.obs under 0
-    
+    # equivalent to: mean(abs(mu.B - mean(mu.B)) >= abs(mu.obs))
+    Fn <- ecdf(abs(mu.B))
+    return(
+      1 - Fn(abs(mu.obs))
+    )
   }
 
 # Function for running stat analysis of bootstraps
@@ -330,7 +322,7 @@ sample.stats <- function(
       sample.params_ci <- apply(sample_results, 2, quantile, probs = c(alpha/2, 1 - alpha/2))
       
       # Estimate p_values from bs params
-      if (verbose) snk.report...("Estimating p-values from bootstraped parameters")
+      if (verbose) snk.report...("Estimating p-values from resampled parameters")
       p_values <- rep(NA, n_params)
       p_values_adj <- rep(NA, n_params)
       sig_marks <- rep(" ", n_params)
@@ -339,7 +331,7 @@ sample.stats <- function(
           p_values[n] <- pvalues.samples(sample_results[,n], fitted_params[n]) 
         } else if (baseline_mask[n]) {
           if (tslope_mask[n]) { # testing slope
-            p_values[n] <- pvalues.samples(sample_results[,n] - 0, fitted_params[n] - 0, lower.tail.only = TRUE) 
+            p_values[n] <- pvalues.samples(sample_results[,n] - 0, fitted_params[n] - 0) 
             # Basic idea: A slope < 1 is unstably shallow and suggests that there is no transition point here
             #   ... hence, expect to rest the value - 1; however, the model uses the exp of the parameter, so zero becomes our 1. 
           } else { # testing "log-linked" rate, i.e., true rate is exp of this number
@@ -354,6 +346,15 @@ sample.stats <- function(
       # Sanity check
       num_of_tests <- sum(test_mask | baseline_mask)
       if (num_of_tests != sum(!is.na(p_values))) stop("Problem with p-value calculation")
+      
+      # Check resample size 
+      recommended_resample_size <- alpha / num_of_tests 
+      if (verbose) {
+        snk.report(paste0("Recommended resample size for alpha = ", alpha, ", ", num_of_tests, "tests"))
+        snk.print_vec("with bootstrapping", c(recommended_resample_size))
+        snk.print_vec("with MCMC", c(recommended_resample_size*10))
+        snk.print_vec("Actual resample size", c(nrow(sample_results)))
+      }
       
       # Estimate significance, adjusting for multiple comparisons
       if (!Bonferroni) {
@@ -525,8 +526,8 @@ check.tpoint.stability <- function(
                   if (length(bs_col_idx) < 2) stop("Problem computing TPS in treatment condition (no effects present, baseline only)")
                   implied_bs_slopes <- rowSums(sample.params[,bs_col_idx])
                   
-                  # Compute p_value ("- 1" and lower-tail only because checking if significantly greater than 1)
-                  p_value <- pvalues.samples(implied_bs_slopes - 0, mean(implied_bs_slopes) - 0, lower.tail.only = TRUE) 
+                  # Compute p_value ("- 1" because checking if significantly greater than 1)
+                  p_value <- pvalues.samples(implied_bs_slopes - 0, mean(implied_bs_slopes) - 0) 
                   
                   # Test for significance
                   if (p_value < min(wisp.results$stats$parameters$alpha.adj[bs_col_idx], na.rm = TRUE)) df[r,paste0("TPS.",fe)] <- TRUE
