@@ -582,6 +582,7 @@ wspc::wspc(
     param_beta_Rt_idx = params["param_beta_Rt_idx"];
     param_beta_tslope_idx = params["param_beta_tslope_idx"];
     param_beta_tpoint_idx = params["param_beta_tpoint_idx"];
+    param_baseline_idx = params["param_baseline_idx"];
     beta_idx = params["beta_idx"];
     wfactor_idx = params["wfactor_idx"];
     if (verbose) {vprint("Number of parameters: ", (int)fitted_parameters.size());}
@@ -1576,8 +1577,14 @@ Rcpp::NumericMatrix wspc::MCMC(
             params_next(i) = R::rnorm(params_current(i), bounded_step_size);
           }
           // While looping, compute priors for this random step
-          prior_current += log_dNorm(params_current(i), 0.0, 1.0);
-          prior_next += log_dNorm(params_next(i), 0.0, 1.0);
+          std::string this_param = Rcpp::as<std::string>(param_names[i]);
+          if (
+              !(pattern_match("baseline", this_param) && pattern_match("tpoint", this_param))
+              // ... baseline tpoint values are uniformly distributed
+          ) {
+            prior_current += log_dNorm(params_current(i), 0.0, 1.0);
+            prior_next += log_dNorm(params_next(i), 0.0, 1.0);
+          }
         }
       } else {
         params_current = RMW_steps.row(last_viable_step);

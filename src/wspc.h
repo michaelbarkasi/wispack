@@ -116,6 +116,7 @@ class wspc {
     IntegerVector param_beta_Rt_idx;
     IntegerVector param_beta_tslope_idx;
     IntegerVector param_beta_tpoint_idx;
+    IntegerVector param_baseline_idx;
     List beta_idx;                          // ... lists giving the structured array indices for named parameters
     List wfactor_idx; 
     IntegerVector gv_ran_idx;               // ... indices (row and column) for random effect arrays 
@@ -449,6 +450,9 @@ CharacterVector idx_vec(CharacterVector vec, Rcpp::IntegerVector idx);
 
 // Find matches in character vector
 IntegerVector grep_cpp(CharacterVector V, std::string pattern);
+
+// Find matches in string
+bool pattern_match(std::string pattern, std::string test);
 
 // Sequence generation
 // -------------------

@@ -476,6 +476,18 @@ IntegerVector grep_cpp(
     return idx;
   }
 
+// Find matches in string
+bool pattern_match(
+    std::string pattern,
+    std::string test
+  ) {
+    bool match = false;
+    if (test.find(pattern) != std::string::npos) {
+      match = true; 
+    }
+    return match;
+  }
+
 // Sequence generation *************************************************************************************************
 
 // Sequence of doubles

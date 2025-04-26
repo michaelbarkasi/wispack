@@ -197,6 +197,7 @@ List make_parameter_vector(
     iVec param_beta_Rt_idx;        // ... Excluding ref level (same below)
     iVec param_beta_tslope_idx;
     iVec param_beta_tpoint_idx;
+    iVec param_baseline_idx;
     List beta_idx = clone(beta);
     List wfactor_idx = clone(wfactor); 
     
@@ -265,6 +266,8 @@ List make_parameter_vector(
                   } else if (mc == "tpoint") {   
                     param_beta_tpoint_idx.push_back(idx);
                   }   
+                } else {
+                  param_baseline_idx.push_back(idx);
                 }
                 beta_idx_mc_prt_cld.push_back(idx);
                 idx++;  
@@ -363,6 +366,7 @@ List make_parameter_vector(
       _["param_beta_Rt_idx"] = wrap(param_beta_Rt_idx),
       _["param_beta_tslope_idx"] = wrap(param_beta_tslope_idx),
       _["param_beta_tpoint_idx"] = wrap(param_beta_tpoint_idx),
+      _["param_baseline_idx"] = wrap(param_baseline_idx),
       _["beta_idx"] = beta_idx,
       _["wfactor_idx"] = wfactor_idx
     );
