@@ -1932,6 +1932,37 @@ project_cp <- function(
     
   }
 
+# For trying out warping function in R
+WSP.warp <- function( 
+    x, # value to warp, either a scalar, vector, or 2D array/matrix
+    b, # warping bound
+    w  # warping factor
+  ) {
+    
+    if (length(b) != 1) stop("b must be a single value for warping bound")
+    if (length(w) != 1) stop("w must be a single value for warping factor")
+    if (!(length(x) > 0)) stop("x must be a vector or matrix of values to warp, but has length zero")
+    if (max(x) > b) stop("x must be less than or equal to b")
+    
+    if (is.null(dim(x)) || length(dim(x)) == 1) {
+      out <- rep(NA, length(x))
+      for (i in 1:length(x)) {
+        out[i] <- warp_mc_R(x[i], b, w)
+      }
+    } else if (length(dim(x)) == 2) {
+      out <- array(NA, dim = dim(x))
+      for (i in 1:(dim(x)[1])) {
+        for (j in 1:(dim(x)[2])) {
+          out[i,j] <- warp_mc_R(x[i,j], b, w)
+        }
+      }
+    } else {
+      stop("x must be a vector or matrix of values to warp, but unrecognized dim attribute detected")
+    }
+    return(out)
+    
+  }
+
 # R.sum and M.hat helper functions to enforce block-rate constraints
 #  ... These are no longer used as part of the prediction or optimization functions (most of that is 
 #      now in cpp only), but these are used in the "make" functions for when generating parameters 

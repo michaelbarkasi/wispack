@@ -183,6 +183,16 @@ sdouble warp_mc(
     return(s + direction * warp_ratio(basis, b, w) * magnitude);
   }
 
+// Wrapper for R
+// [[Rcpp::export]]
+double warp_mc_R(
+    const double& s,        // value to warp
+    const double& b,        // bound on this value 
+    const double& w         // warping parameter
+  ) {
+    return(warp_mc(sdouble(s), sdouble(b), sdouble(w)).val());
+  }
+
 // Numerically stable implementation of sigmoid function
 sdouble sigmoid_stable(
     const sdouble& x
