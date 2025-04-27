@@ -24,6 +24,7 @@ wisp <- function(
     MCMC.burnin = 0,
     MCMC.steps = 1e4,
     MCMC.step.size = 0.05,
+    MCMC.prior = 10.0,
     bootstraps.num = 0, 
     converged.resamples.only = FALSE,
     max.fork = 10,
@@ -105,6 +106,7 @@ wisp <- function(
       MCMC_walk <- cpp_model$MCMC(
         MCMC.steps + MCMC.burnin, 
         MCMC.step.size,
+        MCMC.prior,
         verbose 
       )
       if (MCMC.burnin > 0) {
@@ -124,7 +126,6 @@ wisp <- function(
     }
     
     # Extract bs results and diagnostics
-    
     if (bootstraps.num > 0) {
       n_params <- ncol(sample_results) - 4
       sample.params <- sample_results[,1:n_params]
@@ -134,9 +135,16 @@ wisp <- function(
         success.code = sample_results[,n_params + 3],
         num.evals = sample_results[,n_params + 4]
       )
+      MCMC.diagnostics <- NULL
     } else {
-      n_params <- ncol(MCMC_walk)
-      sample.params <- MCMC_walk
+      n_params <- ncol(MCMC_walk) - 4
+      sample.params <- MCMC_walk[,1:n_params]
+      MCMC.diagnostics <- data.frame(
+        pen.neg.value = MCMC_walk[,n_params + 1],
+        neg.loglik = MCMC_walk[,n_params + 2], 
+        acceptance.ratio = MCMC_walk[,n_params + 3],
+        ctr.num = MCMC_walk[,n_params + 4]
+      )
       bs.diagnostics <- NULL
     }
     
@@ -146,11 +154,7 @@ wisp <- function(
       final_parameters <- apply(sample.params, 2, function(x) median(x, na.rm = TRUE))
     } else {
       if (verbose) snk.report...("Setting full-data fit as parameters", initial_breaks = 1, end_breaks = 1)
-      if (bootstraps.num > 0) {
-        final_parameters <- sample.params[bootstraps.num + 1,]
-      } else {
-        final_parameters <- sample.params[1,]
-      }
+      final_parameters <- sample.params[nrow(sample.params),]
     }
     cpp_model$set_parameters(
       final_parameters,
@@ -161,6 +165,7 @@ wisp <- function(
     results <- cpp_model$results()
     results[["sample.params"]] <- sample.params
     results[["bs.diagnostics"]] <- bs.diagnostics
+    results[["MCMC.diagnostics"]] <- MCMC.diagnostics
     
     # Add variable names 
     results[["variables"]] <- variables
