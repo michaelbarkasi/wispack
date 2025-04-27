@@ -259,6 +259,7 @@ class wspc {
     Rcpp::NumericMatrix MCMC(
         int n_steps,                        // Number of steps to take in random walk
         double step_size,                   // Step size for random walk
+        double prior_sd,                    // Standard deviation of prior distribution
         bool verbose
     );
     
@@ -287,14 +288,19 @@ class wspc {
     // ***** misc and debugging 
     
     // Wrap neg_loglik in form needed for R
+    double neg_loglik_debug(
+        const dVec& x
+    );
+    
+    // Wrap bounded_nll in form needed for R
     double bounded_nll_debug(
         const dVec& x
     );
     
-    // Wrap neg_loglik in form needed for R
+    // Wrap grad_bounded_nll_debug in form needed for R
     Rcpp::NumericVector grad_bounded_nll_debug(
         const dVec& x 
-    );
+    ) const;
   
 };
 

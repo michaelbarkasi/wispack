@@ -1403,7 +1403,8 @@ Rcpp::NumericMatrix wspc::bs_batch(
     NumericMatrix bs_results(r_num, c_num);
     
     // Save results from initial full fit
-    dVec full_results = to_dVec(fitted_parameters);
+    NumericVector these_results = optim_results["fitted_parameters"];
+    dVec full_results = to_dVec(these_results);
     full_results.reserve(full_results.size() + 4);
     full_results.push_back(Rcpp::as<double>(optim_results["penalized_neg_loglik"]));
     full_results.push_back(Rcpp::as<double>(optim_results["neg_loglik"]));
@@ -1511,6 +1512,7 @@ Rcpp::NumericMatrix wspc::bs_batch(
 Rcpp::NumericMatrix wspc::MCMC(
     int n_steps,              // Number of steps to take in random walk
     double step_size,         // Step size for random walk
+    double prior_sd,          // standard deviation to use in prior
     bool verbose
   ) {
     
@@ -1520,18 +1522,29 @@ Rcpp::NumericMatrix wspc::MCMC(
     // Fit full model 
     vprint("Performing initial fit of full data", verbose);
     fit(
-      true,  // set fitted parameters
-      false  // don't print anything
+      false,  // don't set fitted parameters
+      false   // don't print anything
     );
     double pnll = optim_results["penalized_neg_loglik"]; 
     if (verbose) {vprint("Penalized neg_loglik: ", pnll);}
     
     // Initiate variables to hold results
     const int n_params = fitted_parameters.size();
-    NumericMatrix RMW_steps(n_steps, n_params);
+    const int c_num = n_params + 4;
+    const int r_num = n_steps + 1;
+    NumericMatrix RMW_steps(r_num, c_num);
     
-    // Save current parameters as first step of RMW
-    RMW_steps.row(0) = fitted_parameters;
+    // Save results from initial full fit
+    NumericVector these_results = optim_results["fitted_parameters"];
+    dVec full_results = to_dVec(these_results);
+    full_results.reserve(full_results.size() + 4);
+    full_results.push_back(Rcpp::as<double>(optim_results["penalized_neg_loglik"]));
+    full_results.push_back(Rcpp::as<double>(optim_results["neg_loglik"]));
+    full_results.push_back(double(1.0)); // acceptance ratio
+    full_results.push_back(double(0.0)); // ctr number
+    
+    // Save full fit results in last row of results matrix
+    RMW_steps.row(n_steps) = to_NumVec(full_results);
     
     // Run MCMC simulation
     int step = 0;
@@ -1539,12 +1552,13 @@ Rcpp::NumericMatrix wspc::MCMC(
     int inf_loop_ctr = 0;
     int last_viable_step = 0;
     double acceptance_rate = 1.0;
-    IntegerVector tracker = iseq(n_steps/10, n_steps - 1, 10);
+    IntegerVector tracker = iseq(n_steps/10, n_steps, 10);
     // Grab current point (model parameters) in random walk
-    NumericVector params_current = RMW_steps.row(step);
+    NumericVector params_current = fitted_parameters;
+    NumericVector last_viable_parameters = params_current;
     
     // Take steps, Random-walk Metropolois algorithm
-    while (step < n_steps - 1) {
+    while (step < n_steps) {
       
       // Initialize priors 
       double prior_current = 0.0;
@@ -1582,12 +1596,12 @@ Rcpp::NumericMatrix wspc::MCMC(
               !(pattern_match("baseline", this_param) && pattern_match("tpoint", this_param))
               // ... baseline tpoint values are uniformly distributed
           ) {
-            prior_current += log_dNorm(params_current(i), 0.0, 1.0);
-            prior_next += log_dNorm(params_next(i), 0.0, 1.0);
+            prior_current += log_dNorm(params_current(i), 0.0, prior_sd);
+            prior_next += log_dNorm(params_next(i), 0.0, prior_sd);
           }
         }
       } else {
-        params_current = RMW_steps.row(last_viable_step);
+        params_current = last_viable_parameters;
         step = last_viable_step;
         continue;
       }
@@ -1611,12 +1625,18 @@ Rcpp::NumericMatrix wspc::MCMC(
           int this_step_batch = Rwhich(eq_left_broadcast(tracker, step))[0];
           Rcpp::Rcout << "step: " << (this_step_batch + 1) * (n_steps/tracker.size()) << "/" << n_steps << std::endl;
         }
-        // Advance step
-        step++;
-        // Save new parameters
-        RMW_steps.row(step) = params_next;
+        // Save new parameters and results
+        dVec full_results = to_dVec(params_next);
+        full_results.reserve(full_results.size() + 4);
+        full_results.push_back(-loglik_next);
+        full_results.push_back(-loglik_next - (bd_current_transformed.val() - 1.0));
+        full_results.push_back(acceptance); // acceptance ratio
+        full_results.push_back(double(ctr + 0.0)); // ctr number
+        RMW_steps.row(step) = to_NumVec(full_results);
         // Set new parameters as current 
         params_current = params_next;
+        // Advance step
+        step++;
       } 
       
       // Advance counters
@@ -1629,7 +1649,7 @@ Rcpp::NumericMatrix wspc::MCMC(
         if (acceptance_rate < 0.01) {
           // ... go back to last viable step
           step = last_viable_step;
-          params_current = RMW_steps.row(last_viable_step);
+          params_current = last_viable_parameters;
           vprint("Infinite loop suspected, resetting parameters to last viable set.", verbose);
         } else {
           // ... update last viable step
@@ -1958,6 +1978,25 @@ Rcpp::List wspc::results() {
  */
 
 // Wrap neg_loglik in form needed for R
+double wspc::neg_loglik_debug(
+    const dVec& x
+  ) {
+    
+    // Convert to sVec
+    sVec parameters_var = to_sVec(x);
+    
+    // Compute neg_loglik
+    double negloglik = neg_loglik(parameters_var).val();
+    
+    // Clear stan memory
+    clear_stan_mem(); 
+    
+    // Return as double
+    return negloglik;
+    
+  }
+
+// Wrap bounded_nll in form needed for R
 double wspc::bounded_nll_debug(
     const dVec& x
   ) { 
@@ -1971,17 +2010,20 @@ double wspc::bounded_nll_debug(
     sVec parameters_var = to_sVec(x);
     
     // Compute bounded_nll
-    sdouble fx = bounded_nll(parameters_var);
+    double fx = bounded_nll(parameters_var).val();
     
-    // Return the value of the neg_loglik
-    return fx.val(); 
+    // Clear stan memory
+    clear_stan_mem(); 
+    
+    // Return the value of the bounded_nll
+    return fx; 
     
   } 
 
-// Wrap neg_loglik in form needed for R
+// Wrap grad_bounded_nll_debug in form needed for R
 Rcpp::NumericVector wspc::grad_bounded_nll_debug(
     const dVec& x 
-  ) { 
+  ) const { 
     
     /*
      * This function is just for testing and debugging, e.g., 
@@ -2000,7 +2042,7 @@ Rcpp::NumericVector wspc::grad_bounded_nll_debug(
       grad_fx_R[i] = grad_fx(i);
     } 
     
-    // Return the value of the neg_loglik
+    // Return the value of the grad of bounded_nll
     return grad_fx_R; 
     
   }  
@@ -2013,6 +2055,7 @@ RCPP_MODULE(wspc) {
     .field("optim_results", &wspc::optim_results)
     .field("fitted_parameters", &wspc::fitted_parameters)
     .method("set_parameters", &wspc::set_parameters)
+    .method("neg_loglik_debug", &wspc::neg_loglik_debug)
     .method("bounded_nll_debug", &wspc::bounded_nll_debug)
     .method("grad_bounded_nll_debug", &wspc::grad_bounded_nll_debug)
     .method("fit", &wspc::fit)
