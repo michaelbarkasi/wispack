@@ -379,9 +379,9 @@ sample.stats <- function(
       if (num_of_tests != sum(!is.na(p_values))) stop("Problem with p-value calculation")
       
       # Check resample size 
-      recommended_resample_size <- alpha / num_of_tests 
+      recommended_resample_size <- num_of_tests / alpha
       if (verbose) {
-        snk.report(paste0("Recommended resample size for alpha = ", alpha, ", ", num_of_tests, "tests"))
+        snk.report(paste0("Recommended resample size for alpha = ", alpha, ", ", num_of_tests, " tests"))
         snk.print_vec("with bootstrapping", c(recommended_resample_size))
         snk.print_vec("with MCMC", c(recommended_resample_size*10))
         snk.print_vec("Actual resample size", c(nrow(sample_results)))
