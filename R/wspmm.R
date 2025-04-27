@@ -27,6 +27,8 @@ wisp <- function(
     bootstraps.num = 0, 
     converged.resamples.only = FALSE,
     max.fork = 10,
+    null.rate = 1,
+    null.slope = 1,
     dim.bounds = NULL, 
     verbose = TRUE,
     print.child.summaries = TRUE,
@@ -180,6 +182,8 @@ wisp <- function(
     results$stats$parameters <- sample.stats(
       wisp.results = results,
       conv.resamples.only = converged.resamples.only,
+      null.rate = null.rate,
+      null.slope = null.slope,
       verbose = verbose
     )
     
@@ -259,11 +263,13 @@ wisp <- function(
 
 # Helper function for computing p_values from bootstraps or MCMC samples
 pvalues.samples <- function(
-    mu.B,    # vector of bootstrapped or MCMC estimates
-    mu.obs  # observed value, either mean of mu.B or actual observation
+    mu.B,       # vector of bootstrapped or MCMC estimates
+    mu.obs,     # observed value, either mean of mu.B or actual observation
+    mu.null = 0 # null hypothesis value, usually 0
   ) {
-    # equivalent to: mean(abs(mu.B - mean(mu.B)) >= abs(mu.obs))
-    Fn <- ecdf(abs(mu.B))
+    # Basic idea: Instead of centering data > bootstrapping > estimate parameter, bootstrap > estimate parameter > center data
+    # equivalent to: mean(abs(mu.B - mean(mu.B) + mu.null) >= abs(mu.obs))
+    Fn <- ecdf(abs(mu.B - mean(mu.B) + mu.null))
     return(
       1 - Fn(abs(mu.obs))
     )
@@ -275,6 +281,8 @@ sample.stats <- function(
     alpha = 0.05,
     Bonferroni = FALSE,
     conv.resamples.only = TRUE,
+    null.rate = 1,
+    null.slope = 1,
     verbose = TRUE
   ) {
     
@@ -311,6 +319,7 @@ sample.stats <- function(
       
       # Grabbing indexes of parameters to test
       fitted_params_names <- wisp.results$param.names
+      baselineRt_mask <- grepl("baseline", fitted_params_names) & grepl("Rt", fitted_params_names)        # mask for baseline rate values
       baseline_mask <- grepl("baseline", fitted_params_names) & !grepl("tpoint", fitted_params_names)     # mask for baseline rate and tslope values
       tslope_mask <- grepl("tslope", fitted_params_names)                                                 # mask for tslope values
       beta_w_mask <- grepl("beta_Rt|beta_tslope|beta_tpoint|wfactor", fitted_params_names)                # only want to test fixed-effect and wfactor parameters (no baseline parameters)
@@ -331,13 +340,23 @@ sample.stats <- function(
           p_values[n] <- pvalues.samples(sample_results[,n], fitted_params[n]) 
         } else if (baseline_mask[n]) {
           if (tslope_mask[n]) { # testing slope
-            p_values[n] <- pvalues.samples(sample_results[,n] - 0, fitted_params[n] - 0) 
-            # Basic idea: A slope < 1 is unstably shallow and suggests that there is no transition point here
-            #   ... hence, expect to rest the value - 1; however, the model uses the exp of the parameter, so zero becomes our 1. 
+            # Find rise: 
+            gene_name <- sub(".*tslope_(.*?)_Tns/Blk.*", "\\1", fitted_params_names[n])
+            gene_Rt_mask <- grepl(gene_name, fitted_params_names) & baselineRt_mask
+            block_num <- sub(".*_Tns/Blk(.*)", "\\1", fitted_params_names[n])
+            block_num_next <- as.character(as.integer(block_num) + 1)
+            block_num <- paste0("Tns/Blk", block_num)
+            block_num_next <- paste0("Tns/Blk", block_num_next)
+            this_Rt_mask <- gene_Rt_mask & grepl(block_num, fitted_params_names)
+            next_Rt_mask <- gene_Rt_mask & grepl(block_num_next, fitted_params_names)
+            this_Rt <- fitted_params[this_Rt_mask]
+            next_Rt <- fitted_params[next_Rt_mask]
+            rise <- next_Rt - this_Rt
+            if (is.na(rise) || is.infinite(rise)) stop("Problem with rise calculation")
+            # Compute p-value
+            p_values[n] <- pvalues.samples(sample_results[,n], fitted_params[n], null.slope/rise) 
           } else { # testing "log-linked" rate, i.e., true rate is exp of this number
-            p_values[n] <- pvalues.samples(sample_results[,n], fitted_params[n]) 
-            # ^ ... These values can be negative, meaning unlinked (i.e., taking exp) they are less than 1, which we interpret as not expressed
-            #   ... As there are multiple cells per bin, perhaps the cutoff shouldn't be 1, but the number of cells (so avg is 1)??
+            p_values[n] <- pvalues.samples(sample_results[,n], fitted_params[n], null.rate) 
           }
         }
         if (is.na(p_values[n]) && (test_mask[n] || baseline_mask[n])) stop("Problem with p-value calculation, NA")
