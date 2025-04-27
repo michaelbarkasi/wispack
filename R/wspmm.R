@@ -281,7 +281,7 @@ sample.stats <- function(
     alpha = 0.05,
     Bonferroni = FALSE,
     conv.resamples.only = TRUE,
-    null.rate = 1,
+    null.rate = log(2),
     null.slope = 1,
     verbose = TRUE
   ) {
@@ -317,6 +317,13 @@ sample.stats <- function(
       fitted_params <- wisp.results$fitted.parameters
       n_params <- length(fitted_params)
       
+      # Grab count data 
+      log_count <- wisp.results$count.data.summed$count.log
+      child_col <- wisp.results$count.data.summed$child
+      parent_col <- wisp.results$count.data.summed$parent
+      ref_none_mask <- wisp.results$count.data.summed$ran == "none" & wisp.results$count.data.summed$treatment == "ref"
+      max_bin <- max(wisp.results$count.data.summed$bin)
+      
       # Grabbing indexes of parameters to test
       fitted_params_names <- wisp.results$param.names
       baselineRt_mask <- grepl("baseline", fitted_params_names) & grepl("Rt", fitted_params_names)        # mask for baseline rate values
@@ -341,20 +348,25 @@ sample.stats <- function(
         } else if (baseline_mask[n]) {
           if (tslope_mask[n]) { # testing slope
             # Find rise: 
-            gene_name <- sub(".*tslope_(.*?)_Tns/Blk.*", "\\1", fitted_params_names[n])
-            gene_Rt_mask <- grepl(gene_name, fitted_params_names) & baselineRt_mask
+            parent_name <- sub(".*baseline_(.*?)_tslope.*", "\\1", fitted_params_names[n])
+            child_name <- sub(".*tslope_(.*?)_Tns/Blk.*", "\\1", fitted_params_names[n])
+            parent_child_Rt_mask <- grepl(parent_name, fitted_params_names) & grepl(child_name, fitted_params_names) & baselineRt_mask
             block_num <- sub(".*_Tns/Blk(.*)", "\\1", fitted_params_names[n])
             block_num_next <- as.character(as.integer(block_num) + 1)
             block_num <- paste0("Tns/Blk", block_num)
             block_num_next <- paste0("Tns/Blk", block_num_next)
-            this_Rt_mask <- gene_Rt_mask & grepl(block_num, fitted_params_names)
-            next_Rt_mask <- gene_Rt_mask & grepl(block_num_next, fitted_params_names)
+            this_Rt_mask <- parent_child_Rt_mask & grepl(block_num, fitted_params_names)
+            next_Rt_mask <- parent_child_Rt_mask & grepl(block_num_next, fitted_params_names)
             this_Rt <- fitted_params[this_Rt_mask]
             next_Rt <- fitted_params[next_Rt_mask]
             rise <- next_Rt - this_Rt
             if (is.na(rise) || is.infinite(rise)) stop("Problem with rise calculation")
+            # Find mean of log-linked count
+            count_mask <- parent_col == parent_name & child_col == child_name & ref_none_mask
+            mean_log_count <- mean(log_count[count_mask], na.rm = TRUE)
+            rise_run_scalar <- mean_log_count / max_bin
             # Compute p-value
-            p_values[n] <- pvalues.samples(sample_results[,n], fitted_params[n], null.slope/rise) 
+            p_values[n] <- pvalues.samples(sample_results[,n], fitted_params[n], null.slope*rise_run_scalar/rise) 
           } else { # testing "log-linked" rate, i.e., true rate is exp of this number
             p_values[n] <- pvalues.samples(sample_results[,n], fitted_params[n], null.rate) 
           }
