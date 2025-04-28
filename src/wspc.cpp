@@ -1583,8 +1583,11 @@ Rcpp::NumericMatrix wspc::MCMC(
           // ... calculate step size
           double normalized_step_size = step_size * std::abs(params_current(i)) + step_size;
           double bounded_step_size = normalized_step_size / bd_current_transformed.val();
-          if (bounded_step_size <= 0.0) {
-            // ... not analytically possible, but in case of numerical error
+          if (bounded_step_size == 0.0) {
+            // ... presumably this case means current parameter is extremely close to zero or very close to boundary
+            params_next(i) = R::rnorm(params_current(i), step_size);
+          } else if (bounded_step_size < 0.0) {
+            // ... no analytically possible, but here in case of programming issues
             params_next(i) = params_current(i);
           } else {
             // ... take next step
