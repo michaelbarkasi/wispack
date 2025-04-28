@@ -26,9 +26,9 @@ wisp <- function(
     MCMC.step.size = 0.05,
     MCMC.prior = 10.0,
     bootstraps.num = 0, 
-    converged.resamples.only = FALSE,
+    converged.resamples.only = TRUE,
     max.fork = 10,
-    null.rate = 1,
+    null.rate = log(2),
     null.slope = 1,
     dim.bounds = NULL, 
     verbose = TRUE,
@@ -43,7 +43,7 @@ wisp <- function(
       rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
       max_evals = 1000,                           # maximum number of evaluations for optimization
       rng_seed = 42,                              # seed for random number generator
-      warp_precision = 1e-7                       # precision for calculations in warp function
+      warp_precision = 1e-7                       # decimal precision to retain when selecting really big number as pseudo infinity for unbound warping
     )
   ) {
     
