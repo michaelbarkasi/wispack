@@ -209,7 +209,7 @@ wisp <- function(
     
     # Make plots of results ####
     
-    # Plot MCMC walks 
+    # Plot MCMC walks, both parameters and negloglik
     if (bootstraps.num == 0) {
       plots.MCMC <- plot.MCMC.walks(
         wisp.results = results
@@ -1784,12 +1784,42 @@ plot.MCMC.walks <- function(
       step = rep(1:nrow(sampled_params), ncol(sampled_params))
     )
     
-    plot.walks <- ggplot(data = walks, 
+    # Make plot
+    plot.walks.parameters <- ggplot(data = walks, 
                    aes(x = step, y = value, group = param, color = param)) + 
       geom_line() + 
       ggtitle("Parameter Walks from MCMC Estimation") +
       theme_minimal()
-    print(plot.walks)
+    print(plot.walks.parameters)
+    
+    # Grab trace of negloglik and normalize
+    nll <- unlist(wisp.results[["MCMC.diagnostics"]][["neg.loglik"]])
+    pnll <- unlist(wisp.results[["MCMC.diagnostics"]][["pen.neg.value"]])
+    nll <- (nll - nll[1]) / nll[1]
+    pnll <- (pnll - pnll[1]) / pnll[1]
+    ymin <- min(c(nll, pnll))
+    ymax <- max(c(nll, pnll))
+    
+    # Manually create long-format data frame
+    df_long <- data.frame(
+      iteration = c(seq_along(nll), seq_along(pnll)),
+      value = c(nll, pnll),
+      type = c(rep("neg.loglik", length(nll)), rep("penalized", length(pnll)))
+    )
+    
+    # Plot
+    plot.walks.nll <- ggplot(df_long, aes(x = iteration, y = value, color = type)) +
+      geom_line() +
+      scale_color_manual(values = c("neg.loglik" = "blue", "penalized" = "red")) +
+      coord_cartesian(ylim = c(ymin, ymax)) +  
+      theme_minimal() +
+      labs(
+        x = "MCMC step number", 
+        y = "Normalized Value", 
+        title = "Negative log likelihood over MCMC random walk", 
+        color = "Type"
+        )
+    print(plot.walks.nll)
     
   }
 

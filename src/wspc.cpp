@@ -1299,8 +1299,8 @@ void wspc::fit(
     } 
     
     // Save optimization results
-    fitted_parameters = to_NumVec(x);
-    optim_results["fitted_parameters"] = fitted_parameters; // for predicting log-linked count
+    //fitted_parameters = to_NumVec(x);
+    optim_results["fitted_parameters"] = to_NumVec(x); // for predicting log-linked count
     optim_results["penalized_neg_loglik"] = min_fx;
     optim_results["neg_loglik"] = final_nll.val();
     optim_results["success_code"] = success_code;
