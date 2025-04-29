@@ -2036,18 +2036,18 @@ demo_warp <- function(
     
     # Make the ggplot
     demo_plot_warpfunction <- ggplot(df, aes(x = x, y = y, color = curve)) +
-      geom_line(linewidth = 1.5) +
+      geom_line(linewidth = 1.25) +
       geom_hline(yintercept = 100, linetype = "dashed", color = "darkgray", linewidth = 1) +
       geom_hline(yintercept = 0, linetype = "dashed", color = "darkgray", linewidth = 1) +
       #coord_fixed(ratio = 1) +
       geom_segment(
         data = df_segments,
         aes(x = point_pos, xend = point_pos, y = point_pos, yend = y_pos),
-        color = "blue4", linetype = "dashed", linewidth = 0.75) + 
+        color = "cyan4", linetype = "dashed", linewidth = 0.75) + 
       geom_segment(
         data = df_segments,
         aes(x = point_neg, xend = point_neg, y = point_neg, yend = y_neg),
-        color = "red4", linetype = "dashed", linewidth = 0.75) +
+        color = "deeppink4", linetype = "dashed", linewidth = 0.75) +
       annotate("text", x = 10, y = 95, label = "upper asymptote", size = 7.5, color = "black") +
       annotate("text", x = 90, y = 5, label = "lower asymptote", size = 7.5, color = "black") +
       annotate("text", x = point_pos - 10, y = (y_pos + point_pos)/2, label = expression(varphi * "(z)(b - z)"), size = 7.5, color = "black") +
@@ -2059,7 +2059,7 @@ demo_warp <- function(
         color = "Direction"
       ) +
       scale_color_manual(
-        values = c("black", "red", "blue"),
+        values = c("black", "deeppink2", "cyan3"),
         labels = c(expression(rho * " = 0"), expression(rho * " < 0"), expression(rho * " > 0"))
       ) +
       theme_minimal(base_size = 16) +
