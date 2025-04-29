@@ -2000,13 +2000,18 @@ WSP.warp <- function(
 
 # Pre-made plot to explain warping function
 demo_warp <- function(
-    w = 2, # warping factor
+    w = 2,                       # warping factor
     point_pos = 60,
-    point_neg = 40
+    point_neg = 40,
+    Rt = c(6, 3, 0.2, 6)*4.65,   # rates for poly-sigmoid
+    tslope = c(0.4, 0.75, 1),    # slope scalars for poly-sigmoid
+    tpoint = c(15, 38, 80),      # transition points for poly-sigmoid
+    w_factors = c(0.6, -0.9, 0.5)      # warping factors for poly sigmoid
   ) {
     
     # Data
-    x <- (1:1000)/10
+    n <- 1000
+    x <- (1:n)/10
     b <- 100
     y <- x
     y1 <- WSP.warp(x, b, w)
@@ -2030,10 +2035,11 @@ demo_warp <- function(
     )
     
     # Make the ggplot
-    demo_plot <- ggplot(df, aes(x = x, y = y, color = curve)) +
+    demo_plot_warpfunction <- ggplot(df, aes(x = x, y = y, color = curve)) +
       geom_line(linewidth = 1.5) +
       geom_hline(yintercept = 100, linetype = "dashed", color = "darkgray", linewidth = 1) +
       geom_hline(yintercept = 0, linetype = "dashed", color = "darkgray", linewidth = 1) +
+      #coord_fixed(ratio = 1) +
       geom_segment(
         data = df_segments,
         aes(x = point_pos, xend = point_pos, y = point_pos, yend = y_pos),
@@ -2048,7 +2054,7 @@ demo_warp <- function(
       annotate("text", x = point_neg + 10, y = (y_neg + point_neg)/2, label = expression(varphi * "(b - z)z"), size = 7.5, color = "black") +
       labs(
         x = "z",
-        y = expression(omega * "(z, " * rho * ", b = 100)"),,
+        y = expression(omega * "(z, " * rho * ", b)"),,
         title = "WSP Warping Function",
         color = "Direction"
       ) +
@@ -2065,8 +2071,157 @@ demo_warp <- function(
         legend.text = element_text(size = 18)
       )
     
+    # Construct poly-sigmoid curve, no warping
+    x <- seq(0, 100, length.out = n)
+    y <- rep(NA, n)
+    deg <- length(Rt)-1
+    for (i in 1:n) y[i] <- poly_sigmoid_R(
+      x[i], # input 
+      deg,    # degree 
+      Rt,     # Rates
+      tslope, # slope scalars
+      tpoint  # inflection points
+    )
+    
+    # Construct poly-sigmoid curve, with warping
+    yw <- rep(NA, n)
+    Rtw <- WSP.warp(Rt, 100000, w_factors[1])
+    tslopew <- WSP.warp(tslope, 100000, w_factors[2])
+    tpointw <- WSP.warp(tpoint, 100, w_factors[3])
+    for (i in 1:n) yw[i] <- poly_sigmoid_R(
+      x[i],    # input 
+      deg,     # degree 
+      Rtw,     # Rates
+      tslopew, # slope scalars
+      tpointw  # inflection points
+    )
+    df <- data.frame(x = c(x, x), y = c(y, yw), type = c(rep("unwarped", n), rep("warped", n)))
+    
+    # Compute slopes 
+    m <- tslope 
+    for (i in 1:length(tslope)) {
+      m[i] <- m[i] * (Rt[i+1] - Rt[i]) / 4
+    }
+    mw <- tslopew
+    for (i in 1:length(tslopew)) {
+      mw[i] <- mw[i] * (Rtw[i+1] - Rtw[i]) / 4
+    }
+    
+    # Make line segments to show slopes
+    y0 <- tpoint 
+    y0w <- tpointw
+    for (i in 1:length(y0)) {
+      y0[i] <- poly_sigmoid_R(
+        y0[i],  # input 
+        deg,    # degree 
+        Rt,     # Rates
+        tslope, # slope scalars
+        tpoint  # inflection points
+      )
+    }
+    for (i in 1:length(y0w)) {
+      y0w[i] <- poly_sigmoid_R(
+        y0w[i],  # input 
+        deg,     # degree 
+        Rtw,     # Rates
+        tslopew, # slope scalars
+        tpointw  # inflection points
+      )
+    }
+    slope_run <- ((max(y)-min(y))/abs(diff(Rt))) * 3 + c(6, 0, 0.5)
+    slope_runw <- ((max(yw)-min(yw))/abs(diff(Rtw))) * 3 + c(6, 0, 0.5)
+    slope_seg_neg <- y0 - slope_run*m 
+    slope_seg_negw <- y0w - slope_runw*mw
+    slope_seg_pos <- y0 + slope_run*m 
+    slope_seg_posw <- y0w + slope_runw*mw
+    
+    # Data frame to hold slope segments for plotting
+    def_segments_slopes <- data.frame(
+      slope_seg_neg_x = tpoint - slope_run,
+      slope_seg_pos_x = tpoint + slope_run,
+      slope_seg_neg_y = slope_seg_neg,
+      slope_seg_pos_y = slope_seg_pos
+    )
+    def_segments_slopesw <- data.frame(
+      slope_seg_neg_x = tpointw - slope_runw,
+      slope_seg_pos_x = tpointw + slope_runw,
+      slope_seg_neg_y = slope_seg_negw,
+      slope_seg_pos_y = slope_seg_posw
+    )
+    
+    # Data frame to hold rate segments for plotting
+    def_segments_rates <- data.frame(
+      x0 = c(0, tpoint)-max(x)*0.1,
+      x1 = c(tpoint, max(x))+max(x)*0.1,
+      y0 = Rt,
+      y1 = Rt
+    )
+    def_segments_ratesw <- data.frame(
+      x0 = c(0, tpointw)-max(x)*0.1,
+      x1 = c(tpointw, max(x))+max(x)*0.1,
+      y0 = Rtw,
+      y1 = Rtw
+    )
+    
+    # Compute y limits
+    ylower <- min(
+      min(c(
+        def_segments_slopes$slope_seg_neg_y, def_segments_slopes$slope_seg_pos_y,
+        def_segments_slopesw$slope_seg_neg_y, def_segments_slopesw$slope_seg_pos_y)),
+      -mean(y)*0.05
+    ) 
+    yupper <- max(
+      max(c(
+        def_segments_slopes$slope_seg_neg_y, def_segments_slopes$slope_seg_pos_y,
+        def_segments_slopesw$slope_seg_neg_y, def_segments_slopesw$slope_seg_pos_y)),
+      max(y)*1.2
+    )
+    
+    # Make plot
+    demo_plot_warpedsigmoid <- ggplot(df) +
+      geom_line(aes(x = x, y = y, color = type), linewidth = 1.5) +  
+      geom_vline(xintercept = tpoint, linetype = "dashed", color = "red4", linewidth = 1) +
+      geom_vline(xintercept = tpointw, linetype = "dashed", color = "red", linewidth = 1) +
+      ylim(ylower, yupper) +
+      coord_fixed()  +
+      geom_segment(
+        data = def_segments_rates,
+        aes(x = x0, xend = x1, y = y0, yend = y1),
+        color = "darkgray", linetype = "dashed", linewidth = 1) +
+      geom_segment(
+        data = def_segments_ratesw,
+        aes(x = x0, xend = x1, y = y0, yend = y1),
+        color = "gray", linetype = "dashed", linewidth = 1) +
+      geom_segment(
+        data = def_segments_slopes,
+        aes(x = slope_seg_neg_x, xend = slope_seg_pos_x, y = slope_seg_neg_y, yend = slope_seg_pos_y),
+        color = "blue4", linetype = "dashed", linewidth = 0.75) + 
+      geom_segment(
+        data = def_segments_slopesw,
+        aes(x = slope_seg_neg_x, xend = slope_seg_pos_x, y = slope_seg_neg_y, yend = slope_seg_pos_y),
+        color = "blue", linetype = "dashed", linewidth = 0.75) +
+      labs(
+        x = "x",
+        y = expression(Psi * "(x, r, s, p)"),
+        title = "WSP Sigmoid Function, Warped",
+        color = "Type"
+      )  +
+      scale_color_manual(
+        values = c("black", "orange3")
+      ) +
+      theme_minimal(base_size = 16) +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = 30),
+        axis.title = element_text(size = 20),
+        axis.text = element_text(size = 20),
+        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 18)
+      ) 
+    
+    grid.arrange(demo_plot_warpfunction, demo_plot_warpedsigmoid, ncol = 1)
+    
     # Save at 1156 x 843
-    return(demo_plot)
+    return(demo_plot_warpfunction)
     
   }
 
