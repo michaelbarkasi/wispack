@@ -24,11 +24,39 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// sigmoid_stable_R
+double sigmoid_stable_R(const double& x);
+RcppExport SEXP _wispack_sigmoid_stable_R(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const double& >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(sigmoid_stable_R(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// poly_sigmoid_R
+double poly_sigmoid_R(const double& b, const int& deg, const NumericVector& Rt, const NumericVector& tslope, const NumericVector& tpoint);
+RcppExport SEXP _wispack_poly_sigmoid_R(SEXP bSEXP, SEXP degSEXP, SEXP RtSEXP, SEXP tslopeSEXP, SEXP tpointSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const double& >::type b(bSEXP);
+    Rcpp::traits::input_parameter< const int& >::type deg(degSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type Rt(RtSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type tslope(tslopeSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type tpoint(tpointSEXP);
+    rcpp_result_gen = Rcpp::wrap(poly_sigmoid_R(b, deg, Rt, tslope, tpoint));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 RcppExport SEXP _rcpp_module_boot_wspc();
 
 static const R_CallMethodDef CallEntries[] = {
     {"_wispack_warp_mc_R", (DL_FUNC) &_wispack_warp_mc_R, 3},
+    {"_wispack_sigmoid_stable_R", (DL_FUNC) &_wispack_sigmoid_stable_R, 1},
+    {"_wispack_poly_sigmoid_R", (DL_FUNC) &_wispack_poly_sigmoid_R, 5},
     {"_rcpp_module_boot_wspc", (DL_FUNC) &_rcpp_module_boot_wspc, 0},
     {NULL, NULL, 0}
 };

@@ -206,6 +206,14 @@ sdouble sigmoid_stable(
     }
   }
 
+// Wrapper for R
+// [[Rcpp::export]]
+double sigmoid_stable_R(
+    const double& x
+  ) {
+    return(sigmoid_stable(sdouble(x)).val());
+  }
+
 // Core poly-sigmoid function of the model
 sdouble poly_sigmoid(
     const sdouble& b,        // input variable
@@ -243,6 +251,26 @@ sdouble poly_sigmoid(
       } 
       return ps;
     } 
+    
+  }
+
+// Wrapper for R
+// [[Rcpp::export]]
+double poly_sigmoid_R(
+    const double& b,            // input variable
+    const int& deg,             // degree of the poly-sigmoid, i.e., number of transitions between blocks
+    const NumericVector& Rt,           // vector containing the height ("rate") of each block
+    const NumericVector& tslope,       // vector containing the slope of each transition between blocks
+    const NumericVector& tpoint        // vector containing the point of each transition in the bin space
+  ) {
+    
+    return poly_sigmoid(
+      sdouble(b), 
+      deg, 
+      to_sVec(Rt), 
+      to_sVec(tslope), 
+      to_sVec(tpoint)
+    ).val();
     
   }
 
