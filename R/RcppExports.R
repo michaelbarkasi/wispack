@@ -5,3 +5,11 @@ warp_mc_R <- function(s, b, w) {
     .Call(`_wispack_warp_mc_R`, s, b, w)
 }
 
+sigmoid_stable_R <- function(x) {
+    .Call(`_wispack_sigmoid_stable_R`, x)
+}
+
+poly_sigmoid_R <- function(b, deg, Rt, tslope, tpoint) {
+    .Call(`_wispack_poly_sigmoid_R`, b, deg, Rt, tslope, tpoint)
+}
+

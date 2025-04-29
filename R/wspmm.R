@@ -1998,6 +1998,246 @@ WSP.warp <- function(
     
   }
 
+# Pre-made plot to explain warping function
+demo_warp <- function(
+    w = 2, # warping factor
+    point_pos = 60,
+    point_neg = 40
+  ) {
+    
+    # Data
+    x <- (1:1000)/10
+    b <- 100
+    y <- x
+    y1 <- WSP.warp(x, b, w)
+    y2 <- WSP.warp(x, b, -w)
+    y_pos <- WSP.warp(point_pos, b, w)
+    y_neg <- WSP.warp(point_neg, b, -w)
+    
+    # Organize into a data frame
+    df <- data.frame(
+      x = rep(x, 3),
+      y = c(y, y1, y2),
+      curve = factor(rep(c("w = 0", "w > 0", "w < 0"), each = length(x)))
+    )
+    df$curve <- relevel(df$curve, ref = "w = 0")
+    
+    df_segments <- data.frame(
+      point_pos = point_pos,
+      point_neg = point_neg,
+      y_pos = y_pos,
+      y_neg = y_neg
+    )
+    
+    # Make the ggplot
+    demo_plot <- ggplot(df, aes(x = x, y = y, color = curve)) +
+      geom_line(linewidth = 1.5) +
+      geom_hline(yintercept = 100, linetype = "dashed", color = "darkgray", linewidth = 1) +
+      geom_hline(yintercept = 0, linetype = "dashed", color = "darkgray", linewidth = 1) +
+      geom_segment(
+        data = df_segments,
+        aes(x = point_pos, xend = point_pos, y = point_pos, yend = y_pos),
+        color = "blue4", linetype = "dashed", linewidth = 0.75) + 
+      geom_segment(
+        data = df_segments,
+        aes(x = point_neg, xend = point_neg, y = point_neg, yend = y_neg),
+        color = "red4", linetype = "dashed", linewidth = 0.75) +
+      annotate("text", x = 10, y = 95, label = "upper asymptote", size = 7.5, color = "black") +
+      annotate("text", x = 90, y = 5, label = "lower asymptote", size = 7.5, color = "black") +
+      annotate("text", x = point_pos - 10, y = (y_pos + point_pos)/2, label = expression(varphi * "(z)(b - z)"), size = 7.5, color = "black") +
+      annotate("text", x = point_neg + 10, y = (y_neg + point_neg)/2, label = expression(varphi * "(b - z)z"), size = 7.5, color = "black") +
+      labs(
+        x = "z",
+        y = expression(omega * "(z, " * rho * ", b = 100)"),,
+        title = "WSP Warping Function",
+        color = "Direction"
+      ) +
+      scale_color_manual(
+        values = c("black", "red", "blue"),
+        labels = c(expression(rho * " = 0"), expression(rho * " < 0"), expression(rho * " > 0"))
+      ) +
+      theme_minimal(base_size = 16) +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = 30),
+        axis.title = element_text(size = 20),
+        axis.text = element_text(size = 20),
+        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 18)
+      )
+    
+    # Save at 1156 x 843
+    return(demo_plot)
+    
+  }
+
+# Pre-made plot to explain poly-sigmoid function 
+demo_sigmoid <- function(
+    r = 4,                       # upper asymptote for logistic
+    s = 1,                       # slope scalar at inflection point
+    Rt = c(6, 3, 0.2, 6)*4.65,   # rates for poly-sigmoid
+    tslope = c(0.4, 0.75, 1),    # slope scalars for poly-sigmoid
+    tpoint = c(15, 38, 80)       # transition points for poly-sigmoid
+  ) {
+    
+    # Plot 1, logistic function ####
+    
+    # Construct logistic curve
+    n <- 1000
+    x <- seq(-10, 10, length.out = n)
+    y <- rep(NA, n)
+    for (i in 1:n) y[i] <- sigmoid_stable_R(-x[i]*s)*r
+    df <- data.frame(x = x, y = y)
+    
+    # Compute slope at inflection point (y0)
+    y0 <- sigmoid_stable_R(-0*s)*r
+    m <- s*(y0*r - y0*y0)/r
+    m <- -m # ... flip because the x axis was flipped
+    
+    # Make line segment to show slope at inflection point
+    slope_run <- r/s
+    slope_seg_neg <- y0 - slope_run*m
+    slope_seg_pos <- y0 + slope_run*m
+    
+    # Data frame to hold segment for plotting
+    df_segments <- data.frame(
+      slope_seg_neg_x = -slope_run,
+      slope_seg_pos_x = slope_run,
+      slope_seg_neg_y = slope_seg_neg,
+      slope_seg_pos_y = slope_seg_pos
+    )
+    
+    # Plot logistic function 
+    demo_plot_logistic <- ggplot(df, aes(x = x, y = y)) +
+      geom_line(linewidth = 1.5)  +
+      coord_fixed() +
+      geom_hline(yintercept = r, linetype = "dashed", color = "darkgray", linewidth = 1) +
+      geom_hline(yintercept = 0, linetype = "dashed", color = "darkgray", linewidth = 1) +
+      geom_vline(xintercept = 0, linetype = "dashed", color = "red4", linewidth = 1) +
+      geom_segment(
+        data = df_segments,
+        aes(x = slope_seg_neg_x, xend = slope_seg_pos_x, y = slope_seg_neg_y, yend = slope_seg_pos_y),
+        color = "blue4", linetype = "dashed", linewidth = 0.75) + 
+      annotate("text", x = -7, y = r+0.75, label = "upper asymptote", size = 7.5, color = "black") +
+      annotate("text", x = 7, y = -0.75, label = "lower asymptote", size = 7.5, color = "black") +
+      annotate("text", x = 3, y = r+0.75, label = "inflection point", size = 7.5, color = "red4") +
+      annotate("text", x = -2, y = r+1, angle = atan(m)*57.3, label = "slope", size = 7.5, color = "blue4") +
+      labs(
+        x = "x",
+        y = expression(psi * "(x, r = 4, s = 1)"),
+        title = "The Logistic Function"
+      )  +
+      theme_minimal(base_size = 16) +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = 30),
+        axis.title = element_text(size = 20),
+        axis.text = element_text(size = 20),
+        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 18)
+      )
+    # saved at 1145 x 647
+    
+    # Plot 2, poly-sigmoid function ####
+    
+    # Construct poly-sigmoid curve 
+    x <- seq(0, 100, length.out = n)
+    y <- rep(NA, n)
+    deg <- length(Rt)-1
+    for (i in 1:n) y[i] <- poly_sigmoid_R(
+      x[i], # input 
+      deg,    # degree 
+      Rt,     # Rates
+      tslope, # slope scalars
+      tpoint  # inflection points
+    )
+    df <- data.frame(x = x, y = y)
+    
+    # Compute slopes 
+    m <- tslope 
+    for (i in 1:length(tslope)) {
+      m[i] <- m[i] * (Rt[i+1] - Rt[i]) / 4
+    }
+    
+    # Make line segments to show slopes
+    y0 <- tpoint 
+    for (i in 1:length(y0)) {
+      y0[i] <- poly_sigmoid_R(
+        y0[i],  # input 
+        deg,      # degree 
+        Rt,     # Rates
+        tslope, # slope scalars
+        tpoint  # inflection points
+      )
+    }
+    slope_run <- ((max(y)-min(y))/abs(diff(Rt))) * 3 + c(6, 0, 0.5)
+    slope_seg_neg <- y0 - slope_run*m 
+    slope_seg_pos <- y0 + slope_run*m 
+    
+    # Data frame to hold slope segments for plotting
+    def_segments_slopes <- data.frame(
+      slope_seg_neg_x = tpoint - slope_run,
+      slope_seg_pos_x = tpoint + slope_run,
+      slope_seg_neg_y = slope_seg_neg,
+      slope_seg_pos_y = slope_seg_pos
+    )
+    
+    # Data frame to hold rate segments for plotting
+    def_segments_rates <- data.frame(
+      x0 = c(0, tpoint)-max(x)*0.1,
+      x1 = c(tpoint, max(x))+max(x)*0.1,
+      y0 = Rt,
+      y1 = Rt
+    )
+    
+    # Compute y limits
+    ylower <- min(
+      min(c(def_segments_slopes$slope_seg_neg_y, def_segments_slopes$slope_seg_pos_y)),
+      -mean(y)*0.05
+    ) 
+    yupper <- max(
+      max(c(def_segments_slopes$slope_seg_neg_y, def_segments_slopes$slope_seg_pos_y)),
+      max(y)*1.2
+    )
+    
+    # Compute block midpoints 
+    block_midpoints <- c(0, tpoint) 
+    block_midpoints <- block_midpoints + diff(c(block_midpoints, max(x)))/2
+    
+    # Make plot
+    demo_plot_sigmoid <- ggplot(df, aes(x = x, y = y)) +
+      geom_line(linewidth = 1.5) +  
+      geom_vline(xintercept = tpoint, linetype = "dashed", color = "red4", linewidth = 1) +
+      ylim(ylower, yupper) +
+      coord_fixed()  +
+      geom_segment(
+        data = def_segments_rates,
+        aes(x = x0, xend = x1, y = y0, yend = y1),
+        color = "darkgray", linetype = "dashed", linewidth = 1) +
+      geom_segment(
+        data = def_segments_slopes,
+        aes(x = slope_seg_neg_x, xend = slope_seg_pos_x, y = slope_seg_neg_y, yend = slope_seg_pos_y),
+        color = "blue4", linetype = "dashed", linewidth = 0.75) + 
+      annotate("text", x = block_midpoints, y = Rt+mean(Rt)*0.15, label = paste("rate", 1:length(Rt)), size = 7.5, color = "black") +
+      annotate("text", x = tpoint-max(x)*0.08, y = -max(y)*0.1, label = paste("t-point", 1:length(tpoint)), size = 7.5, color = "red4") +
+      annotate("text", x = tpoint-max(x)*0.035, y = y0*0.95, angle = atan(m)*57.3, label = paste("slope", 1:length(tslope)), size = 7.5, color = "blue4") +
+      labs(
+        x = "x",
+        y = expression(Psi * "(x, r, s, p)"),
+        title = "The WSP Sigmoid Function"
+      )  +
+      theme_minimal(base_size = 16) +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = 30),
+        axis.title = element_text(size = 20),
+        axis.text = element_text(size = 20),
+        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 18)
+      )
+    
+    grid.arrange(demo_plot_logistic, demo_plot_sigmoid, ncol = 1)
+    # Saved at 1186 x 1032
+    
+  }
+
 # R.sum and M.hat helper functions to enforce block-rate constraints
 #  ... These are no longer used as part of the prediction or optimization functions (most of that is 
 #      now in cpp only), but these are used in the "make" functions for when generating parameters 
