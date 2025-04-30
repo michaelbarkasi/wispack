@@ -88,7 +88,7 @@ wisp <- function(
     # Confirm forking is possible
     if (!(Sys.info()["sysname"] == "Darwin" || Sys.info()["sysname"] == "Linux")) {
       if (bootstraps.num > 0) {
-        if (verbose) snk.report...("Forking not available on Windows, cannot bootstrap, switching to MCMC")
+        if (verbose) snk.report...("Forking not available on Windows, cannot bootstrap, only running MCMC (10k steps)")
         bootstraps.num <- 0 
         MCMC.steps <- 1e4
       }
@@ -99,21 +99,19 @@ wisp <- function(
       }
     }
     
-    if (bootstraps.num == 0) {
-      
-      # Run MCMC simulation
-      if (verbose) snk.report("Running MCMC stimulations (single-threaded)", end_breaks = 1)
-      MCMC_walk <- cpp_model$MCMC(
-        MCMC.steps + MCMC.burnin, 
-        MCMC.step.size,
-        MCMC.prior,
-        verbose 
-      )
-      if (MCMC.burnin > 0) {
-        MCMC_walk <- MCMC_walk[-c(2:(2+MCMC.burnin-1)),]
-      }
-      
-    } else {
+    # Run MCMC simulation
+    if (verbose) snk.report("Running MCMC stimulations (single-threaded)", end_breaks = 1)
+    MCMC_walk <- cpp_model$MCMC(
+      MCMC.steps + MCMC.burnin, 
+      MCMC.step.size,
+      MCMC.prior,
+      verbose 
+    )
+    if (MCMC.burnin > 0) {
+      MCMC_walk <- MCMC_walk[-c(2:(2+MCMC.burnin-1)),]
+    }
+    
+    if (bootstraps.num > 0) {
       
       # Run bootstrap fits in parallel with forking
       if (verbose) snk.report("Running bootstrap fits (with forking)", end_breaks = 1)
@@ -125,27 +123,38 @@ wisp <- function(
       
     }
     
-    # Extract bs results and diagnostics
+    # Extract results and diagnostics
+    # Save MCMC estimates and diagnostics
+    n_params <- ncol(MCMC_walk) - 4
+    sample.params.MCMC <- MCMC_walk[,1:n_params]
+    MCMC.diagnostics <- data.frame(
+      pen.neg.value = MCMC_walk[,n_params + 1],
+      neg.loglik = MCMC_walk[,n_params + 2], 
+      acceptance.ratio = MCMC_walk[,n_params + 3],
+      ctr.num = MCMC_walk[,n_params + 4]
+    )
     if (bootstraps.num > 0) {
+      
+      # Save bs estimates and diagnostics
       n_params <- ncol(sample_results) - 4
-      sample.params <- sample_results[,1:n_params]
+      sample.params.bs <- sample_results[,1:n_params]
       bs.diagnostics <- data.frame( 
         pen.neg.value = sample_results[,n_params + 1],
         neg.loglik = sample_results[,n_params + 2], 
         success.code = sample_results[,n_params + 3],
         num.evals = sample_results[,n_params + 4]
       )
-      MCMC.diagnostics <- NULL
+      
     } else {
-      n_params <- ncol(MCMC_walk) - 4
-      sample.params <- MCMC_walk[,1:n_params]
-      MCMC.diagnostics <- data.frame(
-        pen.neg.value = MCMC_walk[,n_params + 1],
-        neg.loglik = MCMC_walk[,n_params + 2], 
-        acceptance.ratio = MCMC_walk[,n_params + 3],
-        ctr.num = MCMC_walk[,n_params + 4]
-      )
+      sample.params.bs <- NULL
       bs.diagnostics <- NULL
+    }
+    
+    # Set resamples for analysis 
+    if (is.null(sample.params.bs)) {
+      sample.params <- sample.params.MCMC
+    } else {
+      sample.params <- sample.params.bs
     }
     
     # Set final fitted parameters
@@ -164,6 +173,8 @@ wisp <- function(
     # Grab model results and add samples
     results <- cpp_model$results()
     results[["sample.params"]] <- sample.params
+    results[["sample.params.bs"]] <- sample.params.bs
+    results[["sample.params.MCMC"]] <- sample.params.MCMC
     results[["bs.diagnostics"]] <- bs.diagnostics
     results[["MCMC.diagnostics"]] <- MCMC.diagnostics
     
