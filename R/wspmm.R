@@ -127,7 +127,7 @@ wisp <- function(
     # Save MCMC estimates and diagnostics
     n_params <- ncol(MCMC_walk) - 4
     sample.params.MCMC <- MCMC_walk[,1:n_params]
-    MCMC.diagnostics <- data.frame(
+    diagnostics.MCMC <- data.frame(
       pen.neg.value = MCMC_walk[,n_params + 1],
       neg.loglik = MCMC_walk[,n_params + 2], 
       acceptance.ratio = MCMC_walk[,n_params + 3],
@@ -138,7 +138,7 @@ wisp <- function(
       # Save bs estimates and diagnostics
       n_params <- ncol(sample_results) - 4
       sample.params.bs <- sample_results[,1:n_params]
-      bs.diagnostics <- data.frame( 
+      diagnostics.bs <- data.frame( 
         pen.neg.value = sample_results[,n_params + 1],
         neg.loglik = sample_results[,n_params + 2], 
         success.code = sample_results[,n_params + 3],
@@ -147,7 +147,7 @@ wisp <- function(
       
     } else {
       sample.params.bs <- NULL
-      bs.diagnostics <- NULL
+      diagnostics.bs <- NULL
     }
     
     # Set resamples for analysis 
@@ -175,8 +175,8 @@ wisp <- function(
     results[["sample.params"]] <- sample.params
     results[["sample.params.bs"]] <- sample.params.bs
     results[["sample.params.MCMC"]] <- sample.params.MCMC
-    results[["bs.diagnostics"]] <- bs.diagnostics
-    results[["MCMC.diagnostics"]] <- MCMC.diagnostics
+    results[["diagnostics.bs"]] <- diagnostics.bs
+    results[["diagnostics.MCMC"]] <- diagnostics.MCMC
     
     # Add variable names 
     results[["variables"]] <- variables
@@ -221,12 +221,21 @@ wisp <- function(
     # Make plots of results ####
     
     # Plot MCMC walks, both parameters and negloglik
-    if (bootstraps.num == 0) {
+    if (MCMC.steps > 0) {
       plots.MCMC <- plot.MCMC.walks(
         wisp.results = results
       )
     } else {
       plots.MCMC <- NULL
+    }
+    
+    # Plot normality comparison of MCMC and bootstrap estimates
+    if (bootstraps.num > 0) {
+      plots.parameter.normality <- plot.parameter.estimation.normality(
+        wisp.results = results
+      )
+    } else {
+      plots.parameter.normality <- NULL
     }
     
     # Plot structural parameter distribution
@@ -257,6 +266,7 @@ wisp <- function(
       ratecount = plots.ratecount,
       parameters = plots.parameters,
       MCMC = plots.MCMC,
+      parameter.normality = plots.parameter.normality,
       effect.dist = plots.effect.dist
     )
     results[["plots"]] <- plots
@@ -318,7 +328,7 @@ sample.stats <- function(
     # Grab simulation results
     if (conv.resamples.only) {
       if (verbose) snk.report...("Grabbing sample results, only resamples with converged fit")
-      sample_results <- wisp.results$sample.params[wisp.results$bs.diagnostics$success.code == 3,]
+      sample_results <- wisp.results$sample.params[wisp.results$diagnostics.bs$success.code == 3,]
     } else {
       if (verbose) snk.report...("Grabbing sample results")
       sample_results <- wisp.results$sample.params
@@ -1804,8 +1814,8 @@ plot.MCMC.walks <- function(
     print(plot.walks.parameters)
     
     # Grab trace of negloglik and normalize
-    nll <- unlist(wisp.results[["MCMC.diagnostics"]][["neg.loglik"]])
-    pnll <- unlist(wisp.results[["MCMC.diagnostics"]][["pen.neg.value"]])
+    nll <- unlist(wisp.results[["diagnostics.MCMC"]][["neg.loglik"]])
+    pnll <- unlist(wisp.results[["diagnostics.MCMC"]][["pen.neg.value"]])
     nll <- (nll - nll[1]) / nll[1]
     pnll <- (pnll - pnll[1]) / pnll[1]
     ymin <- min(c(nll, pnll))
@@ -1902,6 +1912,71 @@ plot.decomposition <- function(
     
     return(plots.decomp)
     
+  }
+
+plot.parameter.estimation.normality <- function(
+    wisp.results
+  ) {
+    
+    # For each parameter in the model, both bootstrapping (bs) and the MCMC simulation will 
+    # produce a distribution of parameter estimates. We expect that distribution to be normal,
+    # which suggests that the estimates are stable. For each parameter and each method (bs and MCMC), 
+    # we can quantify "how normal" the estimate distribution is by computing the Shapiro-Wilk normality 
+    # p-value on small resamples of the estimate. Higher p-values mean more like a normal distribution, 
+    # lower p-values mean less like a normal distribution. We get a single p-value for each parameter 
+    # by taking the mean of the resamples, then, for each of bs and MCMC, we'll have a distribution of p-values, 
+    # one p-value per parameter. We can then compare the distributions of p-values for bs and MCMC by 
+    # looking at their density plots to see if one systematically produces more normal distributions than the other.
+    
+    param_mcmc <- wisp.results[["sample.params.MCMC"]]
+    param_bs <- wisp.results[["sample.params.bs"]]
+    if (is.null(param_bs) || is.null(param_mcmc)) {
+      stop("One of bootstrap or MCMC parameter estimates are missing.")
+    }
+   
+    dens_list <- lapply(1:ncol(param_mcmc), function(pnum) {
+      mcmc_vals <- param_mcmc[, pnum]
+      bs_vals   <- param_bs[, pnum]
+      n_resamples <- 100
+      mcmc_sw_stat <- rep(NA, n_resamples)
+      bs_sw_stat   <- rep(NA, n_resamples)
+      
+      sample_size <- 35
+      for (i in 1:n_resamples) {
+        mcmc_vals_sample <- sample(mcmc_vals, sample_size, replace = TRUE)
+        bs_vals_sample   <- sample(bs_vals, sample_size, replace = TRUE)
+        mcmc_sw_stat[i] <- shapiro.test(mcmc_vals_sample)$p.value
+        bs_sw_stat[i]   <- shapiro.test(bs_vals_sample)$p.value
+      }
+      
+      return(
+        data.frame(
+          sw_stat = c(mean(mcmc_sw_stat), mean(bs_sw_stat)),
+          group = as.factor(c("mcmc", "bs"))
+        )
+      )
+    })
+    
+    df_dens <- do.call(rbind, dens_list)
+    
+    # Plot
+    plot_comparison <- ggplot(df_dens, aes(x = sw_stat, color = group)) +
+      geom_density(linewidth = 1.2) +
+      theme_minimal() +
+      labs(
+        title = "Shaprio-Wilk Normality Test on Resampled Parameters", 
+        x = "Shaprio-Wilk Normality Test p-value", 
+        y = "Density"
+      ) +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = 30),
+        axis.title = element_text(size = 20),
+        axis.text = element_text(size = 20),
+        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 18)
+      ) 
+    
+    return(plot_comparison)
   }
 
 # Debugging and misc ###################################################################################################
@@ -2065,7 +2140,7 @@ demo_warp <- function(
       annotate("text", x = point_neg + 10, y = (y_neg + point_neg)/2, label = expression(varphi * "(b - z)z"), size = 7.5, color = "black") +
       labs(
         x = "z",
-        y = expression(omega * "(z, " * rho * ", b)"),,
+        y = expression(omega * "(z, " * rho * ", b)"),
         title = "WSP Warping Function",
         color = "Direction"
       ) +
