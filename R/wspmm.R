@@ -1079,7 +1079,9 @@ plot.parameters <- function(
     for (gv_lvl in as.character(wisp.results$grouping.variables$child.lvls)) {
       param_names <- gsub(paste0("_",gv_lvl,"_"), "_", param_names)
     }
-    param_names <- gsub(paste0("wfactor_"), "", param_names)
+    param_names <- gsub(paste0("wfactor_point_"), "level_", param_names)
+    param_names <- gsub(paste0("wfactor_rate_"), "level_", param_names)
+    param_names <- gsub(paste0("wfactor_slope_"), "level_", param_names)
     param_names <- gsub(paste0("_X"), "", param_names)
     param_names <- gsub(paste0("beta_"), "", param_names)
     param_names <- gsub(paste0("Tns/Blk"), "T/B", param_names)
