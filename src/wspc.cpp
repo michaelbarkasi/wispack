@@ -1609,10 +1609,10 @@ Rcpp::NumericMatrix wspc::MCMC(
         continue;
       }
       
-      // Compute posteriors for this random step
+      // Compute likelihoods for this random step
       double loglik_current = -bounded_nll(to_sVec(params_current)).val();
       double loglik_next = -bounded_nll(to_sVec(params_next)).val();
-      // Calculate acceptance probability 
+      // Calculate posteriors and acceptance probability 
       double acceptance = std::exp(
         (loglik_next + prior_next) - 
         (loglik_current + prior_current) 
