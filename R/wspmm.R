@@ -28,8 +28,6 @@ wisp <- function(
     bootstraps.num = 0, 
     converged.resamples.only = TRUE,
     max.fork = 10,
-    null.rate = log(2),
-    null.slope = 1,
     dim.bounds = NULL, 
     verbose = TRUE,
     print.child.summaries = TRUE,
@@ -198,8 +196,6 @@ wisp <- function(
     results$stats$parameters <- sample.stats(
       wisp.results = results,
       conv.resamples.only = converged.resamples.only,
-      null.rate = null.rate,
-      null.slope = null.slope,
       verbose = verbose
     )
     
@@ -211,12 +207,6 @@ wisp <- function(
     results$stats$residuals <- residuals$stats
     results$stats$residuals.log <- residuals$stats.log
     plots.residuals <- residuals$plots
-    
-    # Check tpoint stability
-    results$stats$tps <- check.tpoint.stability(
-      wisp.results = results,
-      verbose = verbose
-    )
     
     # Make plots of results ####
     
@@ -290,14 +280,14 @@ wisp <- function(
 # Helper function for computing p_values from bootstraps or MCMC samples
 pvalues.samples <- function(
     mu.B,       # vector of bootstrapped or MCMC estimates
-    mu.obs,     # observed value, either mean of mu.B or actual observation
-    mu.null = 0 # null hypothesis value, usually 0
+    mu.obs      # observed value, either mean of mu.B or actual observation
   ) {
     # Basic idea: Instead of centering data > bootstrapping > estimate parameter, bootstrap > estimate parameter > center data
-    # equivalent to: mean(abs(mu.B - mean(mu.B) + mu.null) >= abs(mu.obs))
-    Fn <- ecdf(abs(mu.B - mean(mu.B) + mu.null))
+    # equivalent to: mean(abs(mu.B - mean(mu.B)) >= abs(mu.obs))
+    Fn <- ecdf(mu.B - mean(mu.B))
+    abs.mu.obs <- abs(mu.obs)
     return(
-      1 - Fn(abs(mu.obs))
+      1 - Fn(abs.mu.obs) + Fn(-abs.mu.obs)
     )
   }
 
@@ -307,8 +297,6 @@ sample.stats <- function(
     alpha = 0.05,
     Bonferroni = FALSE,
     conv.resamples.only = TRUE,
-    null.rate = log(2),
-    null.slope = 1,
     verbose = TRUE
   ) {
     
@@ -343,27 +331,15 @@ sample.stats <- function(
       fitted_params <- wisp.results$fitted.parameters
       n_params <- length(fitted_params)
       
-      # Grab count data 
-      log_count <- wisp.results$count.data.summed$count.log
-      child_col <- wisp.results$count.data.summed$child
-      parent_col <- wisp.results$count.data.summed$parent
-      ref_none_mask <- wisp.results$count.data.summed$ran == "none" & wisp.results$count.data.summed$treatment == "ref"
-      max_bin <- max(wisp.results$count.data.summed$bin)
-      
       # Grabbing indexes of parameters to test
       fitted_params_names <- wisp.results$param.names
-      baselineRt_mask <- grepl("baseline", fitted_params_names) & grepl("Rt", fitted_params_names)        # mask for baseline rate values
-      baseline_mask <- grepl("baseline", fitted_params_names) & !grepl("tpoint", fitted_params_names)     # mask for baseline rate and tslope values
-      tslope_mask <- grepl("tslope", fitted_params_names)                                                 # mask for tslope values
-      beta_w_mask <- grepl("beta_Rt|beta_tslope|beta_tpoint|wfactor", fitted_params_names)                # only want to test fixed-effect and wfactor parameters (no baseline parameters)
-      empty_w_mask <- colSums(sample_results) == 0                                                        # Can only be zero for point wfactors of degree-zero children (which must be zero)
-      test_mask <- beta_w_mask & !empty_w_mask
+      test_mask <- grepl("beta_Rt|beta_tslope|beta_tpoint", fitted_params_names)
       
       # Compute 95% confidence intervals
       if (verbose) snk.report...("Computing 95% confidence intervals")
       sample.params_ci <- apply(sample_results, 2, quantile, probs = c(alpha/2, 1 - alpha/2))
       
-      # Estimate p_values from bs params
+      # Estimate p_values from samples
       if (verbose) snk.report...("Estimating p-values from resampled parameters")
       p_values <- rep(NA, n_params)
       p_values_adj <- rep(NA, n_params)
@@ -371,37 +347,12 @@ sample.stats <- function(
       for (n in seq_along(fitted_params)) {
         if (test_mask[n]) {
           p_values[n] <- pvalues.samples(sample_results[,n], fitted_params[n]) 
-        } else if (baseline_mask[n]) {
-          if (tslope_mask[n]) { # testing slope
-            # Find rise: 
-            parent_name <- sub(".*baseline_(.*?)_tslope.*", "\\1", fitted_params_names[n])
-            child_name <- sub(".*tslope_(.*?)_Tns/Blk.*", "\\1", fitted_params_names[n])
-            parent_child_Rt_mask <- grepl(parent_name, fitted_params_names) & grepl(child_name, fitted_params_names) & baselineRt_mask
-            block_num <- sub(".*_Tns/Blk(.*)", "\\1", fitted_params_names[n])
-            block_num_next <- as.character(as.integer(block_num) + 1)
-            block_num <- paste0("Tns/Blk", block_num)
-            block_num_next <- paste0("Tns/Blk", block_num_next)
-            this_Rt_mask <- parent_child_Rt_mask & grepl(block_num, fitted_params_names)
-            next_Rt_mask <- parent_child_Rt_mask & grepl(block_num_next, fitted_params_names)
-            this_Rt <- fitted_params[this_Rt_mask]
-            next_Rt <- fitted_params[next_Rt_mask]
-            rise <- next_Rt - this_Rt
-            if (is.na(rise) || is.infinite(rise)) stop("Problem with rise calculation")
-            # Find mean of log-linked count
-            count_mask <- parent_col == parent_name & child_col == child_name & ref_none_mask
-            mean_log_count <- mean(log_count[count_mask], na.rm = TRUE)
-            rise_run_scalar <- mean_log_count / max_bin
-            # Compute p-value
-            p_values[n] <- pvalues.samples(sample_results[,n], fitted_params[n], null.slope*rise_run_scalar/rise) 
-          } else { # testing "log-linked" rate, i.e., true rate is exp of this number
-            p_values[n] <- pvalues.samples(sample_results[,n], fitted_params[n], null.rate) 
-          }
         }
-        if (is.na(p_values[n]) && (test_mask[n] || baseline_mask[n])) stop("Problem with p-value calculation, NA")
+        if (is.na(p_values[n]) && test_mask[n]) stop("Problem with p-value calculation, NA")
       }
       
       # Sanity check
-      num_of_tests <- sum(test_mask | baseline_mask)
+      num_of_tests <- sum(test_mask)
       if (num_of_tests != sum(!is.na(p_values))) stop("Problem with p-value calculation")
       
       # Check resample size 
@@ -456,154 +407,6 @@ sample.stats <- function(
       # Print summary table of stat analysis 
       if (verbose) snk.print_table("Stat summary", stats.parameters, head = TRUE, initial_breaks = 1)
       return(stats.parameters)
-      
-    }
-    
-  }
-
-# Function for checking whether tpoints are stable, i.e., a genuine rate transition
-check.tpoint.stability <- function(
-    wisp.results,
-    alpha = 0.05,
-    verbose = TRUE
-  ) {
-   
-    # "TPS" = transition point stability. 
-    # ... a stable transition point is one where the slope of the rate is significantly greater than 1
-    
-    # Check that stats have been run
-    if (length(wisp.results$stats$parameters) == 0) {
-      snk.report...("Can't make TPS table without running stats")
-    } else {
-      
-      # Grab names and other needed values
-      fixed_effect_names <- wisp.results$treatment$names
-      fixed_effect_components <- wisp.results$treatment$components
-      names(fixed_effect_components) <- fixed_effect_names
-      mc_names <- wisp.results$model.component.list
-      p_val_adj_names <- wisp.results$stats$parameters$parameter
-      parent_names <- as.character(wisp.results$grouping.variables$parent.lvls)
-      child_names <- as.character(wisp.results$grouping.variables$child.lvls)
-      sample.params <- wisp.results$sample.params
-      
-      # Grab baseline-tslope and beta masks
-      beta_mask <- grepl("beta_", p_val_adj_names)
-      tslope_mask <- grepl("tslope", p_val_adj_names)
-      tslope_bl_mask <- grepl("baseline", p_val_adj_names) & tslope_mask
-      tslope_beta_mask <- beta_mask & tslope_mask
-      
-      # Make column names 
-      col_names <- c(
-        wisp.results$variables$parent,
-        wisp.results$variables$child,
-        "TPS.ref", 
-        paste0("TPS.", fixed_effect_names[-c(1)]), 
-        as.character(levels(interaction(mc_names, fixed_effect_names[-c(1)])))
-      )
-      m <- length(as.character(levels(interaction(mc_names, fixed_effect_names[-c(1)])))) + length(fixed_effect_names[-c(1)])
-      
-      # Make row names
-      row_names <- as.character(levels(interaction(child_names, parent_names)))
-      n <- length(row_names)
-      
-      # Initialize data frame
-      df <- data.frame(rep("", n), rep("", n), rep(FALSE, n))
-      for (c in 1:m) df <- cbind(df, rep(FALSE, n))
-      colnames(df) <- col_names
-      rownames(df) <- row_names
-      
-      # Test effects
-      for (gvp_lvl in parent_names) {
-        for (gv_lvl in child_names) {
-          
-          # Grab parent and child names
-          r <- paste0(gv_lvl,".",gvp_lvl)
-          df[r,wisp.results$variables$parent] <- gvp_lvl
-          df[r,wisp.results$variables$child] <- gv_lvl
-          
-          # Make mask for this parent-child combination
-          pc_mask <- grepl(gvp_lvl, p_val_adj_names) & grepl(gv_lvl, p_val_adj_names)
-          
-          # Grab adjusted p-values, if any, for this child under this parent
-          baseline_tslope_mask <- tslope_bl_mask & pc_mask
-          
-          # Check if a stable t-point in reference condition
-          any_slopes <- any(baseline_tslope_mask)
-          if (any_slopes) {
-            if (any(wisp.results$stats$parameters$p.value.adj[baseline_tslope_mask] < alpha)) {
-              df[r,"TPS.ref"] <- TRUE
-            }
-          }
-          
-          # Check for fixed effects on model components 
-          for (fe in fixed_effect_names[-c(1)]) { # skip "ref" condition, as it is the baseline
-            for (mc in mc_names) {
-              
-              # Grab the mask for this fixed effect and model component
-              fe_mask <- grepl(paste0("_",fe,"_"), p_val_adj_names, fixed = TRUE)
-              fe_mc_mask <- beta_mask & pc_mask & fe_mask & grepl(mc, p_val_adj_names)
-              
-              # Check if there are any significant p-values
-              if (any(fe_mc_mask)) {
-                if (any(wisp.results$stats$parameters$p.value.adj[fe_mc_mask] < alpha)) {
-                  df[r,paste0(mc,".",fe)] <- TRUE
-                }
-              } else {
-                df[r,paste0(mc,".",fe)] <- NA # means deg 1
-              }
-              
-              # Check if TPS in this treatment condition
-              if (mc == "tslope" && any_slopes) {
-                
-                # Grab list of components 
-                fe_components <- fixed_effect_components[[fe]]
-                
-                # Check implied slope for each transition point
-                baseline_tslope_idx <- which(baseline_tslope_mask)
-                for (i in seq_along(baseline_tslope_idx)) {
-                  
-                  # Construct index of bs matrix columns to add
-                  bs_col_idx <- c(baseline_tslope_idx[i])
-                  for (fec in fe_components) {
-                    
-                    # Grab mask for this tslope effect for this parent-child pair
-                    fec_mask <- grepl(paste0("_",paste0(fec),"_"), p_val_adj_names, fixed = TRUE)
-                    fec_tslope_mask <- tslope_beta_mask & pc_mask & fec_mask
-                    
-                    # Sanity check, both should be the number of transition points
-                    if (sum(fec_tslope_mask) != sum(baseline_tslope_mask)) stop("Problem testing for TPS in treatment condition.")
-                    
-                    # Add new column index
-                    fec_tslope_idx <- which(fec_tslope_mask)
-                    bs_col_idx <- c(bs_col_idx, fec_tslope_idx[i])
-                    
-                  }
-                  
-                  # Compute implied slopes for this effects condition in each bs resample
-                  if (length(bs_col_idx) < 2) stop("Problem computing TPS in treatment condition (no effects present, baseline only)")
-                  implied_bs_slopes <- rowSums(sample.params[,bs_col_idx])
-                  
-                  # Compute p_value ("- 1" because checking if significantly greater than 1)
-                  p_value <- pvalues.samples(implied_bs_slopes - 0, mean(implied_bs_slopes) - 0) 
-                  
-                  # Test for significance
-                  if (p_value < min(wisp.results$stats$parameters$alpha.adj[bs_col_idx], na.rm = TRUE)) df[r,paste0("TPS.",fe)] <- TRUE
-                  
-                }
-                
-              }
-              
-            }
-          }
-          
-        }
-      }
-      
-      # Print summary table of stat analysis 
-      if (verbose) snk.print_table("TPS test results", df, head = TRUE, initial_breaks = 0, end_breaks = 0)
-      
-      # return
-      return(df)
       
     }
     
