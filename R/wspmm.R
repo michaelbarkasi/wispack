@@ -1899,6 +1899,12 @@ demo_warp <- function(
     w_factors = c(0.6, -0.9, 0.5)      # warping factors for poly sigmoid
   ) {
     
+    # Font sizes 
+    label_size <- 5.5
+    title_size <- 20 
+    axis_size <- 12 
+    legend_size <- 10
+    
     # Data
     n <- 1000
     x <- (1:n)/10
@@ -1938,10 +1944,10 @@ demo_warp <- function(
         data = df_segments,
         aes(x = point_neg, xend = point_neg, y = point_neg, yend = y_neg),
         color = "deeppink4", linetype = "dashed", linewidth = 0.75) +
-      annotate("text", x = 10, y = 95, label = "upper asymptote", size = 7.5, color = "black") +
-      annotate("text", x = 90, y = 5, label = "lower asymptote", size = 7.5, color = "black") +
-      annotate("text", x = point_pos - 10, y = (y_pos + point_pos)/2, label = expression(varphi * "(z)(b - z)"), size = 7.5, color = "black") +
-      annotate("text", x = point_neg + 10, y = (y_neg + point_neg)/2, label = expression(varphi * "(b - z)z"), size = 7.5, color = "black") +
+      annotate("text", x = 10, y = 95, label = "upper asymptote", size = label_size, color = "black") +
+      annotate("text", x = 90, y = 5, label = "lower asymptote", size = label_size, color = "black") +
+      annotate("text", x = point_pos - 10, y = (y_pos + point_pos)/2, label = expression(varphi * "(z)(b - z)"), size = label_size, color = "black") +
+      annotate("text", x = point_neg + 10, y = (y_neg + point_neg)/2, label = expression(varphi * "(b - z)z"), size = label_size, color = "black") +
       labs(
         x = "z",
         y = expression(omega * "(z, " * rho * ", b)"),
@@ -1954,11 +1960,11 @@ demo_warp <- function(
       ) +
       theme_minimal(base_size = 16) +
       theme(
-        plot.title = element_text(hjust = 0.5, size = 30),
-        axis.title = element_text(size = 20),
-        axis.text = element_text(size = 20),
-        legend.title = element_text(size = 18),
-        legend.text = element_text(size = 18)
+        plot.title = element_text(hjust = 0.5, size = title_size),
+        axis.title = element_text(size = axis_size),
+        axis.text = element_text(size = axis_size),
+        legend.title = element_text(size = legend_size),
+        legend.text = element_text(size = legend_size)
       )
     
     # Construct poly-sigmoid curve, no warping
@@ -2101,17 +2107,16 @@ demo_warp <- function(
       ) +
       theme_minimal(base_size = 16) +
       theme(
-        plot.title = element_text(hjust = 0.5, size = 30),
-        axis.title = element_text(size = 20),
-        axis.text = element_text(size = 20),
-        legend.title = element_text(size = 18),
-        legend.text = element_text(size = 18)
+        plot.title = element_text(hjust = 0.5, size = title_size),
+        axis.title = element_text(size = axis_size),
+        axis.text = element_text(size = axis_size),
+        legend.title = element_text(size = legend_size),
+        legend.text = element_text(size = legend_size)
       ) 
     
     grid.arrange(demo_plot_warpfunction, demo_plot_warpedsigmoid, ncol = 1)
     
     # Save at 1156 x 843
-    return(demo_plot_warpfunction)
     
   }
 
@@ -2123,6 +2128,12 @@ demo_sigmoid <- function(
     tslope = c(0.4, 0.75, 1),    # slope scalars for poly-sigmoid
     tpoint = c(15, 38, 80)       # transition points for poly-sigmoid
   ) {
+    
+    # Font sizes 
+    label_size <- 5.5
+    title_size <- 20 
+    axis_size <- 12 
+    legend_size <- 10
     
     # Plot 1, logistic function ####
     
@@ -2162,22 +2173,22 @@ demo_sigmoid <- function(
         data = df_segments,
         aes(x = slope_seg_neg_x, xend = slope_seg_pos_x, y = slope_seg_neg_y, yend = slope_seg_pos_y),
         color = "blue4", linetype = "dashed", linewidth = 0.75) + 
-      annotate("text", x = -7, y = r+0.75, label = "upper asymptote", size = 7.5, color = "black") +
-      annotate("text", x = 7, y = -0.75, label = "lower asymptote", size = 7.5, color = "black") +
-      annotate("text", x = 3, y = r+0.75, label = "inflection point", size = 7.5, color = "red4") +
-      annotate("text", x = -2, y = r+1, angle = atan(m)*57.3, label = "slope", size = 7.5, color = "blue4") +
+      annotate("text", x = -7, y = r+0.75, label = "upper asymptote", size = label_size, color = "black") +
+      annotate("text", x = 7, y = -0.75, label = "lower asymptote", size = label_size, color = "black") +
+      annotate("text", x = 3, y = r+0.75, label = "inflection point", size = label_size, color = "red4") +
+      annotate("text", x = -2, y = r+1, angle = atan(m)*57.3, label = "slope", size = label_size, color = "blue4") +
       labs(
         x = "x",
-        y = expression(psi * "(x, r = 4, s = 1)"),
+        y = expression(psi * "(x, r, s)"),
         title = "The Logistic Function"
       )  +
       theme_minimal(base_size = 16) +
       theme(
-        plot.title = element_text(hjust = 0.5, size = 30),
-        axis.title = element_text(size = 20),
-        axis.text = element_text(size = 20),
-        legend.title = element_text(size = 18),
-        legend.text = element_text(size = 18)
+        plot.title = element_text(hjust = 0.5, size = title_size),
+        axis.title = element_text(size = axis_size),
+        axis.text = element_text(size = axis_size),
+        legend.title = element_text(size = legend_size),
+        legend.text = element_text(size = legend_size)
       )
     # saved at 1145 x 647
     
@@ -2261,9 +2272,9 @@ demo_sigmoid <- function(
         data = def_segments_slopes,
         aes(x = slope_seg_neg_x, xend = slope_seg_pos_x, y = slope_seg_neg_y, yend = slope_seg_pos_y),
         color = "blue4", linetype = "dashed", linewidth = 0.75) + 
-      annotate("text", x = block_midpoints, y = Rt+mean(Rt)*0.15, label = paste("rate", 1:length(Rt)), size = 7.5, color = "black") +
-      annotate("text", x = tpoint-max(x)*0.08, y = -max(y)*0.1, label = paste("t-point", 1:length(tpoint)), size = 7.5, color = "red4") +
-      annotate("text", x = tpoint-max(x)*0.035, y = y0*0.95, angle = atan(m)*57.3, label = paste("slope", 1:length(tslope)), size = 7.5, color = "blue4") +
+      annotate("text", x = block_midpoints, y = Rt+mean(Rt)*0.15, label = paste("rate", 1:length(Rt)), size = label_size, color = "black") +
+      annotate("text", x = tpoint-max(x)*0.08, y = -max(y)*0.1, label = paste("t-point", 1:length(tpoint)), size = label_size, color = "red4") +
+      annotate("text", x = tpoint-max(x)*0.035, y = y0*0.95, angle = atan(m)*57.3, label = paste("slope", 1:length(tslope)), size = label_size, color = "blue4") +
       labs(
         x = "x",
         y = expression(Psi * "(x, r, s, p)"),
@@ -2271,11 +2282,11 @@ demo_sigmoid <- function(
       )  +
       theme_minimal(base_size = 16) +
       theme(
-        plot.title = element_text(hjust = 0.5, size = 30),
-        axis.title = element_text(size = 20),
-        axis.text = element_text(size = 20),
-        legend.title = element_text(size = 18),
-        legend.text = element_text(size = 18)
+        plot.title = element_text(hjust = 0.5, size = title_size),
+        axis.title = element_text(size = axis_size),
+        axis.text = element_text(size = axis_size),
+        legend.title = element_text(size = legend_size),
+        legend.text = element_text(size = legend_size)
       )
     
     grid.arrange(demo_plot_logistic, demo_plot_sigmoid, ncol = 1)
