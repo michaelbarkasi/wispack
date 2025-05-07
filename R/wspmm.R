@@ -283,7 +283,6 @@ pvalues.samples <- function(
     mu.obs      # observed value, either mean of mu.B or actual observation
   ) {
     # Basic idea: Instead of centering data > bootstrapping > estimate parameter, bootstrap > estimate parameter > center data
-    # equivalent to: mean(abs(mu.B - mean(mu.B)) >= abs(mu.obs))
     Fn <- ecdf(mu.B - mean(mu.B))
     abs.mu.obs <- abs(mu.obs)
     return(
