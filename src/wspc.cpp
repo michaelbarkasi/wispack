@@ -1553,7 +1553,11 @@ Rcpp::NumericMatrix wspc::MCMC(
     int inf_loop_ctr = 0;
     int last_viable_step = 0;
     double acceptance_rate = 1.0;
-    IntegerVector tracker = iseq(n_steps/10, n_steps, 10*neighbor_filter);
+    int tracker_steps = 10*neighbor_filter;
+    if (tracker_steps > n_steps/2) {
+      tracker_steps = (int)n_steps/2;
+    }
+    IntegerVector tracker = iseq(n_steps/10, n_steps, tracker_steps);
     // Grab current point (model parameters) in random walk
     NumericVector params_current = fitted_parameters;
     NumericVector last_viable_parameters = params_current;
