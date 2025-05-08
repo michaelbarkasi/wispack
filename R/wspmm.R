@@ -25,6 +25,7 @@ wisp <- function(
     MCMC.steps = 1e4,
     MCMC.step.size = 0.05,
     MCMC.prior = 10.0,
+    MCMC.neighor.filter = 10,
     bootstraps.num = 0, 
     converged.resamples.only = TRUE,
     max.fork = 10,
@@ -99,12 +100,23 @@ wisp <- function(
     
     # Run MCMC simulation
     if (verbose) snk.report("Running MCMC stimulations (single-threaded)", end_breaks = 1)
+    start_time_MCMC <- Sys.time()
     MCMC_walk <- cpp_model$MCMC(
       MCMC.steps + MCMC.burnin, 
+      MCMC.neighor.filter,
       MCMC.step.size,
       MCMC.prior,
       verbose 
     )
+    run_time_MCMC <- Sys.time() - start_time_MCMC
+    if (verbose) {
+      snk.report...("MCMC simulation complete")
+      snk.print_vec("MCMC run time (total), minutes", c(as.numeric(run_time_MCMC, units = "mins")))
+      snk.print_vec("MCMC run time (per retained step), seconds", c(as.numeric(run_time_MCMC, units = "secs") / (MCMC.steps + MCMC.burnin)))
+      snk.print_vec("MCMC run time (per step), seconds", c((as.numeric(run_time_MCMC, units = "secs") / (MCMC.steps + MCMC.burnin))/MCMC.neighor.filter))
+    }
+    
+    # Clear out burn-in, if any
     if (MCMC.burnin > 0) {
       MCMC_walk <- MCMC_walk[-c(2:(2+MCMC.burnin-1)),]
     }
@@ -112,17 +124,25 @@ wisp <- function(
     if (bootstraps.num > 0) {
       
       # Run bootstrap fits in parallel with forking
+      start_time_bs <- Sys.time()
       if (verbose) snk.report("Running bootstrap fits (with forking)", end_breaks = 1)
       sample_results <- cpp_model$bs_batch(
         bootstraps.num, 
         max.fork,
         verbose
       )
+      run_time_bs <- Sys.time() - start_time_bs
+      if (verbose) {
+        snk.report...("Bootstrap simulation complete")
+        snk.print_vec("Bootstrap run time (total), minutes", c(as.numeric(run_time_bs, units = "mins")))
+        snk.print_vec("Bootstrap run time (per sample), seconds", c(as.numeric(run_time_bs, units = "secs") / bootstraps.num))
+        snk.print_vec("Bootstrap run time (per sample, per thread), seconds", c(as.numeric(run_time_bs, units = "secs") * max.fork / bootstraps.num), end_breaks = 1)
+      }
       
     }
     
     # Extract results and diagnostics
-    # Save MCMC estimates and diagnostics
+    # ... Save MCMC estimates and diagnostics
     n_params <- ncol(MCMC_walk) - 4
     sample.params.MCMC <- MCMC_walk[,1:n_params]
     diagnostics.MCMC <- data.frame(
@@ -133,7 +153,7 @@ wisp <- function(
     )
     if (bootstraps.num > 0) {
       
-      # Save bs estimates and diagnostics
+      # ... Save bs estimates and diagnostics
       n_params <- ncol(sample_results) - 4
       sample.params.bs <- sample_results[,1:n_params]
       diagnostics.bs <- data.frame( 
@@ -228,6 +248,15 @@ wisp <- function(
       plots.parameter.normality <- NULL
     }
     
+    # Examine one-step correlation in MCMC random walk 
+    results.sample.correlations <- sample.correlations(
+      wisp.results = results,
+      bootstraps.num > 0,
+      verbose = verbose
+    )
+    plots.sample.correlations <- results.sample.correlations$plot.sample.correlations
+    results[["diagnostics.sample_cor"]] <- results.sample.correlations$sample.correlations.values
+    
     # Plot structural parameter distribution
     plots.effect.dist <- plot.effect.dist(
       wisp.results = results,
@@ -256,7 +285,8 @@ wisp <- function(
       ratecount = plots.ratecount,
       parameters = plots.parameters,
       MCMC = plots.MCMC,
-      parameter.normality = plots.parameter.normality,
+      parameter.normality = plots.parameter.normality, 
+      parameter.sample.correlations = plots.sample.correlations,
       effect.dist = plots.effect.dist
     )
     results[["plots"]] <- plots
@@ -358,8 +388,7 @@ sample.stats <- function(
       recommended_resample_size <- num_of_tests / alpha
       if (verbose) {
         snk.report(paste0("Recommended resample size for alpha = ", alpha, ", ", num_of_tests, " tests"))
-        snk.print_vec("with bootstrapping", c(recommended_resample_size))
-        snk.print_vec("with MCMC", c(recommended_resample_size*10))
+        snk.print_vec("with bootstrapping/MCMC", c(recommended_resample_size))
         snk.print_vec("Actual resample size", c(nrow(sample_results)))
       }
       
@@ -578,6 +607,95 @@ analyze.residuals <- function(
         stats = stats.residuals,
         stats.log = stats.residuals.log,
         plots = plots.residuals
+      )
+    )
+    
+  }
+
+# Function to check for correlations between samples one-step a part 
+sample.correlations <- function( 
+    wisp.results,
+    check_bs, 
+    verbose = TRUE
+  ) {
+    
+    # Font sizes 
+    label_size <- 5.5
+    title_size <- 20 
+    axis_size <- 12 
+    legend_size <- 10
+    
+    if (verbose) {
+      snk.report("Calculating correlations between samples one-step a part", initial_breaks = 1)
+      snk.horizontal_rule(reps = snk.simple_break_reps)
+    }
+    
+    # Grab sample results
+    sample_results_MCMC <- wisp.results$sample.params.MCMC
+    if (check_bs) sample_results_bs <- wisp.results$sample.params.bs
+    
+    # Compute correlations
+    n_params <- ncol(sample_results_MCMC)
+    if (check_bs) {
+      if (n_params != ncol(sample_results_bs)) {
+        stop("Sample results from MCMC and bootstrap have different number of parameters")
+      }
+    }
+    # ... for MCMC random walk steps
+    cor_MCMC <- rep(NA, n_params)
+    n_samples_MCMC <- nrow(sample_results_MCMC)
+    for (i in seq_len(n_params)) {
+      cor_MCMC[i] <- cor(
+        x = sample_results_MCMC[c(1:(n_samples_MCMC-1)),i], 
+        y = sample_results_MCMC[c(2:n_samples_MCMC),i],
+        method = "pearson"
+      )
+    }
+    if (check_bs) {
+      # ... for bootstraps (control, expect no correlation) 
+      cor_bs <- rep(NA, n_params)
+      n_samples_bs <- nrow(sample_results_bs)
+      for (i in seq_len(n_params)) {
+        cor_bs[i] <- cor(
+          x = sample_results_bs[c(1:(n_samples_bs-1)),i], 
+          y = sample_results_bs[c(2:n_samples_bs),i],
+          method = "pearson"
+        )
+      }
+    } else {
+      cor_bs <- NULL
+    }
+    
+    # Make summary table
+    sample_correlations <- data.frame(
+      sample_cor = c(cor_MCMC, cor_bs),
+      method = c(rep("MCMC", n_params), rep("Bootstrap", n_params*check_bs))
+    )
+    
+    # Make summary density plot 
+    plot_sample_correlations <- ggplot(sample_correlations, aes(x = sample_cor, color = method)) +
+      geom_density(linewidth = 1.2) +
+      theme_minimal() +
+      labs(
+        title = "Correlation Between Resampled Parameters One Step a Part", 
+        x = "Correlation", 
+        y = "Density"
+      ) +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = title_size),
+        axis.title = element_text(size = axis_size),
+        axis.text = element_text(size = axis_size),
+        legend.title = element_text(size = legend_size),
+        legend.text = element_text(size = legend_size)
+      )
+    
+    # Print summary table of stat analysis 
+    if (verbose) snk.print_table("Sample correlations", sample_correlations, head = TRUE, initial_breaks = 0)
+    
+    return(
+      list(
+        sample.correlations.values = sample_correlations,
+        plot.sample.correlations = plot_sample_correlations
       )
     )
     
@@ -1731,6 +1849,12 @@ plot.parameter.estimation.normality <- function(
     # by taking the mean of the resamples, then, for each of bs and MCMC, we'll have a distribution of p-values, 
     # one p-value per parameter. We can then compare the distributions of p-values for bs and MCMC by 
     # looking at their density plots to see if one systematically produces more normal distributions than the other.
+   
+    # Font sizes 
+    label_size <- 5.5
+    title_size <- 20 
+    axis_size <- 12 
+    legend_size <- 10
     
     param_mcmc <- wisp.results[["sample.params.MCMC"]]
     param_bs <- wisp.results[["sample.params.bs"]]
@@ -1756,7 +1880,7 @@ plot.parameter.estimation.normality <- function(
       return(
         data.frame(
           sw_stat = c(mean(mcmc_sw_stat), mean(bs_sw_stat)),
-          group = as.factor(c("mcmc", "bs"))
+          method = as.factor(c("MCMC", "Bootstrap"))
         )
       )
     })
@@ -1764,7 +1888,7 @@ plot.parameter.estimation.normality <- function(
     df_dens <- do.call(rbind, dens_list)
     
     # Plot
-    plot_comparison <- ggplot(df_dens, aes(x = sw_stat, color = group)) +
+    plot_comparison <- ggplot(df_dens, aes(x = sw_stat, color = method)) +
       geom_density(linewidth = 1.2) +
       theme_minimal() +
       labs(
@@ -1773,12 +1897,12 @@ plot.parameter.estimation.normality <- function(
         y = "Density"
       ) +
       theme(
-        plot.title = element_text(hjust = 0.5, size = 30),
-        axis.title = element_text(size = 20),
-        axis.text = element_text(size = 20),
-        legend.title = element_text(size = 18),
-        legend.text = element_text(size = 18)
-      ) 
+        plot.title = element_text(hjust = 0.5, size = title_size),
+        axis.title = element_text(size = axis_size),
+        axis.text = element_text(size = axis_size),
+        legend.title = element_text(size = legend_size),
+        legend.text = element_text(size = legend_size)
+      )
     
     return(plot_comparison)
   }

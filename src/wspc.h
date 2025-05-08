@@ -258,6 +258,7 @@ class wspc {
     // Markov-chain Monte Carlo (MCMC) simulation
     Rcpp::NumericMatrix MCMC(
         int n_steps,                        // Number of steps to take in random walk
+        int neighbor_filter,                // Keep only ever neighbor_filter step
         double step_size,                   // Step size for random walk
         double prior_sd,                    // Standard deviation of prior distribution
         bool verbose
