@@ -1511,6 +1511,7 @@ Rcpp::NumericMatrix wspc::bs_batch(
 // Markov-chain Monte Carlo (MCMC) simulation
 Rcpp::NumericMatrix wspc::MCMC(
     int n_steps,              // Number of steps to take in random walk
+    int neighbor_filter,      // Keep only ever neighbor_filter step
     double step_size,         // Step size for random walk
     double prior_sd,          // standard deviation to use in prior
     bool verbose
@@ -1552,10 +1553,13 @@ Rcpp::NumericMatrix wspc::MCMC(
     int inf_loop_ctr = 0;
     int last_viable_step = 0;
     double acceptance_rate = 1.0;
-    IntegerVector tracker = iseq(n_steps/10, n_steps, 10);
+    IntegerVector tracker = iseq(n_steps/10, n_steps, 10*neighbor_filter);
     // Grab current point (model parameters) in random walk
     NumericVector params_current = fitted_parameters;
     NumericVector last_viable_parameters = params_current;
+    
+    // Initialize neighbor counter
+    int neighbor_counter = 0;
     
     // Take steps, Random-walk Metropolois algorithm
     while (step < n_steps) {
@@ -1623,23 +1627,29 @@ Rcpp::NumericMatrix wspc::MCMC(
       // Accept or reject the proposed step
       double ran_draw = R::runif(0.0, 1.0); 
       if (ran_draw < acceptance) {
-        // Tracker
-        if (any_true(eq_left_broadcast(tracker, step))) {
-          int this_step_batch = Rwhich(eq_left_broadcast(tracker, step))[0];
-          Rcpp::Rcout << "step: " << (this_step_batch + 1) * (n_steps/tracker.size()) << "/" << n_steps << std::endl;
-        }
-        // Save new parameters and results
-        dVec full_results = to_dVec(params_next);
-        full_results.reserve(full_results.size() + 4);
-        full_results.push_back(-loglik_next);
-        full_results.push_back(-loglik_next - (bd_current_transformed.val() - 1.0));
-        full_results.push_back(acceptance); // acceptance ratio
-        full_results.push_back(double(ctr + 0.0)); // ctr number
-        RMW_steps.row(step) = to_NumVec(full_results);
         // Set new parameters as current 
         params_current = params_next;
-        // Advance step
-        step++;
+        // Advance neighbor counter 
+        neighbor_counter++;
+        if (neighbor_counter == neighbor_filter) {
+          // Tracker
+          if (any_true(eq_left_broadcast(tracker, step))) {
+            int this_step_batch = Rwhich(eq_left_broadcast(tracker, step))[0];
+            Rcpp::Rcout << "step: " << (this_step_batch + 1) * (n_steps/tracker.size()) << "/" << n_steps << std::endl;
+          }
+          // Save new parameters and results
+          dVec full_results = to_dVec(params_next);
+          full_results.reserve(full_results.size() + 4);
+          full_results.push_back(-loglik_next);
+          full_results.push_back(-loglik_next - (bd_current_transformed.val() - 1.0));
+          full_results.push_back(acceptance); // acceptance ratio
+          full_results.push_back(double(ctr + 0.0)); // ctr number
+          RMW_steps.row(step) = to_NumVec(full_results);
+          // Advance step
+          step++;
+          // Reset neighbor counter
+          neighbor_counter = 0;
+        }
       } 
       
       // Advance counters
@@ -1647,7 +1657,7 @@ Rcpp::NumericMatrix wspc::MCMC(
       inf_loop_ctr++;
       
       // Check for infinite loop
-      acceptance_rate = static_cast<double>(step)/static_cast<double>(ctr);
+      acceptance_rate = (static_cast<double>(step)/static_cast<double>(ctr))*static_cast<double>(neighbor_filter);
       if (inf_loop_ctr > 200) {
         if (acceptance_rate < 0.01) {
           // ... go back to last viable step
