@@ -25,7 +25,7 @@ wisp <- function(
     MCMC.steps = 1e4,
     MCMC.step.size = 0.05,
     MCMC.prior = 10.0,
-    MCMC.neighor.filter = 10,
+    MCMC.neighbor.filter = 10,
     bootstraps.num = 0, 
     converged.resamples.only = TRUE,
     max.fork = 10,
@@ -103,7 +103,7 @@ wisp <- function(
     start_time_MCMC <- Sys.time()
     MCMC_walk <- cpp_model$MCMC(
       MCMC.steps + MCMC.burnin, 
-      MCMC.neighor.filter,
+      MCMC.neighbor.filter,
       MCMC.step.size,
       MCMC.prior,
       verbose 
@@ -113,7 +113,7 @@ wisp <- function(
       snk.report...("MCMC simulation complete")
       snk.print_vec("MCMC run time (total), minutes", c(as.numeric(run_time_MCMC, units = "mins")))
       snk.print_vec("MCMC run time (per retained step), seconds", c(as.numeric(run_time_MCMC, units = "secs") / (MCMC.steps + MCMC.burnin)))
-      snk.print_vec("MCMC run time (per step), seconds", c((as.numeric(run_time_MCMC, units = "secs") / (MCMC.steps + MCMC.burnin))/MCMC.neighor.filter))
+      snk.print_vec("MCMC run time (per step), seconds", c((as.numeric(run_time_MCMC, units = "secs") / (MCMC.steps + MCMC.burnin))/MCMC.neighbor.filter))
     }
     
     # Clear out burn-in, if any
