@@ -241,21 +241,12 @@ wisp <- function(
     
     # Plot normality comparison of MCMC and bootstrap estimates
     if (bootstraps.num > 0) {
-      plots.parameter.normality <- plot.parameter.estimation.normality(
+      plots.MCMC.bs.comparison <- plot.MCMC.bs.comparison(
         wisp.results = results
       )
     } else {
-      plots.parameter.normality <- NULL
+      plots.MCMC.bs.comparison <- NULL
     }
-    
-    # Examine one-step correlation in MCMC random walk 
-    results.sample.correlations <- sample.correlations(
-      wisp.results = results,
-      bootstraps.num > 0,
-      verbose = verbose
-    )
-    plots.sample.correlations <- results.sample.correlations$plot.sample.correlations
-    results[["diagnostics.sample_cor"]] <- results.sample.correlations$sample.correlations.values
     
     # Plot structural parameter distribution
     plots.effect.dist <- plot.effect.dist(
@@ -285,8 +276,7 @@ wisp <- function(
       ratecount = plots.ratecount,
       parameters = plots.parameters,
       MCMC = plots.MCMC,
-      parameter.normality = plots.parameter.normality, 
-      parameter.sample.correlations = plots.sample.correlations,
+      parameter.normality = plots.MCMC.bs.comparison, 
       effect.dist = plots.effect.dist
     )
     results[["plots"]] <- plots
@@ -607,95 +597,6 @@ analyze.residuals <- function(
         stats = stats.residuals,
         stats.log = stats.residuals.log,
         plots = plots.residuals
-      )
-    )
-    
-  }
-
-# Function to check for correlations between samples one-step a part 
-sample.correlations <- function( 
-    wisp.results,
-    check_bs, 
-    verbose = TRUE
-  ) {
-    
-    # Font sizes 
-    label_size <- 5.5
-    title_size <- 20 
-    axis_size <- 12 
-    legend_size <- 10
-    
-    if (verbose) {
-      snk.report("Calculating correlations between samples one-step a part", initial_breaks = 1)
-      snk.horizontal_rule(reps = snk.simple_break_reps)
-    }
-    
-    # Grab sample results
-    sample_results_MCMC <- wisp.results$sample.params.MCMC
-    if (check_bs) sample_results_bs <- wisp.results$sample.params.bs
-    
-    # Compute correlations
-    n_params <- ncol(sample_results_MCMC)
-    if (check_bs) {
-      if (n_params != ncol(sample_results_bs)) {
-        stop("Sample results from MCMC and bootstrap have different number of parameters")
-      }
-    }
-    # ... for MCMC random walk steps
-    cor_MCMC <- rep(NA, n_params)
-    n_samples_MCMC <- nrow(sample_results_MCMC)
-    for (i in seq_len(n_params)) {
-      cor_MCMC[i] <- cor(
-        x = sample_results_MCMC[c(1:(n_samples_MCMC-1)),i], 
-        y = sample_results_MCMC[c(2:n_samples_MCMC),i],
-        method = "pearson"
-      )
-    }
-    if (check_bs) {
-      # ... for bootstraps (control, expect no correlation) 
-      cor_bs <- rep(NA, n_params)
-      n_samples_bs <- nrow(sample_results_bs)
-      for (i in seq_len(n_params)) {
-        cor_bs[i] <- cor(
-          x = sample_results_bs[c(1:(n_samples_bs-1)),i], 
-          y = sample_results_bs[c(2:n_samples_bs),i],
-          method = "pearson"
-        )
-      }
-    } else {
-      cor_bs <- NULL
-    }
-    
-    # Make summary table
-    sample_correlations <- data.frame(
-      sample_cor = c(cor_MCMC, cor_bs),
-      method = c(rep("MCMC", n_params), rep("Bootstrap", n_params*check_bs))
-    )
-    
-    # Make summary density plot 
-    plot_sample_correlations <- ggplot(sample_correlations, aes(x = sample_cor, color = method)) +
-      geom_density(linewidth = 1.2) +
-      theme_minimal() +
-      labs(
-        title = "Correlation Between Resampled Parameters One Step a Part", 
-        x = "Correlation", 
-        y = "Density"
-      ) +
-      theme(
-        plot.title = element_text(hjust = 0.5, size = title_size),
-        axis.title = element_text(size = axis_size),
-        axis.text = element_text(size = axis_size),
-        legend.title = element_text(size = legend_size),
-        legend.text = element_text(size = legend_size)
-      )
-    
-    # Print summary table of stat analysis 
-    if (verbose) snk.print_table("Sample correlations", sample_correlations, head = TRUE, initial_breaks = 0)
-    
-    return(
-      list(
-        sample.correlations.values = sample_correlations,
-        plot.sample.correlations = plot_sample_correlations
       )
     )
     
@@ -1707,33 +1608,84 @@ plot.child.summary <- function(
 
 # Method to plot random walks from MCMC simulations 
 plot.MCMC.walks <- function(
-    wisp.results
+    wisp.results,
+    low_samples = 10
   ) {
+   
+    # Low samples used in demo: 
+    # c(43, 201, 141, 4, 204, 39, 194, 57, 162, 143)
+    
+    # Font sizes 
+    label_size <- 5.5
+    title_size <- 20 
+    axis_size <- 12 
+    legend_size <- 10
     
     # Grab sampled parameters
     sampled_params <- wisp.results$sample.params
     
+    # Find high-value parameters
+    high_val <- 20 < colMeans(sampled_params)
+    
     # Down-sample 
     these_rows <- as.integer(seq(1, nrow(sampled_params), length.out = 1000))
-    sampled_params <- sampled_params[these_rows,]
-    
-    # Take abs and log
-    sampled_params <- log(abs(sampled_params) + 1)
+    sampled_params_high <- sampled_params[these_rows,high_val]
+    sampled_params_low <- sampled_params[these_rows,!high_val]
+    if (length(low_samples) > 1) these_cols <- low_samples
+    else these_cols <- sample(1:ncol(sampled_params_low), low_samples, replace = FALSE)
+    sampled_params_low <- sampled_params_low[,these_cols]
+    sampled_params_low <- sampled_params_low[,order(colMeans(abs(sampled_params_low)), decreasing = TRUE)]
     
     # Make long-format data frame
-    walks <- data.frame(
-      value = c(sampled_params),
-      param = rep(1:ncol(sampled_params), each = nrow(sampled_params)),
-      step = rep(1:nrow(sampled_params), ncol(sampled_params))
+    walks_low <- data.frame(
+      value = c(sampled_params_low),
+      param = as.factor(rep(1:ncol(sampled_params_low), each = nrow(sampled_params_low))),
+      step = rep(these_rows, ncol(sampled_params_low))
+    )
+    walks_high <- data.frame(
+      value = c(sampled_params_high),
+      param = as.factor(rep(1:ncol(sampled_params_high), each = nrow(sampled_params_high))),
+      step = rep(these_rows, ncol(sampled_params_high))
     )
     
+    # Make colors 
+    getPalette <- colorRampPalette(RColorBrewer::brewer.pal(9, "Set1"))  # Set1 has max 9 colors
+    colors_low <- getPalette(ncol(sampled_params_low))
+    colors_high <- getPalette(ncol(sampled_params_high))
+    
     # Make plot
-    plot.walks.parameters <- ggplot(data = walks, 
-                   aes(x = step, y = value, group = param, color = param)) + 
+    plot.walks.parameters_low <- ggplot(
+      data = walks_low, 
+      aes(x = step, y = value, group = param, color = param)
+    ) + 
       geom_line() + 
-      ggtitle("Parameter Walks from MCMC Estimation") +
-      theme_minimal()
-    print(plot.walks.parameters)
+      ggtitle("Parameter Walks from MCMC Estimation, Low-Values") +
+      scale_color_manual(values = colors_low) +
+      theme_minimal() + 
+      theme(
+        plot.title = element_text(hjust = 0.5, size = title_size),
+        axis.title = element_text(size = axis_size),
+        axis.text = element_text(size = axis_size),
+        legend.title = element_text(size = legend_size),
+        legend.text = element_text(size = legend_size),
+        legend.position = "none"
+      )
+    plot.walks.parameters_high <- ggplot(
+      data = walks_high, 
+      aes(x = step, y = value, group = param, color = param)
+    ) + 
+      geom_line() + 
+      ggtitle("Parameter Walks from MCMC Estimation, High-Values") +
+      scale_color_manual(values = colors_high) +
+      theme_minimal() + 
+      theme(
+        plot.title = element_text(hjust = 0.5, size = title_size),
+        axis.title = element_text(size = axis_size),
+        axis.text = element_text(size = axis_size),
+        legend.title = element_text(size = legend_size),
+        legend.text = element_text(size = legend_size),
+        legend.position = "none"
+      )
     
     # Grab trace of negloglik and normalize
     nll <- unlist(wisp.results[["diagnostics.MCMC"]][["neg.loglik"]])
@@ -1761,8 +1713,28 @@ plot.MCMC.walks <- function(
         y = "Normalized Value", 
         title = "Negative log likelihood over MCMC random walk", 
         color = "Type"
-        )
-    print(plot.walks.nll)
+      ) + 
+      theme(
+        plot.title = element_text(hjust = 0.5, size = title_size),
+        axis.title = element_text(size = axis_size),
+        axis.text = element_text(size = axis_size),
+        legend.title = element_text(size = legend_size),
+        legend.text = element_text(size = legend_size)
+      )
+    
+    grid.arrange(
+      plot.walks.parameters_low, 
+      plot.walks.parameters_high, 
+      plot.walks.nll,
+      ncol = 1)
+    
+    return(
+      list(
+        plot.walks.parameters_low = plot.walks.parameters_low,
+        plot.walks.parameters_high = plot.walks.parameters_high,
+        plot.walks.nll = plot.walks.nll
+      )
+    )
     
   }
 
@@ -1836,7 +1808,7 @@ plot.decomposition <- function(
     
   }
 
-plot.parameter.estimation.normality <- function(
+plot.MCMC.bs.comparison <- function(
     wisp.results
   ) {
     
@@ -1849,19 +1821,24 @@ plot.parameter.estimation.normality <- function(
     # by taking the mean of the resamples, then, for each of bs and MCMC, we'll have a distribution of p-values, 
     # one p-value per parameter. We can then compare the distributions of p-values for bs and MCMC by 
     # looking at their density plots to see if one systematically produces more normal distributions than the other.
-   
+    
+    # Ensure reproducibility (sampling via Shaprio test not very stable)
+    set.seed(1234)
+    
     # Font sizes 
     label_size <- 5.5
     title_size <- 20 
     axis_size <- 12 
     legend_size <- 10
     
+    # Grab data
     param_mcmc <- wisp.results[["sample.params.MCMC"]]
     param_bs <- wisp.results[["sample.params.bs"]]
     if (is.null(param_bs) || is.null(param_mcmc)) {
       stop("One of bootstrap or MCMC parameter estimates are missing.")
     }
-   
+    
+    # Find mean "normality" (p-value of shaprio test) for each parameter, on each method
     dens_list <- lapply(1:ncol(param_mcmc), function(pnum) {
       mcmc_vals <- param_mcmc[, pnum]
       bs_vals   <- param_bs[, pnum]
@@ -1888,7 +1865,7 @@ plot.parameter.estimation.normality <- function(
     df_dens <- do.call(rbind, dens_list)
     
     # Plot
-    plot_comparison <- ggplot(df_dens, aes(x = sw_stat, color = method)) +
+    plot_comparison_Shaprio <- ggplot(df_dens, aes(x = sw_stat, color = method)) +
       geom_density(linewidth = 1.2) +
       theme_minimal() +
       labs(
@@ -1904,7 +1881,143 @@ plot.parameter.estimation.normality <- function(
         legend.text = element_text(size = legend_size)
       )
     
-    return(plot_comparison)
+    # For each method, order parameters by "normality" (p-value of shaprio test)
+    mcmc_pvals <- rep(NA, ncol(param_mcmc))
+    bs_pvals   <- rep(NA, ncol(param_bs))
+    for (i in 1:ncol(param_mcmc)) {
+      mcmc_vals <- param_mcmc[, i]
+      bs_vals   <- param_bs[, i]
+      n_resamples <- 100
+      mcmc_sw_stat <- rep(NA, n_resamples)
+      bs_sw_stat   <- rep(NA, n_resamples)
+      
+      sample_size <- 35
+      for (i in 1:n_resamples) {
+        mcmc_vals_sample <- sample(mcmc_vals, sample_size, replace = TRUE)
+        bs_vals_sample   <- sample(bs_vals, sample_size, replace = TRUE)
+        mcmc_sw_stat[i] <- shapiro.test(mcmc_vals_sample)$p.value
+        bs_sw_stat[i]   <- shapiro.test(bs_vals_sample)$p.value
+      }
+      mcmc_pvals[i] <- mean(mcmc_sw_stat)
+      bs_pvals[i] <- mean(bs_sw_stat)
+    }
+    mcmc_pvals_order <- order(mcmc_pvals)
+    bs_pvals_order <- order(bs_pvals)
+    
+    # Take 10 equally spaced parameteres from the ordered list
+    take <- 10
+    mcmc_pvals_order <- mcmc_pvals_order[as.integer(seq(1,length(mcmc_pvals_order), length.out = take))]
+    bs_pvals_order <- bs_pvals_order[as.integer(seq(1,length(bs_pvals_order), length.out = take))]
+    
+    # Precompute density estimates for each param and group
+    dens_list <- lapply(1:take, function(pnum) {
+      mcmc_vals <- param_mcmc[, mcmc_pvals_order[pnum]]
+      bs_vals   <- param_bs[, bs_pvals_order[pnum]]
+      
+      # Density and centering
+      d_mcmc <- density(mcmc_vals)
+      d_bs   <- density(bs_vals)
+      mcmc_peak <- d_mcmc$x[which.max(d_mcmc$y)]
+      bs_peak   <- d_bs$x[which.max(d_bs$y)]
+      
+      # Return centered density curves
+      data.frame(
+        x = c(d_mcmc$x - mcmc_peak, d_bs$x - bs_peak),
+        y = c(d_mcmc$y, d_bs$y),
+        method = rep(c("MCMC", "Bootstrap"), each = length(d_mcmc$x)),
+        param = factor(pnum)
+      )
+    })
+    
+    df_dens <- do.call(rbind, dens_list)
+    df_dens$y <- log(df_dens$y+1)
+    
+    # Plot precomputed densities
+    plot_comparison_density <- ggplot(df_dens, aes(x = x, y = y, color = method, method = interaction(method, param))) +
+      geom_line(linewidth = 1) +
+      theme_minimal() +
+      labs(
+        title = "Resampled Parameter Distribution Comparison",
+        x = "Parameter Value Centered with Peak Density at Zero", y = "Log Density + 1") +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = title_size),
+        axis.title = element_text(size = axis_size),
+        axis.text = element_text(size = axis_size),
+        legend.title = element_text(size = legend_size),
+        legend.text = element_text(size = legend_size)
+      )
+    
+    # Grab sample results
+    sample_results_MCMC <- wisp.results$sample.params.MCMC
+    sample_results_bs <- wisp.results$sample.params.bs
+    
+    # Compute correlations
+    n_params <- ncol(sample_results_MCMC)
+    if (n_params != ncol(sample_results_bs)) {
+      stop("Sample results from MCMC and bootstrap have different number of parameters")
+    }
+    # ... for MCMC random walk steps
+    cor_MCMC <- rep(NA, n_params)
+    n_samples_MCMC <- nrow(sample_results_MCMC)
+    for (i in seq_len(n_params)) {
+      cor_MCMC[i] <- cor(
+        x = sample_results_MCMC[c(1:(n_samples_MCMC-1)),i], 
+        y = sample_results_MCMC[c(2:n_samples_MCMC),i],
+        method = "pearson"
+      )
+    }
+    # ... for bootstraps (control, expect no correlation) 
+    cor_bs <- rep(NA, n_params)
+    n_samples_bs <- nrow(sample_results_bs)
+    for (i in seq_len(n_params)) {
+      cor_bs[i] <- cor(
+        x = sample_results_bs[c(1:(n_samples_bs-1)),i], 
+        y = sample_results_bs[c(2:n_samples_bs),i],
+        method = "pearson"
+      )
+    }
+    
+    # Make summary table
+    den_MCMC <- density(cor_MCMC)
+    den_bs <- density(cor_bs)
+    sample_correlations <- data.frame(
+      density = log(c(den_MCMC$y, den_bs$y) + 1),
+      auto_cor = c(den_MCMC$x, den_bs$x),
+      method = c(rep("MCMC", length(den_MCMC$x)), rep("Bootstrap", length(den_bs$x)))
+    )
+    
+    # Make summary density plot 
+    plot_sample_correlations <- ggplot(sample_correlations, aes(x = auto_cor, y = density, color = method)) +
+      geom_line(linewidth = 1.2) +
+      theme_minimal() +
+      labs(
+        title = "Next-step Autocorrelation Between Parameter Resamples", 
+        x = "Autocorrelation", 
+        y = "Log Density + 1"
+      ) +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = title_size),
+        axis.title = element_text(size = axis_size),
+        axis.text = element_text(size = axis_size),
+        legend.title = element_text(size = legend_size),
+        legend.text = element_text(size = legend_size)
+      )
+    
+    grid.arrange(
+      plot_comparison_density,
+      plot_comparison_Shaprio,
+      plot_sample_correlations,
+      ncol = 1
+    )
+    
+    return(
+      list(
+        plot_sample_correlations = plot_sample_correlations,
+        plot_comparison_Shaprio = plot_comparison_Shaprio,
+        plot_comparison_density = plot_comparison_density
+      )
+    )
+    
   }
 
 # Debugging and misc ###################################################################################################
