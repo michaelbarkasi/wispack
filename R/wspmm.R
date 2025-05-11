@@ -441,6 +441,12 @@ analyze.residuals <- function(
       snk.horizontal_rule(reps = snk.simple_break_reps)
     }
     
+    # Font sizes 
+    label_size <- 5.5
+    title_size <- 20 
+    axis_size <- 12 
+    legend_size <- 12
+    
     if (verbose) snk.report...("Computing residuals")
     # Compute residuals 
     wisp.results$count.data.summed$residuals <- wisp.results$count.data.summed$pred - wisp.results$count.data.summed$count
@@ -455,8 +461,8 @@ analyze.residuals <- function(
       dispersion.matrix = wisp.results$gamma.dispersion
     ) {
       
-      clean_parents <- parents[ !is.na(resids)]
-      clean_child <- child[ !is.na(resids)]
+      clean_parents <- parents[!is.na(resids)]
+      clean_child <- child[!is.na(resids)]
       resids <- resids[!is.na(resids)] 
       n <- length(resids)
       sd_resid <- sd(resids)
@@ -492,18 +498,37 @@ analyze.residuals <- function(
         convolved_quantile[i] <- this_quantile
       }
       
-      df <- data.frame(convolved_quantile, resids)
+      qq1 <- qqnorm(resids, plot.it = FALSE)
+      
+      # Put into one data frame with a group column
+      df <- rbind(
+        data.frame(sample = qq1$y, theoretical = qq1$x, group = "Normal"),
+        data.frame(sample = resids, theoretical = convolved_quantile, group = "convolved")
+      )
       
       # Create the ggplot
-      resid_plot <- ggplot(df, aes(x = convolved_quantile, y = resids)) +
-        geom_point(color = "steelblue", size = 2) +  
+      resid_plot <- ggplot(df, aes(x = theoretical, y = sample, color = group)) +
+        geom_point(size = 1.5) +  
         geom_abline(intercept = mean_resid, slope = sd_resid, color = "black", linewidth = 0.8, linetype = "dashed") +  
         labs(
-          x = "Ordered Log-residuals",
-          y = "Theoretical gamma-convolved Quantiles",
+          y = "Ordered Log-residuals",
+          x = "Theoretical Quantiles",
           title = paste0("Q-Q Plot of Log-residuals (", gp, ")")
         ) +
-        theme_minimal()
+        scale_color_manual(
+          name = "Quantile Distribution",
+          labels = c("Normal", "Gamma Convolved"),
+          values = c("Normal" = "steelblue", "convolved" = "red")
+        ) +
+        theme_minimal() +
+        theme(
+          legend.position = "bottom",
+          plot.title = element_text(hjust = 0.5, size = title_size),
+          axis.title = element_text(size = axis_size),
+          axis.text = element_text(size = axis_size),
+          legend.title = element_text(size = legend_size),
+          legend.text = element_text(size = legend_size)
+        )
       
       return(resid_plot)
       
@@ -539,7 +564,15 @@ analyze.residuals <- function(
       hist_resids_plot <- ggplot(df_wide, aes(x=residuals.log)) +
         geom_histogram(bins = 50, fill = "steelblue", color = "black", na.rm = TRUE) + 
         labs(x = "Log-residual Value", y = "Frequency", title = paste0("Histograms of Log-residuals (",gp,")")) +
-        theme_minimal()
+        theme_minimal() + 
+        theme(
+          legend.position = "bottom",
+          plot.title = element_text(hjust = 0.5, size = title_size),
+          axis.title = element_text(size = axis_size),
+          axis.text = element_text(size = axis_size),
+          legend.title = element_text(size = legend_size),
+          legend.text = element_text(size = legend_size)
+        )
       
       # qq-plot
       qq_resids_plot <- qq_convolved(
