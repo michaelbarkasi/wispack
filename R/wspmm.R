@@ -2488,7 +2488,7 @@ demo_sigmoid <- function(
     for (i in 1:length(y0)) {
       y0[i] <- poly_sigmoid_R(
         y0[i],  # input 
-        deg,      # degree 
+        deg,    # degree 
         Rt,     # Rates
         tslope, # slope scalars
         tpoint  # inflection points
@@ -2533,7 +2533,7 @@ demo_sigmoid <- function(
       geom_line(linewidth = 1.5) +  
       geom_vline(xintercept = tpoint, linetype = "dashed", color = "red4", linewidth = 1) +
       ylim(ylower, yupper) +
-      coord_fixed()  +
+      coord_fixed() +
       geom_segment(
         data = def_segments_rates,
         aes(x = x0, xend = x1, y = y0, yend = y1),
