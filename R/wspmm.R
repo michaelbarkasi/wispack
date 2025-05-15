@@ -2083,6 +2083,374 @@ find_centroid <- function(
     return(d)
   }
 
+# Method to estimate fix-ran effect ratio (for prior) 
+analyze_diff <- function(
+    wisp_results,
+    count_type     # Character, one of: "count", "pred", "count.log", or "pred.log"
+  ) {
+    
+    # Grab count data frame
+    count_data <- wisp_results$count.data.summed
+    
+    # Grab random effects levels 
+    ran_lvls <- wisp_results$grouping.variables$ran.lvls[-c(1)] # remove "none" level
+    n_ran_lvls <- length(ran_lvls)
+    
+    # Get treatment levels instanced by each ran level
+    trts <- wisp_results$treatment$names
+    trts_comps <- wisp_results$treatment$components
+    names(trts_comps) <- trts
+    n_trts <- length(trts)
+    trt_lvls_in_ran <- list()
+    for (m in ran_lvls) {
+      mask <- count_data$ran == m & !is.na(count_data$count)
+      trt_lvls_in_ran[[m]] <- unique(count_data$treatment[mask])
+    }
+    
+    # Grab fixed effects levels
+    fix <- wisp_results$fix
+    names(fix$lvls) <- fix$name
+    names(fix$ref.lvl) <- fix$name
+    names(fix$treat.lvl) <- fix$name
+    n_fix <- length(fix$name)
+    
+    # Make treatment component array
+    trt_comp_array <- array(
+      as.character(NA),
+      dim = c(n_trts, n_fix),
+      dimnames = list(trts, fix$name)
+    )
+    for (t in trts) {
+      if (t == "ref") {
+        trt_comp_array[t,] <- fix$ref.lvl
+      } else {
+        for (fe in fix$name) {
+          if (any(trts_comps[[t]] %in% fix$lvls[[fe]])) {
+            trt_comp_array[t, fe] <- fix$treat.lvl[[fe]]
+          } else {
+            trt_comp_array[t, fe] <- fix$ref.lvl[fe]
+          }
+        }
+      }
+    }
+    
+    # Identify which treatment pairs differ only on one component 
+    trt_oneoff_array <- array(
+      FALSE,
+      dim = c(n_trts, n_trts),
+      dimnames = list(trts, trts)
+    )
+    for (ti in 1:(n_trts - 1)) {
+      for (tj in (ti + 1):n_trts) {
+        if (sum(trt_comp_array[ti,] != trt_comp_array[tj,]) == 1) {
+          trt_oneoff_array[ti,tj] <- TRUE
+          trt_oneoff_array[tj,ti] <- TRUE
+        }
+      }
+    }
+    
+    # Function to make data matrices 
+    # ... will randomly nudge the provided tpoints
+    make_data_matrices <- function(
+      count_type 
+      ) {
+        
+        # Grab prelim info
+        parents <- wisp_results$grouping.variables$parent.lvls
+        n_parents <- length(parents)
+        children <- wisp_results$grouping.variables$child.lvls
+        n_children <- length(children)
+        bins <- unique(count_data$bin)
+        n_bins <- length(bins)
+        param_names <- names(wisp_results$fitted.parameters)
+        degs <- array( 
+          0,
+          dim = c(n_children, n_parents),
+          dimnames = list(child = children, parent = parents)
+        )
+        tpoints <- wisp_results$change.points
+        tslopes <- wisp_results$est.slopes
+        
+        # Make full count data matrices
+        data0 <- array(
+          NA, 
+          dim = c(
+            n_bins, n_children, n_parents,
+            n_ran_lvls,
+            n_trts
+          ),
+          dimnames = list(bin = bins, child = children, parent = parents, ran = ran_lvls, fixedeffect = trts)
+        )
+        for (m in ran_lvls) {
+          for (t in trt_lvls_in_ran[[m]]) {
+            for (g in children) {
+              for (p in parents) {
+                mask <- count_data$ran == m & count_data$treatment == t & count_data$child == g & count_data$parent == p
+                if (sum(mask) == n_bins) data0[, g, p, m, t] <- count_data[,count_type][mask]
+              }
+            }
+          }
+        }
+        
+        # Find t-points and degrees for each parent-child pair
+        for (p in parents) {
+          for (g in children) {
+            degs[g, p] <- 0
+            tpoints_pg <- tpoints[[p]][[g]]
+            if (length(tpoints_pg) > 0) degs[g, p] <- nrow(tpoints_pg)
+          }
+        }
+        max_deg <- max(degs)
+        max_blocks <- max_deg + 1
+        
+        # Make tpoint and tslope matrices 
+        datat <- array(
+          NA,
+          dim = c(
+            max_deg, n_children, n_parents,
+            n_ran_lvls + 1,
+            n_trts
+          ),
+          dimnames = list(tp = 1:max_deg, child = children, parent = parents, ran = c("none", ran_lvls), fixedeffect = trts)
+        )
+        datas <- array(
+          NA,
+          dim = c(
+            max_deg, n_children, n_parents,
+            n_ran_lvls + 1,
+            n_trts
+          ),
+          dimnames = list(ts = 1:max_deg, child = children, parent = parents, ran = c("none", ran_lvls), fixedeffect = trts)
+        )
+        for (p in parents) {
+          for (g in children) {
+            for (m in ran_lvls) {
+              for (t in trt_lvls_in_ran[[m]]) {
+                t_num <- which(trts == t)
+                m_num <- which(c("none", ran_lvls) == m)
+                array_col_num <- (t_num - 1) * (n_ran_lvls + 1) + m_num
+                tpoints_pg <- tpoints[[p]][[g]]
+                tslopes_pg <- tslopes[[p]][[g]]
+                if (length(tpoints_pg) > 0) {
+                  tpoints_pg_this <- tpoints_pg[, array_col_num]
+                  tslopes_pg_this <- tslopes_pg[, array_col_num]
+                  # Randomly nudge 
+                  jit1 <- sample((-3):3, 1)
+                  tpoints_pg_this <- tpoints_pg_this + jit1
+                  jit2 <- runif(1, min = 0.75, max = 1.25)
+                  tslopes_pg_this <- tslopes_pg_this * jit2
+                  # Ensure in bounds and save
+                  if (any(tpoints_pg_this < 3)) tpoints_pg_this[tpoints_pg_this < 3] <- 3
+                  if (any(tpoints_pg_this > n_bins - 2)) tpoints_pg_this[tpoints_pg_this > n_bins - 2] <- n_bins - 2
+                  datat[1:degs[g, p], g, p, m, t] <- tpoints_pg_this
+                  datas[1:degs[g, p], g, p, m, t] <- tslopes_pg_this
+                }
+              }
+            }
+          }
+        }
+        
+        # Collapse full count data matrices down to blocks
+        data <- array(
+          NA, 
+          dim = c(
+            max_blocks, n_children, n_parents,
+            n_ran_lvls,
+            n_trts
+          ),
+          dimnames = list(bin = 1:max_blocks, child = children, parents, ran = ran_lvls, fixedeffect = trts)
+        )
+        for (m in ran_lvls) {
+          for (t in trt_lvls_in_ran[[m]]) {
+            if (length(data0[, , , m, t]) > 0) {
+              for (g in children) {
+                for (p in parents) {
+                  if (degs[g, p] == 0) {
+                    data[1, g, p, m, t] <- mean(data0[, g, p, m, t])
+                  } else {
+                    tpoints_pgtm <- datat[, g, p, m, t]
+                    for (i in 1:(degs[g, p] + 1)) {
+                      if (i == 1) {
+                        row_batch <- 1:(tpoints_pgtm[i] - 1) 
+                      } else if (i > degs[g, p]) {
+                        row_batch <- tpoints_pgtm[i - 1]:n_bins
+                      } else {
+                        row_batch <- tpoints_pgtm[i - 1]:(tpoints_pgtm[i] - 1) 
+                      }
+                      data[i, g, p, m, t] <- mean(data0[row_batch, g, p, m, t])
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        return(
+          list(
+            count_data = data,
+            tpoint_data = datat,
+            tslope_data = datas
+          )
+        )
+        
+      }
+    
+    # Function for finding normalized differences between random levels
+    find_norm_diffs <- function(
+      data,
+      random # If not random, then one-off
+      ) {
+        
+        # Initialize array to track which random levels and treatments have been compared
+        running_tally <- array(
+          as.character(NA),
+          dim = c(2, 4)
+        )
+        
+        # Initialize variable to hold normalized differences
+        norm_diffs <- c()
+        
+        # ... then for each treatment level
+        for (t1 in trts) {
+          for (t2 in trts) {
+            
+            if (random) {
+              if (t1 != t2) next
+            } else if (!trt_oneoff_array[t1, t2]) {
+              next 
+            }
+            
+            # For each unique random-level pair 
+            for (m1 in ran_lvls) {
+              if (t1 %in% trt_lvls_in_ran[[m1]]) {
+                for (m2 in ran_lvls) {
+                  
+                  # Looking at variation between random levels, so don't compare levels to themselves
+                  if (t2 %in% trt_lvls_in_ran[[m2]] && m1 != m2) {
+                    
+                    # Grab random levels and treatments for this comparison
+                    this_row <- c(m1, m2, t1, t2)
+                    
+                    # Check if these random levels and treatments have been compared and skip if so
+                    if (any(apply(running_tally, 1, function(x) all(this_row %in% x)))) {
+                      next
+                    } else {
+                      
+                      # Grab data matrices for each random level and treatment level
+                      values1 <- data[, , , m1, t1]
+                      values2 <- data[, , , m2, t2]
+                      
+                      # Find the difference between these two random levels and associated treatments 
+                      diffs <- abs(values1 - values2)
+                      
+                      # If this is a legit comparison (no NA), normalize the differences and add to the list
+                      if (sum(!is.na(c(diffs))) > 0) {
+                        diffs <- diffs/values1
+                        diffs <- na.omit(c(diffs))
+                        diffs <- diffs[is.finite(diffs)]
+                        norm_diffs <- c(norm_diffs, diffs)
+                        running_tally <- rbind(running_tally, this_row)
+                      }
+                      
+                    }
+                    
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        return(norm_diffs)
+        
+      }
+    
+    # Run analysis a bunch
+    n_runs <- 1000
+    diff.ratio.c_vec <- rep(0, n_runs)
+    diff.ratio.tp_vec <- rep(0, n_runs)
+    diff.ratio.ts_vec <- rep(0, n_runs)
+    for (i in 1:n_runs) {
+      
+      # Make data matrices with random nudge of tpoints
+      data.both <- make_data_matrices(count_type)
+      data.c <- data.both$count_data
+      data.tp <- data.both$tpoint_data
+      data.ts <- data.both$tslope_data
+      
+      # For reach treatment level of each fixed effect, find normalized differences between random levels
+      ran.diffs.c <- find_norm_diffs(data.c, TRUE)
+      oneoff.diffs.c <- find_norm_diffs(data.c, FALSE)
+      diff.ratio.c <- mean(oneoff.diffs.c)/mean(ran.diffs.c)
+      
+      ran.diffs.tp <- find_norm_diffs(data.tp, TRUE)
+      oneoff.diffs.tp <- find_norm_diffs(data.tp, FALSE)
+      diff.ratio.tp <- mean(oneoff.diffs.tp)/mean(ran.diffs.tp)
+      
+      ran.diffs.ts <- find_norm_diffs(data.ts, TRUE)
+      oneoff.diffs.ts <- find_norm_diffs(data.ts, FALSE)
+      diff.ratio.ts <- mean(oneoff.diffs.ts)/mean(ran.diffs.ts)
+      
+      diff.ratio.c_vec[i] <- diff.ratio.c
+      diff.ratio.tp_vec[i] <- diff.ratio.tp
+      diff.ratio.ts_vec[i] <- diff.ratio.ts
+      
+    }
+    
+    # Adjust up so minimum is 1
+    if (min(diff.ratio.c_vec < 1)) diff.ratio.c_vec <- diff.ratio.c_vec + (1 - min(diff.ratio.c_vec))
+    if (min(diff.ratio.tp_vec < 1)) diff.ratio.tp_vec <- diff.ratio.tp_vec + (1 - min(diff.ratio.tp_vec))
+    if (min(diff.ratio.ts_vec < 1)) diff.ratio.ts_vec <- diff.ratio.ts_vec + (1 - min(diff.ratio.ts_vec))
+    
+    # Create empirical cdf functions 
+    Fc <- ecdf(diff.ratio.c_vec)
+    Ftp <- ecdf(diff.ratio.tp_vec)
+    Fts <- ecdf(diff.ratio.ts_vec)
+    
+    # Define normalized sigmoid to model the true cdf 
+    # ... this form should be a reasonable match, and is easy to
+    #      differentiate to get the pdf!
+    normalized_sig <- function(x,p,h,s) {
+      out <- 1/(1 + exp(-s*(x+p))) + h
+      out <- (out - min(out)) / (max(out) - min(out))
+      return(out)
+    }
+    
+    # Define objective function to minimize 
+    MSE <- function(param, X, FX) {
+      p <- param[1]
+      h <- param[2]
+      s <- param[3]
+      preds <- normalized_sig(X,p,h,s)
+      return(mean((FX(X) - preds)^2))
+    }
+    
+    # Fit normalized sigmoid to each ecdf 
+    # ... returned parameters are in order p, h, s
+    norm_sig_Fc <- optim(c(1,1,1), MSE, X = diff.ratio.c_vec, FX = Fc)$par 
+    norm_sig_Ftp <- optim(c(1,1,1), MSE, X = diff.ratio.tp_vec, FX = Ftp)$par
+    norm_sig_Fts <- optim(c(1,1,1), MSE, X = diff.ratio.ts_vec, FX = Fts)$par
+    # ... add min and max
+    norm_sig_Fc <- c(norm_sig_Fc, min(diff.ratio.c_vec), max(diff.ratio.c_vec))
+    norm_sig_Ftp <- c(norm_sig_Ftp, min(diff.ratio.tp_vec), max(diff.ratio.tp_vec))
+    norm_sig_Fts <- c(norm_sig_Fts, min(diff.ratio.ts_vec), max(diff.ratio.ts_vec))
+    
+    return(
+      list(
+        # Raw samples
+        diff_ratio_c = diff.ratio.c_vec,
+        diff_ratio_tp = diff.ratio.tp_vec,
+        diff_ratio_ts = diff.ratio.ts_vec,
+        # Parameters for estimated cdfs, where cdf = normalized_sig(x,p,h,s)
+        ecdf_Fc_params = norm_sig_Fc,
+        ecdf_Ftp_params = norm_sig_Ftp,
+        ecdf_Fts_params = norm_sig_Fts
+      )
+    )
+    
+  }
+
 project_cp <- function(
     found_cp, # vector of change points 
     centroid, # centroid from which those cp were estimated

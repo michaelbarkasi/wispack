@@ -32,6 +32,7 @@ constexpr sdouble (*smin)(const sVec&) = stan::math::min;
 constexpr sdouble (*slog)(const sdouble&) = stan::math::log;
 constexpr sdouble (*sexp)(const sdouble&) = stan::math::exp;
 constexpr sdouble (*ssqrt)(const sdouble&) = stan::math::sqrt;
+constexpr sdouble (*sabs)(const sdouble&) = stan::math::abs;
 typedef int IndexType;
 
 // Constants ***********************************************************************************************************
@@ -108,12 +109,22 @@ class wspc {
     sdouble inf_warp;                       // pseudo-infinity value for warping (representing no warp boundary)
     sVec warp_bounds;                       // warping bounds for each model component
     IntegerVector warp_bounds_idx = IntegerVector::create(0, 1, 2);
+    sVec fe_difference_ratio_Rt;            // ratio of count differences between one-off treatments across ran levels and count differences between same-treatments across ran levels
+    sVec fe_difference_ratio_tpoint;        // same, but for tpoints instead of count
+    sVec fe_difference_ratio_tslope;        // same, but for tslopes instead of count
+    sVec ecdf_Fc_params;                    // parameters for approximation of the cdf of the fixed-random effects ratio for rate effects 
+    sVec ecdf_Ftp_params;                   // parameters for approximation of the cdf of the fixed-random effects ratio for tpoint effects
+    sVec ecdf_Fts_params;                   // parameters for approximation of the cdf of the fixed-random effects ratio for tslope effects
+    sdouble mean_count_log = 1.0;           // mean of log(count) values, used in estimating sd of beta parameters for rate
+    sdouble mean_tslope = 0.0;              // mean of tslope values, used in estimating sd of beta parameters for slope
+    List change_points;                     // list of found change points, structured by parent and child
+    List est_slopes;                        // list of estimated slopes, structured by parent and child
     
     // Indices for managing parameters vector
     IntegerVector param_wfactor_point_idx;  // ... indexes of parameter vector for quick access of different kinds of model parameters
     IntegerVector param_wfactor_rate_idx;
     IntegerVector param_wfactor_slope_idx;
-    IntegerVector param_beta_Rt_idx;
+    IntegerVector param_beta_Rt_idx;        // ... excluding ref level (same below)
     IntegerVector param_beta_tslope_idx;
     IntegerVector param_beta_tpoint_idx;
     IntegerVector param_baseline_idx;
@@ -591,6 +602,18 @@ sVec extrapolate_none(
 
 // Model fitting *******************************************************************************************************
 
+// Empirical cdf 
+sdouble emp_cdf(
+    const sdouble& val,             // value to evaluate
+    const sVec& vec                 // vector of values
+  );
+
+// Empirical pdf from normalized sigmoid fit to empirical cdf
+sdouble emp_pdf(
+    const sdouble& val,     // value to evaluate
+    const sVec& ecdf_params // empirical cdf parameters
+  );
+
 // Thread-safe normal distribution function
 double safe_rnorm(
     double mean, 
@@ -732,6 +755,14 @@ std::vector<dVec> est_bkRates_tRuns(
     const NumericVector& count_series,  // count series
     const IntegerVector& cp_series,     // found change points
     const double& rise_threshold_factor // amount of detected rise as fraction of total required to end run
+  );
+
+// Function to estimate the ratio (FixEff + RanEff) / RanEff 
+sdouble effect_ratio_est(
+    const sdouble& bl, // Expected baseline spatial parameter value
+    const sdouble& fe, // Expected fixed effect parameter value
+    const sdouble& re, // Expected random effect parameter value
+    const sdouble& bd  // Warp boundary
   );
 
 #endif // WSPC_H

@@ -2,6 +2,47 @@
 // model_fit.cpp
 #include "wspc.h"
 
+// Empirical cdf 
+sdouble emp_cdf(
+    const sdouble& val,    // value to evaluate
+    const sVec& vec        // vector of values
+  ) {
+    // Count the number of elements less than or equal to vec
+    int count = 0;
+    for (int i = 0; i < vec.size(); i++) {
+      if (vec(i) <= val) {
+        count++;
+      }
+    }
+    // Return the empirical cdf value
+    return sdouble(count) / sdouble(vec.size());
+  }
+
+// Empirical pdf from normalized sigmoid fit to empirical cdf
+sdouble emp_pdf(
+    const sdouble& val,     // value to evaluate
+    const sVec& ecdf_params // empirical cdf parameters
+  ) {
+    /*
+     * Basic idea: First fit to an empirical cdf a normalized sigmoid of the form: 
+     *    F_X(u) = N(G(u)), for 
+     *    G(u) = h + 1/(1+exp(-s*(u+p)))
+     *    N(v) = (v - min(v))/(max(v) - min(v))
+     * The pdf of this cdf is dF_X/du, which is: 
+     *    dF_X/du = (1/(max(v) - min(v))) * (s * exp(-s*(u+p)))/(1 + exp(-s*(u+p)))^2 
+     */
+    sdouble min_val = ecdf_params(3);
+    sdouble max_val = ecdf_params(4);
+    sdouble p_val = ecdf_params(0); 
+    sdouble s_val = ecdf_params(2); 
+    // ... h is the second element of ecdf_params, but not needed 
+    sdouble min_max = 1/(max_val - min_val); 
+    sdouble exp_val = sexp(-s_val * (val + p_val));
+    sdouble dGdu = (s_val * exp_val) / spower(1 + exp_val, 2.0); 
+    sdouble pdf = min_max * dGdu;
+    return pdf;
+  }
+
 // Thread-safe normal distribution function
 double safe_rnorm(
     double mean, 
@@ -539,3 +580,15 @@ std::vector<dVec> est_bkRates_tRuns(
     
   }
 
+// Function to estimate the ratio (FixEff + RanEff) / RanEff 
+sdouble effect_ratio_est(
+    const sdouble& bl, // Expected baseline spatial parameter value
+    const sdouble& fe, // Expected fixed effect parameter value
+    const sdouble& re, // Expected random effect parameter value
+    const sdouble& bd  // Warp boundary
+  ) {
+    sdouble z = bl + fe; 
+    sdouble B = bd / (bd - z);
+    sdouble Z = 2.0 * z * re;
+    return (B + re*re + Z) / Z;
+  }
