@@ -49,6 +49,9 @@ class wspc {
   
   public:
     
+    LogicalVector age_effect_mask;
+    NumericVector pinned_ages;
+    
     // Fields **********************************************************************************************************
     
     // Data sizes
@@ -107,16 +110,16 @@ class wspc {
     sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
     sdouble warp_precision;                 // precision surviving in calculations of warping
     sdouble inf_warp;                       // pseudo-infinity value for warping (representing no warp boundary)
-    sVec warp_bounds;                       // warping bounds for each model component
+    sdouble mean_count_log = 1.0;           // mean of log(count) values, used in estimating sd of beta parameters for rate
+    sdouble mean_tslope = 0.0;              // mean of tslope values, used in estimating sd of beta parameters for slope
     IntegerVector warp_bounds_idx = IntegerVector::create(0, 1, 2);
+    sVec warp_bounds;                       // warping bounds for each model component
     sVec fe_difference_ratio_Rt;            // ratio of count differences between one-off treatments across ran levels and count differences between same-treatments across ran levels
     sVec fe_difference_ratio_tpoint;        // same, but for tpoints instead of count
     sVec fe_difference_ratio_tslope;        // same, but for tslopes instead of count
     sVec ecdf_Fc_params;                    // parameters for approximation of the cdf of the fixed-random effects ratio for rate effects 
     sVec ecdf_Ftp_params;                   // parameters for approximation of the cdf of the fixed-random effects ratio for tpoint effects
     sVec ecdf_Fts_params;                   // parameters for approximation of the cdf of the fixed-random effects ratio for tslope effects
-    sdouble mean_count_log = 1.0;           // mean of log(count) values, used in estimating sd of beta parameters for rate
-    sdouble mean_tslope = 0.0;              // mean of tslope values, used in estimating sd of beta parameters for slope
     List change_points;                     // list of found change points, structured by parent and child
     List est_slopes;                        // list of estimated slopes, structured by parent and child
     
@@ -448,10 +451,19 @@ IntegerVector Rorder(const NumericVector& x);
 // ... overload
 IntegerVector Rorder(const dVec& x);
 
+// For loading masked elements 
+NumericVector masked_load(
+    const NumericVector& x,        // vector to be loaded
+    const LogicalVector& mask,     // mask of elements to replace
+    const NumericVector& input     // elements to insert into x
+  );
+
 // For subsetting vectors with Rcpp mask 
 sVec masked_vec(sVec vec, Rcpp::LogicalVector mask);
 // ... overload 
 dVec masked_vec(dVec vec, Rcpp::LogicalVector mask);
+// ... overload 
+NumericVector masked_vec(NumericVector vec, Rcpp::LogicalVector mask);
 // ... overload
 iVec masked_vec(iVec vec, Rcpp::LogicalVector mask);
 // ... overload 
@@ -466,8 +478,11 @@ iVec idx_vec(iVec vec, Rcpp::IntegerVector idx);
 // ... overload
 CharacterVector idx_vec(CharacterVector vec, Rcpp::IntegerVector idx);
 
-// Find matches in character vector
+// Find matches in character vector, index return
 IntegerVector grep_cpp(CharacterVector V, std::string pattern);
+
+// Find matches in character vector, boolean mask return
+LogicalVector grepl_cpp(CharacterVector V, std::string pattern);
 
 // Find matches in string
 bool pattern_match(std::string pattern, std::string test);
