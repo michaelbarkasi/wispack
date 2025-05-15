@@ -541,7 +541,7 @@ wspc::wspc(
               NumericMatrix found_slope_trt(deg, treatment_num);
               for (int t = 0; t < treatment_num; t++) {
                 for (int d = 0; d < deg; d++) {
-                  found_slope_trt(d, t) = 4.0/run_estimates(t, d); 
+                  found_slope_trt(d, t) = 4.0/run_estimates(t, d); // ... technically, this is the slope scalar s, such that s*Rise / 4 = slope = Rise / Run
                   if (found_slope_trt(d, t) < min_initialization_slope) {found_slope_trt(d, t) = min_initialization_slope;}
                   // ^ ... keep from initializing too close to zero
                   collected_slopes.push_back(found_slope_trt(d, t));
@@ -668,6 +668,12 @@ wspc::wspc(
       _["num_evals"] = NA_INTEGER,
       _["bs_times"] = NumericVector()
     );
+    
+    // FOR PINNING AGES ONLY!
+    age_effect_mask = grepl_cpp(param_names, "beta_") & grepl_cpp(param_names, "_18_");
+    for (int i = 0; i < age_effect_mask.size(); i++) {
+      age_effect_mask[i] = false;
+    }
     
     vprint("Finished initializing wspc object", verbose);
     
@@ -935,71 +941,66 @@ sdouble wspc::neg_loglik(
       
     }
     
-    // Prior? 
-    // ... we assume the warping factors are normally distributed with mean 0 and sd = sd_warping_factors
-    sdouble log_prior = 0.0;
-    sVec warping_factors_point = idx_vec(parameters, param_wfactor_point_idx);
-    sVec warping_factors_rate = idx_vec(parameters, param_wfactor_rate_idx);
-    sVec warping_factors_slope = idx_vec(parameters, param_wfactor_slope_idx);
-    sdouble sd_warping_factors_point = vsd(warping_factors_point);
-    sdouble sd_warping_factors_rate = vsd(warping_factors_rate);
-    sdouble sd_warping_factors_slope = vsd(warping_factors_slope);
-    for (int i = 0; i < warping_factors_point.size(); i++) {
-      log_prior += log_dNorm(warping_factors_point(i), 0.0, sd_warping_factors_point);
+    if (false) {
+      // Prior?
+      // ... we assume the warping factors are normally distributed with mean 0 and sd = sd_warping_factors
+      sdouble log_prior = 0.0;
+      sVec warping_factors_point = idx_vec(parameters, param_wfactor_point_idx);
+      sVec warping_factors_rate = idx_vec(parameters, param_wfactor_rate_idx);
+      sVec warping_factors_slope = idx_vec(parameters, param_wfactor_slope_idx);
+      sdouble sd_warping_factors_point = vsd(warping_factors_point);
+      sdouble sd_warping_factors_rate = vsd(warping_factors_rate);
+      sdouble sd_warping_factors_slope = vsd(warping_factors_slope);
+      for (int i = 0; i < warping_factors_point.size(); i++) {
+        log_prior += log_dNorm(warping_factors_point(i), 0.0, sd_warping_factors_point);
+      }
+      for (int i = 0; i < warping_factors_rate.size(); i++) {
+        log_prior += log_dNorm(warping_factors_rate(i), 0.0, sd_warping_factors_rate);
+      }
+      for (int i = 0; i < warping_factors_slope.size(); i++) {
+        log_prior += log_dNorm(warping_factors_slope(i), 0.0, sd_warping_factors_slope);
+      }
+      // ... we assume the ratio of fixed to random effects, i.e., (FixEff + RanEff)/RanEff, comes from distribution estimated empirically from data
+      sdouble min_prob = 1/sdouble(inf_);
+      sVec tpoint_beta_values = idx_vec(parameters, param_beta_tpoint_idx); // ... these vectors exclude ref levels
+      sVec Rt_beta_values = idx_vec(parameters, param_beta_Rt_idx);
+      sVec tslope_beta_values = idx_vec(parameters, param_beta_tslope_idx);
+      // ... estimate ratio for t-point
+      sdouble FixEff_tpoint = vmean(tpoint_beta_values);
+      sdouble RanEff_tpoint = vmean(warping_factors_point);
+      sdouble baseline_tpoint = bin_num/2.0; // ... just want a rough guess at "average" or "expected" value (get order-of-magnitude correct)
+      int warp_bound_idx_tpoint = warp_bounds_idx["tpoint"];
+      sdouble bd_tpoint = warp_bounds[warp_bound_idx_tpoint];
+      sdouble ratio_tpoint = effect_ratio_est(baseline_tpoint, FixEff_tpoint, RanEff_tpoint, bd_tpoint);
+      sdouble prob_tpoint = emp_pdf(sabs(ratio_tpoint), ecdf_Ftp_params);
+      if (prob_tpoint < min_prob) {prob_tpoint = min_prob;}
+      //log_prior += slog(prob_tpoint);
+      // ... estimate ratio for rate
+      sdouble FixEff_Rt = vmean(Rt_beta_values);
+      sdouble RanEff_Rt = vmean(warping_factors_rate);
+      sdouble baseline_Rt = mean_count_log;
+      int warp_bound_idx_Rt = warp_bounds_idx["Rt"];
+      sdouble bd_Rt = warp_bounds[warp_bound_idx_Rt];
+      sdouble ratio_Rt = effect_ratio_est(baseline_Rt, FixEff_Rt, RanEff_Rt, bd_Rt);
+      sdouble prob_Rt = emp_pdf(sabs(ratio_Rt), ecdf_Fc_params);
+      if (prob_Rt < min_prob) {prob_Rt = min_prob;}
+      log_prior += slog(prob_Rt);
+      // ... estimate ratio for t-slope
+      sdouble FixEff_tslope = vmean(tslope_beta_values);
+      sdouble RanEff_tslope = vmean(warping_factors_slope);
+      sdouble baseline_tslope = mean_tslope;
+      int warp_bound_idx_tslope = warp_bounds_idx["tslope"];
+      sdouble bd_tslope = warp_bounds[warp_bound_idx_tslope];
+      sdouble ratio_tslope = effect_ratio_est(baseline_tslope, FixEff_tslope, RanEff_tslope, bd_tslope);
+      sdouble prob_tslope = emp_pdf(sabs(ratio_tslope), ecdf_Fts_params);
+      if (prob_tslope < min_prob) {prob_tslope = min_prob;}
+      //log_prior += slog(prob_tslope);
+      
+      // Take negative
+      sdouble negloglik = -(log_lik + log_prior);
+    } else {
+      sdouble negloglik = -log_lik;
     }
-    for (int i = 0; i < warping_factors_rate.size(); i++) {
-      log_prior += log_dNorm(warping_factors_rate(i), 0.0, sd_warping_factors_rate);
-    }
-    for (int i = 0; i < warping_factors_slope.size(); i++) {
-      log_prior += log_dNorm(warping_factors_slope(i), 0.0, sd_warping_factors_slope);
-    }
-    // ... we assume the ratio of fixed to random effects, i.e., (FixEff + RanEff)/RanEff, comes from distribution estimated empirically from data
-    sdouble min_prob = 1/sdouble(inf_);
-    sVec tpoint_beta_values = idx_vec(parameters, param_beta_tpoint_idx); // ... these vectors exclude ref levels
-    sVec Rt_beta_values = idx_vec(parameters, param_beta_Rt_idx);
-    sVec tslope_beta_values = idx_vec(parameters, param_beta_tslope_idx);
-    // ... estimate ratio for t-point
-    sdouble FixEff_tpoint = vmean(tpoint_beta_values);
-    sdouble RanEff_tpoint = vmean(warping_factors_point);
-    sdouble baseline_tpoint = 50.0; 
-    int warp_bound_idx_tpoint = warp_bounds_idx["tpoint"];
-    sdouble bd_tpoint = warp_bounds[warp_bound_idx_tpoint];
-    sdouble ratio_tpoint = effect_ratio_est(baseline_tpoint, FixEff_tpoint, RanEff_tpoint, bd_tpoint);
-    sdouble prob_tpoint = emp_pdf(sabs(ratio_tpoint), ecdf_Ftp_params);
-    if (prob_tpoint < min_prob) {prob_tpoint = min_prob;}
-    //vprint("Ratio tpoint: ", ratio_tpoint);
-    //vprintV(ecdf_Ftp_params, true);
-    //vprint("empt_pdf: ", prob_tpoint);
-    log_prior += slog(prob_tpoint);
-    // ... estimate ratio for rate
-    sdouble FixEff_Rt = vmean(Rt_beta_values);
-    sdouble RanEff_Rt = vmean(warping_factors_rate);
-    sdouble baseline_Rt = mean_count_log;
-    int warp_bound_idx_Rt = warp_bounds_idx["Rt"];
-    sdouble bd_Rt = warp_bounds[warp_bound_idx_Rt];
-    sdouble ratio_Rt = effect_ratio_est(baseline_Rt, FixEff_Rt, RanEff_Rt, bd_Rt);
-    sdouble prob_Rt = emp_pdf(sabs(ratio_Rt), ecdf_Fc_params);
-    if (prob_Rt < min_prob) {prob_Rt = min_prob;}
-    //vprint("Ratio Rt: ", ratio_Rt);
-    //vprintV(ecdf_Fc_params, true);
-    //vprint("empt_pdf: ", prob_Rt);
-    log_prior += slog(prob_Rt);  
-    // ... estimate ratio for t-slope
-    sdouble FixEff_tslope = vmean(tslope_beta_values);
-    sdouble RanEff_tslope = vmean(warping_factors_slope);
-    sdouble baseline_tslope = mean_tslope;
-    int warp_bound_idx_tslope = warp_bounds_idx["tslope"];
-    sdouble bd_tslope = warp_bounds[warp_bound_idx_tslope];
-    sdouble ratio_tslope = effect_ratio_est(baseline_tslope, FixEff_tslope, RanEff_tslope, bd_tslope);
-    sdouble prob_tslope = emp_pdf(sabs(ratio_tslope), ecdf_Fts_params);
-    if (prob_tslope < min_prob) {prob_tslope = min_prob;}
-    //vprint("Ratio tslope: ", ratio_tslope);
-    //vprintV(ecdf_Fts_params, true);
-    //vprint("empt_pdf: ", prob_tslope);
-    log_prior += slog(prob_tslope);
-    
-    // Take negative
-    sdouble negloglik = -(log_lik + log_prior);
     
     // Check for infinities (zero likelihood)
     if (std::isinf(negloglik) || negloglik > sdouble(inf_)) {
@@ -1245,6 +1246,13 @@ sdouble wspc::bounded_nll(
     // Add boundary penalty
     for (int i = 0; i < boundary_vec_size; i++) {
       bnll += boundary_penalty_transform(bd(i), bp_coefs(i));
+    }
+    
+    // FOR PINNING AGES ONLY!
+    for (int p = 0; p < parameters.size(); p++) {
+      if (age_effect_mask[p]) {
+        bnll += log_dNorm(parameters(p), sdouble(pinned_ages[p]), 0.1);
+      }
     }
     
     /*
@@ -1567,6 +1575,12 @@ Rcpp::NumericMatrix wspc::bs_batch(
     full_results.push_back(Rcpp::as<double>(optim_results["success_code"]));
     full_results.push_back(Rcpp::as<double>(optim_results["num_evals"]));
     
+    // FOR PINNING AGES ONLY!
+    if (false) {
+      age_effect_mask = grepl_cpp(param_names, "beta_") & grepl_cpp(param_names, "_18_");
+      pinned_ages = masked_vec(these_results, age_effect_mask);
+    }
+    
     // Save full fit results in last row of results matrix
     bs_results.row(bs_num_max) = to_NumVec(full_results);
     
@@ -1594,6 +1608,11 @@ Rcpp::NumericMatrix wspc::bs_batch(
           
           // Close read end
           close(pipes[i][0]); 
+          
+          // FOR PINNING AGES ONLY!
+          if (false) {
+            fitted_parameters = masked_load(fitted_parameters, age_effect_mask, pinned_ages); 
+          }
           
           // Fit bootstrap
           dVec result = bs_fit(this_row, false); 
