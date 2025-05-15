@@ -62,7 +62,7 @@ wspc::wspc(
     bin_num = smax(to_sVec(Rcpp::as<NumericVector>(count_data["bin"])));
     warp_bounds.resize(3); 
     for (int i = 0; i < 3; i++) {warp_bounds[i] = inf_warp;}  // initialize to infinity (no bounds)
-    warp_bounds_idx.names() = CharacterVector::create("Rt", "tslope", "tpoint");
+    warp_bounds_idx.names() = mc_list;
     int warp_bound_tpoint_idx = warp_bounds_idx["tpoint"]; 
     warp_bounds[warp_bound_tpoint_idx] = bin_num;  // set tpoint bound to max bin
     vprint("Found max bin: " + std::to_string(bin_num.val()), verbose);
@@ -270,6 +270,7 @@ wspc::wspc(
     for (int r = 0; r < n_count_rows; r++) {
       count_log(r) = slog(count(r) + 1.0);
     }
+    mean_count_log = vmean(count_log);
     vprint("Took log of observed counts", verbose);
     
     // Resize gamma dispersion matrix (... fill in next step)
@@ -302,6 +303,14 @@ wspc::wspc(
     // ... store tslope effects in list 
     List tslopeEffs(n_parent);
     tslopeEffs.names() = parent_lvls;
+    // ... store change points in list
+    List found_cp_list(n_parent);
+    found_cp_list.names() = parent_lvls;
+    // ... store tslopes in list 
+    List found_slopes_list(n_parent);
+    found_slopes_list.names() = parent_lvls;
+    // ... collect slopes to estimate mean slope
+    NumericVector collected_slopes;
     
     // Loop through parent levels
     for (int p = 0; p < n_parent; p++) {
@@ -321,6 +330,12 @@ wspc::wspc(
       // ... for tslope effect values 
       tslopeEffs[(String)parent_lvls[p]] = List(n_child);
       name_proxylist(tslopeEffs[(String)parent_lvls[p]], child_lvls);
+      // ... for change points 
+      found_cp_list[(String)parent_lvls[p]] = List(n_child);
+      name_proxylist(found_cp_list[(String)parent_lvls[p]], child_lvls);
+      // ... for tslopes 
+      found_slopes_list[(String)parent_lvls[p]] = List(n_child);
+      name_proxylist(found_slopes_list[(String)parent_lvls[p]], child_lvls);
       
       // Loop through child levels
       for (int c = 0; c < n_child; c++) { 
@@ -412,8 +427,9 @@ wspc::wspc(
         int n_blocks = deg + 1;
         degMat(c, p) = deg;
         
-        // Fill columns into the found_cp matrix
+        // Fill columns into the found_cp and found_slopes matrices
         IntegerMatrix found_cp(deg, n_ran_trt);
+        NumericMatrix found_slopes(deg, n_ran_trt);
         // ^ ... Rcpp should initialize these matrices with all zeros
         if (deg > 0) {
           for (int si = 0; si < good_col_idx.size(); si++) {
@@ -422,8 +438,22 @@ wspc::wspc(
             found_cp.column(s) = found_cp_good.column(si);
             // ... grab counts 
             sVec these_counts = count_masked_array_good.col(si);
+            // ... estimate slopes
+            std::vector<dVec> est_rate_runs = est_bkRates_tRuns(n_blocks, to_NumVec(these_counts), found_cp.column(s), rise_threshold_factor);
+            NumericVector est_run = to_NumVec(est_rate_runs[1]);
+            for (int d = 0; d < deg; d++) {
+              found_slopes(d, s) = 4.0/est_run[d];
+              if (found_slopes(d, s) < min_initialization_slope) {found_slopes(d, s) = min_initialization_slope;}
+              // ^ ... keep from initializing too close to zero
+              // Save in log space
+              //found_slopes(d, s) = std::log(found_slopes(d, s));
+            }
           }
         }
+        
+        // Save
+        assign_proxylist(found_cp_list[(String)parent_lvls[p]], (String)child_lvls[c], found_cp);
+        assign_proxylist(found_slopes_list[(String)parent_lvls[p]], (String)child_lvls[c], found_slopes);
         
         // Extract treatment means for each change point
         NumericMatrix found_cp_trt(deg, treatment_num);
@@ -514,6 +544,7 @@ wspc::wspc(
                   found_slope_trt(d, t) = 4.0/run_estimates(t, d); 
                   if (found_slope_trt(d, t) < min_initialization_slope) {found_slope_trt(d, t) = min_initialization_slope;}
                   // ^ ... keep from initializing too close to zero
+                  collected_slopes.push_back(found_slope_trt(d, t));
                 }
               }
               
@@ -539,7 +570,14 @@ wspc::wspc(
        
       }
     }
+    // ... save found change points and slopes
+    change_points = found_cp_list;
+    est_slopes = found_slopes_list;
     vprint("Estimated change points with LROcp and found initial parameter estimates for fixed-effect treatments", verbose); 
+    
+    // Find and save initial mean slope estimate
+    mean_tslope = (sdouble)vmean(collected_slopes);
+    if (verbose) {vprint("Initial mean estimated tslope: ", mean_tslope);}
     
     // Build default fixed-effects matrices in shell
     List beta = build_beta_shell(mc_list, treatment_lvls, parent_lvls, child_lvls, ref_values, RtEffs, tpointEffs, tslopeEffs, degMat);
@@ -649,12 +687,21 @@ void wspc::clear_stan_mem() {
     
     // Temporarily save stan variable values 
     double dbin_num = bin_num.val();
+  
+    double dmean_count_log = mean_count_log.val();
+    double dmean_tslope = mean_tslope.val();
     double dbuffer_factor = buffer_factor.val();
     double dtpoint_buffer = tpoint_buffer.val();
     double dwarp_precision = warp_precision.val();
     double dinf_warp = inf_warp.val();
     double dmax_penalty_at_distance_factor = max_penalty_at_distance_factor.val();
     dVec dbin = to_dVec(bin);
+    dVec dfe_difference_ratio_Rt = to_dVec(fe_difference_ratio_Rt);
+    dVec dfe_difference_ratio_tpoint = to_dVec(fe_difference_ratio_tpoint);
+    dVec dfe_difference_ratio_tslope = to_dVec(fe_difference_ratio_tslope);
+    dVec decdf_Fc_params = to_dVec(ecdf_Fc_params);
+    dVec decdf_Ftp_params = to_dVec(ecdf_Ftp_params);
+    dVec decdf_Fts_params = to_dVec(ecdf_Fts_params);
     dVec dcount = to_dVec(count);
     dVec dcount_log = to_dVec(count_log);
     dVec dcount_tokenized = to_dVec(count_tokenized);
@@ -668,12 +715,20 @@ void wspc::clear_stan_mem() {
     
     // Re-assign stan variables
     bin_num = (sdouble)dbin_num;
+    mean_count_log = (sdouble)dmean_count_log;
+    mean_tslope = (sdouble)dmean_tslope;
     buffer_factor = (sdouble)dbuffer_factor;
     tpoint_buffer = (sdouble)dtpoint_buffer;
     warp_precision = (sdouble)dwarp_precision;
     inf_warp = (sdouble)dinf_warp;
     max_penalty_at_distance_factor = (sdouble)dmax_penalty_at_distance_factor;
     bin = to_sVec(dbin);
+    fe_difference_ratio_Rt = to_sVec(dfe_difference_ratio_Rt);
+    fe_difference_ratio_tpoint = to_sVec(dfe_difference_ratio_tpoint);
+    fe_difference_ratio_tslope = to_sVec(dfe_difference_ratio_tslope);
+    ecdf_Fc_params = to_sVec(decdf_Fc_params);
+    ecdf_Ftp_params = to_sVec(decdf_Ftp_params);
+    ecdf_Fts_params = to_sVec(decdf_Fts_params);
     count = to_sVec(dcount);
     count_log = to_sVec(dcount_log);
     count_tokenized = to_sVec(dcount_tokenized);
@@ -880,8 +935,71 @@ sdouble wspc::neg_loglik(
       
     }
     
+    // Prior? 
+    // ... we assume the warping factors are normally distributed with mean 0 and sd = sd_warping_factors
+    sdouble log_prior = 0.0;
+    sVec warping_factors_point = idx_vec(parameters, param_wfactor_point_idx);
+    sVec warping_factors_rate = idx_vec(parameters, param_wfactor_rate_idx);
+    sVec warping_factors_slope = idx_vec(parameters, param_wfactor_slope_idx);
+    sdouble sd_warping_factors_point = vsd(warping_factors_point);
+    sdouble sd_warping_factors_rate = vsd(warping_factors_rate);
+    sdouble sd_warping_factors_slope = vsd(warping_factors_slope);
+    for (int i = 0; i < warping_factors_point.size(); i++) {
+      log_prior += log_dNorm(warping_factors_point(i), 0.0, sd_warping_factors_point);
+    }
+    for (int i = 0; i < warping_factors_rate.size(); i++) {
+      log_prior += log_dNorm(warping_factors_rate(i), 0.0, sd_warping_factors_rate);
+    }
+    for (int i = 0; i < warping_factors_slope.size(); i++) {
+      log_prior += log_dNorm(warping_factors_slope(i), 0.0, sd_warping_factors_slope);
+    }
+    // ... we assume the ratio of fixed to random effects, i.e., (FixEff + RanEff)/RanEff, comes from distribution estimated empirically from data
+    sdouble min_prob = 1/sdouble(inf_);
+    sVec tpoint_beta_values = idx_vec(parameters, param_beta_tpoint_idx); // ... these vectors exclude ref levels
+    sVec Rt_beta_values = idx_vec(parameters, param_beta_Rt_idx);
+    sVec tslope_beta_values = idx_vec(parameters, param_beta_tslope_idx);
+    // ... estimate ratio for t-point
+    sdouble FixEff_tpoint = vmean(tpoint_beta_values);
+    sdouble RanEff_tpoint = vmean(warping_factors_point);
+    sdouble baseline_tpoint = 50.0; 
+    int warp_bound_idx_tpoint = warp_bounds_idx["tpoint"];
+    sdouble bd_tpoint = warp_bounds[warp_bound_idx_tpoint];
+    sdouble ratio_tpoint = effect_ratio_est(baseline_tpoint, FixEff_tpoint, RanEff_tpoint, bd_tpoint);
+    sdouble prob_tpoint = emp_pdf(sabs(ratio_tpoint), ecdf_Ftp_params);
+    if (prob_tpoint < min_prob) {prob_tpoint = min_prob;}
+    //vprint("Ratio tpoint: ", ratio_tpoint);
+    //vprintV(ecdf_Ftp_params, true);
+    //vprint("empt_pdf: ", prob_tpoint);
+    log_prior += slog(prob_tpoint);
+    // ... estimate ratio for rate
+    sdouble FixEff_Rt = vmean(Rt_beta_values);
+    sdouble RanEff_Rt = vmean(warping_factors_rate);
+    sdouble baseline_Rt = mean_count_log;
+    int warp_bound_idx_Rt = warp_bounds_idx["Rt"];
+    sdouble bd_Rt = warp_bounds[warp_bound_idx_Rt];
+    sdouble ratio_Rt = effect_ratio_est(baseline_Rt, FixEff_Rt, RanEff_Rt, bd_Rt);
+    sdouble prob_Rt = emp_pdf(sabs(ratio_Rt), ecdf_Fc_params);
+    if (prob_Rt < min_prob) {prob_Rt = min_prob;}
+    //vprint("Ratio Rt: ", ratio_Rt);
+    //vprintV(ecdf_Fc_params, true);
+    //vprint("empt_pdf: ", prob_Rt);
+    log_prior += slog(prob_Rt);  
+    // ... estimate ratio for t-slope
+    sdouble FixEff_tslope = vmean(tslope_beta_values);
+    sdouble RanEff_tslope = vmean(warping_factors_slope);
+    sdouble baseline_tslope = mean_tslope;
+    int warp_bound_idx_tslope = warp_bounds_idx["tslope"];
+    sdouble bd_tslope = warp_bounds[warp_bound_idx_tslope];
+    sdouble ratio_tslope = effect_ratio_est(baseline_tslope, FixEff_tslope, RanEff_tslope, bd_tslope);
+    sdouble prob_tslope = emp_pdf(sabs(ratio_tslope), ecdf_Fts_params);
+    if (prob_tslope < min_prob) {prob_tslope = min_prob;}
+    //vprint("Ratio tslope: ", ratio_tslope);
+    //vprintV(ecdf_Fts_params, true);
+    //vprint("empt_pdf: ", prob_tslope);
+    log_prior += slog(prob_tslope);
+    
     // Take negative
-    sdouble negloglik = -log_lik;
+    sdouble negloglik = -(log_lik + log_prior);
     
     // Check for infinities (zero likelihood)
     if (std::isinf(negloglik) || negloglik > sdouble(inf_)) {
@@ -1233,6 +1351,44 @@ void wspc::fit(
     const bool set_params, 
     const bool verbose
   ) { 
+    
+    // Make initial estimate of fix-ran effects ratios (for priors) 
+    Function analyze_diff("analyze_diff");
+    List wisp_results = results();
+    List effect_ratio_ests = analyze_diff(
+      wisp_results,
+      "count.log"
+    );
+    // Grab results
+    dVec dfe_difference_ratio_Rt = effect_ratio_ests["diff_ratio_c"];
+    dVec dfe_difference_ratio_tpoint = effect_ratio_ests["diff_ratio_tp"];
+    dVec dfe_difference_ratio_tslope = effect_ratio_ests["diff_ratio_ts"];
+    dVec decdf_Fc_params = effect_ratio_ests["ecdf_Fc_params"];
+    dVec decdf_Ftp_params = effect_ratio_ests["ecdf_Ftp_params"];
+    dVec decdf_Fts_params = effect_ratio_ests["ecdf_Fts_params"];
+    // Report 
+    vprint("Effect difference ratio for rate, mean: " + std::to_string(vmean(dfe_difference_ratio_Rt)), verbose);
+    vprint("Effect difference ratio for rate, sd: " + std::to_string(vsd(dfe_difference_ratio_Rt)), verbose);
+    vprint("Effect difference ratio for rate, min: " + std::to_string(min(to_NumVec(dfe_difference_ratio_Rt))), verbose);
+    vprint("Effect difference ratio for rate, max: " + std::to_string(max(to_NumVec(dfe_difference_ratio_Rt))), verbose);
+    vprint("Effect difference ratio for tpoint, mean: " + std::to_string(vmean(dfe_difference_ratio_tpoint)), verbose);
+    vprint("Effect difference ratio for tpoint, sd: " + std::to_string(vsd(dfe_difference_ratio_tpoint)), verbose);
+    vprint("Effect difference ratio for tpoint, min: " + std::to_string(min(to_NumVec(dfe_difference_ratio_tpoint))), verbose);
+    vprint("Effect difference ratio for tpoint, max: " + std::to_string(max(to_NumVec(dfe_difference_ratio_tpoint))), verbose);
+    vprint("Effect difference ratio for tslope, mean: " + std::to_string(vmean(dfe_difference_ratio_tslope)), verbose);
+    vprint("Effect difference ratio for tslope, sd: " + std::to_string(vsd(dfe_difference_ratio_tslope)), verbose);
+    vprint("Effect difference ratio for tslope, min: " + std::to_string(min(to_NumVec(dfe_difference_ratio_tslope))), verbose);
+    vprint("Effect difference ratio for tslope, max: " + std::to_string(max(to_NumVec(dfe_difference_ratio_tslope))), verbose);
+    
+    // Convert to stan variables
+    // ... raw samples
+    fe_difference_ratio_Rt = to_sVec(dfe_difference_ratio_Rt);
+    fe_difference_ratio_tpoint = to_sVec(dfe_difference_ratio_tpoint);
+    fe_difference_ratio_tslope = to_sVec(dfe_difference_ratio_tslope); 
+    // ... parameters for a normalized sigmoid approximating the true cdf, in the form "p, h, s, min, max"
+    ecdf_Fc_params = to_sVec(decdf_Fc_params);
+    ecdf_Ftp_params = to_sVec(decdf_Ftp_params);
+    ecdf_Fts_params = to_sVec(decdf_Fts_params);
     
     // Set boundary-penalty coefficients 
     sVec initial_params_var = to_sVec(fitted_parameters);
@@ -1982,6 +2138,8 @@ Rcpp::List wspc::results() {
       _["grouping.variables"] = grouping_variables,
       _["param.idx0"] = param_idx, // "0" to indicate this goes out w/ C++ zero-based indexing
       _["token.pool"] = token_pool_list,
+      _["change.points"] = change_points,
+      _["est.slopes"] = est_slopes, 
       _["settings"] = model_settings
     );
     
