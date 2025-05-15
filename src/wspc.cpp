@@ -1416,6 +1416,8 @@ Rcpp::NumericMatrix wspc::bs_batch(
     
     // Perform bootstrap fits in batches
     const int batch_num = std::round(bs_num_max / max_fork);
+    int tracker_steps = 10;
+    IntegerVector tracker = iseq(batch_num/tracker_steps, batch_num, tracker_steps);
     for (int b = 0; b < batch_num; b++) {
       // Run in parallel with forking
       
@@ -1492,7 +1494,10 @@ Rcpp::NumericMatrix wspc::bs_batch(
       NumericVector batch_times(batch_timer);
       double batch_time = 1e-9 * (batch_times[1] - batch_times[0])/max_fork;
       if (verbose) {
-        Rcpp::Rcout << "Batch " << b + 1 << "/" << batch_num << ", " << batch_time << " sec/bs" << std::endl;
+        // Tracker
+        if (any_true(eq_left_broadcast(tracker, b))) {
+          Rcpp::Rcout << "Batch: " << b << "/" << batch_num << ", " << batch_time << " sec/bs" << std::endl;
+        }
       }
       
     }
