@@ -1495,7 +1495,7 @@ Rcpp::NumericMatrix wspc::bs_batch(
       double batch_time = 1e-9 * (batch_times[1] - batch_times[0])/max_fork;
       if (verbose) {
         // Tracker
-        if (any_true(eq_left_broadcast(tracker, b))) {
+        if (any_true(eq_left_broadcast(tracker, b)) || b == batch_num || b ==1) {
           Rcpp::Rcout << "Batch: " << b << "/" << batch_num << ", " << batch_time << " sec/bs" << std::endl;
         }
       }
@@ -1558,7 +1558,7 @@ Rcpp::NumericMatrix wspc::MCMC(
     int inf_loop_ctr = 0;
     int last_viable_step = 0;
     double acceptance_rate = 1.0;
-    int tracker_steps = 10*neighbor_filter;
+    int tracker_steps = 10;
     if (tracker_steps > n_steps/2) {
       tracker_steps = (int)n_steps/2;
     }
@@ -1586,13 +1586,16 @@ Rcpp::NumericMatrix wspc::MCMC(
       sdouble bd_current_transformed = 0.0;
       // ... if above boundary, scale step to boundary distance
       if (bd_current_min > 0.0) {
+        
         // ... transform boundary penalty
         for (int i = 0; i < boundary_vec_size; i++) {
           bd_current_transformed += boundary_penalty_transform(bd_current_vec(i), bp_coefs(i));
         }
         bd_current_transformed += 1.0;
+        
         // ... for each parameter
         for (int i = 0; i < n_params; i++) {
+          
           // ... calculate step size
           double normalized_step_size = step_size * std::abs(params_current(i)) + step_size;
           double bounded_step_size = normalized_step_size / bd_current_transformed.val();
@@ -1606,6 +1609,7 @@ Rcpp::NumericMatrix wspc::MCMC(
             // ... take next step
             params_next(i) = R::rnorm(params_current(i), bounded_step_size);
           }
+          
           // While looping, compute priors for this random step
           std::string this_param = Rcpp::as<std::string>(param_names[i]);
           if (
@@ -1615,6 +1619,7 @@ Rcpp::NumericMatrix wspc::MCMC(
             prior_current += log_dNorm(params_current(i), 0.0, prior_sd);
             prior_next += log_dNorm(params_next(i), 0.0, prior_sd);
           }
+          
         }
       } else {
         params_current = last_viable_parameters;
@@ -1645,6 +1650,8 @@ Rcpp::NumericMatrix wspc::MCMC(
           if (any_true(eq_left_broadcast(tracker, step))) {
             int this_step_batch = Rwhich(eq_left_broadcast(tracker, step))[0];
             Rcpp::Rcout << "step: " << (this_step_batch + 1) * (n_steps/tracker.size()) << "/" << n_steps << std::endl;
+          } else if (step == 0) {
+            Rcpp::Rcout << "step: " << 1 << "/" << n_steps << std::endl;
           }
           // Save new parameters and results
           dVec full_results = to_dVec(params_next);
