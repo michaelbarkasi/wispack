@@ -48,8 +48,6 @@ class wspc {
   
   public:
     
-    IntegerVector controlParams;       
-    
     // Fields **********************************************************************************************************
     
     // Data sizes
