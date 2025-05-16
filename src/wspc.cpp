@@ -631,6 +631,17 @@ wspc::wspc(
       _["bs_times"] = NumericVector()
     );
     
+    // TESTING 
+    controlParams = grep_cpp(param_names, "beta") & (
+      grep_cpp(param_names, "Tubb2a") |
+      grep_cpp(param_names, "Tuba1b") |
+      grep_cpp(param_names, "Actl9") | 
+      grep_cpp(param_names, "Actbl2")
+    );
+    for (int i : controlParams) {
+      fitted_parameters(i) = R::runif(-0.05, 0.05); 
+    }
+    
     vprint("Finished initializing wspc object", verbose);
     
   }
@@ -880,8 +891,14 @@ sdouble wspc::neg_loglik(
       
     }
     
+    // priors? 
+    sdouble prior = 0.0;
+    for (int i : controlParams) {
+      prior += log_dNorm(parameters(i), 0.0, 0.1 + 0.2*parameters(i))
+    }
+    
     // Take negative
-    sdouble negloglik = -log_lik;
+    sdouble negloglik = -(log_lik + prior);
     
     // Check for infinities (zero likelihood)
     if (std::isinf(negloglik) || negloglik > sdouble(inf_)) {
@@ -1495,7 +1512,7 @@ Rcpp::NumericMatrix wspc::bs_batch(
       double batch_time = 1e-9 * (batch_times[1] - batch_times[0])/max_fork;
       if (verbose) {
         // Tracker
-        if (any_true(eq_left_broadcast(tracker, b))) {
+        if (any_true(eq_left_broadcast(tracker, b)) || b == batch_num || b ==1) {
           Rcpp::Rcout << "Batch: " << b << "/" << batch_num << ", " << batch_time << " sec/bs" << std::endl;
         }
       }
@@ -1558,7 +1575,7 @@ Rcpp::NumericMatrix wspc::MCMC(
     int inf_loop_ctr = 0;
     int last_viable_step = 0;
     double acceptance_rate = 1.0;
-    int tracker_steps = 10*neighbor_filter;
+    int tracker_steps = 10;
     if (tracker_steps > n_steps/2) {
       tracker_steps = (int)n_steps/2;
     }
@@ -1586,13 +1603,16 @@ Rcpp::NumericMatrix wspc::MCMC(
       sdouble bd_current_transformed = 0.0;
       // ... if above boundary, scale step to boundary distance
       if (bd_current_min > 0.0) {
+        
         // ... transform boundary penalty
         for (int i = 0; i < boundary_vec_size; i++) {
           bd_current_transformed += boundary_penalty_transform(bd_current_vec(i), bp_coefs(i));
         }
         bd_current_transformed += 1.0;
+        
         // ... for each parameter
         for (int i = 0; i < n_params; i++) {
+          
           // ... calculate step size
           double normalized_step_size = step_size * std::abs(params_current(i)) + step_size;
           double bounded_step_size = normalized_step_size / bd_current_transformed.val();
@@ -1606,6 +1626,7 @@ Rcpp::NumericMatrix wspc::MCMC(
             // ... take next step
             params_next(i) = R::rnorm(params_current(i), bounded_step_size);
           }
+          
           // While looping, compute priors for this random step
           std::string this_param = Rcpp::as<std::string>(param_names[i]);
           if (
@@ -1615,11 +1636,15 @@ Rcpp::NumericMatrix wspc::MCMC(
             prior_current += log_dNorm(params_current(i), 0.0, prior_sd);
             prior_next += log_dNorm(params_next(i), 0.0, prior_sd);
           }
+          
         }
+        
       } else {
+        
         params_current = last_viable_parameters;
         step = last_viable_step;
         continue;
+        
       }
       
       // Compute likelihoods for this random step
@@ -1636,16 +1661,21 @@ Rcpp::NumericMatrix wspc::MCMC(
       // Accept or reject the proposed step
       double ran_draw = R::runif(0.0, 1.0); 
       if (ran_draw < acceptance) {
+        
         // Set new parameters as current 
         params_current = params_next;
         // Advance neighbor counter 
         neighbor_counter++;
         if (neighbor_counter == neighbor_filter) {
+          
           // Tracker
           if (any_true(eq_left_broadcast(tracker, step))) {
             int this_step_batch = Rwhich(eq_left_broadcast(tracker, step))[0];
             Rcpp::Rcout << "step: " << (this_step_batch + 1) * (n_steps/tracker.size()) << "/" << n_steps << std::endl;
+          } else if (step == 0) {
+            Rcpp::Rcout << "step: " << 1 << "/" << n_steps << std::endl;
           }
+          
           // Save new parameters and results
           dVec full_results = to_dVec(params_next);
           full_results.reserve(full_results.size() + 4);
@@ -1658,7 +1688,9 @@ Rcpp::NumericMatrix wspc::MCMC(
           step++;
           // Reset neighbor counter
           neighbor_counter = 0;
+          
         }
+        
       } 
       
       // Advance counters
