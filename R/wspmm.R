@@ -563,7 +563,7 @@ analyze.residuals <- function(
       df_wide <- na.omit(wisp.results$count.data.summed[mask_list[[gp]],])
       hist_resids_plot <- ggplot(df_wide, aes(x=residuals.log)) +
         geom_histogram(bins = 50, fill = "steelblue", color = "black", na.rm = TRUE) + 
-        labs(x = "Log-residual Value", y = "Frequency", title = paste0("Histograms of Log-residuals (",gp,")")) +
+        labs(x = "Log-residual Value", y = "Frequency", title = paste0("Histogram of Log-residuals (",gp,")")) +
         theme_minimal() + 
         theme(
           legend.position = "bottom",
