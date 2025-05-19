@@ -632,7 +632,7 @@ wspc::wspc(
     );
     
     // FOR PINNING AGES ONLY!
-    age_effect_mask = grepl_cpp(param_names, "beta_") & grepl_cpp(param_names, "_18_");
+    age_effect_mask = grepl_cpp(param_names, "beta_Rt") & grepl_cpp(param_names, "_18_");
     for (int i = 0; i < age_effect_mask.size(); i++) {
       age_effect_mask[i] = false;
     }
@@ -1142,10 +1142,9 @@ sdouble wspc::bounded_nll(
      */
     
     // FOR PINNING AGES ONLY!
-    for (int p = 0; p < parameters.size(); p++) {
-      if (age_effect_mask[p]) {
-        bnll += log_dNorm(parameters(p), sdouble(pinned_ages[p]), 0.1);
-      }
+    IntegerVector mask_idx = Rwhich(age_effect_mask);
+    for (int p = 0; p < mask_idx.size(); p++) {
+      bnll -= log_dNorm(parameters(mask_idx[p]), sdouble(pinned_ages[p]), 0.05);
     }
     
     return bnll;
@@ -1401,6 +1400,12 @@ Rcpp::NumericMatrix wspc::bs_batch(
     // Reset initial parameters to check their feasibility 
     set_parameters(fitted_parameters, verbose);
     
+    // FOR PINNING AGES ONLY!
+    if (true) {
+      age_effect_mask = grepl_cpp(param_names, "beta_Rt") & grepl_cpp(param_names, "_18_");
+      pinned_ages = masked_vec(fitted_parameters, age_effect_mask);
+    }
+    
     // Fit full model 
     vprint("Performing initial fit of full data", verbose);
     fit(
@@ -1423,12 +1428,6 @@ Rcpp::NumericMatrix wspc::bs_batch(
     full_results.push_back(Rcpp::as<double>(optim_results["neg_loglik"]));
     full_results.push_back(Rcpp::as<double>(optim_results["success_code"]));
     full_results.push_back(Rcpp::as<double>(optim_results["num_evals"]));
-    
-    // FOR PINNING AGES ONLY!
-    if (true) {
-      age_effect_mask = grepl_cpp(param_names, "beta_") & grepl_cpp(param_names, "_18_");
-      pinned_ages = masked_vec(these_results, age_effect_mask);
-    }
     
     // Save full fit results in last row of results matrix
     bs_results.row(bs_num_max) = to_NumVec(full_results);

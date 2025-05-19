@@ -351,15 +351,13 @@ NumericVector masked_load(
     int m = mask.size();
     if (n != m) {Rcpp::stop("Mask and input must have the same length.");}
     int p = input.size();
-    int mp = Rwhich(mask).size();
+    IntegerVector mask_idx = Rwhich(mask);
+    int mp = mask_idx.size();
     if (mp != p) {Rcpp::stop("Input length does not match the number of TRUE in the mask.");}
-    NumericVector out(n);
-    for (int i = 0; i < n; i++) {
-      if (mask[i]) {
-        out[i] = input[i];
-      } else {
-        out[i] = x[i];
-      }
+    NumericVector out = x;
+    for (int i = 0; i < p; i++) {
+      int m_idx = mask_idx[i];
+      out[mask_idx[i]] = input[i];
     }
     return out;
   }
