@@ -48,6 +48,10 @@ class wspc {
   
   public:
     
+    // FOR PINNING AGES ONLY!
+    LogicalVector age_effect_mask;
+    NumericVector pinned_ages;
+    
     // Fields **********************************************************************************************************
     
     // Data sizes
@@ -437,10 +441,19 @@ IntegerVector Rorder(const NumericVector& x);
 // ... overload
 IntegerVector Rorder(const dVec& x);
 
+// For loading masked elements 
+NumericVector masked_load(
+    const NumericVector& x,        // vector to be loaded
+    const LogicalVector& mask,     // mask of elements to replace
+    const NumericVector& input     // elements to insert into x
+  );
+
 // For subsetting vectors with Rcpp mask 
 sVec masked_vec(sVec vec, Rcpp::LogicalVector mask);
 // ... overload 
 dVec masked_vec(dVec vec, Rcpp::LogicalVector mask);
+// ... overload
+NumericVector masked_vec(NumericVector vec, Rcpp::LogicalVector mask);
 // ... overload
 iVec masked_vec(iVec vec, Rcpp::LogicalVector mask);
 // ... overload 
@@ -455,8 +468,11 @@ iVec idx_vec(iVec vec, Rcpp::IntegerVector idx);
 // ... overload
 CharacterVector idx_vec(CharacterVector vec, Rcpp::IntegerVector idx);
 
-// Find matches in character vector
+// Find matches in character vector, return index
 IntegerVector grep_cpp(CharacterVector V, std::string pattern);
+
+// Find matches in character vector, return boolean mask
+LogicalVector grepl_cpp(CharacterVector V, std::string pattern);
 
 // Find matches in string
 bool pattern_match(std::string pattern, std::string test);

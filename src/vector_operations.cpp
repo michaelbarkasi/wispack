@@ -341,6 +341,29 @@ IntegerVector Rorder(
     return indices;
   }
 
+// For loading masked elements 
+NumericVector masked_load(
+    const NumericVector& x,        // vector to be loaded
+    const LogicalVector& mask,     // mask of elements to replace
+    const NumericVector& input     // elements to insert into x
+  ) {
+    int n = x.size();
+    int m = mask.size();
+    if (n != m) {Rcpp::stop("Mask and input must have the same length.");}
+    int p = input.size();
+    int mp = Rwhich(mask).size();
+    if (mp != p) {Rcpp::stop("Input length does not match the number of TRUE in the mask.");}
+    NumericVector out(n);
+    for (int i = 0; i < n; i++) {
+      if (mask[i]) {
+        out[i] = input[i];
+      } else {
+        out[i] = x[i];
+      }
+    }
+    return out;
+  }
+
 // For subsetting vectors with Rcpp mask 
 sVec masked_vec(
     sVec vec, 
@@ -366,6 +389,21 @@ dVec masked_vec(
     int n = 0;
     for (int i = 0; i < m; i++) {if (mask[i]) {n++;}}
     dVec mvec = dVec(n);
+    int j = 0;
+    for (int i = 0; i < m; i++) {if (mask[i]) {mvec[j++] = vec[i];}}
+    return mvec;
+  }
+
+// ... overload 
+NumericVector masked_vec(
+    NumericVector vec, 
+    Rcpp::LogicalVector mask
+  ) {
+    int m = mask.size();
+    if (vec.size() != m) {Rcpp::stop("Vector and mask must have the same length.");}
+    int n = 0;
+    for (int i = 0; i < m; i++) {if (mask[i]) {n++;}}
+    NumericVector mvec = NumericVector(n);
     int j = 0;
     for (int i = 0; i < m; i++) {if (mask[i]) {mvec[j++] = vec[i];}}
     return mvec;
@@ -461,7 +499,7 @@ CharacterVector idx_vec(
     return mvec;
   }
 
-// Find matches in character vector
+// Find matches in character vector, return index
 IntegerVector grep_cpp(
     CharacterVector V, 
     std::string pattern
@@ -474,6 +512,23 @@ IntegerVector grep_cpp(
       }
     }
     return idx;
+  }
+
+// Find matches in character vector, return boolean mask
+LogicalVector grepl_cpp(
+    CharacterVector V, 
+    std::string pattern
+  ) {
+    LogicalVector mask(V.size());
+    for (int i = 0; i < V.size(); i++) {
+      std::string str = Rcpp::as<std::string>(V[i]);
+      if (str.find(pattern) != std::string::npos) {
+        mask[i] = true; 
+      } else {
+        mask[i] = false;
+      }
+    }
+    return mask;
   }
 
 // Find matches in string

@@ -631,6 +631,12 @@ wspc::wspc(
       _["bs_times"] = NumericVector()
     );
     
+    // FOR PINNING AGES ONLY!
+    age_effect_mask = grepl_cpp(param_names, "beta_") & grepl_cpp(param_names, "_18_");
+    for (int i = 0; i < age_effect_mask.size(); i++) {
+      age_effect_mask[i] = false;
+    }
+    
     vprint("Finished initializing wspc object", verbose);
     
   }
@@ -1135,6 +1141,13 @@ sdouble wspc::bounded_nll(
      *  the boundary distance approaches zero, the penalty smoothly goes to infinity. 
      */
     
+    // FOR PINNING AGES ONLY!
+    for (int p = 0; p < parameters.size(); p++) {
+      if (age_effect_mask[p]) {
+        bnll += log_dNorm(parameters(p), sdouble(pinned_ages[p]), 0.1);
+      }
+    }
+    
     return bnll;
     
   }
@@ -1411,6 +1424,12 @@ Rcpp::NumericMatrix wspc::bs_batch(
     full_results.push_back(Rcpp::as<double>(optim_results["success_code"]));
     full_results.push_back(Rcpp::as<double>(optim_results["num_evals"]));
     
+    // FOR PINNING AGES ONLY!
+    if (true) {
+      age_effect_mask = grepl_cpp(param_names, "beta_") & grepl_cpp(param_names, "_18_");
+      pinned_ages = masked_vec(these_results, age_effect_mask);
+    }
+    
     // Save full fit results in last row of results matrix
     bs_results.row(bs_num_max) = to_NumVec(full_results);
     
@@ -1440,6 +1459,11 @@ Rcpp::NumericMatrix wspc::bs_batch(
           
           // Close read end
           close(pipes[i][0]); 
+          
+          // FOR PINNING AGES ONLY!
+          if (true) {
+            fitted_parameters = masked_load(fitted_parameters, age_effect_mask, pinned_ages); 
+          }
           
           // Fit bootstrap
           dVec result = bs_fit(this_row, false); 
