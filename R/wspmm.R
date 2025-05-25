@@ -2563,39 +2563,3 @@ demo_sigmoid <- function(
     # Saved at 1186 x 1032
     
   }
-
-# R.sum and M.hat helper functions to enforce block-rate constraints
-#  ... These are no longer used as part of the prediction or optimization functions (most of that is 
-#      now in cpp only), but these are used in the "make" functions for when generating parameters 
-#      and data for simulations. 
-#  ... Eventually want to move everything, including these, fully to Rcpp.
-
-R.sum <- function(
-    R, 
-    m.hat
-) { 
-  # When the rate of the first block is greater than this sum the rate cannot be negative
-  lengthR <- length(R)
-  if (lengthR != length(m.hat) + 1) stop("R must have length 1 greater than m.hat")
-  r_sum <- sum((R[-c(lengthR)] - R[2:lengthR])/m.hat)
-  return(r_sum)
-}
-
-M.hat <- function(
-    tslopes, 
-    tpoints, 
-    max.bin.dim
-) {
-  
-  # Original formula, derived analytically (do not delete):
-  # m.hat <- vector("list", length(tslopes))
-  # for (j in seq_along(tslopes)) m.hat[j] <- min(1+exp(-tslopes[j]*(1:max.bin.dim - tpoints[j]))) 
-  
-  #  ... However, this is very slow. It can be shown (also analytically) that the above formula is equivalent to: 
-  return(1+exp(-tslopes*(max.bin.dim - tpoints)))
-  #  ... which is computationally much faster.
-  
-}
-
-
-

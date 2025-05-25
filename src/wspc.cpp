@@ -612,10 +612,10 @@ wspc::wspc(
         boundary_vec_size += deg + 1;
         // Add slots for the tslope boundary distance at each tslope
         boundary_vec_size += deg;
-        // Add one slot for the R_sum boundary distance
-        boundary_vec_size++;
+        // Add slots for the boundary distance at each block rate
+        boundary_vec_size += deg + 1;
       } else {
-        // Add one slot for the R_sum boundary distance
+        // Add one slot for the single block rate value
         boundary_vec_size++;
       } 
     }
@@ -915,7 +915,7 @@ sVec wspc::boundary_dist(
     // Compute the boundary distance, for ...
     // ... transition slopes (must be positive)
     // ... transition points (enforces tpoint buffer)
-    // ... Rsum (enforces positive predicted rates)
+    // ... block rate values (must be positive)
     for (int r : idx_mc_unique) {
       
       // Grab warping factors
@@ -949,8 +949,7 @@ sVec wspc::boundary_dist(
         
         // Transition slopes most be positive
         for (int d = 0; d < deg; d++) {
-          sdouble dist_low = tslope(d); 
-          boundary_dist_vec(ctr) = dist_low;
+          boundary_dist_vec(ctr) = tslope(d); 
           ctr++;
         }
         
@@ -977,9 +976,11 @@ sVec wspc::boundary_dist(
           ctr++;
         }
         
-        // Find R_sum boundary distance
-        boundary_dist_vec(ctr) = -poly_sigmoid(bin_num, deg, -Rt, tslope, tpoint);
-        ctr++;
+        // All block rate values must be positive
+        for (int d = 0; d < deg + 1; d++) {
+          boundary_dist_vec(ctr) = Rt(d);
+          ctr++;
+        }
         
       } else {
         
