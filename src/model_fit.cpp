@@ -129,10 +129,10 @@ sdouble poisson_gamma_integral(
     sdouble s = r * r / v; // Gamma distribution "shape" parameter
     sdouble R = s / r;     // Gamma distribution "rate" parameter
     
-    // Idea: This is an analytic solution to the integral of dPois(y, lambda) * dGamma(lambda, r, v) from 1 to positive infinity. 
+    // Idea: This is an analytic solution to the integral of dPois(y, lambda) * dGamma(lambda, r, v) from 0 to positive infinity. 
     //        ... The solution takes the form of a ratio num/denom which is subject to overflow/underflow, and so instead of 
     //            computing this ratio directly, we compute the log of the numerator and denominator separately, and then exponentiate the difference.
-    sdouble log_num = s * slog(R) + stan::math::lgamma(y + s) + stan::math::log1m(stan::math::gamma_p(y + s, R + 1.0));
+    sdouble log_num = s * slog(R) + stan::math::lgamma(y + s); 
     sdouble log_denom = stan::math::lgamma(y + 1.0) + stan::math::lgamma(s) + (y + s) * slog(R + 1.0);
     sdouble integral = sexp(log_num - log_denom);
    
