@@ -300,8 +300,10 @@ dVec series_loglik(
     
     // Compute joint log-likelihood of observations within each window
     for (int i = 0; i <= (n - ws); i++) {
+      
+      int i_mid = i + int(ws/2);
      
-      loglik[i] = 0.0;
+      loglik[i_mid] = 0.0;
       // ... series values in window
       dVec series_i(series.begin() + i, series.begin() + (i + ws));
       // ... series values in first half of window
@@ -313,29 +315,32 @@ dVec series_loglik(
         double mean_i = vmean(series_i);
         double sd_i = vsd(series_i);
         for (int j = 0; j < ws; j++) {
-          loglik[i] += log_dNorm(series_i[j], mean_i, sd_i);
+          loglik[i_mid] += log_dNorm(series_i[j], mean_i, sd_i);
         }
       } else {
         double mean_i1 = vmean(series_i1);
         double sd_i1 = vsd(series_i1);
         for (int j = 0; j < ws/2; j++) {
-          loglik[i] += log_dNorm(series_i[j], mean_i1, sd_i1);
+          loglik[i_mid] += log_dNorm(series_i[j], mean_i1, sd_i1);
         }
         double mean_i2 = vmean(series_i2);
         double sd_i2 = vsd(series_i2);
         for (int j = ws/2; j < ws; j++) {
-          loglik[i] += log_dNorm(series_i[j], mean_i2, sd_i2);
+          loglik[i_mid] += log_dNorm(series_i[j], mean_i2, sd_i2);
         }
       }
       
       // Check for nan's and replace with 1
-      if (std::isnan(loglik[i])) {loglik[i] = 1.0;}
+      if (std::isnan(loglik[i_mid])) {loglik[i_mid] = 1.0;}
      
     }
    
     // Fill in the last part of the vector with the mean
     double loglik_mean = vmean(loglik);
-    for (int i = n - ws + 1; i < n; i++) {
+    for (int i = 0; i < int(ws/2); i++) {
+      loglik[i] = loglik_mean;
+    }
+    for (int i = n - ws + int(ws/2) + 1; i < n; i++) {
       loglik[i] = loglik_mean;
     }
     
@@ -416,7 +421,7 @@ IntegerMatrix LROcp_array(
     const double& out_mult        // Outlier multiplier
   ) {
     // The test here will treat each column of the matrix as a separate series. 
-    //  it further assumes that the series are dependent on each other, and share 
+    //  It further assumes that the series are dependent on each other, and share 
     //  change points, plus some variance between them on the exact location. 
     
     // Control random number generator
@@ -426,7 +431,7 @@ IntegerMatrix LROcp_array(
     int n_samples = series_array.rows();
     NumericMatrix loglik_ratio_array(n_samples, n_series);
     
-    // Convert series_array of raw (or log) count values into an array of likelihood ratios
+    // Convert series_array of (raw or log) count values into an array of likelihood ratios
     for (int s = 0; s < n_series; s++) {
       
       // Get the series for this column
