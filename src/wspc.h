@@ -133,7 +133,7 @@ class wspc {
     List optim_results; 
     
     // Variables for optimization
-    int max_evals = 500;                    // max number of evaluations
+    int max_evals = 1000;                    // max number of evaluations
     double ctol = 5e-6;                     // convergence tolerance
     unsigned int rng_seed = 42u;            // seed for random number generator
     sMat gamma_dispersion;                  // dispersion terms for "kernel" of gamma-Poisson model

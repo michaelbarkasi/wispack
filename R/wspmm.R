@@ -23,12 +23,12 @@ wisp <- function(
     use.median = FALSE,
     MCMC.burnin = 0,
     MCMC.steps = 1e4,
-    MCMC.step.size = 0.05,
-    MCMC.prior = 10.0,
-    MCMC.neighbor.filter = 10,
+    MCMC.step.size = 1.0,
+    MCMC.prior = 1.0,
+    MCMC.neighbor.filter = 2,
     bootstraps.num = 0, 
     converged.resamples.only = TRUE,
-    max.fork = 10,
+    max.fork = 5,
     dim.bounds = NULL, 
     verbose = TRUE,
     print.child.summaries = TRUE,
@@ -37,7 +37,7 @@ wisp <- function(
       buffer_factor = 0.05,                       # buffer factor for penalizing distance from structural parameter values
       ctol = 1e-6,                                # convergence tolerance
       max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from structural parameter values
-      LROcutoff = 2.0,                            # cutoff for LROcp
+      LROcutoff = 2.0,                            # cutoff for LROcp, a multiple of standard deviation
       LROwindow_factor = 2.0,                     # controls size of window used in LROcp algorithm (window = LROwindow_factor * bin_num * buffer_factor)
       rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
       max_evals = 1000,                           # maximum number of evaluations for optimization
