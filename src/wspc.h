@@ -582,11 +582,12 @@ List make_parameter_vector(
   bool verbose
   );
 
-// Use pools to extrapolate counts
+// Use extrapolation pool to extrapolate counts
 sVec extrapolate_none(
   const sVec& count,
   const CharacterVector& ran, 
-  const std::vector<IntegerVector>& extrapolation_pool
+  const std::vector<IntegerVector>& extrapolation_pool,
+  const bool& log_transform
   );
 
 // Model fitting *******************************************************************************************************

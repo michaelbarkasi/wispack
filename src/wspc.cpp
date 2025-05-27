@@ -262,7 +262,7 @@ wspc::wspc(
     extrapolation_pool = make_extrapolation_pool(bin, count, parent, child, ran, treatment, verbose); 
     
     // Extrapolate "none" rows
-    count = extrapolate_none(count, ran, extrapolation_pool);
+    count = extrapolate_none(count, ran, extrapolation_pool, true);
     vprint("Extrapolated 'none' rows", verbose);
     
     // Take log of observed counts 
@@ -1346,7 +1346,7 @@ dVec wspc::bs_fit(
     }
     
     // Extrapolate none's and take their logs
-    count = extrapolate_none(count, ran, extrapolation_pool);
+    count = extrapolate_none(count, ran, extrapolation_pool, true);
     iVec r_rows = Rcpp::as<iVec>(count_row_nums[eq_left_broadcast(ran,"none")]);
     for (int r : r_rows) {
       count_log(r) = slog(count(r) + 1.0);
@@ -1732,7 +1732,7 @@ NumericMatrix wspc::resample(
       }
       
       // Extrapolate none's 
-      count_new = extrapolate_none(count_new, ran, extrapolation_pool);
+      count_new = extrapolate_none(count_new, ran, extrapolation_pool, true);
       
       for (int r : NA_idx) {
         count_new(r) = stan::math::NOT_A_NUMBER;

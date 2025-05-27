@@ -424,7 +424,8 @@ std::vector<IntegerVector> make_extrapolation_pool(
 sVec extrapolate_none(
     const sVec& count,
     const CharacterVector& ran, 
-    const std::vector<IntegerVector>& extrapolation_pool
+    const std::vector<IntegerVector>& extrapolation_pool,
+    const bool& log_transform
   ) {
     
     sVec count_out = count;
@@ -435,14 +436,27 @@ sVec extrapolate_none(
       IntegerVector extrapolation_pool_r = extrapolation_pool[r];
       int extrapolation_sz = extrapolation_pool_r.size();
       if (extrapolation_sz == 0 || extrapolation_pool_r[0] < 1) {Rcpp::stop("No extrapolation pool found for row " + std::to_string(r));}
-      double running_sum = 0.0;
+      sdouble running_sum = 0.0;
       
-      for (int i = 0; i < extrapolation_sz; i++) {
-        running_sum += count[extrapolation_pool_r[i]].val();
+      if (log_transform) {
+        for (int i = 0; i < extrapolation_sz; i++) {
+          running_sum += slog(count[extrapolation_pool_r[i]] + 1.0);
+        }
+      } else {
+        for (int i = 0; i < extrapolation_sz; i++) {
+          running_sum += count[extrapolation_pool_r[i]];
+        }
       }
       
-      int roundedMean = std::round(running_sum / (double)extrapolation_sz);
-      count_out[r] = static_cast<stan::math::var>(roundedMean);
+      sdouble roundedMean;
+      if (log_transform) {
+        roundedMean = running_sum / (sdouble)extrapolation_sz;
+        roundedMean = sexp(roundedMean) - 1.0; // Convert back from log space
+        roundedMean = stan::math::round(roundedMean);
+      } else {
+        roundedMean = stan::math::round(running_sum / (sdouble)extrapolation_sz);
+      }
+      count_out[r] = roundedMean;
       
     }
     
