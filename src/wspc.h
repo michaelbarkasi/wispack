@@ -193,7 +193,8 @@ class wspc {
     
     // Test for tpoints below the buffer
     bool test_tpoints(
-        const sVec& parameters
+        const sVec& parameters,
+        const bool& verbose
     ) const;
     
     // Compute min boundary penalty
@@ -598,6 +599,13 @@ double safe_rnorm(
     double sd
   );
 
+// Better normal distribution function, with PCG and Box-Muller
+double pcg_rnorm(
+    double mean, 
+    double sd,
+    pcg32& rng
+  );
+
 // Log of density of normal distribution centered on zero
 sdouble log_dNorm(
     const sdouble& x,              // value to evaluate
@@ -712,6 +720,13 @@ IntegerVector LROcp_find(
     const dVec& nll_ratio,         // 1D vector of points to test for change points
     const int& ws,                 // Running window size
     const double& out_mult         // Outlier multiplier
+  );
+
+// ... overload
+IntegerVector LROcp_find(
+    const NumericMatrix& loglik_ratio_mat,     // NumericMatrix of vectors (columns) to test for change points
+    const int& ws,                             // Running window size
+    const double& out_mult                     // Outlier multiplier
   );
 
 // Compute likelihood ratios of change points for a series

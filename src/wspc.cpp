@@ -1005,7 +1005,8 @@ sVec wspc::boundary_dist(
 
 // Test for tpoints below the buffer
 bool wspc::test_tpoints(
-    const sVec& parameters
+    const sVec& parameters,
+    const bool& verbose
   ) const {
     
     // Initialize vector to hold tpoints and unique model-component rows
@@ -1060,6 +1061,13 @@ bool wspc::test_tpoints(
           for (int d = 0; d < deg + 1; d++) {
             sdouble buffer_dist = (tpoint_ext(d + 1) - tpoint_ext(d)) - tpoint_buffer;
             if (buffer_dist < 0.0) {
+              if (verbose) {
+                vprint(
+                  "Found tpoint below buffer, dist: " + std::to_string(buffer_dist.val()) +
+                    ", deg: " + std::to_string(deg) +
+                    ", row: " + std::to_string(r),
+                    true);
+              }
               return false;
             }
           }
@@ -1571,6 +1579,10 @@ Rcpp::NumericMatrix wspc::MCMC(
     // Initialize neighbor counter
     int neighbor_counter = 0;
     
+    // Set random number generator with seed
+    unsigned int seed = rng_seed + n_steps;
+    pcg32 walk_rng(seed);
+    
     // Take steps, Random-walk Metropolois algorithm
     while (step < n_steps) {
       
@@ -1602,13 +1614,13 @@ Rcpp::NumericMatrix wspc::MCMC(
           double bounded_step_size = normalized_step_size / bd_current_transformed.val();
           if (bounded_step_size == 0.0) {
             // ... presumably this case means current parameter is extremely close to zero or very close to boundary
-            params_next(i) = R::rnorm(params_current(i), step_size);
+            params_next(i) = pcg_rnorm(params_current(i), step_size, walk_rng);
           } else if (bounded_step_size < 0.0) {
             // ... no analytically possible, but here in case of programming issues
             params_next(i) = params_current(i);
           } else {
             // ... take next step
-            params_next(i) = R::rnorm(params_current(i), bounded_step_size);
+            params_next(i) = pcg_rnorm(params_current(i), bounded_step_size, walk_rng);
           }
           
           // While looping, compute priors for this random step
@@ -1799,7 +1811,7 @@ Rcpp::List wspc::check_parameter_feasibility(
     sVec predicted_rates_log_var;
     
     // Test if any tpoints are below the buffer 
-    bool feasible = test_tpoints(parameters_var);
+    bool feasible = test_tpoints(parameters_var, verbose);
     if (verbose) {
       if (feasible) {
         vprint("... no tpoints below buffer");
