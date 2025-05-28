@@ -514,7 +514,7 @@ IntegerMatrix LROcp_array(
     int n_series = series_array.cols();
     int n_samples = series_array.rows();
     NumericMatrix loglik_ratio_array_highpass(n_samples, n_series);
-    NumericMatrix loglik_ratio_array_medpass(n_samples, n_series);
+    NumericMatrix loglik_ratio_array_midpass(n_samples, n_series);
     NumericMatrix loglik_ratio_array_lowpass(n_samples, n_series);
     
     // Convert series_array of (raw or log) count values into an array of likelihood ratios
@@ -525,12 +525,12 @@ IntegerMatrix LROcp_array(
       
       // Find the likelihood ratios of change points for this series
       dVec loglik_ratio_highpass = LROcp_logRatio(series, ws);
-      dVec loglik_ratio_medpass = LROcp_logRatio(series, ws*2);
+      dVec loglik_ratio_midpass = LROcp_logRatio(series, ws*2);
       dVec loglik_ratio_lowpass = LROcp_logRatio(series, ws*4);
       
       // Save in array 
       loglik_ratio_array_highpass.column(s) = to_NumVec(loglik_ratio_highpass);
-      loglik_ratio_array_medpass.column(s) = to_NumVec(loglik_ratio_medpass);
+      loglik_ratio_array_midpass.column(s) = to_NumVec(loglik_ratio_midpass);
       loglik_ratio_array_lowpass.column(s) = to_NumVec(loglik_ratio_lowpass);
       
     }
@@ -539,7 +539,7 @@ IntegerMatrix LROcp_array(
     NumericMatrix centroid(n_samples, 3);
     for (int i = 0; i < n_samples; i++) {
       centroid(i,0) = vmean(loglik_ratio_array_highpass.row(i));
-      centroid(i,1) = vmean(loglik_ratio_array_medpass.row(i));
+      centroid(i,1) = vmean(loglik_ratio_array_midpass.row(i));
       centroid(i,2) = vmean(loglik_ratio_array_lowpass.row(i));
     }
     
@@ -551,7 +551,7 @@ IntegerMatrix LROcp_array(
       // Project found_cp back to original series 
       // ... these will be one-based indices that need to be subtracted back to zero-based
       Function project_cp("project_cp");
-      IntegerMatrix found_cp_array = project_cp(found_cp, centroid.column(1), loglik_ratio_array_medpass);
+      IntegerMatrix found_cp_array = project_cp(found_cp, centroid.column(1), loglik_ratio_array_midpass);
       // ... ^ in this matrix, rows are change points (by deg), columns are trt x ran interactions
      
       for (int i = 0; i < found_cp_array.ncol(); i++) {

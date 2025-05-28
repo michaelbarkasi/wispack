@@ -420,8 +420,6 @@ wspc::wspc(
             int s = good_col_idx[si];
             // ... grab change points
             found_cp.column(s) = found_cp_good.column(si);
-            // ... grab counts 
-            sVec these_counts = count_masked_array_good.col(si);
           }
         }
         
