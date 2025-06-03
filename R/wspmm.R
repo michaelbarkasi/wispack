@@ -42,7 +42,8 @@ wisp <- function(
       rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
       max_evals = 1000,                           # maximum number of evaluations for optimization
       rng_seed = 42,                              # seed for random number generator
-      warp_precision = 1e-7                       # decimal precision to retain when selecting really big number as pseudo infinity for unbound warping
+      warp_precision = 1e-7,                      # decimal precision to retain when selecting really big number as pseudo infinity for unbound warping
+      recompute_gamma_dispersion = FALSE          # whether to recompute gamma dispersion matrix (if true, will recompute on each fit)
     )
   ) {
     

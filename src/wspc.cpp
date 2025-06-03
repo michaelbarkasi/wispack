@@ -34,6 +34,7 @@ wspc::wspc(
     rng_seed = (unsigned int)settings["rng_seed"];
     warp_precision = (sdouble)settings["warp_precision"];
     inf_warp = (sdouble)settings["inf_warp"];
+    recompute_gamma_dispersion = (bool)settings["recompute_gamma_dispersion"];
     model_settings = Rcpp::clone(settings);
     
     // Report warp_inf 
@@ -274,7 +275,6 @@ wspc::wspc(
     
     // Resize gamma dispersion matrix (... fill in next step)
     gamma_dispersion.resize(n_child, n_parent);
-    gamma_dispersion.setZero();
     gd_child_idx = IntegerVector(n_child);
     gd_parent_idx = IntegerVector(n_parent);
     gd_child_idx.names() = child_lvls;
@@ -332,13 +332,7 @@ wspc::wspc(
         sdouble count_pc_mean = vmean(count_pc_masked);
         sdouble count_pc_var = vvar(count_pc_masked);
         gd_child_idx[(String)child_lvls[c]] = c;
-        if (count_pc_var > count_pc_mean) {
-          // Have: count_pc_var = count_pc_mean + count_pc_mean^2 * gdis
-          // ... count_pc_var = count_pc_mean * (1 + count_pc_mean * gdis)
-          // ... count_pc_var / count_pc_mean = 1 + count_pc_mean * gdis
-          // ... (count_pc_var / count_pc_mean) - 1 = count_pc_mean * gdis
-          gamma_dispersion(c, p) = ((count_pc_var / count_pc_mean) - 1) / count_pc_mean;
-        }
+        gamma_dispersion(c, p) = gamma_dispersion_formula(count_pc_mean, count_pc_var);
         
         sMat count_masked_array(bin_num_i, n_ran_trt);
         count_masked_array.setZero();
@@ -1325,7 +1319,7 @@ dVec wspc::bs_fit(
     unsigned int seed = rng_seed + bs_num;
     pcg32 rng(seed);
     
-    // Resample (with replacement), re-sum token pool, and take logs
+    // Resample (with replacement), re-sum token pool, take logs, recompute gamma_dispersion
     for (int r : count_not_na_idx) {
       
       // ... but only for actual observations of random grouping variable
@@ -1356,6 +1350,12 @@ dVec wspc::bs_fit(
     iVec r_rows = Rcpp::as<iVec>(count_row_nums[eq_left_broadcast(ran,"none")]);
     for (int r : r_rows) {
       count_log(r) = slog(count(r) + 1.0);
+    }
+    
+    // Recompute gamma dispersion
+    // ... this *is* done after extrapolating_none in the constructor
+    if (recompute_gamma_dispersion) {
+      gamma_dispersion = gamma_dispersion_recompute(count, count_not_na_mask, parent, child, parent_lvls, child_lvls);
     }
     
     // Check feasibility 

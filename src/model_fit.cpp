@@ -181,6 +181,65 @@ sdouble delta_var_est(
     return var / ((mu + 1) * (mu + 1));
   }
 
+// Formula to calculate gamme dispersion factor from mean and variance of counts
+sdouble gamma_dispersion_formula(
+    const sdouble& count_pc_mean, // mean of counts for parent-child combination
+    const sdouble& count_pc_var   // variance of counts for parent-child combination
+  ) {
+    
+    if (count_pc_var > count_pc_mean) {
+      // Have: count_pc_var = count_pc_mean + count_pc_mean^2 * gdis
+      // ... count_pc_var = count_pc_mean * (1 + count_pc_mean * gdis)
+      // ... count_pc_var / count_pc_mean = 1 + count_pc_mean * gdis
+      // ... (count_pc_var / count_pc_mean) - 1 = count_pc_mean * gdis
+      return ((count_pc_var / count_pc_mean) - 1.0) / count_pc_mean;
+    } else {
+      return 0.0; // no dispersion if variance is less than or equal to mean
+    }
+  }
+
+// Recomputes gamma_dispersion matrix, but not gd_child_idx and gd_parent_idx
+sMat gamma_dispersion_recompute(
+    const sVec& count,                             // count data vector (raw, not log)
+    const LogicalVector& count_not_na_mask,        // mask for non-NA counts
+    const CharacterVector& parent,                 // parent column of summed data
+    const CharacterVector& child,                  // child column of summed data
+    const CharacterVector& parent_lvls,            // levels of parent grouping variable (fixed-effects)
+    const CharacterVector& child_lvls              // levels of child grouping variable (fixed-effects)
+  ) {
+    
+    // Grab number of parent and child levels
+    int n_child = child_lvls.size();
+    int n_parent = parent_lvls.size();
+    
+    // Initialize gamma dispersion matrix
+    sMat gamma_dispersion(n_child, n_parent);
+    gamma_dispersion.setZero();
+    
+    // Loop through parent levels
+    for (int p = 0; p < n_parent; p++) {
+      
+      LogicalVector parent_mask = eq_left_broadcast(parent, parent_lvls[p]);
+      
+      // Loop through child levels
+      for (int c = 0; c < n_child; c++) { 
+        
+        // Estimate dispersion of raw count (not log)
+        LogicalVector child_mask = eq_left_broadcast(child, child_lvls[c]);
+        LogicalVector pc_mask = parent_mask & child_mask & count_not_na_mask;
+        sVec count_pc_masked = masked_vec(count, pc_mask); 
+        sdouble count_pc_mean = vmean(count_pc_masked);
+        sdouble count_pc_var = vvar(count_pc_masked);
+        gamma_dispersion(c, p) = gamma_dispersion_formula(count_pc_mean, count_pc_var);
+        
+      }
+      
+    }
+    
+    return gamma_dispersion;
+    
+  }
+
 // Generic warping function with bound 
 sdouble warp_ratio(
     const sdouble& basis,    // parameterizing coordinate to set the warp

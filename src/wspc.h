@@ -133,12 +133,13 @@ class wspc {
     List optim_results; 
     
     // Variables for optimization
-    int max_evals = 1000;                    // max number of evaluations
-    double ctol = 5e-6;                     // convergence tolerance
-    unsigned int rng_seed = 42u;            // seed for random number generator
-    sMat gamma_dispersion;                  // dispersion terms for "kernel" of gamma-Poisson model
-    IntegerVector gd_child_idx;             // indexes of child levels in gamma_dispersion
-    IntegerVector gd_parent_idx;            // indexes of parent levels in gamma_dispersion
+    int max_evals = 1000;                       // max number of evaluations
+    double ctol = 5e-6;                         // convergence tolerance
+    unsigned int rng_seed = 42u;                // seed for random number generator
+    bool recompute_gamma_dispersion = false;    // whether to recompute gamma dispersion matrix (if true, will recompute on each fit)
+    sMat gamma_dispersion;                      // dispersion terms for "kernel" of gamma-Poisson model
+    IntegerVector gd_child_idx;                 // indexes of child levels in gamma_dispersion
+    IntegerVector gd_parent_idx;                // indexes of parent levels in gamma_dispersion
     
     // Boundary penalty variables
     int boundary_vec_size = 0;                           // number of boundary components
@@ -672,6 +673,22 @@ sdouble poisson_gamma_integral(
 sdouble delta_var_est(
     const sdouble& var, 
     const sdouble& mu
+  );
+
+// Formula to calculate gamme dispersion factor from mean and variance of counts
+sdouble gamma_dispersion_formula(
+    const sdouble& count_pc_mean, // mean of counts for parent-child combination
+    const sdouble& count_pc_var   // variance of counts for parent-child combination
+  );
+
+// Recomputes gamma_dispersion matrix, but not gd_child_idx and gd_parent_idx
+sMat gamma_dispersion_recompute(
+    const sVec& count,                             // count data vector (raw, not log)
+    const LogicalVector& count_not_na_mask,        // mask for non-NA counts
+    const CharacterVector& parent,                 // parent column of summed data
+    const CharacterVector& child,                  // child column of summed data
+    const CharacterVector& parent_lvls,            // levels of parent grouping variable (fixed-effects)
+    const CharacterVector& child_lvls              // levels of child grouping variable (fixed-effects)
   );
 
 // Function to set warping ratios 
