@@ -43,6 +43,7 @@ void vprint(
     Rcpp::Rcout << message << val << std::endl;
   }
 
+// Function for printing vectors
 void vprintV(
     const CharacterVector& message,
     bool verbose
@@ -52,7 +53,7 @@ void vprintV(
     }
   }
 
-// Function for printing vectors
+// ... overload for NumericVector
 void vprintV(
     const NumericVector& vec,
     bool verbose

@@ -34,7 +34,6 @@ wspc::wspc(
     rng_seed = (unsigned int)settings["rng_seed"];
     warp_precision = (sdouble)settings["warp_precision"];
     inf_warp = (sdouble)settings["inf_warp"];
-    recompute_gamma_dispersion = (bool)settings["recompute_gamma_dispersion"];
     model_settings = Rcpp::clone(settings);
     
     // Report warp_inf 
@@ -121,7 +120,7 @@ wspc::wspc(
     
     // Pre-compute weight-matrix rows 
     // ... for making weights matrix
-    sMat weight_rows(treatment_num, treatment_num);
+    weight_rows.resize(treatment_num, treatment_num);
     weight_rows.setOnes();
     for (int tr = 0; tr < treatment_num; tr++) {
       CharacterVector trt_given = treatment_components[tr];
@@ -139,7 +138,8 @@ wspc::wspc(
     parent_lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["parent"]));
     child_lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["child"]));
     ran_lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["ran"]));
-    ran_lvls.push_front("none");                                        // add "none" to represent no random effect (reference level)
+    // ... add "none" to represent no random effect (reference level)
+    ran_lvls.push_front("none"); 
     // ... print extracted grouping variables
     vprint("Extracted parent grouping variables:", verbose);
     vprintV(parent_lvls, verbose);
@@ -273,286 +273,96 @@ wspc::wspc(
     }
     vprint("Took log of observed counts", verbose);
     
-    // Resize gamma dispersion matrix (... fill in next step)
-    gamma_dispersion.resize(n_child, n_parent);
-    gd_child_idx = IntegerVector(n_child);
-    gd_parent_idx = IntegerVector(n_parent);
-    gd_child_idx.names() = child_lvls;
-    gd_parent_idx.names() = parent_lvls;
-    
-    // Initialize matrix to hold degrees of each parent-child combination
-    degMat = IntegerMatrix(n_child, n_parent);
-    rownames(degMat) = child_lvls;
-    colnames(degMat) = parent_lvls;
-    
     // Compute running and filter window sizes for LRO change-point detection
-    int ws = static_cast<int>(std::round(LROwindow_factor * (double)bin_num_i * buffer_factor.val()));
-    int n_ran_trt = n_ran * treatment_num;
+    ws = static_cast<int>(std::round(LROwindow_factor * (double)bin_num_i * buffer_factor.val()));
+    
+    // Estimate gamma dispersion of raw counts
+    List gamma_ests = compute_gamma_dispersion(
+      count,
+      count_not_na_mask,
+      parent,
+      child,
+      parent_lvls,
+      child_lvls
+    );
+    gamma_dispersion = to_sMat(Rcpp::as<NumericMatrix>(gamma_ests["gamma_dispersion"]));
+    gd_child_idx = Rcpp::as<IntegerVector>(gamma_ests["gd_child_idx"]);
+    gd_parent_idx = Rcpp::as<IntegerVector>(gamma_ests["gd_parent_idx"]);
+    vprint("Estimated gamma dispersion of raw counts", verbose);
     
     // Estimate degree of each parent-child combination at baseline using LRO change-point detection 
-    // ... store ref values in list
-    List ref_values(n_parent);
-    ref_values.names() = parent_lvls;
-    // ... store rate effects in list
-    List RtEffs(n_parent);
-    RtEffs.names() = parent_lvls;
-    // ... store tpoint effects in list
-    List tpointEffs(n_parent);
-    tpointEffs.names() = parent_lvls;
-    // ... store tslope effects in list 
-    List tslopeEffs(n_parent);
-    tslopeEffs.names() = parent_lvls;
+    List cp_ests = estimate_change_points(
+      bin,
+      count_log,
+      count_not_na_mask,
+      ws,
+      bin_num_i,
+      LROcutoff,
+      parent,
+      child,
+      ran,
+      treatment,
+      parent_lvls,
+      child_lvls,
+      ran_lvls,  
+      treatment_lvls,
+      treatment_components
+    );
+    degMat = Rcpp::as<IntegerMatrix>(cp_ests["degMat"]);                              // matrix of degrees of each parent-child combination
+    found_cp_list = Rcpp::as<List>(cp_ests["found_cp_list"]);                         // list of found change points for each parent-child combination
+    found_cp_trt_list = Rcpp::as<List>(cp_ests["found_cp_trt_list"]);                 // list of found change points for each parent-child combination, averaged across treatments
+    vprint("Estimated change points", verbose);
     
-    // Loop through parent levels
-    for (int p = 0; p < n_parent; p++) {
-      
-      LogicalVector parent_mask = eq_left_broadcast(parent, parent_lvls[p]);
-      gd_parent_idx[(String)parent_lvls[p]] = p;
-      
-      // Set up list for ref values
-      ref_values[(String)parent_lvls[p]] = List(n_child);
-      name_proxylist(ref_values[(String)parent_lvls[p]], child_lvls);
-      // ... for rate effect values
-      RtEffs[(String)parent_lvls[p]] = List(n_child);
-      name_proxylist(RtEffs[(String)parent_lvls[p]], child_lvls);
-      // ... for tpoint effect values 
-      tpointEffs[(String)parent_lvls[p]] = List(n_child);
-      name_proxylist(tpointEffs[(String)parent_lvls[p]], child_lvls);
-      // ... for tslope effect values 
-      tslopeEffs[(String)parent_lvls[p]] = List(n_child);
-      name_proxylist(tslopeEffs[(String)parent_lvls[p]], child_lvls);
-      
-      // Loop through child levels
-      for (int c = 0; c < n_child; c++) { 
-        
-        // Estimate dispersion of raw count (not log)
-        LogicalVector child_mask = eq_left_broadcast(child, child_lvls[c]);
-        LogicalVector pc_mask = parent_mask & child_mask & count_not_na_mask;
-        sVec count_pc_masked = masked_vec(count, pc_mask); 
-        sdouble count_pc_mean = vmean(count_pc_masked);
-        sdouble count_pc_var = vvar(count_pc_masked);
-        gd_child_idx[(String)child_lvls[c]] = c;
-        gamma_dispersion(c, p) = gamma_dispersion_formula(count_pc_mean, count_pc_var);
-        
-        sMat count_masked_array(bin_num_i, n_ran_trt);
-        count_masked_array.setZero();
-        LogicalVector good_col(n_ran_trt);
-        
-        // Collect count values for each treatment-ran level interaction of this child-parent pair
-        NumericMatrix count_log_avg_mat(bin_num_i, treatment_num);
-        for (int t = 0; t < treatment_num; t++) {
-          String trt = treatment_lvls[t];
-          
-          // Make mask for treatment rows of this parent-child pair
-          LogicalVector trt_mask = eq_left_broadcast(treatment, trt);
-          LogicalVector mask = pc_mask & trt_mask;
-         
-          // Grab average counts for this treatment level (used later to set initial values)
-          dVec count_log_avg(bin_num_i); 
-          LogicalVector mask0 = count_not_na_mask & parent_mask & child_mask & trt_mask;
-          sVec count_trt_masked = masked_vec(count_log, mask0);
-          sVec bin_trt_masked = masked_vec(bin, mask0);
-          for (int b = 0; b < bin_num_i; b++) {
-            LogicalVector mask_b = eq_left_broadcast(to_NumVec(bin_trt_masked), (double)b + 1.0);
-            sVec count_b = masked_vec(count_trt_masked, mask_b);
-            count_log_avg[b] = vmean(count_b).val();
-          }
-          count_log_avg_mat.column(t) = to_NumVec(count_log_avg);
-          
-          // Collect count values for each ran level and this treatment trt
-          for (int r = 0; r < n_ran; r++) {
-            // Make mask for ran level rows of this treatment (of this parent-child pair)
-            LogicalVector ran_mask = eq_left_broadcast(ran, ran_lvls[r]);
-            LogicalVector mask = mask0 & ran_mask;
-            
-            // Make masked copies of count_log and bin
-            sVec count_masked = masked_vec(count_log, mask);  
-            sVec bin_masked = masked_vec(bin, mask);
-            if (count_masked.size() == bin_num_i && bin_masked.size() == bin_num_i) {
-              
-              // Ensure count_masked is in correct order
-              // ... should be, but sanity check 
-              for (int b = 0; b < bin_num_i; b++) {
-                if (bin_masked[b] != (b + 1.0)) {
-                  stop("Count or bin vectors not in correct order.");
-                }
-              }
-              
-              // Set this column and mark good
-              count_masked_array.col(t*n_ran + r) = count_masked;
-              good_col(t*n_ran + r) = true;
-              
-            } else {
-              good_col(t*n_ran + r) = false;
-            }
-            
-          }
-         
-        }
-        
-        // Extract good column numbers 
-        IntegerVector good_col_idx = Rwhich(good_col);
-        sMat count_masked_array_good = count_masked_array(Eigen::all, to_iVec(good_col_idx));
-        
-        // Estimate change points from masked count series
-        IntegerMatrix found_cp_good = LROcp_array(
-          count_masked_array_good,    // 2D matrix of points to test for change points (columns as series, rows as bins)
-          ws,                         // running window size 
-          LROcutoff                   // points more than this times sd considered outliers
-        );
-        
-        // Estimate degree of this parent-child pair 
-        int deg = found_cp_good.rows();
-        int n_blocks = deg + 1;
-        degMat(c, p) = deg;
-        
-        // Fill columns into the found_cp matrix
-        IntegerMatrix found_cp(deg, n_ran_trt);
-        // ^ ... Rcpp should initialize these matrices with all zeros
-        if (deg > 0) {
-          for (int si = 0; si < good_col_idx.size(); si++) {
-            int s = good_col_idx[si];
-            // ... grab change points
-            found_cp.column(s) = found_cp_good.column(si);
-          }
-        }
-        
-        // Extract treatment means for each change point
-        NumericMatrix found_cp_trt(deg, treatment_num);
-        for (int t = 0; t < treatment_num; t++) {
-          for (int d = 0; d < deg; d++) {
-            found_cp_trt(d, t) = 0.0;
-            int n_ran_hit = 0;
-            for (int r = 0; r < n_ran; r++) {
-              if (good_col(t*n_ran + r)) { // ... ensure there is data here
-                found_cp_trt(d, t) += (double)found_cp(d, t*n_ran + r);
-                n_ran_hit++;
-              }
-            }
-            found_cp_trt(d, t) = found_cp_trt(d, t) / (double)n_ran_hit;
-          }
-        }
-       
-        // Set initial parameters for fixed-effect treatments
-        List placeholder_ref_values(mc_list.size());
-        placeholder_ref_values.names() = mc_list;
-        NumericMatrix placeholder_RtEffs(treatment_num, n_blocks);
-        NumericMatrix placeholder_tpointEffs(treatment_num, deg);
-        NumericMatrix placeholder_tslopeEffs(treatment_num, deg);
-        NumericMatrix run_estimates(treatment_num, deg);
-        
-        // Loop through model components (Rt, tslope, tpoint)
-        for (String mc : mc_list) {
-          
-          // Mean rate per block
-          if (mc == "Rt") {
-            
-            // Loop through treatments
-            sMat RtVals(treatment_num, n_blocks);
-            for (int t = 0; t < treatment_num; t++) {
-             
-              NumericVector count_log_avg = count_log_avg_mat.column(t);
-              NumericVector found_cp_trt_t_num = found_cp_trt.column(t);
-              IntegerVector found_cp_trt_t(deg);
-              for (int d = 0; d < deg; d++) {
-                found_cp_trt_t[d] = std::round(found_cp_trt_t_num[d]);
-              }
-              
-              dVec Rt_est(n_blocks); 
-              if (n_blocks == 1) { // case when deg = 0
-                Rt_est[0] = vmean(count_log_avg);
-                RtVals(t, 0) = (sdouble)Rt_est[0];
-              } else {
-                
-                // Estimate rate values as mean of count values in each block 
-                std::vector<dVec> est_rate_runs = est_bkRates_tRuns(n_blocks, count_log_avg, found_cp_trt_t, rise_threshold_factor);
-                Rt_est = est_rate_runs[0];
-                run_estimates.row(t) = to_NumVec(est_rate_runs[1]);
-                RtVals.row(t) = to_sVec(Rt_est); 
-                
-              }
-              if (t == 0) {placeholder_ref_values[mc] = to_NumVec(Rt_est);}
-             
-            }
-           
-            // Estimate fixed effects from treatments for each block, rate
-            for (int bk = 0; bk < n_blocks; bk++) {
-              sVec beta_bk_Rt = weight_rows.fullPivLu().solve(RtVals.col(bk));
-              placeholder_RtEffs.column(bk) = to_NumVec(beta_bk_Rt);
-            }
-            
-          } else if (deg > 0) { 
-            
-            // Handle tpoint and tslope
-            if (mc == "tpoint") {
-              
-              // Grab reference values 
-              placeholder_ref_values[mc] = found_cp_trt.column(0);
-              
-              // Estimate fixed effects from treatments for each tpoint, point value
-              // ... put into Eigen for solving and make rows trts, cols tpoints
-              sMat found_cp_trt_transposed = to_sMat(found_cp_trt).transpose(); 
-              for (int d = 0; d < deg; d++) {
-                sVec beta_d_tpoint = weight_rows.fullPivLu().solve(found_cp_trt_transposed.col(d));
-                placeholder_tpointEffs.column(d) = to_NumVec(beta_d_tpoint);
-              }
-              
-            } else if (mc == "tslope") {
-              
-              // Estimate tslopes for each treatment
-              NumericMatrix found_slope_trt(deg, treatment_num);
-              for (int t = 0; t < treatment_num; t++) {
-                for (int d = 0; d < deg; d++) {
-                  found_slope_trt(d, t) = 4.0/run_estimates(t, d); 
-                  if (found_slope_trt(d, t) < min_initialization_slope) {found_slope_trt(d, t) = min_initialization_slope;}
-                  // ^ ... keep from initializing too close to zero
-                }
-              }
-              
-              // Grab reference values 
-              placeholder_ref_values[mc] = found_slope_trt.column(0);
-              
-              // Estimate fixed effects from treatments for each tslope, point slope
-              // ... put into Eigen for solving and make rows trts, cols tslopes
-              sMat found_slope_trt_transposed = to_sMat(found_slope_trt).transpose();
-              for (int d = 0; d < deg; d++) {
-                sVec beta_d_tslope = weight_rows.fullPivLu().solve(found_slope_trt_transposed.col(d));
-                placeholder_tslopeEffs.column(d) = to_NumVec(beta_d_tslope);
-              }
-              
-            }
-          }
-         
-        }
-        assign_proxylist(ref_values[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_ref_values);
-        assign_proxylist(RtEffs[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_RtEffs);
-        assign_proxylist(tpointEffs[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_tpointEffs);
-        assign_proxylist(tslopeEffs[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_tslopeEffs);
-       
-      }
-    }
-    vprint("Estimated change points with LROcp and found initial parameter estimates for fixed-effect treatments", verbose); 
+    // Find average log counts for each parent-child combination
+    count_log_avg_mat_list = find_count_log_means(
+      bin,
+      count_log,
+      count_not_na_mask,
+      bin_num_i, 
+      parent,
+      child,
+      treatment,
+      parent_lvls,
+      child_lvls,
+      treatment_lvls,
+      treatment_components
+    );
+    vprint("Found average log counts for each parent-child combination", verbose);
+    
+    // Find initial parameter estimates for fixed-effect treatments 
+    List init_params = estimate_initial_parameters(
+      count, 
+      count_not_na_mask,
+      treatment_num,
+      rise_threshold_factor,
+      min_initialization_slope,
+      weight_rows, 
+      mc_list,
+      parent,
+      child,
+      parent_lvls,
+      child_lvls,
+      degMat,
+      found_cp_list, 
+      found_cp_trt_list,
+      count_log_avg_mat_list 
+    );
+    List ref_values = Rcpp::as<List>(init_params["ref_values"]);       // reference values for each parent-child combination
+    List RtEffs = Rcpp::as<List>(init_params["RtEffs"]);               // rate effects for each parent-child combination
+    List tpointEffs = Rcpp::as<List>(init_params["tpointEffs"]);       // tpoint effects for each parent-child combination
+    List tslopeEffs = Rcpp::as<List>(init_params["tslopeEffs"]);       // tslope effects for each parent-child combination
+    vprint("Estimated initial parameters for fixed-effect treatments", verbose);
     
     // Build default fixed-effects matrices in shell
     List beta = build_beta_shell(mc_list, treatment_lvls, parent_lvls, child_lvls, ref_values, RtEffs, tpointEffs, tslopeEffs, degMat);
     vprint("Built initial beta (ref and fixed-effects) matrices", verbose); 
     
     // Initialize random effect warping factors 
-    List wfactors = List(3);
-    CharacterVector wfactors_names = {"point", "rate", "slope"};
-    wfactors.names() = wfactors_names;
-    
-    // Loop through warping factors (point and rate)
-    for (String wf : wfactors_names) {
-      // Initialize array to hold warping factors 
-      NumericMatrix wf_array(n_ran, n_child);
-      // Loop through child levels and make random assignments
-      for (int c = 0; c < n_child; c++) {
-        NumericVector wfs_c = Rcpp::runif(n_ran, -0.1, 0.1);
-        wf_array.column(c) = wfs_c;
-      } 
-      wfactors[wf] = wf_array;
-    } 
+    List wfactors = make_initial_random_effects(
+      wfactors_names,
+      ran_lvls.size(),
+      child_lvls.size()
+    );
     vprint("Initialized random effect warping factors", verbose);
     
     // Make and map parameter vector
@@ -653,6 +463,7 @@ void wspc::clear_stan_mem() {
     dVec dbp_coefs = to_dVec(bp_coefs);
     dVec dwarp_bounds = to_dVec(warp_bounds);
     NumericMatrix Numweights = to_NumMat(weights);
+    NumericMatrix Numweight_rows = to_NumMat(weight_rows);
     NumericMatrix Numgamma_dispersion = to_NumMat(gamma_dispersion);
     
     // Recover memory from stan
@@ -672,6 +483,7 @@ void wspc::clear_stan_mem() {
     bp_coefs = to_sVec(dbp_coefs);
     warp_bounds = to_sVec(dwarp_bounds);
     weights = to_sMat(Numweights);
+    weight_rows = to_sMat(Numweight_rows);
     gamma_dispersion = to_sMat(Numgamma_dispersion);
     
   }
@@ -1352,11 +1164,89 @@ dVec wspc::bs_fit(
       count_log(r) = slog(count(r) + 1.0);
     }
     
-    // Recompute gamma dispersion
-    // ... this *is* done after extrapolating_none in the constructor
-    if (recompute_gamma_dispersion) {
-      gamma_dispersion = gamma_dispersion_recompute(count, count_not_na_mask, parent, child, parent_lvls, child_lvls);
-    }
+    // Estimate gamma dispersion of these new raw re-sampled counts
+    List gamma_ests = compute_gamma_dispersion(
+      count,
+      count_not_na_mask,
+      parent,
+      child,
+      parent_lvls,
+      child_lvls
+    );
+    gamma_dispersion = to_sMat(Rcpp::as<NumericMatrix>(gamma_ests["gamma_dispersion"]));
+    gd_child_idx = Rcpp::as<IntegerVector>(gamma_ests["gd_child_idx"]);
+    gd_parent_idx = Rcpp::as<IntegerVector>(gamma_ests["gd_parent_idx"]);
+    
+    // Find average these new re-sampled log counts for each parent-child combination
+    count_log_avg_mat_list = find_count_log_means(
+      bin,
+      count_log,
+      count_not_na_mask,
+      (int)bin_num.val(), 
+      parent,
+      child,
+      treatment,
+      parent_lvls,
+      child_lvls,
+      treatment_lvls,
+      treatment_components
+    );
+    
+    // Find initial parameter estimates for fixed-effect treatments, for new re-sampled data
+    List init_params = estimate_initial_parameters(
+      count, 
+      count_not_na_mask,
+      treatment_num,
+      rise_threshold_factor,
+      min_initialization_slope,
+      weight_rows, 
+      mc_list,
+      parent,
+      child,
+      parent_lvls,
+      child_lvls,
+      degMat,
+      found_cp_list, 
+      found_cp_trt_list,
+      count_log_avg_mat_list 
+    );
+    List ref_values = Rcpp::as<List>(init_params["ref_values"]);       // reference values for each parent-child combination
+    List RtEffs = Rcpp::as<List>(init_params["RtEffs"]);               // rate effects for each parent-child combination
+    List tpointEffs = Rcpp::as<List>(init_params["tpointEffs"]);       // tpoint effects for each parent-child combination
+    List tslopeEffs = Rcpp::as<List>(init_params["tslopeEffs"]);       // tslope effects for each parent-child combination
+    
+    // Build default fixed-effects matrices in shell
+    List beta = build_beta_shell(mc_list, treatment_lvls, parent_lvls, child_lvls, ref_values, RtEffs, tpointEffs, tslopeEffs, degMat);
+    
+    // Initialize new random effect warping factors 
+    List wfactors = make_initial_random_effects(
+      wfactors_names,
+      ran_lvls.size(),
+      child_lvls.size()
+    );
+    
+    // Make and map parameter vector
+    List params = make_parameter_vector(
+      beta, wfactors,
+      parent_lvls, child_lvls, ran_lvls,
+      mc_list, 
+      treatment_lvls,
+      degMat
+    );
+    
+    // Extract new parameter vector information
+    fitted_parameters = params["param_vec"];
+    // ... rest should be the same as before, but extracting for sanity
+    param_names = params["param_names"];
+    param_wfactor_rate_idx = params["param_wfactor_rate_idx"];
+    param_wfactor_point_idx = params["param_wfactor_point_idx"]; 
+    param_wfactor_slope_idx = params["param_wfactor_slope_idx"];
+    param_beta_Rt_idx = params["param_beta_Rt_idx"];
+    param_beta_tslope_idx = params["param_beta_tslope_idx"];
+    param_beta_tpoint_idx = params["param_beta_tpoint_idx"];
+    param_baseline_idx = params["param_baseline_idx"];
+    beta_idx = params["beta_idx"];
+    wfactor_idx = params["wfactor_idx"];
     
     // Check feasibility 
     List feasibility_results = check_parameter_feasibility(to_sVec(fitted_parameters), false); 

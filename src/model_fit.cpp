@@ -199,7 +199,7 @@ sdouble gamma_dispersion_formula(
   }
 
 // Recomputes gamma_dispersion matrix, but not gd_child_idx and gd_parent_idx
-sMat gamma_dispersion_recompute(
+List compute_gamma_dispersion(
     const sVec& count,                             // count data vector (raw, not log)
     const LogicalVector& count_not_na_mask,        // mask for non-NA counts
     const CharacterVector& parent,                 // parent column of summed data
@@ -213,13 +213,18 @@ sMat gamma_dispersion_recompute(
     int n_parent = parent_lvls.size();
     
     // Initialize gamma dispersion matrix
-    sMat gamma_dispersion(n_child, n_parent);
-    gamma_dispersion.setZero();
+    NumericMatrix gamma_dispersion(n_child, n_parent);
+    // ... initialized with all zeros
+    IntegerVector gd_child_idx(n_child);
+    IntegerVector gd_parent_idx(n_parent);
+    gd_child_idx.names() = child_lvls;
+    gd_parent_idx.names() = parent_lvls;
     
     // Loop through parent levels
     for (int p = 0; p < n_parent; p++) {
       
       LogicalVector parent_mask = eq_left_broadcast(parent, parent_lvls[p]);
+      gd_parent_idx[(String)parent_lvls[p]] = p;
       
       // Loop through child levels
       for (int c = 0; c < n_child; c++) { 
@@ -230,13 +235,18 @@ sMat gamma_dispersion_recompute(
         sVec count_pc_masked = masked_vec(count, pc_mask); 
         sdouble count_pc_mean = vmean(count_pc_masked);
         sdouble count_pc_var = vvar(count_pc_masked);
-        gamma_dispersion(c, p) = gamma_dispersion_formula(count_pc_mean, count_pc_var);
+        gamma_dispersion(c, p) = gamma_dispersion_formula(count_pc_mean, count_pc_var).val();
+        gd_child_idx[(String)child_lvls[c]] = c;
         
       }
       
     }
     
-    return gamma_dispersion;
+    return List::create(
+      _["gamma_dispersion"] = gamma_dispersion,
+      _["gd_child_idx"] = gd_child_idx,
+      _["gd_parent_idx"] = gd_parent_idx
+    );
     
   }
 
@@ -695,3 +705,449 @@ std::vector<dVec> est_bkRates_tRuns(
     
   }
 
+// Function to estimate change points
+List estimate_change_points(
+    const sVec& bin,                               // bin data vector 
+    const sVec& count_log,                         // log of count data vector
+    const LogicalVector& count_not_na_mask,        // mask for non-NA counts
+    const int& ws,                                 // running window size
+    const int& bin_num_i,                          // number of bins in the count data
+    const double& LROcutoff,                       // cutoff for outlier detection in change-point detection
+    const CharacterVector& parent,                 // parent column of summed data
+    const CharacterVector& child,                  // child column of summed data
+    const CharacterVector& ran,                    // random effect column of summed data
+    const CharacterVector& treatment,              // treatment column of summed data
+    const CharacterVector& parent_lvls,            // levels of parent grouping variable (fixed-effects)
+    const CharacterVector& child_lvls,             // levels of child grouping variable (fixed-effects)
+    const CharacterVector& ran_lvls,               // levels of random effect grouping variable (random-effects)
+    const CharacterVector& treatment_lvls,                      // all possible treatment combinations, levels as single-string name
+    const std::vector<CharacterVector>& treatment_components    // all possible treatment combinations, level components
+  ) {
+    
+    // degMat, found_cp
+    
+    // Grab number of parent and child levels
+    const int n_ran = ran_lvls.size();
+    const int n_child = child_lvls.size();
+    const int n_parent = parent_lvls.size();
+    const int treatment_num = treatment_components.size();
+    const int n_ran_trt = n_ran * treatment_num;
+    
+    // Initialize matrix to hold degrees of each parent-child combination
+    IntegerMatrix degMat(n_child, n_parent);
+    rownames(degMat) = child_lvls;
+    colnames(degMat) = parent_lvls;
+    
+    // Initialize lists to hold results matrices for each parent-child combination 
+    // ... for found_cp
+    List found_cp_list(n_parent);
+    found_cp_list.names() = parent_lvls;
+    // ... for found_cp_trt
+    List found_cp_trt_list(n_parent);
+    found_cp_trt_list.names() = parent_lvls;
+    
+    // Loop through parent levels
+    for (int p = 0; p < n_parent; p++) {
+      
+      // Make parent mask
+      LogicalVector parent_mask = eq_left_broadcast(parent, parent_lvls[p]);
+      
+      // Set up lists for results matrices for this parent
+      // ... for found_cp
+      found_cp_list[(String)parent_lvls[p]] = List(n_child);
+      name_proxylist(found_cp_list[(String)parent_lvls[p]], child_lvls);
+      // ... for found_cp_trt
+      found_cp_trt_list[(String)parent_lvls[p]] = List(n_child);
+      name_proxylist(found_cp_trt_list[(String)parent_lvls[p]], child_lvls);
+      
+      // Loop through child levels
+      for (int c = 0; c < n_child; c++) { 
+        
+        // Make child mask and parent-child mask
+        LogicalVector child_mask = eq_left_broadcast(child, child_lvls[c]);
+        LogicalVector pc_mask = parent_mask & child_mask & count_not_na_mask;
+        
+        // Initialize count array for change-point detection
+        sMat count_masked_array(bin_num_i, n_ran_trt);
+        count_masked_array.setZero();
+        LogicalVector good_col(n_ran_trt);
+        
+        // Collect count values for each treatment-ran level interaction of this child-parent pair
+        for (int t = 0; t < treatment_num; t++) {
+          String trt = treatment_lvls[t];
+          
+          // Make mask for treatment rows of this parent-child pair
+          LogicalVector trt_mask = eq_left_broadcast(treatment, trt);
+          LogicalVector pc_trt_mask = pc_mask & trt_mask;
+          
+          // Collect count values for each ran level and this treatment trt
+          for (int r = 0; r < n_ran; r++) {
+            // Make mask for ran level rows of this treatment (of this parent-child pair)
+            LogicalVector ran_mask = eq_left_broadcast(ran, ran_lvls[r]);
+            LogicalVector mask = pc_trt_mask & ran_mask;
+            
+            // Make masked copies of count_log and bin
+            sVec count_masked = masked_vec(count_log, mask);  
+            sVec bin_masked = masked_vec(bin, mask);
+            if (count_masked.size() == bin_num_i && bin_masked.size() == bin_num_i) {
+              
+              // Ensure count_masked is in correct order
+              // ... should be, but sanity check 
+              for (int b = 0; b < bin_num_i; b++) {
+                if (bin_masked[b] != (b + 1.0)) {
+                  stop("Count or bin vectors not in correct order.");
+                }
+              }
+              
+              // Set this column and mark good
+              count_masked_array.col(t*n_ran + r) = count_masked;
+              good_col(t*n_ran + r) = true;
+              
+            } else {
+              good_col(t*n_ran + r) = false;
+            }
+            
+          }
+          
+        }
+        
+        // Extract good column numbers 
+        IntegerVector good_col_idx = Rwhich(good_col);
+        sMat count_masked_array_good = count_masked_array(Eigen::all, to_iVec(good_col_idx));
+        
+        // Estimate change points from masked count series
+        IntegerMatrix found_cp_good = LROcp_array(
+          count_masked_array_good,    // 2D matrix of points to test for change points (columns as series, rows as bins)
+          ws,                         // running window size 
+          LROcutoff                   // points more than this times sd considered outliers
+        );
+        
+        // Estimate degree of this parent-child pair 
+        int deg = found_cp_good.rows();
+        degMat(c, p) = deg;
+        
+        // Fill columns into the found_cp matrix
+        IntegerMatrix found_cp(deg, n_ran_trt);
+        // ^ ... Rcpp should initialize these matrices with all zeros
+        if (deg > 0) {
+          for (int si = 0; si < good_col_idx.size(); si++) {
+            int s = good_col_idx[si];
+            // ... grab change points
+            found_cp.column(s) = found_cp_good.column(si);
+          }
+        }
+        
+        // Extract treatment means for each change point
+        NumericMatrix found_cp_trt(deg, treatment_num);
+        for (int t = 0; t < treatment_num; t++) {
+          for (int d = 0; d < deg; d++) {
+            found_cp_trt(d, t) = 0.0;
+            int n_ran_hit = 0;
+            for (int r = 0; r < n_ran; r++) {
+              if (good_col(t*n_ran + r)) { // ... ensure there is data here
+                found_cp_trt(d, t) += (double)found_cp(d, t*n_ran + r);
+                n_ran_hit++;
+              }
+            }
+            found_cp_trt(d, t) = found_cp_trt(d, t) / (double)n_ran_hit;
+          }
+        }
+        
+        // Assign results matrices to the parent-child list
+        assign_proxylist(found_cp_list[(String)parent_lvls[p]], (String)child_lvls[c], found_cp);
+        assign_proxylist(found_cp_trt_list[(String)parent_lvls[p]], (String)child_lvls[c], found_cp_trt);
+        
+      }
+    }
+    
+    return List::create(
+      _["degMat"] = degMat,                                 // matrix of degrees of each parent-child combination
+      _["found_cp_list"] = found_cp_list,                   // list of found change points for each parent-child combination
+      _["found_cp_trt_list"] = found_cp_trt_list            // list of found change points for each parent-child combination, averaged across treatments
+    );
+    
+  }
+
+// Function to take means of count_log 
+List find_count_log_means(
+    const sVec& bin,                               // bin data vector 
+    const sVec& count_log,                         // log of count data vector
+    const LogicalVector& count_not_na_mask,        // mask for non-NA counts
+    const int& bin_num_i,                          // number of bins in the count data
+    const CharacterVector& parent,                 // parent column of summed data
+    const CharacterVector& child,                  // child column of summed data
+    const CharacterVector& treatment,              // treatment column of summed data
+    const CharacterVector& parent_lvls,            // levels of parent grouping variable (fixed-effects)
+    const CharacterVector& child_lvls,             // levels of child grouping variable (fixed-effects)
+    const CharacterVector& treatment_lvls,                      // all possible treatment combinations, levels as single-string name
+    const std::vector<CharacterVector>& treatment_components    // all possible treatment combinations, level components
+  ) {
+    
+    // Grab number of parent and child levels
+    const int n_child = child_lvls.size();
+    const int n_parent = parent_lvls.size();
+    const int treatment_num = treatment_components.size();
+    
+    // Initialize lists to hold count_log_avg_mat for each parent-child combination 
+    List count_log_avg_mat_list(n_parent);
+    count_log_avg_mat_list.names() = parent_lvls;
+    
+    // Loop through parent levels
+    for (int p = 0; p < n_parent; p++) {
+      
+      // Make parent mask
+      LogicalVector parent_mask = eq_left_broadcast(parent, parent_lvls[p]);
+      
+      // Set up lists for count_log_avg_mat for this parent
+      count_log_avg_mat_list[(String)parent_lvls[p]] = List(n_child);
+      name_proxylist(count_log_avg_mat_list[(String)parent_lvls[p]], child_lvls);
+      
+      // Loop through child levels
+      for (int c = 0; c < n_child; c++) { 
+        
+        // Make child mask and parent-child mask
+        LogicalVector child_mask = eq_left_broadcast(child, child_lvls[c]);
+        LogicalVector pc_mask = parent_mask & child_mask & count_not_na_mask;
+        
+        // Find mean of count_log for each child-parent pair
+        NumericMatrix count_log_avg_mat(bin_num_i, treatment_num);
+        for (int t = 0; t < treatment_num; t++) {
+          String trt = treatment_lvls[t];
+          
+          // Make mask for treatment rows of this parent-child pair
+          LogicalVector trt_mask = eq_left_broadcast(treatment, trt);
+          LogicalVector pc_trt_mask = pc_mask & trt_mask;
+          
+          // Grab average counts for this treatment level (used later to set initial values)
+          dVec count_log_avg(bin_num_i); 
+          sVec count_trt_masked = masked_vec(count_log, pc_trt_mask);
+          sVec bin_trt_masked = masked_vec(bin, pc_trt_mask);
+          for (int b = 0; b < bin_num_i; b++) {
+            LogicalVector mask_b = eq_left_broadcast(to_NumVec(bin_trt_masked), (double)b + 1.0);
+            sVec count_b = masked_vec(count_trt_masked, mask_b);
+            count_log_avg[b] = vmean(count_b).val();
+          }
+          count_log_avg_mat.column(t) = to_NumVec(count_log_avg);
+          
+        }
+       
+        // Assign results matrix to the parent-child list
+        assign_proxylist(count_log_avg_mat_list[(String)parent_lvls[p]], (String)child_lvls[c], count_log_avg_mat);
+        
+      }
+    }
+    
+    return count_log_avg_mat_list; // return the list of average log counts for each parent-child combination
+    
+  }
+
+// Function to estimate change points
+List estimate_initial_parameters(
+    const sVec& count,                             // count data vector (raw, not log)
+    const LogicalVector& count_not_na_mask,        // mask for non-NA counts
+    const int& treatment_num,                      // number of treatments
+    const double& rise_threshold_factor,           // amount of detected rise as fraction of total required to end run
+    const double& min_initialization_slope,        // minimum slope for initial parameterization
+    const sMat& weight_rows,                       // ... for making weights matrix and initial effects estimates
+    const CharacterVector& mc_list,                // list of model component types to estimate initial parameters for
+    const CharacterVector& parent,                 // parent column of summed data
+    const CharacterVector& child,                  // child column of summed data
+    const CharacterVector& parent_lvls,            // levels of parent grouping variable (fixed-effects)
+    const CharacterVector& child_lvls,             // levels of child grouping variable (fixed-effects)
+    const IntegerMatrix& degMat,                   // matrix of degrees of each parent-child combination
+    const List& found_cp_list,                     // list of found change points (IntegerMatrix) for each parent-child combination
+    const List& found_cp_trt_list,                 // list of found change points (NumericMatrix) for each parent-child combination, averaged across treatments
+    const List& count_log_avg_mat_list             // list of average log counts (NumericMatrix) for each parent-child combination
+  ) {
+    
+    // Grab number of parent and child levels
+    int n_child = child_lvls.size();
+    int n_parent = parent_lvls.size();
+    
+    // Estimate degree of each parent-child combination at baseline using LRO change-point detection 
+    // ... store ref values in list
+    List ref_values(n_parent);
+    ref_values.names() = parent_lvls;
+    // ... store rate effects in list
+    List RtEffs(n_parent);
+    RtEffs.names() = parent_lvls;
+    // ... store tpoint effects in list
+    List tpointEffs(n_parent);
+    tpointEffs.names() = parent_lvls;
+    // ... store tslope effects in list 
+    List tslopeEffs(n_parent);
+    tslopeEffs.names() = parent_lvls;
+    
+    // Loop through parent levels
+    for (int p = 0; p < n_parent; p++) {
+      
+      // Make parent mask
+      LogicalVector parent_mask = eq_left_broadcast(parent, parent_lvls[p]);
+      
+      // Set up list for ref values
+      ref_values[(String)parent_lvls[p]] = List(n_child);
+      name_proxylist(ref_values[(String)parent_lvls[p]], child_lvls);
+      // ... for rate effect values
+      RtEffs[(String)parent_lvls[p]] = List(n_child);
+      name_proxylist(RtEffs[(String)parent_lvls[p]], child_lvls);
+      // ... for tpoint effect values 
+      tpointEffs[(String)parent_lvls[p]] = List(n_child);
+      name_proxylist(tpointEffs[(String)parent_lvls[p]], child_lvls);
+      // ... for tslope effect values 
+      tslopeEffs[(String)parent_lvls[p]] = List(n_child);
+      name_proxylist(tslopeEffs[(String)parent_lvls[p]], child_lvls);
+      
+      // Extract found_cp, found_cp_trt, and count_log_avg_mat for this parent-child pair
+      List found_cp_list_p = found_cp_list[(String)parent_lvls[p]];
+      List found_cp_trt_list_p = found_cp_trt_list[(String)parent_lvls[p]];
+      List count_log_avg_mat_list_p = count_log_avg_mat_list[(String)parent_lvls[p]];
+      
+      // Loop through child levels
+      for (int c = 0; c < n_child; c++) { 
+        
+        // Extract deg and block num 
+        int deg = degMat(c, p);
+        int n_blocks = deg + 1;
+        
+        // Extract found_cp, found_cp_trt, and count_log_avg_mat for this parent-child pair
+        IntegerMatrix found_cp = found_cp_list_p[(String)child_lvls[c]];
+        NumericMatrix found_cp_trt = found_cp_trt_list_p[(String)child_lvls[c]];
+        NumericMatrix count_log_avg_mat = count_log_avg_mat_list_p[(String)child_lvls[c]];
+        
+        // Make child mask and parent-child mask
+        LogicalVector child_mask = eq_left_broadcast(child, child_lvls[c]);
+        LogicalVector pc_mask = parent_mask & child_mask & count_not_na_mask;
+        
+        // Set initial parameters for fixed-effect treatments
+        List placeholder_ref_values(mc_list.size());
+        placeholder_ref_values.names() = mc_list;
+        NumericMatrix placeholder_RtEffs(treatment_num, n_blocks);
+        NumericMatrix placeholder_tpointEffs(treatment_num, deg);
+        NumericMatrix placeholder_tslopeEffs(treatment_num, deg);
+        NumericMatrix run_estimates(treatment_num, deg);
+        
+        // Loop through model components (Rt, tslope, tpoint)
+        for (String mc : mc_list) {
+          
+          // Mean rate per block
+          if (mc == "Rt") {
+            
+            // Loop through treatments
+            sMat RtVals(treatment_num, n_blocks);
+            for (int t = 0; t < treatment_num; t++) {
+              
+              NumericVector count_log_avg = count_log_avg_mat.column(t);
+              NumericVector found_cp_trt_t_num = found_cp_trt.column(t);
+              IntegerVector found_cp_trt_t(deg);
+              for (int d = 0; d < deg; d++) {
+                found_cp_trt_t[d] = std::round(found_cp_trt_t_num[d]);
+              }
+              
+              dVec Rt_est(n_blocks); 
+              if (n_blocks == 1) { // case when deg = 0
+                Rt_est[0] = vmean(count_log_avg);
+                RtVals(t, 0) = (sdouble)Rt_est[0];
+              } else {
+                
+                // Estimate rate values as mean of count values in each block 
+                std::vector<dVec> est_rate_runs = est_bkRates_tRuns(n_blocks, count_log_avg, found_cp_trt_t, rise_threshold_factor);
+                Rt_est = est_rate_runs[0];
+                run_estimates.row(t) = to_NumVec(est_rate_runs[1]);
+                RtVals.row(t) = to_sVec(Rt_est); 
+                
+              }
+              if (t == 0) {placeholder_ref_values[mc] = to_NumVec(Rt_est);}
+              
+            }
+            
+            // Estimate fixed effects from treatments for each block, rate
+            for (int bk = 0; bk < n_blocks; bk++) {
+              sVec beta_bk_Rt = weight_rows.fullPivLu().solve(RtVals.col(bk));
+              placeholder_RtEffs.column(bk) = to_NumVec(beta_bk_Rt);
+            }
+            
+          } else if (deg > 0) { 
+            
+            // Handle tpoint and tslope
+            if (mc == "tpoint") {
+              
+              // Grab reference values 
+              placeholder_ref_values[mc] = found_cp_trt.column(0);
+              
+              // Estimate fixed effects from treatments for each tpoint, point value
+              // ... put into Eigen for solving and make rows trts, cols tpoints
+              sMat found_cp_trt_transposed = to_sMat(found_cp_trt).transpose(); 
+              for (int d = 0; d < deg; d++) {
+                sVec beta_d_tpoint = weight_rows.fullPivLu().solve(found_cp_trt_transposed.col(d));
+                placeholder_tpointEffs.column(d) = to_NumVec(beta_d_tpoint);
+              }
+              
+            } else if (mc == "tslope") {
+              
+              // Estimate tslopes for each treatment
+              NumericMatrix found_slope_trt(deg, treatment_num);
+              for (int t = 0; t < treatment_num; t++) {
+                for (int d = 0; d < deg; d++) {
+                  found_slope_trt(d, t) = 4.0/run_estimates(t, d); 
+                  if (found_slope_trt(d, t) < min_initialization_slope) {found_slope_trt(d, t) = min_initialization_slope;}
+                  // ^ ... keep from initializing too close to zero
+                }
+              }
+              
+              // Grab reference values 
+              placeholder_ref_values[mc] = found_slope_trt.column(0);
+              
+              // Estimate fixed effects from treatments for each tslope, point slope
+              // ... put into Eigen for solving and make rows trts, cols tslopes
+              sMat found_slope_trt_transposed = to_sMat(found_slope_trt).transpose();
+              for (int d = 0; d < deg; d++) {
+                sVec beta_d_tslope = weight_rows.fullPivLu().solve(found_slope_trt_transposed.col(d));
+                placeholder_tslopeEffs.column(d) = to_NumVec(beta_d_tslope);
+              }
+              
+            }
+          }
+          
+        }
+        assign_proxylist(ref_values[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_ref_values);
+        assign_proxylist(RtEffs[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_RtEffs);
+        assign_proxylist(tpointEffs[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_tpointEffs);
+        assign_proxylist(tslopeEffs[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_tslopeEffs);
+        
+      }
+    }
+    
+    return List::create(
+      _["ref_values"] = ref_values,                   // list of reference values for each parent-child combination
+      _["RtEffs"] = RtEffs,                           // list of rate effects for each parent-child combination
+      _["tpointEffs"] = tpointEffs,                   // list of tpoint effects for each parent-child combination
+      _["tslopeEffs"] = tslopeEffs                    // list of tslope effects for each parent-child combination
+    );
+    
+  }
+
+// Function to initialize random effect warping factors 
+List make_initial_random_effects(
+  const CharacterVector& wfactors_names,  // names of warping factors to initialize
+  const int& n_ran,                       // number of random effects
+  const int& n_child                      // number of child levels
+  ) {
+    
+    // Initialize new random effect warping factors 
+    List wfactors = List(wfactors_names.size());
+    wfactors.names() = wfactors_names;
+    
+    // Loop through warping factors (point and rate)
+    for (String wf : wfactors_names) {
+      // Initialize array to hold warping factors 
+      NumericMatrix wf_array(n_ran, n_child);
+      // Loop through child levels and make random assignments
+      for (int c = 0; c < n_child; c++) {
+        NumericVector wfs_c = Rcpp::runif(n_ran, -0.1, 0.1);
+        wf_array.column(c) = wfs_c;
+      } 
+      wfactors[wf] = wf_array;
+    } 
+    return wfactors;
+    
+  }
