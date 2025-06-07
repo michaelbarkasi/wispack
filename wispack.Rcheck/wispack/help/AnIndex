@@ -1,0 +1,14 @@
+analyze.residuals	analyze.residuals
+demo_sigmoid	demo_sigmoid
+demo_warp	demo_warp
+plot.child.summary	plot.child.summary
+plot.decomposition	plot.decomposition
+plot.effect.dist	plot.effect.dist
+plot.MCMC.bs.comparison	plot.MCMC.bs.comparison
+plot.MCMC.walks	plot.MCMC.walks
+plot.parameters	plot.parameters
+plot.ratecount	plot.ratecount
+pvalues.samples	pvalues.samples
+sample.stats	sample.stats
+wisp	wisp
+WSP.warp	WSP.warp

@@ -1,4 +1,11 @@
 
+#' @useDynLib wispack, .registration = TRUE
+#' @import Rcpp
+#' @import methods
+#' @import RcppEigen 
+#' @import dtwclust
+NULL
+
 .onLoad <- function(libname, pkgname) {
   Rcpp::loadModule("wspc", TRUE)
   loadNamespace("colorspace")
@@ -90,11 +97,12 @@ wisp <- function(
     )
     # ... check that provided variables is a list with valid names
     variables.names <- check_list(variables, variables.internal)
+    variables.names <- variables.names[-c(which(variables.names == "fixedeffects"))]  # remove fixedeffects from list of variable names
     # ... load 
     for (v in names(variables)) {
       variables.internal[[v]] <- variables[[v]]
     }
-   
+    
     # Relabel and rearrange data columns 
     if (class(count.data) != "data.frame") {
       stop("count.data must be a data frame")
@@ -151,7 +159,7 @@ wisp <- function(
         stop("model.settings$buffer_factor must be a number between 0 and 1")
       } 
       if (s == "max_evals" || s == "rng_seed") {
-        s <- as.integer(s)
+        ms <- as.integer(ms)
       }
       if (
         s == "ctol" || 
@@ -172,7 +180,8 @@ wisp <- function(
     # Initialize cpp model ####
     if (verbose) {
       snk.report("Initializing Cpp (wspc) model")
-      snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 2)
+      snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 1)
+      snk.print_table("Data provided", data, end_breaks = 2)
     }
     cpp_model <- new(
       wspc, 
@@ -244,8 +253,8 @@ wisp <- function(
     }
     
     # Clear out burn-in, if any
-    if (MCMC.burnin > 0) {
-      MCMC_walk <- MCMC_walk[-c(2:(2+MCMC.burnin-1)),]
+    if (MCMC.settings.internal$MCMC.burnin > 0) {
+      MCMC_walk <- MCMC_walk[-c(2:(2+MCMC.settings.internal$MCMC.burnin-1)),]
     }
     
     if (bootstraps.num > 0) {
@@ -802,8 +811,8 @@ analyze.residuals <- function(
 #' @param count.alpha.ran Numeric, transparency for count points when random level is not "none". If left NA, defaults to 0.25.
 #' @param pred.alpha.none Numeric, transparency for predicted lines when random level is "none". If left NA, defaults to 1.0.
 #' @param pred.alpha.ran Numeric, transparency for predicted lines when random level is not "none". If left NA, defaults to 0.9.
-#' @param rans.to.print Character vector, list of random levels to include on each child plot. If NA, all random levels are included.
-#' @param childs.to.print Character vector, list of child levels to place on their own plot. If NA, all child levels are plotted individually.
+#' @param rans.to.print Character vector, list of random levels to include on each child plot. If c(), all random levels are included.
+#' @param childs.to.print Character vector, list of child levels to place on their own plot. If c(), all child levels are plotted individually.
 #' @return List of ggplot objects for rate-count plots.
 #' @export
 plot.ratecount <- function(
@@ -817,8 +826,8 @@ plot.ratecount <- function(
     count.alpha.ran = NA,
     pred.alpha.none = NA,
     pred.alpha.ran = NA,
-    rans.to.print = NA,
-    childs.to.print = NA
+    rans.to.print = c(),
+    childs.to.print = c()
   ) {
    
     # Grab data and run checks 
@@ -835,8 +844,8 @@ plot.ratecount <- function(
     if (is.na(count.alpha.none)) count.alpha.none <- 0.25
     if (is.na(pred.alpha.ran)) pred.alpha.ran <- 0.9
     if (is.na(pred.alpha.none)) pred.alpha.none <- 1.0
-    if (is.na(rans.to.print)) rans.to.print <- unique(df[,"ran"])
-    if (is.na(childs.to.print)) {
+    if (length(rans.to.print) == 0) rans.to.print <- unique(df[,"ran"])
+    if (length(childs.to.print) == 0) {
       make_parent_ref <- TRUE
       childs.to.print <- wisp.results$grouping.variables$child.lvls
       } 

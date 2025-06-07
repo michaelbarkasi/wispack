@@ -281,6 +281,7 @@ sdouble warp_mc(
   }
 
 // Wrapper for R
+//' @export
 // [[Rcpp::export]]
 double warp_mc_R(
     const double& s,        // value to warp
@@ -304,6 +305,7 @@ sdouble sigmoid_stable(
   }
 
 // Wrapper for R
+//' @export
 // [[Rcpp::export]]
 double sigmoid_stable_R(
     const double& x
@@ -352,6 +354,7 @@ sdouble poly_sigmoid(
   }
 
 // Wrapper for R
+//' @export
 // [[Rcpp::export]]
 double poly_sigmoid_R(
     const double& b,            // input variable

@@ -1,0 +1,25 @@
+WSP.warp                R version of the warping function used in wisps
+analyze.residuals       Analyze residuals from wisp fit
+demo_sigmoid            Make plot demonstrating how the wisp function
+                        is determined by the Rt, slope, and tpoint
+                        parameters
+demo_warp               Make plot demonstrating how the wisp function
+                        is warped by the warping factors
+plot.MCMC.bs.comparison
+                        Visually compare normality and autocorrelation
+                        of bootstrap and MCMC parameter estimates
+plot.MCMC.walks         Plot sampling of random walks and negative log
+                        likelihood from MCMC simulations
+plot.child.summary      Print rate-count, residual, and parameter plots
+                        for one child level together.
+plot.decomposition      Plot individual components of wisp fit for a
+                        single child level
+plot.effect.dist        Plot parameter distributions from WISP results
+                        as histograms
+plot.parameters         Plot of wisp parameters
+plot.ratecount          Plot fitted model and data
+pvalues.samples         Compute p-values using ecdf from parameter
+                        resamples
+sample.stats            Estimate p-values and confidence intervals from
+                        resampled parameters
+wisp                    Fit wisp to count data

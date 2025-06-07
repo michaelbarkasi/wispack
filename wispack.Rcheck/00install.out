@@ -1,0 +1,461 @@
+* installing *source* package ‘wispack’ ...
+** using staged installation
+** libs
+using C++ compiler: ‘Apple clang version 16.0.0 (clang-1600.0.26.6)’
+using C++14
+using SDK: ‘MacOSX15.5.sdk’
+clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/opt/nlopt/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/opt/nlopt/include -fPIC  -falign-functions=64 -Wall -g -O2   -c RcppExports.cpp -o RcppExports.o
+In file included from RcppExports.cpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:29:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/Sparse:26:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/SparseCore:61:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseCore/TriangularSolver.h:273:13: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  273 |       Index count = 0;
+      |             ^
+In file included from RcppExports.cpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:29:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/Sparse:29:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/SparseLU:35:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:78:9: warning: variable 'nsuper_et_post' set but not used [-Wunused-but-set-variable]
+   78 |   Index nsuper_et_post = 0; // Number of relaxed snodes in postordered etree 
+      |         ^
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:79:9: warning: variable 'nsuper_et' set but not used [-Wunused-but-set-variable]
+   79 |   Index nsuper_et = 0; // Number of relaxed snodes in the original etree 
+      |         ^
+In file included from RcppExports.cpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:31:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/IterativeSolvers:46:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/src/IterativeSolvers/IDRS.h:72:10: warning: variable 'replacements' set but not used [-Wunused-but-set-variable]
+   72 |                         Index replacements = 0;
+      |                               ^
+In file included from RcppExports.cpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:37:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/SparseExtra:45:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/src/SparseExtra/MarketIO.h:246:7: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  246 |   int count = 0;
+      |       ^
+5 warnings generated.
+clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/opt/nlopt/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/opt/nlopt/include -fPIC  -falign-functions=64 -Wall -g -O2   -c model_fit.cpp -o model_fit.o
+In file included from model_fit.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:23:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/Sparse:26:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/SparseCore:61:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseCore/TriangularSolver.h:273:13: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  273 |       Index count = 0;
+      |             ^
+In file included from model_fit.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:23:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/Sparse:29:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/SparseLU:35:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:78:9: warning: variable 'nsuper_et_post' set but not used [-Wunused-but-set-variable]
+   78 |   Index nsuper_et_post = 0; // Number of relaxed snodes in postordered etree 
+      |         ^
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:79:9: warning: variable 'nsuper_et' set but not used [-Wunused-but-set-variable]
+   79 |   Index nsuper_et = 0; // Number of relaxed snodes in the original etree 
+      |         ^
+In file included from model_fit.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun.hpp:56:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun/elt_multiply.hpp:9:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun/multiply.hpp:7:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun.hpp:35:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/binomial_coefficient_log.hpp:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/partials_propagator.hpp:8:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/operands_and_partials.hpp:57:1: warning: 'ops_partials_edge' defined as a struct template here but previously declared as a class template; this is valid, but may result in linker errors under the Microsoft C++ ABI [-Wmismatched-tags]
+   57 | struct ops_partials_edge<ViewElt, Op, require_st_arithmetic<Op>> {
+      | ^
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/operands_and_partials.hpp:45:1: note: did you mean struct here?
+   45 | class ops_partials_edge;
+      | ^~~~~
+      | struct
+In file included from model_fit.cpp:3:
+In file included from ./wspc.h:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:31:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/IterativeSolvers:46:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/src/IterativeSolvers/IDRS.h:72:10: warning: variable 'replacements' set but not used [-Wunused-but-set-variable]
+   72 |                         Index replacements = 0;
+      |                               ^
+In file included from model_fit.cpp:3:
+In file included from ./wspc.h:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:37:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/SparseExtra:45:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/src/SparseExtra/MarketIO.h:246:7: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  246 |   int count = 0;
+      |       ^
+6 warnings generated.
+clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/opt/nlopt/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/opt/nlopt/include -fPIC  -falign-functions=64 -Wall -g -O2   -c model_structure.cpp -o model_structure.o
+In file included from model_structure.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:23:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/Sparse:26:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/SparseCore:61:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseCore/TriangularSolver.h:273:13: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  273 |       Index count = 0;
+      |             ^
+In file included from model_structure.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:23:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/Sparse:29:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/SparseLU:35:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:78:9: warning: variable 'nsuper_et_post' set but not used [-Wunused-but-set-variable]
+   78 |   Index nsuper_et_post = 0; // Number of relaxed snodes in postordered etree 
+      |         ^
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:79:9: warning: variable 'nsuper_et' set but not used [-Wunused-but-set-variable]
+   79 |   Index nsuper_et = 0; // Number of relaxed snodes in the original etree 
+      |         ^
+In file included from model_structure.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun.hpp:56:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun/elt_multiply.hpp:9:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun/multiply.hpp:7:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun.hpp:35:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/binomial_coefficient_log.hpp:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/partials_propagator.hpp:8:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/operands_and_partials.hpp:57:1: warning: 'ops_partials_edge' defined as a struct template here but previously declared as a class template; this is valid, but may result in linker errors under the Microsoft C++ ABI [-Wmismatched-tags]
+   57 | struct ops_partials_edge<ViewElt, Op, require_st_arithmetic<Op>> {
+      | ^
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/operands_and_partials.hpp:45:1: note: did you mean struct here?
+   45 | class ops_partials_edge;
+      | ^~~~~
+      | struct
+In file included from model_structure.cpp:3:
+In file included from ./wspc.h:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:31:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/IterativeSolvers:46:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/src/IterativeSolvers/IDRS.h:72:10: warning: variable 'replacements' set but not used [-Wunused-but-set-variable]
+   72 |                         Index replacements = 0;
+      |                               ^
+In file included from model_structure.cpp:3:
+In file included from ./wspc.h:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:37:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/SparseExtra:45:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/src/SparseExtra/MarketIO.h:246:7: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  246 |   int count = 0;
+      |       ^
+6 warnings generated.
+clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/opt/nlopt/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/opt/nlopt/include -fPIC  -falign-functions=64 -Wall -g -O2   -c printing.cpp -o printing.o
+In file included from printing.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:23:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/Sparse:26:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/SparseCore:61:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseCore/TriangularSolver.h:273:13: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  273 |       Index count = 0;
+      |             ^
+In file included from printing.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:23:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/Sparse:29:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/SparseLU:35:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:78:9: warning: variable 'nsuper_et_post' set but not used [-Wunused-but-set-variable]
+   78 |   Index nsuper_et_post = 0; // Number of relaxed snodes in postordered etree 
+      |         ^
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:79:9: warning: variable 'nsuper_et' set but not used [-Wunused-but-set-variable]
+   79 |   Index nsuper_et = 0; // Number of relaxed snodes in the original etree 
+      |         ^
+In file included from printing.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun.hpp:56:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun/elt_multiply.hpp:9:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun/multiply.hpp:7:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun.hpp:35:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/binomial_coefficient_log.hpp:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/partials_propagator.hpp:8:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/operands_and_partials.hpp:57:1: warning: 'ops_partials_edge' defined as a struct template here but previously declared as a class template; this is valid, but may result in linker errors under the Microsoft C++ ABI [-Wmismatched-tags]
+   57 | struct ops_partials_edge<ViewElt, Op, require_st_arithmetic<Op>> {
+      | ^
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/operands_and_partials.hpp:45:1: note: did you mean struct here?
+   45 | class ops_partials_edge;
+      | ^~~~~
+      | struct
+In file included from printing.cpp:3:
+In file included from ./wspc.h:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:31:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/IterativeSolvers:46:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/src/IterativeSolvers/IDRS.h:72:10: warning: variable 'replacements' set but not used [-Wunused-but-set-variable]
+   72 |                         Index replacements = 0;
+      |                               ^
+In file included from printing.cpp:3:
+In file included from ./wspc.h:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:37:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/SparseExtra:45:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/src/SparseExtra/MarketIO.h:246:7: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  246 |   int count = 0;
+      |       ^
+6 warnings generated.
+clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/opt/nlopt/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/opt/nlopt/include -fPIC  -falign-functions=64 -Wall -g -O2   -c vector_conversions.cpp -o vector_conversions.o
+In file included from vector_conversions.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:23:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/Sparse:26:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/SparseCore:61:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseCore/TriangularSolver.h:273:13: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  273 |       Index count = 0;
+      |             ^
+In file included from vector_conversions.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:23:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/Sparse:29:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/SparseLU:35:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:78:9: warning: variable 'nsuper_et_post' set but not used [-Wunused-but-set-variable]
+   78 |   Index nsuper_et_post = 0; // Number of relaxed snodes in postordered etree 
+      |         ^
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:79:9: warning: variable 'nsuper_et' set but not used [-Wunused-but-set-variable]
+   79 |   Index nsuper_et = 0; // Number of relaxed snodes in the original etree 
+      |         ^
+In file included from vector_conversions.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun.hpp:56:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun/elt_multiply.hpp:9:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun/multiply.hpp:7:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun.hpp:35:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/binomial_coefficient_log.hpp:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/partials_propagator.hpp:8:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/operands_and_partials.hpp:57:1: warning: 'ops_partials_edge' defined as a struct template here but previously declared as a class template; this is valid, but may result in linker errors under the Microsoft C++ ABI [-Wmismatched-tags]
+   57 | struct ops_partials_edge<ViewElt, Op, require_st_arithmetic<Op>> {
+      | ^
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/operands_and_partials.hpp:45:1: note: did you mean struct here?
+   45 | class ops_partials_edge;
+      | ^~~~~
+      | struct
+In file included from vector_conversions.cpp:3:
+In file included from ./wspc.h:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:31:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/IterativeSolvers:46:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/src/IterativeSolvers/IDRS.h:72:10: warning: variable 'replacements' set but not used [-Wunused-but-set-variable]
+   72 |                         Index replacements = 0;
+      |                               ^
+In file included from vector_conversions.cpp:3:
+In file included from ./wspc.h:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:37:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/SparseExtra:45:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/src/SparseExtra/MarketIO.h:246:7: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  246 |   int count = 0;
+      |       ^
+6 warnings generated.
+clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/opt/nlopt/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/opt/nlopt/include -fPIC  -falign-functions=64 -Wall -g -O2   -c vector_logic.cpp -o vector_logic.o
+In file included from vector_logic.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:23:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/Sparse:26:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/SparseCore:61:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseCore/TriangularSolver.h:273:13: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  273 |       Index count = 0;
+      |             ^
+In file included from vector_logic.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:23:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/Sparse:29:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/SparseLU:35:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:78:9: warning: variable 'nsuper_et_post' set but not used [-Wunused-but-set-variable]
+   78 |   Index nsuper_et_post = 0; // Number of relaxed snodes in postordered etree 
+      |         ^
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:79:9: warning: variable 'nsuper_et' set but not used [-Wunused-but-set-variable]
+   79 |   Index nsuper_et = 0; // Number of relaxed snodes in the original etree 
+      |         ^
+In file included from vector_logic.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun.hpp:56:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun/elt_multiply.hpp:9:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun/multiply.hpp:7:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun.hpp:35:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/binomial_coefficient_log.hpp:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/partials_propagator.hpp:8:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/operands_and_partials.hpp:57:1: warning: 'ops_partials_edge' defined as a struct template here but previously declared as a class template; this is valid, but may result in linker errors under the Microsoft C++ ABI [-Wmismatched-tags]
+   57 | struct ops_partials_edge<ViewElt, Op, require_st_arithmetic<Op>> {
+      | ^
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/operands_and_partials.hpp:45:1: note: did you mean struct here?
+   45 | class ops_partials_edge;
+      | ^~~~~
+      | struct
+In file included from vector_logic.cpp:3:
+In file included from ./wspc.h:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:31:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/IterativeSolvers:46:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/src/IterativeSolvers/IDRS.h:72:10: warning: variable 'replacements' set but not used [-Wunused-but-set-variable]
+   72 |                         Index replacements = 0;
+      |                               ^
+In file included from vector_logic.cpp:3:
+In file included from ./wspc.h:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:37:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/SparseExtra:45:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/src/SparseExtra/MarketIO.h:246:7: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  246 |   int count = 0;
+      |       ^
+6 warnings generated.
+clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/opt/nlopt/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/opt/nlopt/include -fPIC  -falign-functions=64 -Wall -g -O2   -c vector_operations.cpp -o vector_operations.o
+In file included from vector_operations.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:23:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/Sparse:26:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/SparseCore:61:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseCore/TriangularSolver.h:273:13: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  273 |       Index count = 0;
+      |             ^
+In file included from vector_operations.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:23:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/Sparse:29:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/SparseLU:35:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:78:9: warning: variable 'nsuper_et_post' set but not used [-Wunused-but-set-variable]
+   78 |   Index nsuper_et_post = 0; // Number of relaxed snodes in postordered etree 
+      |         ^
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:79:9: warning: variable 'nsuper_et' set but not used [-Wunused-but-set-variable]
+   79 |   Index nsuper_et = 0; // Number of relaxed snodes in the original etree 
+      |         ^
+In file included from vector_operations.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun.hpp:56:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun/elt_multiply.hpp:9:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun/multiply.hpp:7:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun.hpp:35:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/binomial_coefficient_log.hpp:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/partials_propagator.hpp:8:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/operands_and_partials.hpp:57:1: warning: 'ops_partials_edge' defined as a struct template here but previously declared as a class template; this is valid, but may result in linker errors under the Microsoft C++ ABI [-Wmismatched-tags]
+   57 | struct ops_partials_edge<ViewElt, Op, require_st_arithmetic<Op>> {
+      | ^
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/operands_and_partials.hpp:45:1: note: did you mean struct here?
+   45 | class ops_partials_edge;
+      | ^~~~~
+      | struct
+In file included from vector_operations.cpp:3:
+In file included from ./wspc.h:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:31:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/IterativeSolvers:46:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/src/IterativeSolvers/IDRS.h:72:10: warning: variable 'replacements' set but not used [-Wunused-but-set-variable]
+   72 |                         Index replacements = 0;
+      |                               ^
+In file included from vector_operations.cpp:3:
+In file included from ./wspc.h:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:37:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/SparseExtra:45:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/src/SparseExtra/MarketIO.h:246:7: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  246 |   int count = 0;
+      |       ^
+6 warnings generated.
+clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/opt/nlopt/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/opt/nlopt/include -fPIC  -falign-functions=64 -Wall -g -O2   -c wspc.cpp -o wspc.o
+In file included from wspc.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:23:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/Sparse:26:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/SparseCore:61:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseCore/TriangularSolver.h:273:13: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  273 |       Index count = 0;
+      |             ^
+In file included from wspc.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:4:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:23:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/Sparse:29:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/SparseLU:35:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:78:9: warning: variable 'nsuper_et_post' set but not used [-Wunused-but-set-variable]
+   78 |   Index nsuper_et_post = 0; // Number of relaxed snodes in postordered etree 
+      |         ^
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:79:9: warning: variable 'nsuper_et' set but not used [-Wunused-but-set-variable]
+   79 |   Index nsuper_et = 0; // Number of relaxed snodes in the original etree 
+      |         ^
+In file included from wspc.cpp:3:
+In file included from ./wspc.h:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev.hpp:10:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun.hpp:56:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun/elt_multiply.hpp:9:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/rev/fun/multiply.hpp:7:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun.hpp:35:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/fun/binomial_coefficient_log.hpp:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/partials_propagator.hpp:8:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/operands_and_partials.hpp:57:1: warning: 'ops_partials_edge' defined as a struct template here but previously declared as a class template; this is valid, but may result in linker errors under the Microsoft C++ ABI [-Wmismatched-tags]
+   57 | struct ops_partials_edge<ViewElt, Op, require_st_arithmetic<Op>> {
+      | ^
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math/prim/functor/operands_and_partials.hpp:45:1: note: did you mean struct here?
+   45 | class ops_partials_edge;
+      | ^~~~~
+      | struct
+In file included from wspc.cpp:3:
+In file included from ./wspc.h:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:31:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/IterativeSolvers:46:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/src/IterativeSolvers/IDRS.h:72:10: warning: variable 'replacements' set but not used [-Wunused-but-set-variable]
+   72 |                         Index replacements = 0;
+      |                               ^
+In file included from wspc.cpp:3:
+In file included from ./wspc.h:13:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:37:
+In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/SparseExtra:45:
+/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/unsupported/Eigen/src/SparseExtra/MarketIO.h:246:7: warning: variable 'count' set but not used [-Wunused-but-set-variable]
+  246 |   int count = 0;
+      |       ^
+6 warnings generated.
+clang++ -arch arm64 -std=gnu++14 -dynamiclib -Wl,-headerpad_max_install_names -undefined dynamic_lookup -L/Library/Frameworks/R.framework/Resources/lib -L/opt/R/arm64/lib -o wispack.so RcppExports.o model_fit.o model_structure.o printing.o vector_conversions.o vector_logic.o vector_operations.o wspc.o -L/opt/homebrew/opt/nlopt/lib -lnlopt -L/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/lib/ -Wl,-rpath,/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/lib/ -ltbb -ltbbmalloc -F/Library/Frameworks/R.framework/.. -framework R -Wl,-framework -Wl,CoreFoundation
+installing to /Users/michaelbarkasi/Library/CloudStorage/OneDrive-WashingtonUniversityinSt.Louis/projects_Oviedo_lab/R_packages/wispack/wispack.Rcheck/00LOCK-wispack/00new/wispack/libs
+** R
+** demo
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** checking absolute paths in shared objects and dynamic libraries
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (wispack)
