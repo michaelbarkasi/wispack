@@ -1,10 +1,10 @@
 * using log directory ‘/Users/michaelbarkasi/Library/CloudStorage/OneDrive-WashingtonUniversityinSt.Louis/projects_Oviedo_lab/R_packages/wispack/wispack.Rcheck’
-* using R version 4.4.1 (2024-06-14)
+* using R version 4.4.2 (2024-10-31)
 * using platform: aarch64-apple-darwin20
 * R was compiled by
     Apple clang version 14.0.0 (clang-1400.0.29.202)
     GNU Fortran (GCC) 12.2.0
-* running under: macOS 15.5
+* running under: macOS Sequoia 15.5
 * using session charset: UTF-8
 * checking for file ‘wispack/DESCRIPTION’ ... OK
 * checking extension type ... Package
@@ -19,14 +19,14 @@
 * checking for portable file names ... OK
 * checking for sufficient/correct file permissions ... OK
 * checking whether package ‘wispack’ can be installed ... OK
-* used C++ compiler: ‘Apple clang version 16.0.0 (clang-1600.0.26.6)’
-* used SDK: ‘MacOSX15.5.sdk’
+* used C++ compiler: ‘Apple clang version 17.0.0 (clang-1700.0.13.5)’
+* used SDK: ‘’
 * checking C++ specification ... NOTE
   Specified C++14: please drop specification unless essential
 * checking installed package size ... NOTE
-  installed size is 15.8Mb
+  installed size is 22.5Mb
   sub-directories of 1Mb or more:
-    extdata  14.5Mb
+    extdata  21.3Mb
 * checking package directory ... OK
 * checking DESCRIPTION meta-information ... OK
 * checking top-level files ... NOTE

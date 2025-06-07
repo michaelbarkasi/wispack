@@ -5,11 +5,11 @@ Creating pdf output from LaTeX ...
 This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex)
  restricted \write18 enabled.
 entering extended mode
-LaTeX2e <2023-11-01> patch level 1
-L3 programming layer <2024-02-20>
+LaTeX2e <2024-11-01> patch level 2
+L3 programming layer <2025-01-18>
 (./Rd2.tex
 (/usr/local/texlive/2024/texmf-dist/tex/latex/base/book.cls
-Document Class: book 2023/05/17 v1.4n Standard LaTeX document class
+Document Class: book 2024/06/29 v1.4n Standard LaTeX document class
 (/usr/local/texlive/2024/texmf-dist/tex/latex/base/bk10.clo))
 (/Library/Frameworks/R.framework/Resources/share/texmf/tex/latex/Rd.sty
 (/usr/local/texlive/2024/texmf-dist/tex/latex/base/ifthen.sty)
@@ -49,12 +49,12 @@ For additional information on amsmath, use the `?' option.
 (/usr/local/texlive/2024/texmf-dist/tex/generic/pdftexcmds/pdftexcmds.sty
 (/usr/local/texlive/2024/texmf-dist/tex/generic/infwarerr/infwarerr.sty)))
 (/usr/local/texlive/2024/texmf-dist/tex/latex/hycolor/hycolor.sty)
-(/usr/local/texlive/2024/texmf-dist/tex/latex/auxhook/auxhook.sty)
 (/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/nameref.sty
 (/usr/local/texlive/2024/texmf-dist/tex/latex/refcount/refcount.sty)
 (/usr/local/texlive/2024/texmf-dist/tex/generic/gettitlestring/gettitlestring.s
 ty (/usr/local/texlive/2024/texmf-dist/tex/latex/kvoptions/kvoptions.sty)))
 (/usr/local/texlive/2024/texmf-dist/tex/latex/etoolbox/etoolbox.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/generic/stringenc/stringenc.sty)
 (/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/pd1enc.def)
 (/usr/local/texlive/2024/texmf-dist/tex/generic/intcalc/intcalc.sty)
 (/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/puenc.def)
@@ -77,13 +77,18 @@ No file Rd2.aux.
 No file Rd2.toc.
 (/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/umsa.fd)
 (/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/umsb.fd)
-(/usr/local/texlive/2024/texmf-dist/tex/latex/jknapltx/ursfs.fd) [1{/usr/local/
-texlive/2024/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/local/texlive/2
-024/texmf-dist/fonts/enc/dvips/base/8r.enc}{/usr/local/texlive/2024/texmf-dist/
-fonts/enc/dvips/inconsolata/i4-t1-0.enc}] [2] [3]
-(/usr/local/texlive/2024/texmf-dist/tex/latex/inconsolata/ts1zi4.fd) [4{/usr/lo
-cal/texlive/2024/texmf-dist/fonts/enc/dvips/inconsolata/i4-ts1.enc}] [5]
-[6] [7] [8] [9]
+(/usr/local/texlive/2024/texmf-dist/tex/latex/jknapltx/ursfs.fd)
+[1{/usr/local/texlive/2024/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/l
+ocal/texlive/2024/texmf-dist/fonts/enc/dvips/base/8r.enc}{/usr/local/texlive/20
+24/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc}]
+[2]
+[3] (/usr/local/texlive/2024/texmf-dist/tex/latex/inconsolata/ts1zi4.fd)
+[4{/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/inconsolata/i4-ts1.enc}]
+[5]
+[6]
+[7]
+[8]
+[9]
 Overfull \hbox (14.98795pt too wide) in paragraph at lines 443--444
 \T1/ptm/m/n/10 par-ent, child, ran, fixed-ef-fects), or equiv-a-lent vari-ables
  as spec-i-fied in the []\T1/zi4/m/n/10 variables
@@ -109,11 +114,13 @@ Overfull \hbox (24.76099pt too wide) in paragraph at lines 468--469
 m/m/n/10 , []\T1/zi4/m/n/10 sample.params[]\T1/ptm/m/n/10 , []\T1/zi4/m/n/10 sa
 mple.params.bs[]\T1/ptm/m/n/10 , []\T1/zi4/m/n/10 sample.params.MCMC[]\T1/ptm/m
 /n/10 , []\T1/zi4/m/n/10 diagnostics.bs[]\T1/ptm/m/n/10 ,
+
 [10]
 No file Rd2.ind.
+
 [11]
-(/private/var/folders/vx/lvd79g_14c9f4t8hwnyb_v740000gn/T/RtmpGbtkxN/Rd2pdf63a7
-792f53fc/Rd2.aux)
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/Rtmplq0e0C/Rd2pdfa102
+2079ad48/Rd2.aux)
 
 Package rerunfilecheck Warning: File `Rd2.out' has changed.
 (rerunfilecheck)                Rerun to get outlines right
@@ -137,11 +144,11 @@ Transcript written in Rd2.ilg.
 This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex)
  restricted \write18 enabled.
 entering extended mode
-LaTeX2e <2023-11-01> patch level 1
-L3 programming layer <2024-02-20>
+LaTeX2e <2024-11-01> patch level 2
+L3 programming layer <2025-01-18>
 (./Rd2.tex
 (/usr/local/texlive/2024/texmf-dist/tex/latex/base/book.cls
-Document Class: book 2023/05/17 v1.4n Standard LaTeX document class
+Document Class: book 2024/06/29 v1.4n Standard LaTeX document class
 (/usr/local/texlive/2024/texmf-dist/tex/latex/base/bk10.clo))
 (/Library/Frameworks/R.framework/Resources/share/texmf/tex/latex/Rd.sty
 (/usr/local/texlive/2024/texmf-dist/tex/latex/base/ifthen.sty)
@@ -181,12 +188,12 @@ For additional information on amsmath, use the `?' option.
 (/usr/local/texlive/2024/texmf-dist/tex/generic/pdftexcmds/pdftexcmds.sty
 (/usr/local/texlive/2024/texmf-dist/tex/generic/infwarerr/infwarerr.sty)))
 (/usr/local/texlive/2024/texmf-dist/tex/latex/hycolor/hycolor.sty)
-(/usr/local/texlive/2024/texmf-dist/tex/latex/auxhook/auxhook.sty)
 (/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/nameref.sty
 (/usr/local/texlive/2024/texmf-dist/tex/latex/refcount/refcount.sty)
 (/usr/local/texlive/2024/texmf-dist/tex/generic/gettitlestring/gettitlestring.s
 ty (/usr/local/texlive/2024/texmf-dist/tex/latex/kvoptions/kvoptions.sty)))
 (/usr/local/texlive/2024/texmf-dist/tex/latex/etoolbox/etoolbox.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/generic/stringenc/stringenc.sty)
 (/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/pd1enc.def)
 (/usr/local/texlive/2024/texmf-dist/tex/generic/intcalc/intcalc.sty)
 (/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/puenc.def)
@@ -202,26 +209,31 @@ ty (/usr/local/texlive/2024/texmf-dist/tex/latex/kvoptions/kvoptions.sty)))
 Writing index file Rd2.idx
 (/usr/local/texlive/2024/texmf-dist/tex/latex/psnfss/t1ptm.fd)
 (/usr/local/texlive/2024/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def)
-(/private/var/folders/vx/lvd79g_14c9f4t8hwnyb_v740000gn/T/RtmpGbtkxN/Rd2pdf63a7
-792f53fc/Rd2.aux)
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/Rtmplq0e0C/Rd2pdfa102
+2079ad48/Rd2.aux)
 (/usr/local/texlive/2024/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
 )
-(/private/var/folders/vx/lvd79g_14c9f4t8hwnyb_v740000gn/T/RtmpGbtkxN/Rd2pdf63a7
-792f53fc/Rd2.out)
-(/private/var/folders/vx/lvd79g_14c9f4t8hwnyb_v740000gn/T/RtmpGbtkxN/Rd2pdf63a7
-792f53fc/Rd2.out)
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/Rtmplq0e0C/Rd2pdfa102
+2079ad48/Rd2.out)
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/Rtmplq0e0C/Rd2pdfa102
+2079ad48/Rd2.out)
 (/usr/local/texlive/2024/texmf-dist/tex/latex/inconsolata/t1zi4.fd)
-(/private/var/folders/vx/lvd79g_14c9f4t8hwnyb_v740000gn/T/RtmpGbtkxN/Rd2pdf63a7
-792f53fc/Rd2.toc (/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/umsa.fd
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/Rtmplq0e0C/Rd2pdfa102
+2079ad48/Rd2.toc (/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/umsa.fd
 ) (/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/umsb.fd)
-(/usr/local/texlive/2024/texmf-dist/tex/latex/jknapltx/ursfs.fd)) [1{/usr/local
-/texlive/2024/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/local/texlive/
-2024/texmf-dist/fonts/enc/dvips/base/8r.enc}{/usr/local/texlive/2024/texmf-dist
-/fonts/enc/dvips/inconsolata/i4-t1-0.enc}] [2] [3]
-(/usr/local/texlive/2024/texmf-dist/tex/latex/inconsolata/ts1zi4.fd) [4{/usr/lo
-cal/texlive/2024/texmf-dist/fonts/enc/dvips/inconsolata/i4-ts1.enc}] [5]
-[6] [7] [8] [9]
+(/usr/local/texlive/2024/texmf-dist/tex/latex/jknapltx/ursfs.fd))
+[1{/usr/local/texlive/2024/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/l
+ocal/texlive/2024/texmf-dist/fonts/enc/dvips/base/8r.enc}{/usr/local/texlive/20
+24/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc}]
+[2]
+[3] (/usr/local/texlive/2024/texmf-dist/tex/latex/inconsolata/ts1zi4.fd)
+[4{/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/inconsolata/i4-ts1.enc}]
+[5]
+[6]
+[7]
+[8]
+[9]
 Overfull \hbox (14.98795pt too wide) in paragraph at lines 443--444
 \T1/ptm/m/n/10 par-ent, child, ran, fixed-ef-fects), or equiv-a-lent vari-ables
  as spec-i-fied in the []\T1/zi4/m/n/10 variables
@@ -247,11 +259,15 @@ Overfull \hbox (24.76099pt too wide) in paragraph at lines 468--469
 m/m/n/10 , []\T1/zi4/m/n/10 sample.params[]\T1/ptm/m/n/10 , []\T1/zi4/m/n/10 sa
 mple.params.bs[]\T1/ptm/m/n/10 , []\T1/zi4/m/n/10 sample.params.MCMC[]\T1/ptm/m
 /n/10 , []\T1/zi4/m/n/10 diagnostics.bs[]\T1/ptm/m/n/10 ,
+
 [10]
-(/private/var/folders/vx/lvd79g_14c9f4t8hwnyb_v740000gn/T/RtmpGbtkxN/Rd2pdf63a7
-792f53fc/Rd2.ind [11] [12])
-(/private/var/folders/vx/lvd79g_14c9f4t8hwnyb_v740000gn/T/RtmpGbtkxN/Rd2pdf63a7
-792f53fc/Rd2.aux)
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/Rtmplq0e0C/Rd2pdfa102
+2079ad48/Rd2.ind
+[11]
+
+[12])
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/Rtmplq0e0C/Rd2pdfa102
+2079ad48/Rd2.aux)
 
 Package rerunfilecheck Warning: File `Rd2.out' has changed.
 (rerunfilecheck)                Rerun to get outlines right
@@ -275,11 +291,11 @@ Transcript written in Rd2.ilg.
 This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex)
  restricted \write18 enabled.
 entering extended mode
-LaTeX2e <2023-11-01> patch level 1
-L3 programming layer <2024-02-20>
+LaTeX2e <2024-11-01> patch level 2
+L3 programming layer <2025-01-18>
 (./Rd2.tex
 (/usr/local/texlive/2024/texmf-dist/tex/latex/base/book.cls
-Document Class: book 2023/05/17 v1.4n Standard LaTeX document class
+Document Class: book 2024/06/29 v1.4n Standard LaTeX document class
 (/usr/local/texlive/2024/texmf-dist/tex/latex/base/bk10.clo))
 (/Library/Frameworks/R.framework/Resources/share/texmf/tex/latex/Rd.sty
 (/usr/local/texlive/2024/texmf-dist/tex/latex/base/ifthen.sty)
@@ -319,12 +335,12 @@ For additional information on amsmath, use the `?' option.
 (/usr/local/texlive/2024/texmf-dist/tex/generic/pdftexcmds/pdftexcmds.sty
 (/usr/local/texlive/2024/texmf-dist/tex/generic/infwarerr/infwarerr.sty)))
 (/usr/local/texlive/2024/texmf-dist/tex/latex/hycolor/hycolor.sty)
-(/usr/local/texlive/2024/texmf-dist/tex/latex/auxhook/auxhook.sty)
 (/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/nameref.sty
 (/usr/local/texlive/2024/texmf-dist/tex/latex/refcount/refcount.sty)
 (/usr/local/texlive/2024/texmf-dist/tex/generic/gettitlestring/gettitlestring.s
 ty (/usr/local/texlive/2024/texmf-dist/tex/latex/kvoptions/kvoptions.sty)))
 (/usr/local/texlive/2024/texmf-dist/tex/latex/etoolbox/etoolbox.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/generic/stringenc/stringenc.sty)
 (/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/pd1enc.def)
 (/usr/local/texlive/2024/texmf-dist/tex/generic/intcalc/intcalc.sty)
 (/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/puenc.def)
@@ -340,26 +356,31 @@ ty (/usr/local/texlive/2024/texmf-dist/tex/latex/kvoptions/kvoptions.sty)))
 Writing index file Rd2.idx
 (/usr/local/texlive/2024/texmf-dist/tex/latex/psnfss/t1ptm.fd)
 (/usr/local/texlive/2024/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def)
-(/private/var/folders/vx/lvd79g_14c9f4t8hwnyb_v740000gn/T/RtmpGbtkxN/Rd2pdf63a7
-792f53fc/Rd2.aux)
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/Rtmplq0e0C/Rd2pdfa102
+2079ad48/Rd2.aux)
 (/usr/local/texlive/2024/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
 )
-(/private/var/folders/vx/lvd79g_14c9f4t8hwnyb_v740000gn/T/RtmpGbtkxN/Rd2pdf63a7
-792f53fc/Rd2.out)
-(/private/var/folders/vx/lvd79g_14c9f4t8hwnyb_v740000gn/T/RtmpGbtkxN/Rd2pdf63a7
-792f53fc/Rd2.out)
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/Rtmplq0e0C/Rd2pdfa102
+2079ad48/Rd2.out)
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/Rtmplq0e0C/Rd2pdfa102
+2079ad48/Rd2.out)
 (/usr/local/texlive/2024/texmf-dist/tex/latex/inconsolata/t1zi4.fd)
-(/private/var/folders/vx/lvd79g_14c9f4t8hwnyb_v740000gn/T/RtmpGbtkxN/Rd2pdf63a7
-792f53fc/Rd2.toc (/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/umsa.fd
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/Rtmplq0e0C/Rd2pdfa102
+2079ad48/Rd2.toc (/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/umsa.fd
 ) (/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/umsb.fd)
-(/usr/local/texlive/2024/texmf-dist/tex/latex/jknapltx/ursfs.fd) [1{/usr/local/
-texlive/2024/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/local/texlive/2
-024/texmf-dist/fonts/enc/dvips/base/8r.enc}{/usr/local/texlive/2024/texmf-dist/
-fonts/enc/dvips/inconsolata/i4-t1-0.enc}]) [2] [3]
-(/usr/local/texlive/2024/texmf-dist/tex/latex/inconsolata/ts1zi4.fd) [4{/usr/lo
-cal/texlive/2024/texmf-dist/fonts/enc/dvips/inconsolata/i4-ts1.enc}] [5]
-[6] [7] [8] [9]
+(/usr/local/texlive/2024/texmf-dist/tex/latex/jknapltx/ursfs.fd)
+[1{/usr/local/texlive/2024/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/l
+ocal/texlive/2024/texmf-dist/fonts/enc/dvips/base/8r.enc}{/usr/local/texlive/20
+24/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc}])
+[2]
+[3] (/usr/local/texlive/2024/texmf-dist/tex/latex/inconsolata/ts1zi4.fd)
+[4{/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/inconsolata/i4-ts1.enc}]
+[5]
+[6]
+[7]
+[8]
+[9]
 Overfull \hbox (14.98795pt too wide) in paragraph at lines 443--444
 \T1/ptm/m/n/10 par-ent, child, ran, fixed-ef-fects), or equiv-a-lent vari-ables
  as spec-i-fied in the []\T1/zi4/m/n/10 variables
@@ -385,11 +406,15 @@ Overfull \hbox (24.76099pt too wide) in paragraph at lines 468--469
 m/m/n/10 , []\T1/zi4/m/n/10 sample.params[]\T1/ptm/m/n/10 , []\T1/zi4/m/n/10 sa
 mple.params.bs[]\T1/ptm/m/n/10 , []\T1/zi4/m/n/10 sample.params.MCMC[]\T1/ptm/m
 /n/10 , []\T1/zi4/m/n/10 diagnostics.bs[]\T1/ptm/m/n/10 ,
+
 [10]
-(/private/var/folders/vx/lvd79g_14c9f4t8hwnyb_v740000gn/T/RtmpGbtkxN/Rd2pdf63a7
-792f53fc/Rd2.ind [11] [12])
-(/private/var/folders/vx/lvd79g_14c9f4t8hwnyb_v740000gn/T/RtmpGbtkxN/Rd2pdf63a7
-792f53fc/Rd2.aux) )
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/Rtmplq0e0C/Rd2pdfa102
+2079ad48/Rd2.ind
+[11]
+
+[12])
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/Rtmplq0e0C/Rd2pdfa102
+2079ad48/Rd2.aux) )
 (see the transcript file for additional information)</usr/local/texlive/2024/te
 xmf-dist/fonts/type1/public/inconsolata/Inconsolata-zi4r.pfb></usr/local/texliv
 e/2024/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2024/tex
@@ -400,4 +425,4 @@ Output written on Rd2.pdf (12 pages, 100417 bytes).
 Transcript written on Rd2.log.
 Saving output to ‘wispack-manual.pdf’ ...
 Done
-You may want to clean up by 'rm -Rf /var/folders/vx/lvd79g_14c9f4t8hwnyb_v740000gn/T//RtmpGbtkxN/Rd2pdf63a7792f53fc'
+You may want to clean up by 'rm -Rf /var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T//Rtmplq0e0C/Rd2pdfa1022079ad48'

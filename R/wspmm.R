@@ -2355,36 +2355,75 @@ project_cp <- function(
     
   }
 
-# For trying out warping function in R
 #' R version of the warping function used in wisps
 #' 
-#' This function provides an R implementation of the warping function used in wisps for demonstration purposes.
+#' This function provides an R implementation of the warping function used to warp model components before input into \code{wisp.sigmoid}.
 #' 
-#' @param x Numeric vector or matrix, values to warp. Scalar values fine as well. Matrix must be 2D.
+#' @param z Numeric vector or matrix, values to warp. Scalar values fine as well. Matrix must be 2D.
 #' @param b Numeric, warping bound (must be a single value).
 #' @param w Numeric, warping factor (must be a single value).
-#' @return Numeric vector or matrix, warped values. Returned object will have the same dimensions as input x.
-WSP.warp <- function( 
-    x, # value to warp, either a scalar, vector, or 2D array/matrix
+#' @return Numeric vector or matrix, warped values. Returned object will have the same dimensions as input z.
+wisp.warp <- function( 
+    z, # value to warp, either a scalar, vector, or 2D array/matrix
     b, # warping bound
     w  # warping factor
   ) {
     
     if (length(b) != 1) stop("b must be a single value for warping bound")
     if (length(w) != 1) stop("w must be a single value for warping factor")
-    if (!(length(x) > 0)) stop("x must be a vector or matrix of values to warp, but has length zero")
-    if (max(x) > b) stop("x must be less than or equal to b")
+    if (!(length(z) > 0)) stop("z must be a vector or matrix of values to warp, but has length zero")
+    if (max(z) > b) stop("z must be less than or equal to b")
+    
+    if (is.null(dim(z)) || length(dim(z)) == 1) {
+      out <- rep(NA, length(z))
+      for (i in 1:length(z)) {
+        out[i] <- warp_mc_R(z[i], b, w)
+      }
+    } else if (length(dim(z)) == 2) {
+      out <- array(NA, dim = dim(z))
+      for (i in 1:(dim(z)[1])) {
+        for (j in 1:(dim(z)[2])) {
+          out[i,j] <- warp_mc_R(z[i,j], b, w)
+        }
+      }
+    } else {
+      stop("z must be a vector or matrix of values to warp, but unrecognized dim attribute detected")
+    }
+    return(out)
+    
+  }
+
+#' R version of the wisp sigmoid
+#' 
+#' This function provides an R implementation of the wisp sigmoid function. It assumes the parameters Rt, tslope, and tpoint have already been warped by \code{wisp.warp}.
+#' 
+#' @param x Numeric, input spatial position, either a scalar, vector, or 2D array/matrix
+#' @param Rt Numeric vector, rate parameters for the wisp function. Degree of the wisp model will be length of this vector minus 1.
+#' @param tslope Numeric vector, slope scalars for the wisp function. Must be one less than the length of Rt.
+#' @param tpoint Numeric vector, transition points for the wisp function. Must be one less than the length of Rt.
+#' @return Numeric vector or matrix, wisp sigmoid values for given input. Returned object will have the same dimensions as input x.
+wisp.sigmoid <- function(
+    x, 
+    Rt,
+    tslope,
+    tpoint
+  ) {
+    
+    # Check inputs
+    if (length(Rt) != length(tslope) + 1) {stop("Rt must be one element longer than tslope")}
+    if (length(tslope) != length(tpoint)) {stop("tslope must be the same length as tpoint")}
+    deg <- length(Rt) - 1
     
     if (is.null(dim(x)) || length(dim(x)) == 1) {
       out <- rep(NA, length(x))
       for (i in 1:length(x)) {
-        out[i] <- warp_mc_R(x[i], b, w)
+        out[i] <- poly_sigmoid_R(x[i], deg, Rt, tslope, tpoint)
       }
     } else if (length(dim(x)) == 2) {
       out <- array(NA, dim = dim(x))
       for (i in 1:(dim(x)[1])) {
         for (j in 1:(dim(x)[2])) {
-          out[i,j] <- warp_mc_R(x[i,j], b, w)
+          out[i,j] <- poly_sigmoid_R(x[i,j], deg, Rt, tslope, tpoint)
         }
       }
     } else {
@@ -2407,7 +2446,7 @@ WSP.warp <- function(
 #' @param w_factors Numeric vector, warping factors for the wisp function. Must be length 3. First element is the warping factor for Rt, second for tslope, and third for tpoint. Note that this is more restrictive than the real wisp model, which not only allows for different warping factors across the model components (Rt, tslope, and tpoint), but also across the different elements within each model component as well.
 #' @return Nothing. A ggplot object is printed to console.
 #' @export
-demo_warp <- function(
+demo.warp.plots <- function(
     w = 2,                       # warping factor
     point_pos = 60,
     point_neg = 40,
@@ -2428,10 +2467,10 @@ demo_warp <- function(
     x <- (1:n)/10
     b <- 100
     y <- x
-    y1 <- WSP.warp(x, b, w)
-    y2 <- WSP.warp(x, b, -w)
-    y_pos <- WSP.warp(point_pos, b, w)
-    y_neg <- WSP.warp(point_neg, b, -w)
+    y1 <- wisp.warp(x, b, w)
+    y2 <- wisp.warp(x, b, -w)
+    y_pos <- wisp.warp(point_pos, b, w)
+    y_neg <- wisp.warp(point_neg, b, -w)
     
     # Organize into a data frame
     df <- data.frame(
@@ -2499,9 +2538,9 @@ demo_warp <- function(
     
     # Construct poly-sigmoid curve, with warping
     yw <- rep(NA, n)
-    Rtw <- WSP.warp(Rt, 100000, w_factors[1])
-    tslopew <- WSP.warp(tslope, 100000, w_factors[2])
-    tpointw <- WSP.warp(tpoint, 100, w_factors[3])
+    Rtw <- wisp.warp(Rt, 100000, w_factors[1])
+    tslopew <- wisp.warp(tslope, 100000, w_factors[2])
+    tpointw <- wisp.warp(tpoint, 100, w_factors[3])
     for (i in 1:n) yw[i] <- poly_sigmoid_R(
       x[i],    # input 
       deg,     # degree 
@@ -2633,8 +2672,8 @@ demo_warp <- function(
       ) 
     
     grid.arrange(demo_plot_warpfunction, demo_plot_warpedsigmoid, ncol = 1)
-    
     # Save at 1156 x 843
+    return(NULL)
     
   }
 
@@ -2649,7 +2688,7 @@ demo_warp <- function(
 #' @param tpoint Numeric vector, transition points for the wisp function. Must be one less than the length of Rt.
 #' @return Nothing. A ggplot object is printed to console.
 #' @export
-demo_sigmoid <- function(
+demo.sigmoid.plots <- function(
     r = 4,                       # upper asymptote for logistic
     s = 1,                       # slope scalar at inflection point
     Rt = c(6, 3, 0.2, 6)*4.65,   # rates for poly-sigmoid
@@ -2662,6 +2701,20 @@ demo_sigmoid <- function(
     title_size <- 20 
     axis_size <- 12 
     legend_size <- 10
+    
+    # Check inputs
+    if (length(Rt) != length(tslope) + 1) {
+      stop("Rt must be one element longer than tslope")
+    }
+    if (length(tslope) != length(tpoint)) {
+      stop("tslope must be the same length as tpoint")
+    }
+    if (length(r) != 1) {
+      stop("r must be a single value for upper asymptote")
+    }
+    if (length(s) != 1) {
+      stop("s must be a single value for slope scalar at inflection point")
+    }
     
     # Plot 1, logistic function ####
     
@@ -2819,5 +2872,6 @@ demo_sigmoid <- function(
     
     grid.arrange(demo_plot_logistic, demo_plot_sigmoid, ncol = 1)
     # Saved at 1186 x 1032
+    return(NULL)
     
   }

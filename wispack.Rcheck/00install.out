@@ -1,10 +1,10 @@
 * installing *source* package ‘wispack’ ...
 ** using staged installation
 ** libs
-using C++ compiler: ‘Apple clang version 16.0.0 (clang-1600.0.26.6)’
+using C++ compiler: ‘Apple clang version 17.0.0 (clang-1700.0.13.5)’
 using C++14
-using SDK: ‘MacOSX15.5.sdk’
-clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/opt/nlopt/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/opt/nlopt/include -fPIC  -falign-functions=64 -Wall -g -O2   -c RcppExports.cpp -o RcppExports.o
+using SDK: ‘’
+clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/Cellar/nlopt/2.9.1/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/Cellar/nlopt/2.9.1/include -fPIC  -falign-functions=64 -Wall -g -O2   -c RcppExports.cpp -o RcppExports.o
 In file included from RcppExports.cpp:4:
 In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigen.h:25:
 In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include/RcppEigenForward.h:29:
@@ -39,7 +39,7 @@ In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resourc
   246 |   int count = 0;
       |       ^
 5 warnings generated.
-clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/opt/nlopt/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/opt/nlopt/include -fPIC  -falign-functions=64 -Wall -g -O2   -c model_fit.cpp -o model_fit.o
+clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/Cellar/nlopt/2.9.1/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/Cellar/nlopt/2.9.1/include -fPIC  -falign-functions=64 -Wall -g -O2   -c model_fit.cpp -o model_fit.o
 In file included from model_fit.cpp:3:
 In file included from ./wspc.h:10:
 In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
@@ -97,7 +97,7 @@ In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resourc
   246 |   int count = 0;
       |       ^
 6 warnings generated.
-clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/opt/nlopt/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/opt/nlopt/include -fPIC  -falign-functions=64 -Wall -g -O2   -c model_structure.cpp -o model_structure.o
+clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/Cellar/nlopt/2.9.1/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/Cellar/nlopt/2.9.1/include -fPIC  -falign-functions=64 -Wall -g -O2   -c model_structure.cpp -o model_structure.o
 In file included from model_structure.cpp:3:
 In file included from ./wspc.h:10:
 In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
@@ -155,7 +155,7 @@ In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resourc
   246 |   int count = 0;
       |       ^
 6 warnings generated.
-clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/opt/nlopt/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/opt/nlopt/include -fPIC  -falign-functions=64 -Wall -g -O2   -c printing.cpp -o printing.o
+clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/Cellar/nlopt/2.9.1/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/Cellar/nlopt/2.9.1/include -fPIC  -falign-functions=64 -Wall -g -O2   -c printing.cpp -o printing.o
 In file included from printing.cpp:3:
 In file included from ./wspc.h:10:
 In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
@@ -213,7 +213,7 @@ In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resourc
   246 |   int count = 0;
       |       ^
 6 warnings generated.
-clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/opt/nlopt/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/opt/nlopt/include -fPIC  -falign-functions=64 -Wall -g -O2   -c vector_conversions.cpp -o vector_conversions.o
+clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/Cellar/nlopt/2.9.1/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/Cellar/nlopt/2.9.1/include -fPIC  -falign-functions=64 -Wall -g -O2   -c vector_conversions.cpp -o vector_conversions.o
 In file included from vector_conversions.cpp:3:
 In file included from ./wspc.h:10:
 In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
@@ -271,7 +271,7 @@ In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resourc
   246 |   int count = 0;
       |       ^
 6 warnings generated.
-clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/opt/nlopt/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/opt/nlopt/include -fPIC  -falign-functions=64 -Wall -g -O2   -c vector_logic.cpp -o vector_logic.o
+clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/Cellar/nlopt/2.9.1/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/Cellar/nlopt/2.9.1/include -fPIC  -falign-functions=64 -Wall -g -O2   -c vector_logic.cpp -o vector_logic.o
 In file included from vector_logic.cpp:3:
 In file included from ./wspc.h:10:
 In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
@@ -329,7 +329,7 @@ In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resourc
   246 |   int count = 0;
       |       ^
 6 warnings generated.
-clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/opt/nlopt/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/opt/nlopt/include -fPIC  -falign-functions=64 -Wall -g -O2   -c vector_operations.cpp -o vector_operations.o
+clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/Cellar/nlopt/2.9.1/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/Cellar/nlopt/2.9.1/include -fPIC  -falign-functions=64 -Wall -g -O2   -c vector_operations.cpp -o vector_operations.o
 In file included from vector_operations.cpp:3:
 In file included from ./wspc.h:10:
 In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
@@ -387,7 +387,7 @@ In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resourc
   246 |   int count = 0;
       |       ^
 6 warnings generated.
-clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/opt/nlopt/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/opt/nlopt/include -fPIC  -falign-functions=64 -Wall -g -O2   -c wspc.cpp -o wspc.o
+clang++ -arch arm64 -std=gnu++14 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/include' -D_REENTRANT -DSTAN_THREADS -I/opt/homebrew/Cellar/nlopt/2.9.1/include -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include' -I'/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/BH/include' -I/opt/R/arm64/include   -I/opt/homebrew/Cellar/nlopt/2.9.1/include -fPIC  -falign-functions=64 -Wall -g -O2   -c wspc.cpp -o wspc.o
 In file included from wspc.cpp:3:
 In file included from ./wspc.h:10:
 In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/StanHeaders/include/stan/math.hpp:19:
@@ -445,7 +445,7 @@ In file included from /Library/Frameworks/R.framework/Versions/4.4-arm64/Resourc
   246 |   int count = 0;
       |       ^
 6 warnings generated.
-clang++ -arch arm64 -std=gnu++14 -dynamiclib -Wl,-headerpad_max_install_names -undefined dynamic_lookup -L/Library/Frameworks/R.framework/Resources/lib -L/opt/R/arm64/lib -o wispack.so RcppExports.o model_fit.o model_structure.o printing.o vector_conversions.o vector_logic.o vector_operations.o wspc.o -L/opt/homebrew/opt/nlopt/lib -lnlopt -L/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/lib/ -Wl,-rpath,/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/lib/ -ltbb -ltbbmalloc -F/Library/Frameworks/R.framework/.. -framework R -Wl,-framework -Wl,CoreFoundation
+clang++ -arch arm64 -std=gnu++14 -dynamiclib -Wl,-headerpad_max_install_names -undefined dynamic_lookup -L/Library/Frameworks/R.framework/Resources/lib -L/opt/R/arm64/lib -o wispack.so RcppExports.o model_fit.o model_structure.o printing.o vector_conversions.o vector_logic.o vector_operations.o wspc.o -L/opt/homebrew/Cellar/nlopt/2.9.1/lib -lnlopt -L/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/lib/ -Wl,-rpath,/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppParallel/lib/ -ltbb -ltbbmalloc -F/Library/Frameworks/R.framework/.. -framework R -Wl,-framework -Wl,CoreFoundation
 installing to /Users/michaelbarkasi/Library/CloudStorage/OneDrive-WashingtonUniversityinSt.Louis/projects_Oviedo_lab/R_packages/wispack/wispack.Rcheck/00LOCK-wispack/00new/wispack/libs
 ** R
 ** demo

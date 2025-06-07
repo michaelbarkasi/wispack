@@ -105,5 +105,5 @@ laminar.model <- wisp(
   )
 
 # Demo plots showing anatomy of a wisp
-demo_sigmoid()
-demo_warp() 
+demo.sigmoid.plots()
+demo.warp.plots() 
