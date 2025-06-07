@@ -8,7 +8,7 @@
 
 #' Fit wisp to count data
 #'
-#' This function takes a data frame of a specified form and fits a wisp model to it. Statistical analyses and plots are generated from the fitted model.
+#' This function takes a data frame of wisp variables (as columns) and fits a wisp model to it. Statistical analyses and plots are generated from the fitted model.
 #'
 #' @param count.data Data.frame, with columns for model variables (count, bin, parent, child, ran, fixedeffects), or equivalent variables as specified in the \code{variables} argument.
 #' @param variables List, specifying the names of the columns in \code{count.data} that correspond to the model variables. The list should contain only (but not necessarily all) named elements: \code{count}, \code{bin}, \code{parent}, \code{child}, \code{ran}, and \code{fixedeffects}.
@@ -424,7 +424,14 @@ wisp <- function(
 
 # Analysis methods #####################################################################################################
 
-# Helper function for computing p_values from bootstraps or MCMC samples
+#' Compute p-values using ecdf from parameter resamples
+#'
+#' This function takes a vector \code{mu.B} of sampled values of a variable X, and a single observation \code{mu.obs} of the same variable, and computes the p-value of \code{mu.obs} using the empirical cumulative distribution function (ecdf) of \code{mu.B}.
+#'
+#' @param mu.B Numeric vector of sampled values of a variable X, e.g., bootstrapped or MCMC estimates, used to make an empirical cumulative distribution function (ecdf).
+#' @param mu.obs Numeric value of the observed variable X, e.g., the mean of \code{mu.B} or an actual observation.
+#' @return Numeric p-value.
+#' @export
 pvalues.samples <- function(
     mu.B,       # vector of bootstrapped or MCMC estimates
     mu.obs      # observed value, either mean of mu.B or actual observation
@@ -437,7 +444,17 @@ pvalues.samples <- function(
     )
   }
 
-# Function for running stat analysis of bootstraps
+#' Estimate p-values and confidence intervals from resampled parameters
+#'
+#' Runs statistical analysis on the resampled parameters from the wisp function. It computes p-values and confidence intervals for each parameter, adjusting for multiple comparisons using either the Bonferroni correction or the Holm-Bonferroni method.
+#'
+#' @param wisp.results List, output of the wisp function.
+#' @param alpha Numeric value giving significance level for p-values and confidence intervals. Default is 0.05.
+#' @param Bonferroni Logical, if TRUE, uses the Bonferroni correction for multiple comparisons; if FALSE, uses the Holm-Bonferroni method. Default is FALSE.
+#' @param conv.resamples.only Logical, if TRUE, only resamples with a converged fit are used for statistical analysis; if FALSE, all resamples are used. Default is TRUE.
+#' @param verbose Logical, if TRUE, prints information during the statistical analysis.
+#' @return Data frame giving, for each parameter, its name, estimate, confidence interval (CI.low, CI.high), p-value, adjusted p-value (p.value.adj), adjusted alpha (alpha.adj), and significance level (significance).
+#' @export
 sample.stats <- function(
     wisp.results,
     alpha = 0.05,
@@ -557,7 +574,14 @@ sample.stats <- function(
     
   }
 
-# Method for analyzing residuals
+#' Analyze residuals from wisp fit
+#'
+#' This function takes a vector \code{mu.B} of sampled values of a variable X, and a single observation \code{mu.obs} of the same variable, and computes the p-value of \code{mu.obs} using the empirical cumulative distribution function (ecdf) of \code{mu.B}.
+#'
+#' @param wisp.results List, output of the wisp function.
+#' @param verbose Logical, if TRUE, prints information during the statistical analysis.
+#' @return Numeric p-value.
+#' @export
 analyze.residuals <- function(
     wisp.results,
     verbose = TRUE
