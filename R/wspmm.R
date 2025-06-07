@@ -10,17 +10,17 @@
 #'
 #' This function takes a data frame of wisp variables (as columns) and fits a wisp model to it. Statistical analyses and plots are generated from the fitted model.
 #'
-#' @param count.data Data.frame, with columns for model variables (count, bin, parent, child, ran, fixedeffects), or equivalent variables as specified in the \code{variables} argument.
-#' @param variables List, specifying the names of the columns in \code{count.data} that correspond to the model variables. The list should contain only (but not necessarily all) named elements: \code{count}, \code{bin}, \code{parent}, \code{child}, \code{ran}, and \code{fixedeffects}.
+#' @param count.data Data.frame, data to be modeled, with columns for model variables (count, bin, parent, child, ran, fixedeffects), or equivalent variables as specified in the \code{variables} argument.
+#' @param variables List, names of the columns in \code{count.data} that correspond to the model variables. The list should contain only (but not necessarily all) named elements: \code{count}, \code{bin}, \code{parent}, \code{child}, \code{ran}, and \code{fixedeffects}.
 #' @param use.median Logical, if TRUE, the median of the resamples is used as the final parameter estimates; if FALSE, the initial fit by L-BFGS is used.
-#' @param MCMC.settings List giving settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.
+#' @param MCMC.settings List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.
 #' @param bootstraps.num Integer, number of bootstrap resamples to perform. If 0, only MCMC is run.
 #' @param converged.resamples.only Logical, if TRUE, only resamples with a converged fit are used for statistical analysis; if FALSE, all resamples are used. Applies only to bootstraps. 
 #' @param max.fork Integer, maximum number of parallel processes to use for bootstrapping.
-#' @param dim.bounds Numeric vector giving block boundaries for plotting in rate-count plots. If empty, the argument is ignored.
+#' @param dim.bounds Numeric vector, block boundaries for plotting in rate-count plots. If empty, the argument is ignored.
 #' @param verbose Logical, if TRUE, prints information during the fitting process.
 #' @param print.child.summaries Logical, if TRUE, prints summaries of each child level. 
-#' @param model.settings List giving settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, and \code{warp_precision}. Default values are provided.
+#' @param model.settings List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, and \code{warp_precision}. Default values are provided.
 #' @return List giving the results of the fitted model, including: \code{model.component.list}, \code{count.data.summed}, \code{fitted.parameters}, \code{gamma.disperson}, \code{param.names}, \code{fix}, \code{treatment}, \code{grouping.variables}, \code{param.idx0}, \code{settings}, \code{sample.params}, \code{sample.params.bs}, \code{sample.params.MCMC}, \code{diagnostics.bs}, \code{diagnostics.MCMC}, \code{stats}, and \code{plots}
 #' @export
 wisp <- function(
@@ -788,7 +788,24 @@ analyze.residuals <- function(
 
 # Plotting methods #####################################################################################################
 
-# Method for plotting model and data
+#' Plot fitted model and data
+#'
+#' This function takes wisp model results (a fitted line) and observed data (counts) and plots them together for visual comparison. It can also include independent block boundaries for comparison if provided.
+#'
+#' @param wisp.results List, output of the wisp function.
+#' @param pred.type Character string, the name of the predicted rate column in the count data (e.g., "pred.log" or "pred").
+#' @param count.type Character string, the name of the observed count column in the count data (e.g., "count.log" or "count").
+#' @param dim.boundaries Numeric vector, independent block boundaries to plot for comparison. If empty, the argument is ignored.
+#' @param print.all Logical, if TRUE, prints all plots; if FALSE, only returns plots in list without printing any. 
+#' @param y.lim Numeric vector of length 2, limits for the y-axis of the plots. If NA, defaults to automatic limits.
+#' @param count.alpha.none Numeric, transparency for count points when random level is "none". If left NA, defaults to 0.25.
+#' @param count.alpha.ran Numeric, transparency for count points when random level is not "none". If left NA, defaults to 0.25.
+#' @param pred.alpha.none Numeric, transparency for predicted lines when random level is "none". If left NA, defaults to 1.0.
+#' @param pred.alpha.ran Numeric, transparency for predicted lines when random level is not "none". If left NA, defaults to 0.9.
+#' @param rans.to.print Character vector, list of random levels to include on each child plot. If NA, all random levels are included.
+#' @param childs.to.print Character vector, list of child levels to place on their own plot. If NA, all child levels are plotted individually.
+#' @return List of ggplot objects for rate-count plots.
+#' @export
 plot.ratecount <- function(
     wisp.results,
     pred.type = "pred.log",
@@ -1024,7 +1041,18 @@ plot.ratecount <- function(
     
   }
 
-# Method for printing plot of model parameters
+#' Plot of wisp parameters
+#'
+#' Function to make nicely formatted violin (or bar) plots of the fitted wisp parameters, including confidence intervals if stat information is available.
+#'
+#' @param wisp.results List, output of the wisp function.
+#' @param child.lvl Character string, the child level to be plotted. If NULL, all child levels are plotted.
+#' @param violin Logical, if TRUE, plots violin plots for each parameter; if FALSE, uses bar plots. 
+#' @param print.plots Logical, if TRUE, prints the plots to the console; if FALSE, only returns a list of plots without printing.
+#' @param child.classes List, a list of character vectors specifying which child levels to include together in plots. If NULL, all child levels are included in a single plot.
+#' @param verbose Logical, if TRUE, prints updates about the plotting process.
+#' @return List of ggplot objects for parameter plots.
+#' @export
 plot.parameters <- function(
     wisp.results,
     child.lvl = NULL, # NULL (plot all) or a single child level to be plotted
@@ -1590,7 +1618,14 @@ plot.parameters <- function(
     
   }
 
-# Method for plotting structural parameter distributions
+#' Plot parameter distributions from WISP results as histograms
+#'
+#' Function to make nicely formatted histograms of fitted parameters from WISP results.
+#'
+#' @param wisp.results List, output of the wisp function.
+#' @param verbose Logical, if TRUE, prints information during plotting.
+#' @return List of ggplot objects containing histograms of fitted parameters.
+#' @export
 plot.effect.dist <- function(
     wisp.results,
     verbose = TRUE 
@@ -1614,7 +1649,7 @@ plot.effect.dist <- function(
       geom_histogram(
         data = data.frame(vals = wfactors_point), aes(x = vals, y = after_stat(ndensity)),
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
-      labs(title = "Distribution of random point effects (warping factors)", x = "Warping factor, point", y = "Density") +
+      labs(title = "Distribution of random point effects (warping factors)", x = "Warping factor, point", y = "Count") +
       theme_minimal() 
     
     # ... for rate
@@ -1624,7 +1659,7 @@ plot.effect.dist <- function(
       geom_histogram(
         data = data.frame(vals = wfactors_rate), aes(x = vals, y = after_stat(ndensity)),
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
-      labs(title = "Distribution of random rate effects (warping factors)", x = "Warping factor, rate", y = "Density") +
+      labs(title = "Distribution of random rate effects (warping factors)", x = "Warping factor, rate", y = "Count") +
       theme_minimal() 
     
     # ... for slope 
@@ -1634,7 +1669,7 @@ plot.effect.dist <- function(
       geom_histogram(
         data = data.frame(vals = wfactors_slope), aes(x = vals, y = after_stat(ndensity)),
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
-      labs(title = "Distribution of random slope effects (warping factors)", x = "Warping factor, slope", y = "Density") +
+      labs(title = "Distribution of random slope effects (warping factors)", x = "Warping factor, slope", y = "Count") +
       theme_minimal()
     
     if (verbose) print(plot_wfactor_point_effects_dist)
@@ -1653,7 +1688,7 @@ plot.effect.dist <- function(
         data = data.frame(vals = rate_effects), aes(x = vals, y = after_stat(ndensity)),
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
       xlim(min(rate_effects),max(rate_effects)) +
-      labs(title = "Distribution of fixed rate effects", x = "Rate effect", y = "Density") +
+      labs(title = "Distribution of fixed rate effects", x = "Rate effect", y = "Count") +
       theme_minimal() 
     
     if (verbose) print(plot_rate_effects_effects_dist)
@@ -1670,7 +1705,7 @@ plot.effect.dist <- function(
           data = data.frame(vals = tslope_effects), aes(x = vals, y = after_stat(ndensity)),
           bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
         xlim(min(tslope_effects), max(tslope_effects)) +
-        labs(title = "Distribution of fixed slope effects", x = "t-slope effect", y = "Density") +
+        labs(title = "Distribution of fixed slope effects", x = "t-slope effect", y = "Count") +
         theme_minimal() 
       
       if (verbose) print(plot_slope_effects_effects_dist)
@@ -1688,7 +1723,7 @@ plot.effect.dist <- function(
         geom_histogram(
           data = data.frame(vals = tpoint_effects), aes(x = vals, y = after_stat(ndensity)),
           bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
-        labs(title = "Distribution of fixed t-point effects", x = "t-point effect", y = "Density") +
+        labs(title = "Distribution of fixed t-point effects", x = "t-point effect", y = "Count") +
         theme_minimal() 
       
       if (verbose) print(plot_tpoint_effects_effects_dist)
@@ -1700,7 +1735,16 @@ plot.effect.dist <- function(
     
   }
 
-# Method for printing all child plots on one figure
+#' Print rate-count, residual, and parameter plots for one child level together.
+#'
+#' Function to summarize all important information for an individual child level on one plot.
+#'
+#' @param wisp.results List, output of the wisp function.
+#' @param these.parents Character vector, optional, specifies which parent levels to summarize. Defaults to all. 
+#' @param these.childs Character vector, optional, specifies which child levels to summarize. Defaults to all.
+#' @param verbose Logical, if TRUE, prints information during plotting.
+#' @return Nothing, plots are printed to the current graphics device.
+#' @export
 plot.child.summary <- function(
     wisp.results,
     these.parents = NULL,
@@ -1790,7 +1834,14 @@ plot.child.summary <- function(
     
   }
 
-# Method to plot random walks from MCMC simulations 
+#' Plot sampling of random walks and negative log likelihood from MCMC simulations
+#'
+#' Function to make nicely formatted histograms of fitted parameters from WISP results.
+#'
+#' @param wisp.results List, output of the wisp function.
+#' @param low_samples Integer, number of low-value parameters to plot. Defaults to 10.
+#' @return List of ggplot objects containing plots of walks for low-value parameters, high-value parameters, and normalized negative log likelihood.
+#' @export
 plot.MCMC.walks <- function(
     wisp.results,
     low_samples = 10
@@ -1919,6 +1970,17 @@ plot.MCMC.walks <- function(
     
   }
 
+#' Plot individual components of wisp fit for a single child level
+#'
+#' Extension of \code{plot.ratecount} which plots the individual pieces of the rate-count plot for a single child separately. Returns individual plots for data points only, fit lines only, and data points plus fit lines for individual random levels.
+#'
+#' @param wisp.results List, output of the wisp function.
+#' @param child Character string, the child level to plot. Must be provided, and only one at a time. 
+#' @param log Logical, if TRUE, plots on a log scale. Defaults to FALSE.
+#' @param dim.boundaries Numeric vector, independent block boundaries to plot for comparison. If empty, the argument is ignored.
+#' @param y.lim Numeric vector of length 2, limits for the y-axis of the plots. If NA, defaults to automatic limits.
+#' @return List of ggplot objects containing the decomposed rate-count plots.
+#' @export
 plot.decomposition <- function(
     wisp.results,
     child, # "Nptxr"
@@ -1926,6 +1988,8 @@ plot.decomposition <- function(
     dim.boundaries = c(), # colMeans(count_data_WSPmm.y$db)
     y.lim = NULL
   ) {
+    
+    # Comment for future development: Function assumes there is only one parent level. Needs to handle case of multiple parent levels. 
     
     ran_lvls <- wisp.results$grouping.variables$ran.lvls
     ran_lvls <- ran_lvls[ran_lvls != "none"]
@@ -1989,6 +2053,13 @@ plot.decomposition <- function(
     
   }
 
+#' Visually compare normality and autocorrelation of bootstrap and MCMC parameter estimates
+#'
+#' Function allowing for visual comparison of the parameter estimates from bootstrapping vs MCMC simulation. Shows density for ten representative parameters from bootstrapping and MCMC walk, the distributions of Shapiro-Walk p-values for bootstrapping vs MCMC walks, and the density of autocorrelation results for bootstrapping vs MCMC walks.
+#'
+#' @param wisp.results List, output of the wisp function.
+#' @return List of ggplot objects containing plots of representative parameter distributions, Shapiro-Wilk normality test results, and autocorrelation plots for bootstrap and MCMC parameter estimates.
+#' @export
 plot.MCMC.bs.comparison <- function(
     wisp.results
   ) {
@@ -2276,6 +2347,14 @@ project_cp <- function(
   }
 
 # For trying out warping function in R
+#' R version of the warping function used in wisps
+#' 
+#' This function provides an R implementation of the warping function used in wisps for demonstration purposes.
+#' 
+#' @param x Numeric vector or matrix, values to warp. Scalar values fine as well. Matrix must be 2D.
+#' @param b Numeric, warping bound (must be a single value).
+#' @param w Numeric, warping factor (must be a single value).
+#' @return Numeric vector or matrix, warped values. Returned object will have the same dimensions as input x.
 WSP.warp <- function( 
     x, # value to warp, either a scalar, vector, or 2D array/matrix
     b, # warping bound
@@ -2306,7 +2385,19 @@ WSP.warp <- function(
     
   }
 
-# Pre-made plot to explain warping function
+#' Make plot demonstrating how the wisp function is warped by the warping factors
+#' 
+#' This function takes user-provided values for wisp function parameters and produces a panel of plots showing how the wisp model is warped by the warping factors
+#' 
+#' @param w Numeric, warping factor (must be a single value).
+#' @param point_pos Numeric, x coordinate at which to place positive warp segment (must be a single value).
+#' @param point_neg Numeric, x coordinate at which to place negative warp segment (must be a single value).
+#' @param Rt Numeric vector, rate parameters for the wisp function. Degree of the wisp model will be length of this vector minus 1.
+#' @param tslope Numeric vector, slope scalars for the wisp function. Must be one less than the length of Rt.
+#' @param tpoint Numeric vector, transition points for the wisp function. Must be one less than the length of Rt.
+#' @param w_factors Numeric vector, warping factors for the wisp function. Must be length 3. First element is the warping factor for Rt, second for tslope, and third for tpoint. Note that this is more restrictive than the real wisp model, which not only allows for different warping factors across the model components (Rt, tslope, and tpoint), but also across the different elements within each model component as well.
+#' @return Nothing. A ggplot object is printed to console.
+#' @export
 demo_warp <- function(
     w = 2,                       # warping factor
     point_pos = 60,
@@ -2538,7 +2629,17 @@ demo_warp <- function(
     
   }
 
-# Pre-made plot to explain poly-sigmoid function 
+#' Make plot demonstrating how the wisp function is determined by the Rt, slope, and tpoint parameters
+#' 
+#' This function takes user-provided values for wisp function parameters and produces a panel of plots showing how the wisp model is determined by the Rt, slope, and tpoint parameters.
+#' 
+#' @param r Numeric, upper asymptote for logistic (must be a single value).
+#' @param s Numeric, slope scalar at inflection point (must be a single value).
+#' @param Rt Numeric vector, rate parameters for the wisp function. Degree of the wisp model will be length of this vector minus 1.
+#' @param tslope Numeric vector, slope scalars for the wisp function. Must be one less than the length of Rt.
+#' @param tpoint Numeric vector, transition points for the wisp function. Must be one less than the length of Rt.
+#' @return Nothing. A ggplot object is printed to console.
+#' @export
 demo_sigmoid <- function(
     r = 4,                       # upper asymptote for logistic
     s = 1,                       # slope scalar at inflection point
