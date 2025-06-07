@@ -6,35 +6,131 @@
 
 # Main function for generating WSPmm model #############################################################################
 
-# Function for fitting model to raw count data list 
+#' Fit wisp to count data
+#'
+#' This function takes a data frame of a specified form and fits a wisp model to it. Statistical analyses and plots are generated from the fitted model.
+#'
+#' @param count.data Data.frame, with columns for model variables (count, bin, parent, child, ran, fixedeffects), or equivalent variables as specified in the \code{variables} argument.
+#' @param variables List, specifying the names of the columns in \code{count.data} that correspond to the model variables. The list should contain only (but not necessarily all) named elements: \code{count}, \code{bin}, \code{parent}, \code{child}, \code{ran}, and \code{fixedeffects}.
+#' @param use.median Logical, if TRUE, the median of the resamples is used as the final parameter estimates; if FALSE, the initial fit by L-BFGS is used.
+#' @param MCMC.settings List giving settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.
+#' @param bootstraps.num Integer, number of bootstrap resamples to perform. If 0, only MCMC is run.
+#' @param converged.resamples.only Logical, if TRUE, only resamples with a converged fit are used for statistical analysis; if FALSE, all resamples are used. Applies only to bootstraps. 
+#' @param max.fork Integer, maximum number of parallel processes to use for bootstrapping.
+#' @param dim.bounds Numeric vector giving block boundaries for plotting in rate-count plots. If empty, the argument is ignored.
+#' @param verbose Logical, if TRUE, prints information during the fitting process.
+#' @param print.child.summaries Logical, if TRUE, prints summaries of each child level. 
+#' @param model.settings List giving settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, and \code{warp_precision}. Default values are provided.
+#' @return List giving the results of the fitted model, including: \code{model.component.list}, \code{count.data.summed}, \code{fitted.parameters}, \code{gamma.disperson}, \code{param.names}, \code{fix}, \code{treatment}, \code{grouping.variables}, \code{param.idx0}, \code{settings}, \code{sample.params}, \code{sample.params.bs}, \code{sample.params.MCMC}, \code{diagnostics.bs}, \code{diagnostics.MCMC}, \code{stats}, and \code{plots}
+#' @export
 wisp <- function(
     # Data to model
-    count.data.raw, 
+    count.data, 
     # Variable labels
-    variables = list( # names of columns in count.data.raw giving each model variable type
+    variables = list(), 
+    # Settings used on R side
+    use.median = FALSE,
+    MCMC.settings = list(),
+    bootstraps.num = 0, 
+    converged.resamples.only = TRUE,
+    max.fork = 5,
+    dim.bounds = c(), 
+    verbose = TRUE,
+    print.child.summaries = TRUE,
+    # Setting to pass to C++ model
+    model.settings = list()
+  ) {
+   
+    # Make reproducible
+    ran.seed <- 1234
+    set.seed(ran.seed)
+    
+    # Data checks and parsing ####
+    
+    # Helper function 
+    check_list <- function(
+      user_input,
+      default_list
+    ) {
+      list_name <- deparse(substitute(user_input))
+      default_list.names <- names(default_list)
+      # ... check if variables is provided 
+      if (length(user_input) > 0) {
+        # ... check that provided input is a list with valid names
+        if (class(user_input) != "list") {
+          stop(paste0(list_name, " must be a list"))
+        } else if (is.null(names(user_input))) {
+          stop(paste0(list_name, " must be a list with named elements"))
+        } else if (!all(names(user_input) %in% default_list.names)) {
+          stop(paste0(list_name, " can contain only the following elements: ", paste(default_list.names, collapse = ", ")))
+        } else {
+          # ... check that each element is of the correct type
+          for (v in names(user_input)) {
+            if (length(default_list[[v]]) > 0) {
+              expected_type <- class(default_list[[v]]) 
+              if (class(user_input[[v]]) != expected_type) {
+                stop(paste0(list_name, "$", v, " must be of type ", expected_type))
+              }
+            }
+          }
+        }
+      }
+      return(default_list.names)
+    }
+    
+    # Parse variable names
+    # ... names of columns in count.data giving each model variable
+    variables.internal <- list( 
       count = "count",
       bin = "bin", 
       parent = "parent", 
       child = "child",
       ran = "ran",
       fixedeffects = c()
-    ),
-    # Settings used on R side
-    use.median = FALSE,
-    MCMC.burnin = 0,
-    MCMC.steps = 1e4,
-    MCMC.step.size = 1.0,
-    MCMC.prior = 1.0,
-    MCMC.neighbor.filter = 2,
-    bootstraps.num = 0, 
-    converged.resamples.only = TRUE,
-    max.fork = 5,
-    dim.bounds = NULL, 
-    verbose = TRUE,
-    print.child.summaries = TRUE,
-    # Setting to pass to C++ model
-    model.settings = list(
-      buffer_factor = 0.05,                       # buffer factor for penalizing distance from structural parameter values
+    )
+    # ... check that provided variables is a list with valid names
+    variables.names <- check_list(variables, variables.internal)
+    # ... load 
+    for (v in names(variables)) {
+      variables.internal[[v]] <- variables[[v]]
+    }
+   
+    # Relabel and rearrange data columns 
+    if (class(count.data) != "data.frame") {
+      stop("count.data must be a data frame")
+    }
+    old_names <- colnames(count.data)
+    ordered_cols <- unlist(variables.internal[variables.names])
+    if (!all(ordered_cols %in% old_names)) {
+      stop(
+        paste0(
+          "Not all needed variable names found as column names in count.data, missing: ", 
+          paste(ordered_cols[!(ordered_cols %in% old_names)], collapse = ", ")))
+    }
+    if (length(variables.internal$fixedeffects) == 0) {
+      # ... extract fixed effect names, if not given
+      fe_cols <- !(old_names %in% ordered_cols)
+    } else {
+      # ... if fixed effects name given, load
+      fe_cols <- old_names %in% variables.internal$fixedeffects
+      if (!all(variables.internal$fixedeffects %in% old_names)) {
+        stop(
+          paste0(
+            "Not all fixed effect names found as column names in count.data, missing: ", 
+            paste(variables.internal$fixedeffects[!(variables.internal$fixedeffects %in% old_names)], collapse = ", ")))
+      }
+    } 
+    if (sum(fe_cols) == 0) {
+      stop("No fixed effects found in count.data")
+    } 
+    new_names <- c(variables.names, old_names[fe_cols])
+    data <- cbind(count.data[,ordered_cols], count.data[,fe_cols])
+    colnames(data) <- new_names
+    
+    # Parse model settings 
+    # ... define default values
+    model.settings.internal <- list(
+      buffer_factor = 0.05,                       # buffer factor for minimum distance between t-points
       ctol = 1e-6,                                # convergence tolerance
       max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from structural parameter values
       LROcutoff = 2.0,                            # cutoff for LROcp, a multiple of standard deviation
@@ -44,27 +140,34 @@ wisp <- function(
       rng_seed = 42,                              # seed for random number generator
       warp_precision = 1e-7                       # decimal precision to retain when selecting really big number as pseudo infinity for unbound warping
     )
-  ) {
-    
-    # Make reproducible
-    ran.seed <- 1234
-    set.seed(ran.seed)
-   
-    # Relabel and rearrange data columns 
-    old_names <- colnames(count.data.raw)
-    required_cols <- c("count", "bin", "parent", "child", "ran")
-    ordered_cols <- unlist(variables[required_cols])
-    if (length(variables$fixedeffects) == 0) {
-      fe_cols <- !(old_names %in% ordered_cols)
-    } else {
-      fe_cols <- old_names %in% variables$fixedeffects
+    # ... check that provided model.settings is a list with valid names
+    model.settings.names <- check_list(model.settings, model.settings.internal)
+    # ... check and load values
+    for (s in names(model.settings)) {
+      ms <- model.settings[[s]]
+      if (!(ms > 0)) {
+        stop("All model.settings values must be positive numbers")
+      } else if (s == "buffer_factor" && !(ms < 1)) {
+        stop("model.settings$buffer_factor must be a number between 0 and 1")
+      } 
+      if (s == "max_evals" || s == "rng_seed") {
+        s <- as.integer(s)
+      }
+      if (
+        s == "ctol" || 
+        s == "max_penalty_at_distance_factor" || 
+        s == "rise_threshold_factor" || 
+        s == "warp_precision") {
+        if (ms > 1) {
+          warning(paste0("model.settings$", s, " should be a number less than 1"))
+        }
+      }
+      # ... load value 
+      model.settings.internal[[s]] <- ms
     }
-    new_names <- c(required_cols, old_names[fe_cols])
-    data <- cbind(count.data.raw[,ordered_cols], count.data.raw[,fe_cols])
-    colnames(data) <- new_names
     
     # Add inf_warp 
-    model.settings$inf_warp <- model.settings$warp_precision / .Machine$double.eps
+    model.settings.internal$inf_warp <- model.settings.internal$warp_precision / .Machine$double.eps
     
     # Initialize cpp model ####
     if (verbose) {
@@ -74,7 +177,7 @@ wisp <- function(
     cpp_model <- new(
       wspc, 
       data, 
-      model.settings,
+      model.settings.internal,
       verbose
     )
     
@@ -84,12 +187,36 @@ wisp <- function(
       snk.horizontal_rule(reps = snk.small_break_reps, end_breaks = 0)
     }
     
+    # Parse MCMC settings
+    MCMC.settings.internal <- list(
+      MCMC.burnin = 0,
+      MCMC.steps = 1e3,
+      MCMC.step.size = 1.0,
+      MCMC.prior = 1.0,
+      MCMC.neighbor.filter = 2
+    )
+    # ... check that provided MCMC.settings is a list with valid names
+    MCMC.settings.names <- check_list(MCMC.settings, MCMC.settings.internal)
+    # ... check and load values
+    for (s in names(MCMC.settings)) {
+      ms <- MCMC.settings[[s]]
+      if (!(ms >= 0)) {
+        stop("All MCMC.settings values must be >= 0")
+      } else if (s == "MCMC.steps" && ms < 100) {
+        warning(paste0("MCMC.settings$", s, " should be at least 100"))
+      } else if (s == "MCMC.step.size" && ms >= 2.0) {
+        warning(paste0("Consider setting MCMC.settings$", s, " below 2.0"))
+      } 
+      # ... load value 
+      MCMC.settings.internal[[s]] <- ms
+    }
+    
     # Confirm forking is possible
     if (!(Sys.info()["sysname"] == "Darwin" || Sys.info()["sysname"] == "Linux")) {
       if (bootstraps.num > 0) {
         if (verbose) snk.report...("Forking not available on Windows, cannot bootstrap, only running MCMC (10k steps)")
         bootstraps.num <- 0 
-        MCMC.steps <- 1e4
+        MCMC.settings.internal$MCMC.steps <- 1e3
       }
     } else if (bootstraps.num > 0) {
       if (verbose) {
@@ -102,18 +229,18 @@ wisp <- function(
     if (verbose) snk.report("Running MCMC stimulations (single-threaded)", end_breaks = 1)
     start_time_MCMC <- Sys.time()
     MCMC_walk <- cpp_model$MCMC(
-      MCMC.steps + MCMC.burnin, 
-      MCMC.neighbor.filter,
-      MCMC.step.size,
-      MCMC.prior,
+      MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin, 
+      MCMC.settings.internal$MCMC.neighbor.filter,
+      MCMC.settings.internal$MCMC.step.size,
+      MCMC.settings.internal$MCMC.prior,
       verbose 
     )
     run_time_MCMC <- Sys.time() - start_time_MCMC
     if (verbose) {
       snk.report...("MCMC simulation complete")
       snk.print_vec("MCMC run time (total), minutes", c(as.numeric(run_time_MCMC, units = "mins")))
-      snk.print_vec("MCMC run time (per retained step), seconds", c(as.numeric(run_time_MCMC, units = "secs") / (MCMC.steps + MCMC.burnin)))
-      snk.print_vec("MCMC run time (per step), seconds", c((as.numeric(run_time_MCMC, units = "secs") / (MCMC.steps + MCMC.burnin))/MCMC.neighbor.filter))
+      snk.print_vec("MCMC run time (per retained step), seconds", c(as.numeric(run_time_MCMC, units = "secs") / (MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin)))
+      snk.print_vec("MCMC run time (per step), seconds", c((as.numeric(run_time_MCMC, units = "secs") / (MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin))/MCMC.settings.internal$MCMC.neighbor.filter))
     }
     
     # Clear out burn-in, if any
@@ -231,7 +358,7 @@ wisp <- function(
     # Make plots of results ####
     
     # Plot MCMC walks, both parameters and negloglik
-    if (MCMC.steps > 0) {
+    if (MCMC.settings.internal$MCMC.steps > 0) {
       plots.MCMC <- plot.MCMC.walks(
         wisp.results = results
       )
@@ -642,7 +769,7 @@ plot.ratecount <- function(
     wisp.results,
     pred.type = "pred.log",
     count.type = "count.log",
-    dim.boundaries = NULL,
+    dim.boundaries = c(),
     print.all = FALSE,
     y.lim = NA,
     count.alpha.none = NA, # These values have defaults which will be used if left NA
@@ -751,7 +878,7 @@ plot.ratecount <- function(
           )  
       }
       
-      if (!is.null(dim.boundaries)) {
+      if (length(dim.boundaries) > 0) {
         plot <- plot + geom_vline(
           xintercept = dim.boundaries, 
           color = boundary_color, 
@@ -820,7 +947,7 @@ plot.ratecount <- function(
       plot <- plot + scale_color_manual(values = treatment_colors)
       if (length(y.lim) == 2) plot <- plot + ylim(y.lim)
       
-      if (length(dim.boundaries) != 0) {
+      if (length(dim.boundaries) > 0) {
         plot <- plot + geom_vline(
           xintercept = dim.boundaries, 
           color = boundary_color, 
@@ -1645,9 +1772,6 @@ plot.MCMC.walks <- function(
     low_samples = 10
   ) {
    
-    # Low samples used in demo: 
-    # c(43, 201, 141, 4, 204, 39, 194, 57, 162, 143)
-    
     # Font sizes 
     label_size <- 5.5
     title_size <- 20 
@@ -1775,7 +1899,7 @@ plot.decomposition <- function(
     wisp.results,
     child, # "Nptxr"
     log = FALSE, 
-    dim.boundaries = NULL, # colMeans(count_data_WSPmm.y$db)
+    dim.boundaries = c(), # colMeans(count_data_WSPmm.y$db)
     y.lim = NULL
   ) {
     
