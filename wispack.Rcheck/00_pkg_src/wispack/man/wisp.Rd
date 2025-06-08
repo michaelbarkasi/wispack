@@ -11,7 +11,7 @@ wisp(
   MCMC.settings = list(),
   bootstraps.num = 0,
   converged.resamples.only = TRUE,
-  max.fork = 5,
+  max.fork = 1,
   dim.bounds = c(),
   verbose = TRUE,
   print.child.summaries = TRUE,

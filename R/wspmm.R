@@ -40,7 +40,7 @@ wisp <- function(
     MCMC.settings = list(),
     bootstraps.num = 0, 
     converged.resamples.only = TRUE,
-    max.fork = 5,
+    max.fork = 1,
     dim.bounds = c(), 
     verbose = TRUE,
     print.child.summaries = TRUE,
@@ -222,17 +222,11 @@ wisp <- function(
     
     # Confirm forking is possible
     if (!(Sys.info()["sysname"] == "Darwin" || Sys.info()["sysname"] == "Linux")) {
-      if (bootstraps.num > 0) {
-        if (verbose) snk.report...("Forking not available on Windows, cannot bootstrap, only running MCMC (10k steps)")
-        bootstraps.num <- 0 
-        MCMC.settings.internal$MCMC.steps <- 1e3
+      if (bootstraps.num > 0 && max.fork > 1) {
+        if (verbose) snk.report...("Forking not available on Windows, cannot bootstrap in parallel, setting max fork to 1")
+        max.fork <- 1
       }
-    } else if (bootstraps.num > 0) {
-      if (verbose) {
-        snk.report...("Forking available and bootstrap requested.")
-        snk.report...("If bootstrapping not desired, set bootstraps.num = 0")
-      }
-    }
+    } 
     
     # Run MCMC simulation
     if (verbose) snk.report("Running MCMC stimulations (single-threaded)", end_breaks = 1)
@@ -259,9 +253,9 @@ wisp <- function(
     
     if (bootstraps.num > 0) {
       
-      # Run bootstrap fits in parallel with forking
+      # Run bootstrap fits
       start_time_bs <- Sys.time()
-      if (verbose) snk.report("Running bootstrap fits (with forking)", end_breaks = 1)
+      if (verbose) snk.report("Running bootstrap fits", end_breaks = 1)
       sample_results <- cpp_model$bs_batch(
         bootstraps.num, 
         max.fork,
@@ -368,6 +362,7 @@ wisp <- function(
     
     # Plot MCMC walks, both parameters and negloglik
     if (MCMC.settings.internal$MCMC.steps > 0) {
+      if (verbose) snk.report...("Making MCMC walks plots")
       plots.MCMC <- plot.MCMC.walks(
         wisp.results = results
       )
@@ -377,6 +372,7 @@ wisp <- function(
     
     # Plot normality comparison of MCMC and bootstrap estimates
     if (bootstraps.num > 0) {
+      if (verbose) snk.report...("Making MCMC vs bootstrap parameter distribution comparison plots")
       plots.MCMC.bs.comparison <- plot.MCMC.bs.comparison(
         wisp.results = results
       )
@@ -384,7 +380,8 @@ wisp <- function(
       plots.MCMC.bs.comparison <- NULL
     }
     
-    # Plot structural parameter distribution
+    # Plot effect parameter distribution
+    if (verbose) snk.report...("Making effect parameter distribution plots")
     plots.effect.dist <- plot.effect.dist(
       wisp.results = results,
       verbose = verbose
@@ -400,6 +397,7 @@ wisp <- function(
     )
     
     # Make parameter plots 
+    if (verbose) snk.report...("Making parameter plots")
     plots.parameters <- plot.parameters(
       wisp.results = results,
       print.plots = FALSE, 
@@ -419,6 +417,7 @@ wisp <- function(
     
     # Print summary plots
     if (print.child.summaries) {
+      if (verbose) snk.report...("Printing child summary plots")
       plot.child.summary(
         wisp.results = results,
         these.parents = NULL,

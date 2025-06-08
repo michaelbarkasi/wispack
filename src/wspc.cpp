@@ -1312,80 +1312,94 @@ Rcpp::NumericMatrix wspc::bs_batch(
     bs_results.row(bs_num_max) = to_NumVec(full_results);
     
     // Perform bootstrap fits in batches
+    if (max_fork < 1) {max_fork = 1;} 
     const int batch_num = std::round(bs_num_max / max_fork);
     int tracker_steps = 10;
     IntegerVector tracker = iseq(batch_num/tracker_steps, batch_num, tracker_steps);
     for (int b = 0; b < batch_num; b++) {
-      // Run in parallel with forking
       
       // Initiate timer and grab start time
       Timer batch_timer;
       batch_timer.step("start");  
       
-      // Pipes for inter-process communication
-      iVec pids(bs_num_max);
-      std::vector<std::array<int, 2>> pipes(bs_num_max); 
-      
-      // Initialize pipes and fork processes
-      for (int i = 0; i < max_fork; i++) {
+      if (max_fork > 1) {
+        // Run in parallel with forking
         
-        int this_row = b * max_fork + i;
-        pipe(pipes[i].data()); // Create a pipe
-        pid_t pid = fork();
+        // Pipes for inter-process communication
+        iVec pids(bs_num_max);
+        std::vector<std::array<int, 2>> pipes(bs_num_max); 
         
-        if (pid == 0) { // Child process
+        // Initialize pipes and fork processes
+        for (int i = 0; i < max_fork; i++) {
+          
+          int this_row = b * max_fork + i;
+          pipe(pipes[i].data()); // Create a pipe
+          pid_t pid = fork();
+          
+          if (pid == 0) { // Child process
+            
+            // Close read end
+            close(pipes[i][0]); 
+            
+            // Fit bootstrap
+            dVec result = bs_fit(this_row, false); 
+            
+            // Send result
+            write(pipes[i][1], result.data(), sizeof(double) * c_num);
+            
+            // Close write end
+            close(pipes[i][1]); 
+            
+            // Exit child process
+            _exit(0); 
+            
+            // implicitly recovers stan memory by killing the process which initiated it
+            
+          } else if (pid > 0) { // Parent process
+            
+            // Grab child pid
+            pids[i] = pid;
+            
+            // Close write end
+            close(pipes[i][1]); 
+            
+          } else {
+            Rcpp::stop("Fork failed!");
+          }
+          
+        }
+        
+        // Fetch results from pipes
+        for (int i = 0; i < max_fork; i++) {
+          
+          // Wait for child process
+          waitpid(pids[i], NULL, 0); 
+          
+          // Create a temporary buffer to hold the row data
+          dVec temp_row(c_num); 
+          
+          // Read the row from the pipe into the buffer
+          read(pipes[i][0], temp_row.data(), sizeof(double) * c_num);
+          
+          // Copy the buffer contents into the corresponding row of the matrix
+          int this_row = b * max_fork + i;
+          bs_results.row(this_row) = to_NumVec(temp_row);
           
           // Close read end
           close(pipes[i][0]); 
           
-          // Fit bootstrap
-          dVec result = bs_fit(this_row, false); 
-          
-          // Send result
-          write(pipes[i][1], result.data(), sizeof(double) * c_num);
-          
-          // Close write end
-          close(pipes[i][1]); 
-          
-          // Exit child process
-          _exit(0); 
-          
-          // implicitly recovers stan memory by killing the process which initiated it
-          
-        } else if (pid > 0) { // Parent process
-          
-          // Grab child pid
-          pids[i] = pid;
-          
-          // Close write end
-          close(pipes[i][1]); 
-          
-        } else {
-          Rcpp::stop("Fork failed!");
-        }
+        } 
+        
+      } else {
+        // Run in serial
+        
+        // Fit bootstrap
+        dVec result = bs_fit(b, true); 
+        
+        // Copy into the corresponding row of the matrix
+        bs_results.row(b) = to_NumVec(result);
         
       }
-      
-      // Fetch results from pipes
-      for (int i = 0; i < max_fork; i++) {
-        
-        // Wait for child process
-        waitpid(pids[i], NULL, 0); 
-        
-        // Create a temporary buffer to hold the row data
-        dVec temp_row(c_num); 
-        
-        // Read the row from the pipe into the buffer
-        read(pipes[i][0], temp_row.data(), sizeof(double) * c_num);
-        
-        // Copy the buffer contents into the corresponding row of the matrix
-        int this_row = b * max_fork + i;
-        bs_results.row(this_row) = to_NumVec(temp_row);
-        
-        // Close read end
-        close(pipes[i][0]); 
-        
-      } 
       
       batch_timer.step("end");
       NumericVector batch_times(batch_timer);
