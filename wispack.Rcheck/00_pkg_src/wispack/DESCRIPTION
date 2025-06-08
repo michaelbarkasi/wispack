@@ -16,4 +16,4 @@ SystemRequirements: NLopt
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 NeedsCompilation: yes
-Packaged: 2025-06-08 10:36:29 UTC; michaelbarkasi
+Packaged: 2025-06-08 17:44:26 UTC; michaelbarkasi

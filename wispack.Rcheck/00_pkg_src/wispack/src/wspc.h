@@ -319,6 +319,8 @@ class wspc {
 // Helper functions, printing ******************************************************************************************
 
 // Function for printing character messages
+void vprint_header(const std::string& message, bool verbose);
+void vprint_header(const std::string& message);
 void vprint(const std::string& message, bool verbose);
 void vprint(const std::string& message);
 void vprint(const std::string& message, sdouble val);

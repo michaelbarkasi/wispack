@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2025.2.2)  8 JUN 2025 05:37
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2025.2.2)  8 JUN 2025 12:45
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -348,8 +348,8 @@ File: l3backend-pdftex.def 2024-05-08 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count302
 \l__pdf_internal_box=\box59
 )
-(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/RtmpBKVsjx/Rd2pdfc4c0
-77c776d1/Rd2.aux)
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/RtmpFP0xyB/Rd2pdfffcf
+2f6dd2b/Rd2.aux)
 \openout1 = `Rd2.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 8.
@@ -387,10 +387,10 @@ LaTeX Font Info:    ... okay on input line 8.
 )
 Package hyperref Info: Link coloring ON on input line 8.
 
-(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/RtmpBKVsjx/Rd2pdfc4c0
-77c776d1/Rd2.out)
-(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/RtmpBKVsjx/Rd2pdfc4c0
-77c776d1/Rd2.out)
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/RtmpFP0xyB/Rd2pdfffcf
+2f6dd2b/Rd2.out)
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/RtmpFP0xyB/Rd2pdfffcf
+2f6dd2b/Rd2.out)
 \@outlinefile=\write4
 \openout4 = `Rd2.out'.
 
@@ -403,14 +403,14 @@ File: t1zi4.fd 2018/01/14 T1/zi4 (Inconsolata)
 LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
 (Font)              scaled to size 10.0pt on input line 24.
 
-(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/RtmpBKVsjx/Rd2pdfc4c0
-77c776d1/Rd2.toc
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/RtmpFP0xyB/Rd2pdfffcf
+2f6dd2b/Rd2.toc
 LaTeX Font Info:    Trying to load font information for U+msa on input line 1.
  (/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
 LaTeX Font Info:    Trying to load font information for U+msb on input line 1.
- (/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/umsb.fd
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 LaTeX Font Info:    Trying to load font information for U+rsfs on input line 1.
@@ -454,20 +454,22 @@ LaTeX Font Info:    Font shape `TS1/zi4/m/n' will be
 [8]
 
 [9]
-Overfull \hbox (14.98795pt too wide) in paragraph at lines 443--444
+Overfull \hbox (14.98795pt too wide) in paragraph at lines 450--451
 \T1/ptm/m/n/10 par-ent, child, ran, fixed-ef-fects), or equiv-a-lent vari-ables
  as spec-i-fied in the []\T1/zi4/m/n/10 variables
  []
 
 
-Overfull \hbox (97.85893pt too wide) in paragraph at lines 463--464
+
+[10]
+Overfull \hbox (97.85893pt too wide) in paragraph at lines 470--471
 []\T1/ptm/m/n/10 List, set-tings for the C++ model, in-clud-ing []\T1/zi4/m/n/1
 0 buffer_factor[]\T1/ptm/m/n/10 , []\T1/zi4/m/n/10 ctol[]\T1/ptm/m/n/10 , []\T1
 /zi4/m/n/10 max_penalty_at_distance_factor[]\T1/ptm/m/n/10 ,
  []
 
 
-Overfull \hbox (17.63095pt too wide) in paragraph at lines 463--464
+Overfull \hbox (17.63095pt too wide) in paragraph at lines 470--471
 []\T1/zi4/m/n/10 LROcutoff[]\T1/ptm/m/n/10 , []\T1/zi4/m/n/10 LROwindow_factor[
 ]\T1/ptm/m/n/10 , []\T1/zi4/m/n/10 rise_threshold_factor[]\T1/ptm/m/n/10 , []\T
 1/zi4/m/n/10 max_evals[]\T1/ptm/m/n/10 , []\T1/zi4/m/n/10 rng_seed[]\T1/ptm/m/n
@@ -475,14 +477,14 @@ Overfull \hbox (17.63095pt too wide) in paragraph at lines 463--464
  []
 
 
-Overfull \hbox (3.28851pt too wide) in paragraph at lines 468--469
+Overfull \hbox (3.28851pt too wide) in paragraph at lines 475--476
 []\T1/ptm/m/n/10 List giv-ing the re-sults of the fit-ted model, in-clud-ing: [
 ]\T1/zi4/m/n/10 model.component.list[]\T1/ptm/m/n/10 , []\T1/zi4/m/n/10 count.d
 ata.summed[]\T1/ptm/m/n/10 ,
  []
 
 
-Overfull \hbox (24.76099pt too wide) in paragraph at lines 468--469
+Overfull \hbox (24.76099pt too wide) in paragraph at lines 475--476
 []\T1/zi4/m/n/10 param.idx0[]\T1/ptm/m/n/10 , []\T1/zi4/m/n/10 settings[]\T1/pt
 m/m/n/10 , []\T1/zi4/m/n/10 sample.params[]\T1/ptm/m/n/10 , []\T1/zi4/m/n/10 sa
 mple.params.bs[]\T1/ptm/m/n/10 , []\T1/zi4/m/n/10 sample.params.MCMC[]\T1/ptm/m
@@ -491,11 +493,9 @@ mple.params.bs[]\T1/ptm/m/n/10 , []\T1/zi4/m/n/10 sample.params.MCMC[]\T1/ptm/m
 
 
 
-[10]
-
 [11]
-(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/RtmpBKVsjx/Rd2pdfc4c0
-77c776d1/Rd2.ind
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/RtmpFP0xyB/Rd2pdfffcf
+2f6dd2b/Rd2.ind
 
 [12]
 
@@ -505,8 +505,8 @@ mple.params.bs[]\T1/ptm/m/n/10 , []\T1/zi4/m/n/10 sample.params.MCMC[]\T1/ptm/m
 
 
 ])
-(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/RtmpBKVsjx/Rd2pdfc4c0
-77c776d1/Rd2.aux)
+(/private/var/folders/f3/7pxj2bjn7qz_3k6tvr25qztw0000gn/T/RtmpFP0xyB/Rd2pdfffcf
+2f6dd2b/Rd2.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
@@ -516,7 +516,7 @@ Package rerunfilecheck Info: File `Rd2.out' has not changed.
  ) 
 Here is how much of TeX's memory you used:
  10734 strings out of 473201
- 162723 string characters out of 5716121
+ 162710 string characters out of 5716121
  562680 words of memory out of 5000000
  33699 multiletter control sequences out of 15000+600000
  590727 words of font info for 77 fonts, out of 8000000 for 9000
@@ -527,7 +527,7 @@ a-zi4r.pfb></usr/local/texlive/2024/texmf-dist/fonts/type1/urw/times/utmb8a.pfb
 ></usr/local/texlive/2024/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/loc
 al/texlive/2024/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/local/texlive
 /2024/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on Rd2.pdf (13 pages, 101028 bytes).
+Output written on Rd2.pdf (13 pages, 101710 bytes).
 PDF statistics:
  291 PDF objects out of 1000 (max. 8388607)
  262 compressed objects within 3 object streams

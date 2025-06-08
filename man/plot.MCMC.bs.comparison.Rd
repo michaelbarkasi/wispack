@@ -4,10 +4,12 @@
 \alias{plot.MCMC.bs.comparison}
 \title{Visually compare normality and autocorrelation of bootstrap and MCMC parameter estimates}
 \usage{
-\method{plot}{MCMC.bs.comparison}(wisp.results)
+\method{plot}{MCMC.bs.comparison}(wisp.results, verbose = TRUE)
 }
 \arguments{
 \item{wisp.results}{List, output of the wisp function.}
+
+\item{verbose}{Logical, if TRUE, prints information during plotting.}
 }
 \value{
 List of ggplot objects containing plots of representative parameter distributions, Shapiro-Wilk normality test results, and autocorrelation plots for bootstrap and MCMC parameter estimates.

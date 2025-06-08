@@ -33,7 +33,7 @@ snk.report <- function(
   ) {
     cat(
       paste(rep("\n", initial_breaks)), 
-      label, ": ", 
+      label, #": ", 
       paste(rep("\n", end_breaks)),
       sep=""
       )

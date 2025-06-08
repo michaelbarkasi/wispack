@@ -3,6 +3,27 @@
 #include "wspc.h"
 
 // Function for printing character messages
+void vprint_header(
+    const std::string& message,
+    bool verbose
+  ) {
+    if (verbose) {
+      Rcpp::Rcout << "\n" << message << ":" << std::endl;
+      //Rcpp::Rcout << "----------------------------------------" << std::endl;
+      //std::cout << std::endl;
+    }
+  }
+
+// ... overload for no verbose flag
+void vprint_header(
+    const std::string& message
+  ) {
+    Rcpp::Rcout << "\n" << message << ":" << std::endl;
+    //Rcpp::Rcout << "----------------------------------------" << std::endl;
+    //std::cout << std::endl;
+  }
+
+// Function for printing character messages
 void vprint(
     const std::string& message,
     bool verbose

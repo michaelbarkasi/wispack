@@ -118,6 +118,7 @@ wisp <- function(
     if (length(variables.internal$fixedeffects) == 0) {
       # ... extract fixed effect names, if not given
       fe_cols <- !(old_names %in% ordered_cols)
+      variables.internal$fixedeffects <- old_names[fe_cols]
     } else {
       # ... if fixed effects name given, load
       fe_cols <- old_names %in% variables.internal$fixedeffects
@@ -142,7 +143,7 @@ wisp <- function(
       ctol = 1e-6,                                # convergence tolerance
       max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from structural parameter values
       LROcutoff = 2.0,                            # cutoff for LROcp, a multiple of standard deviation
-      LROwindow_factor = 2.0,                     # controls size of window used in LROcp algorithm (window = LROwindow_factor * bin_num * buffer_factor)
+      LROwindow_factor = 1.25,                    # controls size of window used in LROcp algorithm (window = LROwindow_factor * bin_num * buffer_factor)
       rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
       max_evals = 1000,                           # maximum number of evaluations for optimization
       rng_seed = 42,                              # seed for random number generator
@@ -177,25 +178,6 @@ wisp <- function(
     # Add inf_warp 
     model.settings.internal$inf_warp <- model.settings.internal$warp_precision / .Machine$double.eps
     
-    # Initialize cpp model ####
-    if (verbose) {
-      snk.report("Initializing Cpp (wspc) model")
-      snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 1)
-      snk.print_table("Data provided", data, end_breaks = 2)
-    }
-    cpp_model <- new(
-      wspc, 
-      data, 
-      model.settings.internal,
-      verbose
-    )
-    
-    # Estimate model parameters with MCMC or bootstrapping ####
-    if (verbose) {
-      snk.report("Estimating model parameters", initial_breaks = 1)
-      snk.horizontal_rule(reps = snk.small_break_reps, end_breaks = 0)
-    }
-    
     # Parse MCMC settings
     MCMC.settings.internal <- list(
       MCMC.burnin = 0,
@@ -220,6 +202,33 @@ wisp <- function(
       MCMC.settings.internal[[s]] <- ms
     }
     
+    if (verbose) {
+      snk.report("Parsing data and settings for wisp model")
+      snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 1)
+      snk.print_var_list("Model settings", model.settings.internal, vert = TRUE, end_breaks = 1)
+      snk.print_var_list("MCMC settings", MCMC.settings.internal, vert = TRUE, end_breaks = 1)
+      snk.print_var_list("Variable dictionary", variables.internal, vert = TRUE, end_breaks = 1)
+      snk.print_table("Parsed data", data, end_breaks = 0)
+    }
+    
+    # Initialize cpp model ####
+    if (verbose) {
+      snk.report("Initializing Cpp (wspc) model")
+      snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 1)
+    }
+    cpp_model <- new(
+      wspc, 
+      data, 
+      model.settings.internal,
+      verbose
+    )
+    
+    # Estimate model parameters with MCMC or bootstrapping ####
+    if (verbose) {
+      snk.report("Estimating model parameters", initial_breaks = 1)
+      snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 0)
+    }
+    
     # Confirm forking is possible
     if (!(Sys.info()["sysname"] == "Darwin" || Sys.info()["sysname"] == "Linux")) {
       if (bootstraps.num > 0 && max.fork > 1) {
@@ -229,7 +238,7 @@ wisp <- function(
     } 
     
     # Run MCMC simulation
-    if (verbose) snk.report("Running MCMC stimulations (single-threaded)", end_breaks = 1)
+    if (verbose) snk.report("Running MCMC stimulations", end_breaks = 1)
     start_time_MCMC <- Sys.time()
     MCMC_walk <- cpp_model$MCMC(
       MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin, 
@@ -243,7 +252,7 @@ wisp <- function(
       snk.report...("MCMC simulation complete")
       snk.print_vec("MCMC run time (total), minutes", c(as.numeric(run_time_MCMC, units = "mins")))
       snk.print_vec("MCMC run time (per retained step), seconds", c(as.numeric(run_time_MCMC, units = "secs") / (MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin)))
-      snk.print_vec("MCMC run time (per step), seconds", c((as.numeric(run_time_MCMC, units = "secs") / (MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin))/MCMC.settings.internal$MCMC.neighbor.filter))
+      snk.print_vec("MCMC run time (per step), seconds", c((as.numeric(run_time_MCMC, units = "secs") / (MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin))/MCMC.settings.internal$MCMC.neighbor.filter), end_breaks = 0)
     }
     
     # Clear out burn-in, if any
@@ -266,7 +275,7 @@ wisp <- function(
         snk.report...("Bootstrap simulation complete")
         snk.print_vec("Bootstrap run time (total), minutes", c(as.numeric(run_time_bs, units = "mins")))
         snk.print_vec("Bootstrap run time (per sample), seconds", c(as.numeric(run_time_bs, units = "secs") / bootstraps.num))
-        snk.print_vec("Bootstrap run time (per sample, per thread), seconds", c(as.numeric(run_time_bs, units = "secs") * max.fork / bootstraps.num), end_breaks = 1)
+        snk.print_vec("Bootstrap run time (per sample, per thread), seconds", c(as.numeric(run_time_bs, units = "secs") * max.fork / bootstraps.num), end_breaks = 0)
       }
       
     }
@@ -310,7 +319,7 @@ wisp <- function(
       if (verbose) snk.report...("Setting median parameter samples as final parameters", initial_breaks = 1, end_breaks = 1)
       final_parameters <- apply(sample.params, 2, function(x) median(x, na.rm = TRUE))
     } else {
-      if (verbose) snk.report...("Setting full-data fit as parameters", initial_breaks = 1, end_breaks = 1)
+      if (verbose) snk.report...("Setting full-data fit as parameters", initial_breaks = 2, end_breaks = 1)
       final_parameters <- sample.params[nrow(sample.params),]
     }
     cpp_model$set_parameters(
@@ -361,47 +370,37 @@ wisp <- function(
     # Make plots of results ####
     
     # Plot MCMC walks, both parameters and negloglik
-    if (MCMC.settings.internal$MCMC.steps > 0) {
-      if (verbose) snk.report...("Making MCMC walks plots")
-      plots.MCMC <- plot.MCMC.walks(
-        wisp.results = results
-      )
-    } else {
-      plots.MCMC <- NULL
-    }
+    plots.MCMC <- plot.MCMC.walks(
+      wisp.results = results,
+      verbose = verbose
+    )
     
     # Plot normality comparison of MCMC and bootstrap estimates
-    if (bootstraps.num > 0) {
-      if (verbose) snk.report...("Making MCMC vs bootstrap parameter distribution comparison plots")
-      plots.MCMC.bs.comparison <- plot.MCMC.bs.comparison(
-        wisp.results = results
-      )
-    } else {
-      plots.MCMC.bs.comparison <- NULL
-    }
+    plots.MCMC.bs.comparison <- plot.MCMC.bs.comparison(
+      wisp.results = results,
+      verbose = verbose
+    )
     
     # Plot effect parameter distribution
-    if (verbose) snk.report...("Making effect parameter distribution plots")
     plots.effect.dist <- plot.effect.dist(
       wisp.results = results,
       verbose = verbose
     )
     
     # Make rate plots 
-    if (verbose) snk.report...("Making rate-count plots")
     plots.ratecount <- plot.ratecount(
       wisp.results = results,
       pred.type = "pred",
       count.type = "count",
-      dim.boundaries = dim.bounds
+      dim.boundaries = dim.bounds,
+      verbose = verbose
     )
     
     # Make parameter plots 
-    if (verbose) snk.report...("Making parameter plots")
     plots.parameters <- plot.parameters(
       wisp.results = results,
       print.plots = FALSE, 
-      verbose = FALSE
+      verbose = verbose
     )
     
     # Gather plots
@@ -417,7 +416,6 @@ wisp <- function(
     
     # Print summary plots
     if (print.child.summaries) {
-      if (verbose) snk.report...("Printing child summary plots")
       plot.child.summary(
         wisp.results = results,
         these.parents = NULL,
@@ -812,6 +810,7 @@ analyze.residuals <- function(
 #' @param pred.alpha.ran Numeric, transparency for predicted lines when random level is not "none". If left NA, defaults to 0.9.
 #' @param rans.to.print Character vector, list of random levels to include on each child plot. If c(), all random levels are included.
 #' @param childs.to.print Character vector, list of child levels to place on their own plot. If c(), all child levels are plotted individually.
+#' @param verbose Logical, if TRUE, prints updates about the plotting process.
 #' @return List of ggplot objects for rate-count plots.
 #' @export
 plot.ratecount <- function(
@@ -826,8 +825,11 @@ plot.ratecount <- function(
     pred.alpha.none = NA,
     pred.alpha.ran = NA,
     rans.to.print = c(),
-    childs.to.print = c()
+    childs.to.print = c(),
+    verbose = TRUE
   ) {
+    
+    if (verbose) snk.report...("Making rate-count plots")
    
     # Grab data and run checks 
     df <- wisp.results$count.data.summed 
@@ -1091,16 +1093,12 @@ plot.parameters <- function(
       downsample_size <- min(1e2, nrow(sample.params))
     }
     
-    if (verbose) {
-      snk.report("Plotting model parameters")
-      snk.horizontal_rule(reps = snk.simple_break_reps)
-    }
+    if (verbose) snk.report...("Making parameter plots")
     
     # Grab fitted parameters 
     fitted_params <- wisp.results$fitted.parameters
     
     # Grab masks and set legend position
-    if (verbose) snk.report...("Grabbing masks and setting legend position") 
     param_names <- wisp.results$param.names
     point_mask <- grepl("tpoint", param_names)
     rate_mask <- grepl("Rt", param_names)
@@ -1111,7 +1109,6 @@ plot.parameters <- function(
     legpos <- "none"
     
     # Format parameter names for nice printing
-    if (verbose) snk.report...("Formatting parameter names for nice printing") 
     param_names_saved <- param_names
     for (gvp_lvl in as.character(wisp.results$grouping.variables$parent.lvls)) {
       param_names <- gsub(paste0("baseline_",gvp_lvl,"_"), "", param_names)
@@ -1157,7 +1154,6 @@ plot.parameters <- function(
       }
     child_class_names <- names(child.classes)
     
-    if (verbose) snk.report...("Making plots") 
     for (gvp_lvl in as.character(wisp.results$grouping.variables$parent.lvls)) {
       
       for (cc in 1:length(child.classes)) {
@@ -1639,10 +1635,7 @@ plot.effect.dist <- function(
     verbose = TRUE 
   ) {
     
-    if (verbose) {
-      snk.report("Printing effect distributions")
-      snk.horizontal_rule(reps = snk.simple_break_reps)
-    }
+    if (verbose) snk.report...("Making effect parameter distribution plots")
     
     plots.effects_dist <- list()
     bs_fitted_params <- wisp.results$sample.params
@@ -1760,11 +1753,6 @@ plot.child.summary <- function(
     verbose = TRUE
   ) {
     
-    if (verbose) {
-      snk.report("Printing child summary plots", initial_breaks = 2)
-      snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 0)
-    }
-    
     # Check for needed plots
     if (
       length(wisp.results$plots$ratecount) == 0 || 
@@ -1782,7 +1770,7 @@ plot.child.summary <- function(
     
     for (gvp_lvl in gvp_lvls) {
       
-      if (verbose) snk.report(paste0("Making summary plots for ", gvp_lvl))
+      if (verbose) snk.report(paste0("Printing child summary plots for ", gvp_lvl))
       first_print <- TRUE
       
       for (gv_lvl in gv_lvls) {
@@ -1847,14 +1835,16 @@ plot.child.summary <- function(
 #' Function to make nicely formatted histograms of fitted parameters from WISP results.
 #'
 #' @param wisp.results List, output of the wisp function.
+#' @param verbose Logical, if TRUE, prints information during plotting.
 #' @param low_samples Integer, number of low-value parameters to plot. Defaults to 10.
 #' @return List of ggplot objects containing plots of walks for low-value parameters, high-value parameters, and normalized negative log likelihood.
 #' @export
 plot.MCMC.walks <- function(
     wisp.results,
+    verbose = TRUE,
     low_samples = 10
   ) {
-   
+    
     # Font sizes 
     label_size <- 5.5
     title_size <- 20 
@@ -1862,7 +1852,10 @@ plot.MCMC.walks <- function(
     legend_size <- 10
     
     # Grab sampled parameters
-    sampled_params <- wisp.results$sample.params
+    sampled_params <- wisp.results$sample.params.MCMC
+    if (length(sampled_params) == 0 || is.null(sampled_params)) return(NULL)
+    if (verbose) snk.report...("Making MCMC walks plots")
+    sampled_params <- sampled_params[-c(nrow(sampled_params)),]  # Remove last row, which contains L-BFGS values
     
     # Find high-value parameters
     high_val <- 20 < colMeans(sampled_params)
@@ -1927,11 +1920,13 @@ plot.MCMC.walks <- function(
         legend.position = "none"
       )
     
-    # Grab trace of negloglik and normalize
+    # Grab trace of negloglik and normalize relative to L-BFGS value
     nll <- unlist(wisp.results[["diagnostics.MCMC"]][["neg.loglik"]])
     pnll <- unlist(wisp.results[["diagnostics.MCMC"]][["pen.neg.value"]])
-    nll <- (nll - nll[1]) / nll[1]
-    pnll <- (pnll - pnll[1]) / pnll[1]
+    nll <- nll / nll[length(nll)]
+    pnll <- pnll / pnll[length(pnll)]
+    nll <- nll[-c(length(nll))]  # Remove last value, which is the L-BFGS value
+    pnll <- pnll[-c(length(pnll))]  # Remove last value, which is the L-BFGS value
     ymin <- min(c(nll, pnll))
     ymax <- max(c(nll, pnll))
     
@@ -2066,10 +2061,12 @@ plot.decomposition <- function(
 #' Function allowing for visual comparison of the parameter estimates from bootstrapping vs MCMC simulation. Shows density for ten representative parameters from bootstrapping and MCMC walk, the distributions of Shapiro-Walk p-values for bootstrapping vs MCMC walks, and the density of autocorrelation results for bootstrapping vs MCMC walks.
 #'
 #' @param wisp.results List, output of the wisp function.
+#' @param verbose Logical, if TRUE, prints information during plotting.
 #' @return List of ggplot objects containing plots of representative parameter distributions, Shapiro-Wilk normality test results, and autocorrelation plots for bootstrap and MCMC parameter estimates.
 #' @export
 plot.MCMC.bs.comparison <- function(
-    wisp.results
+    wisp.results,
+    verbose = TRUE
   ) {
     
     # For each parameter in the model, both bootstrapping (bs) and the MCMC simulation will 
@@ -2094,9 +2091,11 @@ plot.MCMC.bs.comparison <- function(
     # Grab data
     param_mcmc <- wisp.results[["sample.params.MCMC"]]
     param_bs <- wisp.results[["sample.params.bs"]]
-    if (is.null(param_bs) || is.null(param_mcmc)) {
-      stop("One of bootstrap or MCMC parameter estimates are missing.")
+    if (is.null(param_bs) || is.null(param_mcmc) || length(param_bs) == 0 || length(param_mcmc) == 0) {
+      return(NULL)
     }
+    
+    if (verbose) snk.report...("Making MCMC vs bootstrap parameter distribution comparison plots")
     
     # Find mean "normality" (p-value of shaprio test) for each parameter, on each method
     dens_list <- lapply(1:ncol(param_mcmc), function(pnum) {
@@ -2354,7 +2353,7 @@ project_cp <- function(
     
   }
 
-#' R version of the warping function used in wisps
+#' Wisp warping function, implemented in R
 #' 
 #' This function provides an R implementation of the warping function used to warp model components before input into \code{wisp.sigmoid}.
 #' 
@@ -2392,7 +2391,7 @@ wisp.warp <- function(
     
   }
 
-#' R version of the wisp sigmoid
+#' Wisp sigmoid function, implemented in R
 #' 
 #' This function provides an R implementation of the wisp sigmoid function. It assumes the parameters Rt, tslope, and tpoint have already been warped by \code{wisp.warp}.
 #' 

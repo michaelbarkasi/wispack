@@ -38,9 +38,13 @@ wspc::wspc(
     
     // Report warp_inf 
     const sdouble eps_ = std::numeric_limits<double>::epsilon(); // machine epsilon
-    vprint("warp_precision: ", warp_precision);
-    vprint("eps_: ", eps_);
-    vprint("inf_warp: ", inf_warp);
+    if (verbose) {
+      vprint_header("Infinity handling");
+      vprint("machine epsilon: (eps_): ", eps_);
+      vprint("pseudo-infinity (inf_): ", inf_);
+      vprint("warp_precision: ", warp_precision);
+      vprint("implied pseudo-infinity for unbounded warp (inf_warp): ", inf_warp);
+    }
     
     // Check structure of input data
     CharacterVector col_names = count_data.names();
@@ -52,13 +56,14 @@ wspc::wspc(
         Rcpp::stop("Input data is missing required column (or out of order): " + required_cols[i]);
       }
     }
-    vprint("Data structure check passed", verbose);
+    vprint("Data structure check passed", false);
     
     // Save tokenized count column before collapsing to sums 
     count_tokenized = to_sVec(Rcpp::as<NumericVector>(count_data["count"]));
-    vprint("Saving tokenized count", verbose);
+    vprint("Saving tokenized count", false);
     
     // Find max bins and set warp bounds
+    vprint_header("Extracting variables and data information", verbose);
     bin_num = smax(to_sVec(Rcpp::as<NumericVector>(count_data["bin"])));
     warp_bounds.resize(3); 
     for (int i = 0; i < 3; i++) {warp_bounds[i] = inf_warp;}  // initialize to infinity (no bounds)
@@ -83,7 +88,7 @@ wspc::wspc(
       fix_ref[i] = lvls[0];                                             // assume first level is reference
       fix_trt[i] = lvls[Rcpp::Range(1, lvls.size() - 1)]; 
     }
-    vprint("Extracted fixed effects:", verbose);
+    vprint("Fixed effects:", verbose);
     vprintV(fix_names, verbose);
     vprint("Ref levels:", verbose);
     vprintV(fix_ref, verbose);
@@ -97,7 +102,7 @@ wspc::wspc(
     for (int t = 0; t < treatment_num; t++) {                           // collapse components into level names
       treatment_lvls[t] = Rcpp::collapse(treatment_components[t]);
     }
-    vprint("Created treatment levels", verbose);
+    vprint("Created treatment levels:", verbose);
     vprintV(treatment_lvls, verbose);
     
     // Create matrix to translate between treatment levels and fixed-effects columns
@@ -116,7 +121,7 @@ wspc::wspc(
         }
       }
     }
-    vprint("Created treatment-to-fix translation matrix", verbose);
+    vprint("Created treatment-to-fix translation matrix", false);
     
     // Pre-compute weight-matrix rows 
     // ... for making weights matrix
@@ -132,7 +137,7 @@ wspc::wspc(
         }
       }
     }
-    vprint("Pre-computed weight matrix rows", verbose);
+    vprint("Pre-computed weight matrix rows", false);
     
     // Extract grouping variables 
     parent_lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["parent"]));
@@ -141,11 +146,11 @@ wspc::wspc(
     // ... add "none" to represent no random effect (reference level)
     ran_lvls.push_front("none"); 
     // ... print extracted grouping variables
-    vprint("Extracted parent grouping variables:", verbose);
+    vprint("Parent grouping variables:", verbose);
     vprintV(parent_lvls, verbose);
-    vprint("Extracted child grouping variables:", verbose);
+    vprint("Child grouping variables:", verbose);
     vprintV(child_lvls, verbose);
-    vprint("Extracted random-effect grouping variables:", verbose);
+    vprint("Random-effect grouping variables:", verbose);
     vprintV(ran_lvls, verbose);
     
     // Temporarily extract tokenized-count columns 
@@ -153,7 +158,7 @@ wspc::wspc(
     CharacterVector parentT = Rcpp::as<CharacterVector>(count_data["parent"]);
     CharacterVector childT = Rcpp::as<CharacterVector>(count_data["child"]);
     CharacterVector ranT = Rcpp::as<CharacterVector>(count_data["ran"]);
-    vprint("Extracted tokenized count columns", verbose);
+    vprint("Extracted tokenized count columns", false);
     
     // Create summed count data, size constants
     int idx = 0;
@@ -163,7 +168,7 @@ wspc::wspc(
     int bin_num_i = (int)bin_num.val();
     n_count_rows = bin_num_i * n_parent * n_child * n_ran * treatment_num;
     count_row_nums = Rcpp::seq(0, n_count_rows - 1);
-    vprint("Grabbed size constants for summed count data, total rows: " + std::to_string(n_count_rows), verbose);
+    vprint("Total rows in summed count data table: " + std::to_string(n_count_rows), verbose);
     
     // Create summed count data rows, initializations
     count.resize(n_count_rows);
@@ -173,7 +178,7 @@ wspc::wspc(
     ran = CharacterVector(n_count_rows);
     treatment = CharacterVector(n_count_rows);
     weights.resize(n_count_rows, treatment_num);
-    vprint("Initialized columns for summed count data", verbose);
+    vprint("Initialized columns for summed count data", false);
     
     // Initiate count indexes 
     int idx_mcu = 0;
@@ -181,17 +186,17 @@ wspc::wspc(
     token_pool.resize(n_count_rows);
     count_not_na_mask = LogicalVector(n_count_rows);
     count_not_na_mask.fill(false);
-    vprint("Initialized count indexes, number of rows with unique model components: " + std::to_string(idx_mc_unique.size()), verbose);
+    vprint("Number of rows with unique model components: " + std::to_string(idx_mc_unique.size()), verbose);
     
     // Pre-compute bin masks
-    vprint("Pre-computing bin masks", verbose);
+    vprint("Pre-computing bin masks", false);
     LogicalMatrix bin_masks(binT.size(), bin_num_i);
     for (int b = 0; b < bin_num_i; b++) { 
       bin_masks.column(b) = eq_left_broadcast(binT, b + 1);
     }
     
     // Create summed count data columns and weight matrix
-    vprint("Creating summed-count data columns ...", verbose); 
+    vprint_header("Creating summed-count data columns", verbose); 
     LogicalVector nan_mask = !Rcpp::is_na(to_NumVec(count_tokenized));
     for (int r = 0; r < n_ran; r++) {
       LogicalVector ran_mask = eq_left_broadcast(ranT, ran_lvls[r]) & nan_mask;
@@ -255,14 +260,15 @@ wspc::wspc(
     
     // Extract idx from count_not_na_mask
     count_not_na_idx = Rwhich(count_not_na_mask);
-    vprint("Extracted non-NA indexes", verbose);
+    vprint("Extracted non-NA indexes", false);
     
     // Make extrapolation pool and extrapolate "none" rows
-    vprint("Making extrapolation pool ...", verbose);
+    vprint_header("Making extrapolation pool", verbose);
     extrapolation_pool.resize(count.size());
     extrapolation_pool = make_extrapolation_pool(bin, count, parent, child, ran, treatment, verbose); 
     
     // Extrapolate "none" rows
+    vprint_header("Making initial parameter estimates", verbose);
     count = extrapolate_none(count, ran, extrapolation_pool, true);
     vprint("Extrapolated 'none' rows", verbose);
     
@@ -432,8 +438,6 @@ wspc::wspc(
       _["num_evals"] = NA_INTEGER,
       _["bs_times"] = NumericVector()
     );
-    
-    vprint("Finished initializing wspc object", verbose);
     
   }
 

@@ -16,7 +16,8 @@
   pred.alpha.none = NA,
   pred.alpha.ran = NA,
   rans.to.print = c(),
-  childs.to.print = c()
+  childs.to.print = c(),
+  verbose = TRUE
 )
 }
 \arguments{
@@ -43,6 +44,8 @@
 \item{rans.to.print}{Character vector, list of random levels to include on each child plot. If c(), all random levels are included.}
 
 \item{childs.to.print}{Character vector, list of child levels to place on their own plot. If c(), all child levels are plotted individually.}
+
+\item{verbose}{Logical, if TRUE, prints updates about the plotting process.}
 }
 \value{
 List of ggplot objects for rate-count plots.
