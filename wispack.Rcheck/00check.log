@@ -110,52 +110,74 @@ analyze.residuals: no visible global function definition for
 analyze.residuals: no visible binding for global variable ‘arrangeGrob’
 analyze.residuals: no visible global function definition for ‘sd’
 analyze.residuals: no visible global function definition for ‘var’
-demo_sigmoid: no visible global function definition for ‘ggplot’
-demo_sigmoid: no visible global function definition for ‘aes’
-demo_sigmoid: no visible global function definition for ‘geom_line’
-demo_sigmoid: no visible global function definition for ‘coord_fixed’
-demo_sigmoid: no visible global function definition for ‘geom_hline’
-demo_sigmoid: no visible global function definition for ‘geom_vline’
-demo_sigmoid: no visible global function definition for ‘geom_segment’
-demo_sigmoid: no visible binding for global variable ‘slope_seg_neg_x’
-demo_sigmoid: no visible binding for global variable ‘slope_seg_pos_x’
-demo_sigmoid: no visible binding for global variable ‘slope_seg_neg_y’
-demo_sigmoid: no visible binding for global variable ‘slope_seg_pos_y’
-demo_sigmoid: no visible global function definition for ‘annotate’
-demo_sigmoid: no visible global function definition for ‘labs’
-demo_sigmoid: no visible global function definition for ‘theme_minimal’
-demo_sigmoid: no visible global function definition for ‘theme’
-demo_sigmoid: no visible global function definition for ‘element_text’
-demo_sigmoid: no visible global function definition for ‘ylim’
-demo_sigmoid: no visible binding for global variable ‘x0’
-demo_sigmoid: no visible binding for global variable ‘x1’
-demo_sigmoid: no visible binding for global variable ‘y1’
-demo_sigmoid: no visible global function definition for ‘grid.arrange’
-demo_warp: no visible global function definition for ‘relevel’
-demo_warp: no visible global function definition for ‘ggplot’
-demo_warp: no visible global function definition for ‘aes’
-demo_warp: no visible binding for global variable ‘curve’
-demo_warp: no visible global function definition for ‘geom_line’
-demo_warp: no visible global function definition for ‘geom_hline’
-demo_warp: no visible global function definition for ‘geom_segment’
-demo_warp: no visible global function definition for ‘annotate’
-demo_warp: no visible global function definition for ‘labs’
-demo_warp: no visible global function definition for
+demo.sigmoid.plots: no visible global function definition for ‘ggplot’
+demo.sigmoid.plots: no visible global function definition for ‘aes’
+demo.sigmoid.plots: no visible global function definition for
+  ‘geom_line’
+demo.sigmoid.plots: no visible global function definition for
+  ‘coord_fixed’
+demo.sigmoid.plots: no visible global function definition for
+  ‘geom_hline’
+demo.sigmoid.plots: no visible global function definition for
+  ‘geom_vline’
+demo.sigmoid.plots: no visible global function definition for
+  ‘geom_segment’
+demo.sigmoid.plots: no visible binding for global variable
+  ‘slope_seg_neg_x’
+demo.sigmoid.plots: no visible binding for global variable
+  ‘slope_seg_pos_x’
+demo.sigmoid.plots: no visible binding for global variable
+  ‘slope_seg_neg_y’
+demo.sigmoid.plots: no visible binding for global variable
+  ‘slope_seg_pos_y’
+demo.sigmoid.plots: no visible global function definition for
+  ‘annotate’
+demo.sigmoid.plots: no visible global function definition for ‘labs’
+demo.sigmoid.plots: no visible global function definition for
+  ‘theme_minimal’
+demo.sigmoid.plots: no visible global function definition for ‘theme’
+demo.sigmoid.plots: no visible global function definition for
+  ‘element_text’
+demo.sigmoid.plots: no visible global function definition for ‘ylim’
+demo.sigmoid.plots: no visible binding for global variable ‘x0’
+demo.sigmoid.plots: no visible binding for global variable ‘x1’
+demo.sigmoid.plots: no visible binding for global variable ‘y1’
+demo.sigmoid.plots: no visible global function definition for
+  ‘grid.arrange’
+demo.warp.plots: no visible global function definition for ‘relevel’
+demo.warp.plots: no visible global function definition for ‘ggplot’
+demo.warp.plots: no visible global function definition for ‘aes’
+demo.warp.plots: no visible binding for global variable ‘curve’
+demo.warp.plots: no visible global function definition for ‘geom_line’
+demo.warp.plots: no visible global function definition for ‘geom_hline’
+demo.warp.plots: no visible global function definition for
+  ‘geom_segment’
+demo.warp.plots: no visible global function definition for ‘annotate’
+demo.warp.plots: no visible global function definition for ‘labs’
+demo.warp.plots: no visible global function definition for
   ‘scale_color_manual’
-demo_warp: no visible global function definition for ‘theme_minimal’
-demo_warp: no visible global function definition for ‘theme’
-demo_warp: no visible global function definition for ‘element_text’
-demo_warp: no visible binding for global variable ‘type’
-demo_warp: no visible global function definition for ‘geom_vline’
-demo_warp: no visible global function definition for ‘ylim’
-demo_warp: no visible global function definition for ‘coord_fixed’
-demo_warp: no visible binding for global variable ‘x0’
-demo_warp: no visible binding for global variable ‘x1’
-demo_warp: no visible binding for global variable ‘slope_seg_neg_x’
-demo_warp: no visible binding for global variable ‘slope_seg_pos_x’
-demo_warp: no visible binding for global variable ‘slope_seg_neg_y’
-demo_warp: no visible binding for global variable ‘slope_seg_pos_y’
-demo_warp: no visible global function definition for ‘grid.arrange’
+demo.warp.plots: no visible global function definition for
+  ‘theme_minimal’
+demo.warp.plots: no visible global function definition for ‘theme’
+demo.warp.plots: no visible global function definition for
+  ‘element_text’
+demo.warp.plots: no visible binding for global variable ‘type’
+demo.warp.plots: no visible global function definition for ‘geom_vline’
+demo.warp.plots: no visible global function definition for ‘ylim’
+demo.warp.plots: no visible global function definition for
+  ‘coord_fixed’
+demo.warp.plots: no visible binding for global variable ‘x0’
+demo.warp.plots: no visible binding for global variable ‘x1’
+demo.warp.plots: no visible binding for global variable
+  ‘slope_seg_neg_x’
+demo.warp.plots: no visible binding for global variable
+  ‘slope_seg_pos_x’
+demo.warp.plots: no visible binding for global variable
+  ‘slope_seg_neg_y’
+demo.warp.plots: no visible binding for global variable
+  ‘slope_seg_pos_y’
+demo.warp.plots: no visible global function definition for
+  ‘grid.arrange’
 plot.MCMC.bs.comparison : <anonymous>: no visible global function
   definition for ‘shapiro.test’
 plot.MCMC.bs.comparison: no visible global function definition for
