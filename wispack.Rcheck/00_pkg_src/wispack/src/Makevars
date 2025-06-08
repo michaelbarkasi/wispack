@@ -1,8 +1,0 @@
-CXX_STD = CXX14
-PKG_CXXFLAGS = $(shell pkg-config --cflags nlopt)
-
-PKG_CPPFLAGS = $(shell $(R_HOME)/bin/Rscript -e "cat(StanHeaders:::CxxFlags(TRUE))") \
-               -I$(shell pkg-config --variable=includedir nlopt)
-
-PKG_LIBS = $(shell pkg-config --libs nlopt) \
-           $(shell $(R_HOME)/bin/Rscript -e "cat(StanHeaders:::LdFlags(TRUE))")
