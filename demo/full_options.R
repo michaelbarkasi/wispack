@@ -42,7 +42,7 @@ layer.boundary.bins <- read.csv(boundary_path)
 fixed.effect.names <- c("hemisphere", "age")
 
 # Define variables in the dataframe for the model
-data.variables = list(
+data.variables <- list(
     count = "count",
     bin = "bin", 
     parent = "cortex", 
@@ -53,7 +53,7 @@ data.variables = list(
 
 # Model settings 
 # ... all settings shown here are defaults
-model.settings = list(
+model.settings <- list(
     # ... these are global options needed to set up model
     buffer_factor = 0.05,                                 # buffer factor for penalizing distance from structural parameter values
     ctol = 1e-6,                                          # convergence tolerance
@@ -76,7 +76,7 @@ model.settings = list(
 
 # Settings for MCMC walk
 # ... all settings shown here are defaults
-MCMC.settings = list(
+MCMC.settings <- list(
     MCMC.burnin = 0,
     MCMC.steps = 1e3,
     MCMC.step.size = 1.0,
