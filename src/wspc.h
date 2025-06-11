@@ -16,6 +16,7 @@
 #include "pcg/pcg_random.hpp"
 #include <unistd.h>                           // for forking on unix
 #include <random>                             // for thread-safe random number generation
+#include <sys/wait.h>                         // for Ubuntu C++ compiler to recognize waitpid
 using namespace Rcpp;
 
 // [[Rcpp::plugins(cpp14)]]
