@@ -8,20 +8,20 @@ barkasi@wustl.edu
 # Installation 
 ----------------------------------------------------------------------------------------
 
-1. Clone this git repo
-2. Make "build_install.sh" executable by running "chmod +x build_install.sh" in bash terminal
-3. In terminal, run "./build_install.sh" to build and install the package
-4. To ensure a clean start, run: 
+1. Clone this git repo  
+2. Make "build_install.sh" executable by running "chmod +x build_install.sh" in bash terminal  
+3. In terminal, run "./build_install.sh" to build and install the package  
+4. To ensure a clean start, run:  
 
-rm -f src/*.o src/*.so
-rm -rf wispack.Rcheck
-rm -f wispack_*.tar.gz
+rm -f src/*.o src/*.so  
+rm -rf wispack.Rcheck  
+rm -f wispack_*.tar.gz  
 ./build_install.sh
 
 # Demos
 ----------------------------------------------------------------------------------------
 
-demo("quick_start", package = "wispack")
+demo("quick_start", package = "wispack")  
 demo("full_options", package = "wispack")
 
 # Dependency licenses
@@ -36,37 +36,37 @@ Rcpp:
 
 by: Dirk Eddelbuettel, Romain Francois, JJ Allaire, Kevin Ushey, Qiang Kou, Nathan Russell, Iñaki Ucar, Doug Bates, and John Chambers
 
-https://cran.r-project.org/web/packages/Rcpp/index.html
+https://cran.r-project.org/web/packages/Rcpp/index.html  
 https://github.com/RcppCore/Rcpp/tree/master
 
-GNU General Public License v2.0
-https://github.com/RcppCore/Rcpp/blob/master/LICENSE
+GNU General Public License v2.0  
+https://github.com/RcppCore/Rcpp/blob/master/LICENSE  
 https://github.com/RcppCore/Rcpp/blob/0905d92e0046de5f171d4fde752d97e8733738be/LICENSE
 
 --------------------------------------------
 Stan Math: 
 
-Bob Carpenter
+Bob Carpenter  
 https://bob-carpenter.github.io/
 
-https://mc-stan.org/math/
+https://mc-stan.org/math/  
 https://github.com/stan-dev/math
 
-BSD 3-Clause License
+BSD 3-Clause License  
 
 The Stan Math Library depends on the Intel TBB library which is licensed under the Apache 2.0 license. This dependency implies an additional restriction as compared to the new BSD license alone. The Apache 2.0 license is incompatible with GPL-2 licensed code if distributed as a unitary binary. You may refer to the Licensing page on the Stan wiki. 
 
 --------------------------------------------
 Boost / BH:
 
-Copyright Beman Dawes, David Abrahams, 1998-2005.
+Copyright Beman Dawes, David Abrahams, 1998-2005.  
 Copyright Rene Rivera 2004-2007.
 
-https://www.boost.org/
+https://www.boost.org/  
 https://github.com/boostorg
 
-Boost license 1.0
-https://www.boost.org/LICENSE_1_0.txt
+Boost license 1.0  
+https://www.boost.org/LICENSE_1_0.txt  
 https://github.com/boostorg/boost/blob/master/LICENSE_1_0.txt
 
 "Boost Software License - Version 1.0 - August 17th, 2003
@@ -98,10 +98,10 @@ Eigen:
 
 The Eigen project was started by Benoît Jacob (founder) and Gaël Guennebaud (guru). Many other people have since contributed their talents to help make Eigen successful.
 
-https://eigen.tuxfamily.org/
+https://eigen.tuxfamily.org/  
 https://gitlab.com/libeigen/eigen
 
-MPL2 (Mozilla Public License)
+MPL2 (Mozilla Public License)  
 https://www.mozilla.org/en-US/MPL/2.0/FAQ/
 
 --------------------------------------------
@@ -120,28 +120,28 @@ Unified Acceleration (UXL) Foundation
 
 https://github.com/uxlfoundation/oneTBB
 
-Apache 2.0
+Apache 2.0  
 https://github.com/uxlfoundation/oneTBB/blob/master/LICENSE.txt
 
 --------------------------------------------
 nlopt: 
 
-Steven G. Johnson
+Steven G. Johnson  
 The NLopt nonlinear-optimization package 
 
-http://github.com/stevengj/nlopt
+http://github.com/stevengj/nlopt  
 https://nlopt.readthedocs.io/en/latest/
 
-GNU Lesser General Public License (LGPL)
+GNU Lesser General Public License (LGPL)  
 https://nlopt.readthedocs.io/en/latest/NLopt_License_and_Copyright/
 
 --------------------------------------------
 pcg: 
 
-Melissa E. O'Neill
+Melissa E. O'Neill  
 https://www.cs.hmc.edu/~oneill/index.html
 
-https://www.pcg-random.org/
+https://www.pcg-random.org/  
 https://github.com/imneme/pcg-cpp
 
 Apache 2.0 and The MIT License
@@ -149,8 +149,8 @@ Apache 2.0 and The MIT License
 --------------------------------------------
 unistd.h, part of the C POSIX library
 
-The IEEE and The Open Group
-https://pubs.opengroup.org/onlinepubs/9799919799/
+The IEEE and The Open Group  
+https://pubs.opengroup.org/onlinepubs/9799919799/  
 https://www.opengroup.org/membership/forums/platform/unix
 
 https://pubs.opengroup.org/onlinepubs/7908799/xsh/unistd.h.html
@@ -160,22 +160,22 @@ Available and licensed on your local system
 --------------------------------------------
 dtwclust: 
 
-Alexis Sarda-Espinosa
+Alexis Sarda-Espinosa  
 Sarda-Espinosa A (2024). dtwclust: Time Series Clustering Along with Optimizations for the Dynamic Time Warping Distance. R package version 6.0.0
 
-Specifically using DTW Barycenter Averaging, from: 
+Specifically using DTW Barycenter Averaging, from:  
 Petitjean F, Ketterlin A and Gancarski P (2011). “A global averaging method for dynamic time warping, with applications to clustering.” Pattern Recognition, 44(3), pp. 678 - 693. ISSN 0031-3203, doi:10.1016/j.patcog.2010.09.013, https://www.sciencedirect.com/science/article/pii/S003132031000453X
 
-https://cran.r-project.org/package=dtwclust
+https://cran.r-project.org/package=dtwclust  
 https://github.com/asardaes/dtwclust
 
 GPLv3
 
 --------------------------------------------
-ggplot2: 
+ggplot2:  
 by: ggplot2 core developer team
 
 https://ggplot2.tidyverse.org/
 
-The MIT license
+The MIT license  
 https://github.com/tidyverse/ggplot2
