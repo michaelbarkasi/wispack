@@ -1,38 +1,61 @@
 # wispack
----------------------------------------------------------------------------------------- 
+
 Rcpp implementation of warped-sigmoid Poisson-process mixed-effect models
  
 Copyright (C) 2025, Michael Barkasi
 barkasi@wustl.edu
 
-# Installation 
-----------------------------------------------------------------------------------------
 
-1. Clone this git repo  
-2. Make "build_install.sh" executable by running "chmod +x build_install.sh" in bash terminal  
-3. In terminal, run "./build_install.sh" to build and install the package  
+## Installation 
+
+1. Clone and `cd` into this git repo
+2. Make `build_install.sh` executable by running `chmod +x build_install.sh` in bash terminal  
+3. In terminal, run `./build_install.sh` to build and install the package  
 4. To ensure a clean start, run:  
 
+```bash
 rm -f src/*.o src/*.so  
 rm -rf wispack.Rcheck  
 rm -f wispack_*.tar.gz  
 ./build_install.sh
+```
 
-# Demos
-----------------------------------------------------------------------------------------
+### Linux
+On Linux (Ubuntu/Debian), additional system dependencies are required *before* the building process: 
+- `libxml2` for roxygen2
+- `r-base-dev`, `libnlopt-dev` (or `libnlopt-cxx-dev`) for Rcpp, RcppEigen, and StanHeaders
 
+For PDF documentation generation, `pdflatex` should also be installed
+
+```bash
+sudo apt install \
+    libxml2 \
+    r-base-dev \
+    libnlopt-dev \
+    libnlopt-cxx-dev \
+    texlive-latex-base \
+    texlive-fonts-recommended \
+    texlive-fonts-extra \
+    texlive-latex-extra
+```
+
+
+## Demos
+
+```R
 demo("quick_start", package = "wispack")  
 demo("full_options", package = "wispack")
+```
 
-# Dependency licenses
-----------------------------------------------------------------------------------------
+
+## Dependency licenses
 
 NOTE: The GPLv2 of Rcpp and the Apache 2.0 of the oneTBB compiled with Stan are incompatible when bundled together as a single binary, which is why these scripts are being provided as a buildable R package on GitHub but not as a precompiled binary ready for installation. 
 
-see: https://github.com/stan-dev/stan/wiki/Stan-Licensing
+See: https://github.com/stan-dev/stan/wiki/Stan-Licensing
 
 --------------------------------------------
-Rcpp:
+### Rcpp
 
 by: Dirk Eddelbuettel, Romain Francois, JJ Allaire, Kevin Ushey, Qiang Kou, Nathan Russell, Iñaki Ucar, Doug Bates, and John Chambers
 
@@ -44,7 +67,7 @@ https://github.com/RcppCore/Rcpp/blob/master/LICENSE
 https://github.com/RcppCore/Rcpp/blob/0905d92e0046de5f171d4fde752d97e8733738be/LICENSE
 
 --------------------------------------------
-Stan Math: 
+### Stan Math
 
 Bob Carpenter  
 https://bob-carpenter.github.io/
@@ -57,7 +80,7 @@ BSD 3-Clause License
 The Stan Math Library depends on the Intel TBB library which is licensed under the Apache 2.0 license. This dependency implies an additional restriction as compared to the new BSD license alone. The Apache 2.0 license is incompatible with GPL-2 licensed code if distributed as a unitary binary. You may refer to the Licensing page on the Stan wiki. 
 
 --------------------------------------------
-Boost / BH:
+### Boost / BH
 
 Copyright Beman Dawes, David Abrahams, 1998-2005.  
 Copyright Rene Rivera 2004-2007.
@@ -94,7 +117,7 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE."
 
 --------------------------------------------
-Eigen:
+### Eigen
 
 The Eigen project was started by Benoît Jacob (founder) and Gaël Guennebaud (guru). Many other people have since contributed their talents to help make Eigen successful.
 
@@ -105,7 +128,7 @@ MPL2 (Mozilla Public License)
 https://www.mozilla.org/en-US/MPL/2.0/FAQ/
 
 --------------------------------------------
-SUNDIALS: 
+### SUNDIALS 
 
 Lawrence Livermore National Security and Southern Methodist University.
 
@@ -114,7 +137,7 @@ https://computing.llnl.gov/projects/sundials
 BSD 3-Clause License Copyright (c) 2002-2019
 
 --------------------------------------------
-oneTBB:
+### oneTBB
 
 Unified Acceleration (UXL) Foundation
 
@@ -124,7 +147,7 @@ Apache 2.0
 https://github.com/uxlfoundation/oneTBB/blob/master/LICENSE.txt
 
 --------------------------------------------
-nlopt: 
+### nlopt
 
 Steven G. Johnson  
 The NLopt nonlinear-optimization package 
@@ -136,7 +159,7 @@ GNU Lesser General Public License (LGPL)
 https://nlopt.readthedocs.io/en/latest/NLopt_License_and_Copyright/
 
 --------------------------------------------
-pcg: 
+### pcg
 
 Melissa E. O'Neill  
 https://www.cs.hmc.edu/~oneill/index.html
@@ -147,7 +170,7 @@ https://github.com/imneme/pcg-cpp
 Apache 2.0 and The MIT License
 
 --------------------------------------------
-unistd.h, part of the C POSIX library
+### unistd.h, part of the C POSIX library
 
 The IEEE and The Open Group  
 https://pubs.opengroup.org/onlinepubs/9799919799/  
@@ -158,7 +181,7 @@ https://pubs.opengroup.org/onlinepubs/7908799/xsh/unistd.h.html
 Available and licensed on your local system
 
 --------------------------------------------
-dtwclust: 
+### dtwclust
 
 Alexis Sarda-Espinosa  
 Sarda-Espinosa A (2024). dtwclust: Time Series Clustering Along with Optimizations for the Dynamic Time Warping Distance. R package version 6.0.0
@@ -172,7 +195,7 @@ https://github.com/asardaes/dtwclust
 GPLv3
 
 --------------------------------------------
-ggplot2:  
+### ggplot2 
 by: ggplot2 core developer team
 
 https://ggplot2.tidyverse.org/
