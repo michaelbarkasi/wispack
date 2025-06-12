@@ -1,0 +1,7 @@
+*.Rcheck
+.Rhistory
+
+src/*.o
+src/*.so
+
+man
