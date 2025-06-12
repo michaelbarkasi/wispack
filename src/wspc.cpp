@@ -1598,7 +1598,7 @@ Rcpp::NumericMatrix wspc::MCMC(
           // ... go back to last viable step
           step = last_viable_step;
           params_current = last_viable_parameters;
-          vprint("Infinite loop suspected, resetting parameters to last viable set.", verbose);
+          vprint("Infinite loop suspected, resetting parameters to last viable set. (Try lowering MCMC.step.size)", verbose);
         } else {
           // ... update last viable step
           last_viable_step = step;

@@ -483,6 +483,16 @@ sample.stats <- function(
     }
     
     # Grab simulation results
+    n_conv <- sum(wisp.results$diagnostics.bs$success.code == 3)
+    n_total <- nrow(wisp.results$diagnostics.bs)
+    if (n_conv / n_total < 0.9) {
+      warning_message <- paste0("Warning: Only ", n_conv, " out of ", n_total, " resamples converged to fit. Results may be unreliable. Using all resamples.")
+      if (verbose) snk.report...(
+        warning_message
+      )
+      warning(warning_message)
+      conv.resamples.only <- FALSE
+    }
     if (conv.resamples.only) {
       if (verbose) snk.report...("Grabbing sample results, only resamples with converged fit")
       sample_results <- wisp.results$sample.params[wisp.results$diagnostics.bs$success.code == 3,]
@@ -2106,11 +2116,29 @@ plot.MCMC.bs.comparison <- function(
       bs_sw_stat   <- rep(NA, n_resamples)
       
       sample_size <- 35
+      throw_bs_warning <- FALSE
+      throw_MCMC_warning <- FALSE
       for (i in 1:n_resamples) {
         mcmc_vals_sample <- sample(mcmc_vals, sample_size, replace = TRUE)
         bs_vals_sample   <- sample(bs_vals, sample_size, replace = TRUE)
-        mcmc_sw_stat[i] <- shapiro.test(mcmc_vals_sample)$p.value
-        bs_sw_stat[i]   <- shapiro.test(bs_vals_sample)$p.value
+        if (length(unique(mcmc_vals_sample)) > 1) {
+          mcmc_sw_stat[i] <- shapiro.test(mcmc_vals_sample)$p.value
+        } else {
+          mcmc_sw_stat[i] <- NA
+          throw_MCMC_warning <- TRUE
+        }
+        if (length(unique(bs_vals_sample)) > 1) {
+          bs_sw_stat[i]   <- shapiro.test(bs_vals_sample)$p.value
+        } else {
+          bs_sw_stat[i] <- NA
+          throw_bs_warning <- TRUE
+        }
+      }
+      if (throw_bs_warning) {
+        warning("Some parameters had only one unique bootstrap resample value, Shapiro test not computed for them.")
+      }
+      if (throw_MCMC_warning) {
+        warning("Some parameters had only one unique MCMC resample value, Shapiro test not computed for them.")
       }
       
       return(
