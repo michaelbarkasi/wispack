@@ -61,7 +61,9 @@ class wspc {
     sVec bin;                               // bin column of summed data
     sVec count;                             // count column of summed data
     sVec count_log;                         // log of observed counts
-    sVec count_tokenized;                   // tokenized count data
+    sVec count_tokenized;                   // tokenized count data, filtered by blanks 
+    sVec count_tokenized_unfiltered;        // tokenized count data, unfiltered by blanks
+    bool use_blank_filter = false;
     
     // Data variables, Rcpp ("factors")
     CharacterVector parent;                 // parent column of summed data
@@ -97,6 +99,7 @@ class wspc {
     IntegerVector idx_mc_unique;            // count data rows at which model component values will change
     std::vector<IntegerVector> token_pool;               // list of token count indexes associated with each summed count row
     std::vector<IntegerVector> extrapolation_pool;       // list of summed-count indexes giving summed count rows from which to extrapolate
+    List blank_count_list;                  // List of integer vectors, the length of the tokenized count data, each element giving nonzero counts (if any) for blanks relevant to the gene, location, treatment level, and grouping variables of that token
     IntegerVector count_not_na_idx;                      // indexes of non-NA rows in summed count data
     LogicalVector count_not_na_mask;        // mask of non-NA rows in summed count data
     
@@ -165,7 +168,7 @@ class wspc {
     // Methods *********************************************************************************************************
    
     // Constructor
-    wspc(Rcpp::DataFrame count_data, Rcpp::List settings, bool verbose);
+    wspc(Rcpp::DataFrame count_data, Rcpp::List blank_count_list, Rcpp::List settings, bool verbose);
     // Destructor
     ~wspc();
     // R copy 
@@ -837,6 +840,13 @@ List make_initial_random_effects(
     const CharacterVector& wfactors_names,  // names of warping factors to initialize
     const int& n_ran,                       // number of random effects
     const int& n_child                      // number of child levels
+  );
+
+// Function to apply blank filter 
+sVec blank_filter(
+    const sVec& count_tokenized, 
+    const List& blank_count_list,
+    const int& rng_seed
   );
 
 #endif // WSPC_H

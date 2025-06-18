@@ -11,6 +11,7 @@
 // Constructor
 wspc::wspc(
     Rcpp::DataFrame count_data,
+    Rcpp::List blank_count_list, 
     Rcpp::List settings,
     bool verbose
   ) { 
@@ -36,6 +37,9 @@ wspc::wspc(
     inf_warp = (sdouble)settings["inf_warp"];
     model_settings = Rcpp::clone(settings);
     
+    // Grab blank count list for blank filtering
+    blank_count_list = blank_count_list;
+    
     // Report warp_inf 
     const sdouble eps_ = std::numeric_limits<double>::epsilon(); // machine epsilon
     if (verbose) {
@@ -59,7 +63,16 @@ wspc::wspc(
     vprint("Data structure check passed", false);
     
     // Save tokenized count column before collapsing to sums 
-    count_tokenized = to_sVec(Rcpp::as<NumericVector>(count_data["count"]));
+    count_tokenized_unfiltered = to_sVec(Rcpp::as<NumericVector>(count_data["count"]));
+    if (blank_count_list.size() > 0) {
+      use_blank_filter = true;
+      if (blank_count_list.size() != count_tokenized_unfiltered.size()) {
+        Rcpp::stop("Blank count list size does not match tokenized count data size.");
+      }
+      count_tokenized = blank_filter(count_tokenized_unfiltered, blank_count_list, rng_seed);
+    } else {
+      count_tokenized = count_tokenized_unfiltered;
+    }
     vprint("Saving tokenized count", false);
     
     // Find max bins and set warp bounds
@@ -1135,6 +1148,11 @@ dVec wspc::bs_fit(
     unsigned int seed = rng_seed + bs_num;
     pcg32 rng(seed);
     
+    // Refilter token counts, if available 
+    if (use_blank_filter) {
+      count_tokenized = blank_filter(count_tokenized_unfiltered, blank_count_list, seed + 1);
+    }
+    
     // Resample (with replacement), re-sum token pool, take logs, recompute gamma_dispersion
     for (int r : count_not_na_idx) {
       
@@ -1146,8 +1164,7 @@ dVec wspc::bs_fit(
         int resample_sz = token_pool_r.size();
         if (resample_sz < 1) {
           // ... ensure new point is viable
-          token_pool_r = token_pool[r];
-          resample_sz = token_pool_r.size();
+          Rcpp::stop("Error: resample size < 1");
         }
         
         count(r) = 0.0;
@@ -1999,7 +2016,7 @@ Rcpp::NumericVector wspc::grad_bounded_nll_debug(
 RCPP_EXPOSED_CLASS(wspc)
 RCPP_MODULE(wspc) {
     class_<wspc>("wspc")
-    .constructor<DataFrame, List, bool>()  
+    .constructor<DataFrame, List, List, bool>()  
     .field("optim_results", &wspc::optim_results)
     .field("fitted_parameters", &wspc::fitted_parameters)
     .method("set_parameters", &wspc::set_parameters)

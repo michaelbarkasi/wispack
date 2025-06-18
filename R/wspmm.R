@@ -33,6 +33,7 @@ NULL
 wisp <- function(
     # Data to model
     count.data, 
+    blank_count_list = list(),
     # Variable labels
     variables = list(), 
     # Settings used on R side
@@ -216,9 +217,11 @@ wisp <- function(
       snk.report("Initializing Cpp (wspc) model")
       snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 1)
     }
+    if (length(blank_count_list) == 0) blank_count_list <- list(1)
     cpp_model <- new(
       wspc, 
       data, 
+      blank_count_list, 
       model.settings.internal,
       verbose
     )

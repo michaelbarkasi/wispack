@@ -1151,3 +1151,38 @@ List make_initial_random_effects(
     return wfactors;
     
   }
+
+sVec blank_filter(
+    const sVec& count_tokenized, 
+    const List& blank_count_list,
+    const int& rng_seed
+  ) {
+    
+    // Set random number generator with unique seed based on resample ID
+    unsigned int seed = rng_seed;
+    pcg32 rng(seed);
+    
+    // Initialize new count vector 
+    int n_tokens = count_tokenized.size();
+    sVec count_tokenized_new(n_tokens); 
+    
+    for (int i = 0; i < n_tokens; i++) {
+      
+      // Grab list of possible blank counts
+      IntegerVector blank_counts = blank_count_list[i];
+      int n_counts = blank_counts.size();
+      
+      // Randomly select integer between 0 and n_counts
+      int this_sampled_count = rng(n_counts); 
+      // Select count
+      int sampled_count = blank_counts[this_sampled_count];
+      sdouble new_count = count_tokenized[i] - (sdouble)sampled_count;
+      if (new_count < 0.0) {new_count = 0.0;}
+      // Save to new vector
+      count_tokenized_new[i] = new_count;
+      
+    }
+    
+    return count_tokenized_new; 
+    
+  }
