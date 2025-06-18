@@ -1427,7 +1427,7 @@ Rcpp::NumericMatrix wspc::bs_batch(
       double batch_time = 1e-9 * (batch_times[1] - batch_times[0])/max_fork;
       if (verbose) {
         // Tracker
-        if (any_true(eq_left_broadcast(tracker, b)) || b == batch_num || b ==1) {
+        if (any_true(eq_left_broadcast(tracker, b)) || b == batch_num || b == 1) {
           Rcpp::Rcout << "Batch: " << b << "/" << batch_num << ", " << batch_time << " sec/bs" << std::endl;
         }
       }
