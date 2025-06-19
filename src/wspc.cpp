@@ -11,7 +11,7 @@
 // Constructor
 wspc::wspc(
     Rcpp::DataFrame count_data,
-    Rcpp::List blank_count_list, 
+    Rcpp::List blankcountlist, 
     Rcpp::List settings,
     bool verbose
   ) { 
@@ -38,7 +38,7 @@ wspc::wspc(
     model_settings = Rcpp::clone(settings);
     
     // Grab blank count list for blank filtering
-    blank_count_list = blank_count_list;
+    blank_count_list = blankcountlist;
     
     // Report warp_inf 
     const sdouble eps_ = std::numeric_limits<double>::epsilon(); // machine epsilon
@@ -477,6 +477,7 @@ void wspc::clear_stan_mem() {
     dVec dcount = to_dVec(count);
     dVec dcount_log = to_dVec(count_log);
     dVec dcount_tokenized = to_dVec(count_tokenized);
+    dVec dcount_tokenized_unfiltered = to_dVec(count_tokenized_unfiltered);
     dVec dbp_coefs = to_dVec(bp_coefs);
     dVec dwarp_bounds = to_dVec(warp_bounds);
     NumericMatrix Numweights = to_NumMat(weights);
@@ -497,6 +498,7 @@ void wspc::clear_stan_mem() {
     count = to_sVec(dcount);
     count_log = to_sVec(dcount_log);
     count_tokenized = to_sVec(dcount_tokenized);
+    count_tokenized_unfiltered = to_sVec(dcount_tokenized_unfiltered);
     bp_coefs = to_sVec(dbp_coefs);
     warp_bounds = to_sVec(dwarp_bounds);
     weights = to_sMat(Numweights);
@@ -1164,6 +1166,7 @@ dVec wspc::bs_fit(
         int resample_sz = token_pool_r.size();
         if (resample_sz < 1) {
           // ... ensure new point is viable
+          Rcpp::Rcout << "Error: resample size < 1, for row " << r << std::endl;
           Rcpp::stop("Error: resample size < 1");
         }
         

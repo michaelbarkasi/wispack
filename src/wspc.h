@@ -168,7 +168,7 @@ class wspc {
     // Methods *********************************************************************************************************
    
     // Constructor
-    wspc(Rcpp::DataFrame count_data, Rcpp::List blank_count_list, Rcpp::List settings, bool verbose);
+    wspc(Rcpp::DataFrame count_data, Rcpp::List blankcountlist, Rcpp::List settings, bool verbose);
     // Destructor
     ~wspc();
     // R copy 
