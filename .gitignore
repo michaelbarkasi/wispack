@@ -6,5 +6,6 @@ src/*.dll
 Read-and-delete-me
 .Rproj.user
 wispack.Rcheck/*
+*.Rcheck/*
 man/*
 !.gitattributes
