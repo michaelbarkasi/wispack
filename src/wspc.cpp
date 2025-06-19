@@ -1146,8 +1146,8 @@ dVec wspc::bs_fit(
         int resample_sz = token_pool_r.size();
         if (resample_sz < 1) {
           // ... ensure new point is viable
-          token_pool_r = token_pool[r];
-          resample_sz = token_pool_r.size();
+          Rcpp::Rcout << "Error: resample size < 1, for row " << r << std::endl;
+          Rcpp::stop("Error: resample size < 1");
         }
         
         count(r) = 0.0;
@@ -1410,7 +1410,7 @@ Rcpp::NumericMatrix wspc::bs_batch(
       double batch_time = 1e-9 * (batch_times[1] - batch_times[0])/max_fork;
       if (verbose) {
         // Tracker
-        if (any_true(eq_left_broadcast(tracker, b)) || b == batch_num || b ==1) {
+        if (any_true(eq_left_broadcast(tracker, b)) || b == batch_num || b == 1) {
           Rcpp::Rcout << "Batch: " << b << "/" << batch_num << ", " << batch_time << " sec/bs" << std::endl;
         }
       }
