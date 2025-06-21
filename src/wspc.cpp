@@ -681,7 +681,7 @@ sdouble wspc::neg_loglik(
         // ... estimate the corresponding variance of the rate back in log space 
         gamma_variance = delta_var_est(gamma_variance, pred_rate_var);
         
-        // Analytic solution to the log of the integral from 1 to positive infinity of the Poisson times Gamma densities
+        // Analytic solution to the log of the integral from 0 to positive infinity of the Poisson times Gamma densities
         log_lik += slog(poisson_gamma_integral(count_log(r), predicted_rates_log_var(r), gamma_variance));
         
       }
