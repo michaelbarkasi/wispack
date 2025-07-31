@@ -485,15 +485,15 @@ sample.stats <- function(
     # Grab simulation results
     n_conv <- sum(wisp.results$diagnostics.bs$success.code == 3)
     n_total <- nrow(wisp.results$diagnostics.bs)
-    if (n_conv / n_total < 0.9) {
-      warning_message <- paste0("Warning: Only ", n_conv, " out of ", n_total, " resamples converged to fit. Results may be unreliable. Using all resamples.")
-      if (verbose) snk.report...(
-        warning_message
-      )
-      warning(warning_message)
-      conv.resamples.only <- FALSE
-    }
     if (conv.resamples.only) {
+      if (n_conv / n_total < 0.9) {
+        warning_message <- paste0("Warning: Only ", n_conv, " out of ", n_total, " resamples converged to fit. Results may be unreliable. Using all resamples.")
+        if (verbose) snk.report...(
+          warning_message
+        )
+        warning(warning_message)
+        conv.resamples.only <- FALSE
+      }
       if (verbose) snk.report...("Grabbing sample results, only resamples with converged fit")
       sample_results <- wisp.results$sample.params[wisp.results$diagnostics.bs$success.code == 3,]
     } else {

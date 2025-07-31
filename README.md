@@ -5,7 +5,6 @@ Rcpp implementation of warped-sigmoid Poisson-process mixed-effect models
 Copyright (C) 2025, Michael Barkasi
 barkasi@wustl.edu
 
-
 ## Installation 
 
 1. Clone and `cd` into this git repo
@@ -39,14 +38,12 @@ sudo apt install \
     texlive-latex-extra
 ```
 
-
 ## Demos
 
 ```R
 demo("quick_start", package = "wispack")  
 demo("full_options", package = "wispack")
 ```
-
 
 ## Dependency licenses
 
