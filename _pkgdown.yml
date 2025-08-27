@@ -1,0 +1,62 @@
+url: https://michaelbarkasi.github.io/wispack/
+template:
+  bootstrap: 5
+  light-switch: true
+
+navbar:
+  structure:
+    left:  [intro, reference, articles, tutorials, news]
+    right: [search, github, lightswitch]
+  components:
+    intro:
+      text: Introduction
+      href: index.html
+    reference:
+      text: Package Functions
+      href: reference/index.html
+    github:
+      icon: fab fa-github
+      href: https://github.com/michaelbarkasi/wispack
+    lightswitch:
+      text: "\U0001F319"
+      href: '#'
+
+articles:
+- title: Installation
+  navbar: Installation
+  contents:
+  - install
+
+- title: Examples
+  navbar: Examples
+  contents: 
+  - starts_with("example_")
+
+- title: Legal
+  navbar: Legal
+  contents:
+  - license
+
+reference:
+- title: Main
+  navbar: Main
+  contents:
+  - wisp
+  
+- title: Model functions
+  navbar: Model functions
+  contents:
+  - starts_with("wisp.")
+  
+- title: Analysis functions
+  navbar: Analysis functions
+  contents:
+  - starts_with("analyze.")
+  - pvalues.samples
+  - sample.stats
+  
+- title: Plotting functions 
+  navbar: Plotting functions
+  contents:
+  - starts_with("plot")
+  - starts_with("demo.")

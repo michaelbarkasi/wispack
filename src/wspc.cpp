@@ -282,6 +282,13 @@ wspc::wspc(
     // Compute running and filter window sizes for LRO change-point detection
     ws = static_cast<int>(std::round(LROwindow_factor * (double)bin_num_i * buffer_factor.val()));
     
+    // Compute tpoint buffer
+    tpoint_buffer = bin_num * buffer_factor;
+    double tpoint_buffer_d = tpoint_buffer.val();
+    int tpoint_buffer_int = (int)tpoint_buffer_d;
+    if (tpoint_buffer_d != tpoint_buffer_int) {tpoint_buffer_int++;} 
+    tpoint_buffer = (sdouble)tpoint_buffer_int;
+    
     // Estimate gamma dispersion of raw counts
     List gamma_ests = compute_gamma_dispersion(
       count,
@@ -300,7 +307,8 @@ wspc::wspc(
     List cp_ests = estimate_change_points(
       bin,
       count_log,
-      count_not_na_mask,
+      count_not_na_mask, 
+      tpoint_buffer.val(),
       ws,
       bin_num_i,
       LROcutoff,
@@ -405,9 +413,6 @@ wspc::wspc(
       gv_fix_idx[r] = std::distance(child_lvls.begin(), it_fix);
     }
     vprint("Constructed grouping variable IDs", verbose);
-    
-    // Compute tpoint buffer
-    tpoint_buffer = bin_num * buffer_factor;
     
     // Compute size of the parameter boundary vector 
     for (int r : idx_mc_unique) {
@@ -595,8 +600,11 @@ sVec wspc::predict_rates(
     // Compute predicted rate for rows of the summed count data
     for (int r = 0; r < n_count_rows; r++) {
       
-      // Skip rows with NA values in count, if requested
-      if (count_not_na_mask[r] || all_rows) {
+      // Update predicted model components if r begins a new batch of unique values 
+      int cnt = std::count(mc_unique_rows.begin(), mc_unique_rows.end(), r);
+      
+      // Unless all_rows, only compute values for non-NA rows or rows that begin a new batch
+      if (count_not_na_mask[r] || cnt > 0 || all_rows) {
         
         // Grab warping factors
         if (gv_ran_idx[r] == 0) {
@@ -666,7 +674,7 @@ sdouble wspc::neg_loglik(
     // Compute the log-likelihood of the count data, assuming a Poisson distribution with Gamma kernel for over-dispersion
     for (int r : count_not_na_idx) {
       
-      if (std::isinf(predicted_rates_log_var(r)) || predicted_rates_log_var(r) < 0.0 || std::isnan(predicted_rates_log_var(r))) {
+      if (std::isinf(predicted_rates_log_var(r)) || predicted_rates_log_var(r) < rt_lower_bound || std::isnan(predicted_rates_log_var(r))) {
         return sdouble(inf_);
       } else {
         
@@ -681,8 +689,17 @@ sdouble wspc::neg_loglik(
         // ... estimate the corresponding variance of the rate back in log space 
         gamma_variance = delta_var_est(gamma_variance, pred_rate_var);
         
+        // Pull up if only approximately zero 
+        if (predicted_rates_log_var(r) < 0.0) {predicted_rates_log_var(r) = 0.0;}
+        
         // Analytic solution to the log of the integral from 0 to positive infinity of the Poisson times Gamma densities
-        log_lik += slog(poisson_gamma_integral(count_log(r), predicted_rates_log_var(r), gamma_variance));
+        if (gamma_variance == 0) { 
+          // if no over-dispersion, just use Poisson
+          log_lik += stan::math::poisson_lpmf(count_log(r), predicted_rates_log_var(r));
+        } else if (count_log(r) > 0.0 && predicted_rates_log_var(r) > 0.0) { 
+          // otherwise, use Poisson-Gamma integral
+          log_lik += slog(poisson_gamma_integral(count_log(r), predicted_rates_log_var(r), gamma_variance));
+        }
         
       }
       
@@ -779,21 +796,21 @@ sVec wspc::boundary_dist(
         // ... and first point must be > buffer, 
         // ... and last point must be < bin_num - buffer
         for (int d = 0; d < deg + 1; d++) {
-          sdouble buffer_dist = (tpoint_ext(d + 1) - tpoint_ext(d)) - tpoint_buffer;
+          sdouble buffer_dist = (tpoint_ext(d + 1) - tpoint_ext(d)) - tpoint_buffer; 
           boundary_dist_vec(ctr) = buffer_dist;
           ctr++;
         }
         
         // All block rate values must be positive
         for (int d = 0; d < deg + 1; d++) {
-          boundary_dist_vec(ctr) = Rt(d);
+          boundary_dist_vec(ctr) = Rt(d) - rt_lower_bound;
           ctr++;
         }
         
       } else {
         
         // ... trivial to check if rate (Rt) is positive
-        boundary_dist_vec(ctr) = Rt(0);
+        boundary_dist_vec(ctr) = Rt(0) - rt_lower_bound;
         ctr++;
         
       }
@@ -872,8 +889,10 @@ bool wspc::test_tpoints(
               if (verbose) {
                 vprint(
                   "Found tpoint below buffer, dist: " + std::to_string(buffer_dist.val()) +
-                    ", deg: " + std::to_string(deg) +
-                    ", row: " + std::to_string(r),
+                    ", deg: " + std::to_string(d) +
+                    ", row: " + std::to_string(r) +
+                    ", tpoint_ext(d + 1): " + std::to_string(tpoint_ext(d + 1).val()) +
+                    ", tpoint_ext(d): " + std::to_string(tpoint_ext(d).val()),
                     true);
               }
               return false;
@@ -1455,6 +1474,21 @@ Rcpp::NumericMatrix wspc::MCMC(
     const int r_num = n_steps + 1;
     NumericMatrix RMW_steps(r_num, c_num);
     
+    
+    // Make baseline parameter mask 
+    LogicalVector baseline_mask(n_params);
+    baseline_mask.fill(false);
+    for (int i : param_baseline_idx) {
+      baseline_mask(i) = true;
+    }
+    
+    // Make beta_Rt parameter mask
+    LogicalVector beta_Rt_mask(n_params);
+    beta_Rt_mask.fill(false);
+    for (int i : param_beta_Rt_idx) {
+      beta_Rt_mask(i) = true;
+    } 
+    
     // Save results from initial full fit
     NumericVector these_results = optim_results["fitted_parameters"];
     dVec full_results = to_dVec(these_results);
@@ -1474,10 +1508,9 @@ Rcpp::NumericMatrix wspc::MCMC(
     int last_viable_step = 0;
     double acceptance_rate = 1.0;
     int tracker_steps = 10;
-    if (tracker_steps > n_steps/2) {
-      tracker_steps = (int)n_steps/2;
-    }
+    if (tracker_steps > n_steps/2) {tracker_steps = (int)n_steps/2;}
     IntegerVector tracker = iseq(n_steps/10, n_steps, tracker_steps);
+    bool printed_step1 = false;
     // Grab current point (model parameters) in random walk
     NumericVector params_current = fitted_parameters;
     NumericVector last_viable_parameters = params_current;
@@ -1516,17 +1549,21 @@ Rcpp::NumericMatrix wspc::MCMC(
         for (int i = 0; i < n_params; i++) {
           
           // ... calculate step size
-          double normalized_step_size = step_size * std::abs(params_current(i)) + step_size;
+          double normalized_step_size = step_size * std::log10(std::abs(params_current(i)) + 1.0);
           double bounded_step_size = normalized_step_size / bd_current_transformed.val();
           if (bounded_step_size == 0.0) {
             // ... presumably this case means current parameter is extremely close to zero or very close to boundary
             params_next(i) = pcg_rnorm(params_current(i), step_size, walk_rng);
-          } else if (bounded_step_size < 0.0) {
-            // ... no analytically possible, but here in case of programming issues
-            params_next(i) = params_current(i);
           } else {
             // ... take next step
             params_next(i) = pcg_rnorm(params_current(i), bounded_step_size, walk_rng);
+          }
+          
+          // Check that a good baseline parameter hasn't been sent below zero
+          if (baseline_mask(i) || beta_Rt_mask(i)) {
+            if (params_next(i) < 0.0) {
+              params_next(i) = 0.0;
+            }
           }
           
           // While looping, compute priors for this random step
@@ -1540,10 +1577,14 @@ Rcpp::NumericMatrix wspc::MCMC(
           }
           
         }
+        
       } else {
+        
         params_current = last_viable_parameters;
         step = last_viable_step;
+        clear_stan_mem(); // Clear stan memory
         continue;
+        
       }
       
       // Compute likelihoods for this random step
@@ -1569,8 +1610,10 @@ Rcpp::NumericMatrix wspc::MCMC(
           if (any_true(eq_left_broadcast(tracker, step))) {
             int this_step_batch = Rwhich(eq_left_broadcast(tracker, step))[0];
             Rcpp::Rcout << "step: " << (this_step_batch + 1) * (n_steps/tracker.size()) << "/" << n_steps << std::endl;
-          } else if (step == 0) {
+            tracker(this_step_batch) -= 1; // ensure report is only printed once
+          } else if (step == 0 && !printed_step1) {
             Rcpp::Rcout << "step: " << 1 << "/" << n_steps << std::endl;
+            printed_step1 = true; // ensure report is only printed once
           }
           // Save new parameters and results
           dVec full_results = to_dVec(params_next);
@@ -1733,9 +1776,24 @@ Rcpp::List wspc::check_parameter_feasibility(
         true            // compute all summed count rows, even with a count value of NA?
       );
       
+      // Test if provided parameters produce any nan rates
+      for (int i = 0; i < n_count_rows; i++) {
+        if (std::isnan(predicted_rates_log_var(i))) {
+          feasible = false;
+        }
+      }
+      
+      if (verbose) {
+        if (feasible) {
+          vprint("... no NAN rates predicted");
+        } else {
+          vprint("... NAN rates predicted");
+        }
+      }
+      
       // Test if provided parameters produce any negative rates
       for (int i = 0; i < n_count_rows; i++) {
-        if (predicted_rates_log_var(i) < 0 || std::isnan(predicted_rates_log_var(i))) {
+        if (!std::isnan(predicted_rates_log_var(i)) && predicted_rates_log_var(i) < rt_lower_bound) {
           feasible = false;
         }
       }
@@ -1743,10 +1801,10 @@ Rcpp::List wspc::check_parameter_feasibility(
       if (verbose) {
         if (feasible) {
           vprint("... no negative rates predicted");
-        } else {
+        } else { 
           vprint("... negative rates predicted");
         }
-      }
+      } 
       
     }
     
@@ -1758,14 +1816,14 @@ Rcpp::List wspc::check_parameter_feasibility(
       }
     }
     
+    // Find and report initial distance to boundary
+    sdouble initial_dist = min_boundary_dist(parameters_var); 
+    if (verbose) {
+      vprint("Initial boundary distance (want >0): ", initial_dist);
+    }
+    
     // If not feasible, attempt to find a feasible starting point
     if (!feasible) {
-      
-      // Find and report initial distance to boundary
-      sdouble initial_dist = min_boundary_dist(parameters_var); 
-      if (verbose) {
-        vprint("Initial boundary distance (want to make >0): ", initial_dist);
-      }
       
       // Variables for optimization
       dVec x = to_dVec(to_NumVec(parameters_var));

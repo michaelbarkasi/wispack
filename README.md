@@ -1,201 +1,95 @@
-# wispack
 
-Rcpp implementation of warped-sigmoid Poisson-process mixed-effect models
+# Introduction
+
+Wispack (pronounced "wisp package" or "wisp pack") is an R package for testing for between-group effects on spatial variation in spatial transcriptomics data, i.e., functional spatial effects (FSE). 
+
+<div class="figure">
+  <img src="man/figures/stack_0_1475_L1_truecolor.png" alt="True-color MERFISH image" width="50%">
+  <p class="caption">True-color image of fluorescing probes bound to mRNA molecules in cortical cells, the raw data of spatial transcriptomics.</p>
+</div>
+
+Unlike SVG testing (spatially variable gene) which only involves testing for spatial variation of gene expression within a group, and unlike differential expression (DE) analysis which tests for between-group effects without regard to spatial distribution, testing for FSE involves testing whether a factor such as age or rearing conditions has a nonzero effect on spatial variation between groups differing on that factor.
+
+<div class="figure">
+  <img src="man/figures/fig_FSE.png" alt="DE vs SVG vs FSE" width="90%">
+  <p class="caption">Comparison between testing for differentially expressed genes, spatially variable genes, and genes with function spatial effects. For visualization purposes, mouse brain slices represent the </p>
+</div>
+
+Wispack performs FSE testing by first using change-point detection to find spatial variation in samples, then fitting a nonlinear mixed-effect model to the detected change points. The core of the nonlinear model is a parameterization of the found change-points as inflections in logistic functions representing gradients of gene expression change. Multiple change-points are handled by summing the component logistic functions into a "poly-sigmoid" function. Fixed effects (such as age or rearing conditions) are then modeled as effects on the underlying logistic parameters. Random (within group) effects are modeled as further nonlinear warping of the poly-sigmoid. Significance testing is performed on the effects through either bootstrapping or MCMC resampling. A complete technical description of wisp models can be found in this [preprint](https://doi.org/10.1101/2025.06.11.659209). 
+
+<div class="figure">
+  <img src="man/figures/fig_WSPfunctions.png" alt="Demo plots of functions involved in wisp" width="90%">
+  <p class="caption">Demo plots of the functions involved in wisp. (A) The logistic function, used to model a single change point in gene expression. (B) The wisp poly-sigmoid function, built from three logistic components, representing three change points. (C) The warping function used to represent random effects, e.g., variation due to differences between individual animals or due to measurement noise. (D) The wisp poly-sigmoid from (B) with warping function applied.</p>
+</div>
+
+Wispack provides a simple user-facing function, wisp(), which takes a data frame in the familiar format expected by standard R functions for linear models (e.g., lm() and lmer()) and runs the complete test for FSEs. Preprocessing of the data is generally required before passing it to wisp(), after which wisp() executes a pipeline involving parameter estimates, prediction, model fitting, and hypothesis testing. 
+
+<div class="figure">
+  <img src="man/figures/fig_modelpipeline_simple.png" alt="Diagram of top-level of wisp modeling pipeline" width="90%">
+  <p class="caption">Top-level overview of wisp modeling pipeline.</p>
+</div>
+
+As shown by the figure below, the steps of this pipeline are nonlinear and recurrent. 
+
+<div class="figure">
+  <img src="man/figures/fig_modelpipeline.png" alt="Diagram of full modeling pipeline" width="90%">
+  <p class="caption">Full modeling pipeline for wisp. Boxes represent variables in the model, or operations performed on variables. Arrows represent input-output relationships between these variables and operations.</p>
+</div>
  
-Copyright (C) 2025, Michael Barkasi
-barkasi@wustl.edu
+Unlike standard linear modeling packages in R which require a model formula, wisp() merely needs the data. For example, the quick-start demo (which uses data on RORB expression across the laminar axis of the primary somatosensory cortex) runs the following code: 
 
-## Installation 
+```R
+# Set random seed for reproducibility
+ran.seed <- 123
+set.seed(ran.seed)
 
-1. Clone and `cd` into this git repo
-2. Make `build_install.sh` executable by running `chmod +x build_install.sh` in bash terminal  
-3. In terminal, run `./build_install.sh` to build and install the package  
-4. To ensure a clean start, run:  
+# Load wispack
+library(wispack)
 
-```bash
-rm -f src/*.o src/*.so  
-rm -rf wispack.Rcheck  
-rm -f wispack_*.tar.gz  
-./build_install.sh
+# Load demo data
+countdata <- read.csv(system.file(
+  "extdata", 
+  "S1_laminar_countdata_demo_default_col_names.csv", 
+  package = "wispack"
+  ))
+
+# Fit model
+laminar.model <- wisp(countdata)
+
+# View model 
+View(laminar.model)
 ```
 
-### Linux
-On Linux (Ubuntu/Debian), additional system dependencies are required *before* the building process: 
-- `libxml2` for roxygen2
-- `r-base-dev`, `libnlopt-dev` (or `libnlopt-cxx-dev`) for Rcpp, RcppEigen, and StanHeaders
+No model formula is required, as all wisp models have the same mathematical form. However, the variables involved in that form can, of course, have different names. These names will come from the column names of the data and can be set manually by the user, as so: 
 
-For PDF documentation generation, `pdflatex` should also be installed
-
-```bash
-sudo apt install \
-    libxml2 \
-    r-base-dev \
-    libnlopt-dev \
-    libnlopt-cxx-dev \
-    texlive-latex-base \
-    texlive-fonts-recommended \
-    texlive-fonts-extra \
-    texlive-latex-extra
+```R
+# Define variables in the dataframe for the model
+data.variables <- list(
+    count = "count",
+    bin = "bin", 
+    parent = "cortex", 
+    child = "gene",
+    ran = "mouse",
+    fixedeffects = c("hemisphere", "age")
+  )
+  
+# Fit model
+laminar.model <- wisp(
+    # Data to model
+    count.data = countdata,
+    # Variable labels
+    variables = data.variables
+  )
 ```
 
-## Demos
+Both the quick-start demo and another demo showing all model options can be run using the demo() command: 
 
 ```R
 demo("quick_start", package = "wispack")  
 demo("full_options", package = "wispack")
 ```
 
-## Dependency licenses
+Please see the tutorials for more detailed walkthroughs of the package and its options.
 
-NOTE: The GPLv2 of Rcpp and the Apache 2.0 of the oneTBB compiled with Stan are incompatible when bundled together as a single binary, which is why these scripts are being provided as a buildable R package on GitHub but not as a precompiled binary ready for installation. 
-
-See: https://github.com/stan-dev/stan/wiki/Stan-Licensing
-
---------------------------------------------
-### Rcpp
-
-by: Dirk Eddelbuettel, Romain Francois, JJ Allaire, Kevin Ushey, Qiang Kou, Nathan Russell, Iñaki Ucar, Doug Bates, and John Chambers
-
-https://cran.r-project.org/web/packages/Rcpp/index.html  
-https://github.com/RcppCore/Rcpp/tree/master
-
-GNU General Public License v2.0  
-https://github.com/RcppCore/Rcpp/blob/master/LICENSE  
-https://github.com/RcppCore/Rcpp/blob/0905d92e0046de5f171d4fde752d97e8733738be/LICENSE
-
---------------------------------------------
-### Stan Math
-
-Bob Carpenter  
-https://bob-carpenter.github.io/
-
-https://mc-stan.org/math/  
-https://github.com/stan-dev/math
-
-BSD 3-Clause License  
-
-The Stan Math Library depends on the Intel TBB library which is licensed under the Apache 2.0 license. This dependency implies an additional restriction as compared to the new BSD license alone. The Apache 2.0 license is incompatible with GPL-2 licensed code if distributed as a unitary binary. You may refer to the Licensing page on the Stan wiki. 
-
---------------------------------------------
-### Boost / BH
-
-Copyright Beman Dawes, David Abrahams, 1998-2005.  
-Copyright Rene Rivera 2004-2007.
-
-https://www.boost.org/  
-https://github.com/boostorg
-
-Boost license 1.0  
-https://www.boost.org/LICENSE_1_0.txt  
-https://github.com/boostorg/boost/blob/master/LICENSE_1_0.txt
-
-"Boost Software License - Version 1.0 - August 17th, 2003
-
-Permission is hereby granted, free of charge, to any person or organization
-obtaining a copy of the software and accompanying documentation covered by
-this license (the "Software") to use, reproduce, display, distribute,
-execute, and transmit the Software, and to prepare derivative works of the
-Software, and to permit third-parties to whom the Software is furnished to
-do so, all subject to the following:
-
-The copyright notices in the Software and this entire statement, including
-the above license grant, this restriction and the following disclaimer,
-must be included in all copies of the Software, in whole or in part, and
-all derivative works of the Software, unless such copies or derivative
-works are solely in the form of machine-executable object code generated by
-a source language processor.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO EVENT
-SHALL THE COPYRIGHT HOLDERS OR ANYONE DISTRIBUTING THE SOFTWARE BE LIABLE
-FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
-ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE."
-
---------------------------------------------
-### Eigen
-
-The Eigen project was started by Benoît Jacob (founder) and Gaël Guennebaud (guru). Many other people have since contributed their talents to help make Eigen successful.
-
-https://eigen.tuxfamily.org/  
-https://gitlab.com/libeigen/eigen
-
-MPL2 (Mozilla Public License)  
-https://www.mozilla.org/en-US/MPL/2.0/FAQ/
-
---------------------------------------------
-### SUNDIALS 
-
-Lawrence Livermore National Security and Southern Methodist University.
-
-https://computing.llnl.gov/projects/sundials
-
-BSD 3-Clause License Copyright (c) 2002-2019
-
---------------------------------------------
-### oneTBB
-
-Unified Acceleration (UXL) Foundation
-
-https://github.com/uxlfoundation/oneTBB
-
-Apache 2.0  
-https://github.com/uxlfoundation/oneTBB/blob/master/LICENSE.txt
-
---------------------------------------------
-### nlopt
-
-Steven G. Johnson  
-The NLopt nonlinear-optimization package 
-
-http://github.com/stevengj/nlopt  
-https://nlopt.readthedocs.io/en/latest/
-
-GNU Lesser General Public License (LGPL)  
-https://nlopt.readthedocs.io/en/latest/NLopt_License_and_Copyright/
-
---------------------------------------------
-### pcg
-
-Melissa E. O'Neill  
-https://www.cs.hmc.edu/~oneill/index.html
-
-https://www.pcg-random.org/  
-https://github.com/imneme/pcg-cpp
-
-Apache 2.0 and The MIT License
-
---------------------------------------------
-### unistd.h, part of the C POSIX library
-
-The IEEE and The Open Group  
-https://pubs.opengroup.org/onlinepubs/9799919799/  
-https://www.opengroup.org/membership/forums/platform/unix
-
-https://pubs.opengroup.org/onlinepubs/7908799/xsh/unistd.h.html
-
-Available and licensed on your local system
-
---------------------------------------------
-### dtwclust
-
-Alexis Sarda-Espinosa  
-Sarda-Espinosa A (2024). dtwclust: Time Series Clustering Along with Optimizations for the Dynamic Time Warping Distance. R package version 6.0.0
-
-Specifically using DTW Barycenter Averaging, from:  
-Petitjean F, Ketterlin A and Gancarski P (2011). “A global averaging method for dynamic time warping, with applications to clustering.” Pattern Recognition, 44(3), pp. 678 - 693. ISSN 0031-3203, doi:10.1016/j.patcog.2010.09.013, https://www.sciencedirect.com/science/article/pii/S003132031000453X
-
-https://cran.r-project.org/package=dtwclust  
-https://github.com/asardaes/dtwclust
-
-GPLv3
-
---------------------------------------------
-### ggplot2 
-by: ggplot2 core developer team
-
-https://ggplot2.tidyverse.org/
-
-The MIT license  
-https://github.com/tidyverse/ggplot2
+Copyright (C) 2025, Michael Barkasi
+barkasi@wustl.edu

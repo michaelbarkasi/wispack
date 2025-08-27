@@ -37,7 +37,34 @@ typedef int IndexType;
 
 // Constants ***********************************************************************************************************
 
-static const double inf_ = 1e100;   // pseudo-infinity value for optimization
+static const double inf_ = 1e100;          // pseudo-infinity value for optimization
+static const double rt_lower_bound = -0.01; // Technically zero, but need wiggle room for "rebound"
+
+/*
+ * "Rebound"
+ * 
+ *  Run the following in R to see why we need a little wiggle room:
+ *  
+ *  x <- c(1:100)
+ *  Rt <- c(0, 0.122661, 0, 0)
+ *  tslope <- c(0.25157, 1.3417, 4.02511)
+ *  tpoint <- c(36.8081, 44.7962, 50.7942) 
+ *  f_pw <- -0.090846
+ *  f_rw <- 0.069678
+ *  f_sw <- 0.079237
+ * 
+ *  Rt_w <- wisp.warp(Rt, 1e4, f_rw)
+ *  tslope_w <- wisp.warp(tslope, 1e4, f_sw)
+ *  tpoint_w <- wisp.warp(tpoint, 100, f_pw)
+ *  y_w <- wisp.sigmoid(x, Rt_w, tslope_w, tpoint_w)
+ *  y <- wisp.sigmoid(x, Rt, tslope, tpoint)
+ *  plot(x, y_w, type='l', lwd=2, col='blue', xlab='x', ylab='y', main='Warped Sigmoid Function')
+ *  lines(x, y, col='black', lwd=2)
+ *  abline(v=tpoint_w, col='red', lty=2)
+ *  abline(h=0, col='gray', lty=2)
+ *  min(y)
+ *  
+ */
 
 // Main class **********************************************************************************************************
 
@@ -511,10 +538,18 @@ IntegerVector buffered_merge(
 iVec block_idx(
     const NumericVector& vec,
     const double& x
-);
+  );
 
 // Return differences between elements 
-IntegerVector vdiff(const IntegerVector& x);
+IntegerVector vdiff(
+    const IntegerVector& x
+  );
+
+// Remove row from IntegerMatrix
+IntegerMatrix remove_row(
+    IntegerMatrix M, 
+    int i
+  );
 
 // Vectorized logic ****************************************************************************************************
 
@@ -766,9 +801,10 @@ dVec LROcp_logRatio(
 
 // Likelihood ratio outlier change-point detection, array input and output
 IntegerMatrix LROcp_array(
-    const sMat& series_array,       // 2D matrix of points to test for change points
-    const int& ws,                  // Running window size
-    const double& out_mult          // Outlier multiplier
+    const sMat& series_array,     // 2D matrix of points to test for change points
+    const int& ws,                // Running window size
+    const double& out_mult,       // Outlier multiplier
+    const double& cp_buffer       // Minimum distance between two change points
   );
 
 // Function to estimate block rate and transition slopes from count series and change points
@@ -784,6 +820,7 @@ List estimate_change_points(
     const sVec& bin,                               // bin data vector 
     const sVec& count_log,                         // log of count data vector
     const LogicalVector& count_not_na_mask,        // mask for non-NA counts
+    const double& cp_buffer,                       // minimum distance between two change points
     const int& ws,                                 // running window size
     const int& bin_num_i,                          // number of bins in the count data
     const double& LROcutoff,                       // cutoff for outlier detection in change-point detection

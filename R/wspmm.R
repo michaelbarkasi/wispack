@@ -645,6 +645,8 @@ analyze.residuals <- function(
       resids <- resids[resid_order]
       dispersion <- dispersion[resid_order]
       
+      # FIX PLOTS HERE
+      
       qnorm_dgamma_sd <- function(norm_obs, norm_mean, X, gamma_expected, gamma_variance) {
         gamma_shape <- gamma_expected * gamma_expected / gamma_variance
         out <- qnorm(norm_obs, mean = norm_mean, sd = X) * dgamma(x = X, shape = gamma_shape, rate = gamma_shape / gamma_expected)
