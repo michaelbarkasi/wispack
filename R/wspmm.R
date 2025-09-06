@@ -638,32 +638,39 @@ analyze.residuals <- function(
       for (j in colnames(dispersion.matrix)) {
         for (i in rownames(dispersion.matrix)) {
           mask <- clean_parents == j & clean_child == i
-          dispersion[mask] <- dispersion.matrix[i, j]
+          if (dispersion.matrix[i, j] > 0) dispersion[mask] <- dispersion.matrix[i, j]
         }
       }
       resid_order <- order(resids)
       resids <- resids[resid_order]
       dispersion <- dispersion[resid_order]
       
-      # FIX PLOTS HERE
-      
       qnorm_dgamma_sd <- function(norm_obs, norm_mean, X, gamma_expected, gamma_variance) {
-        gamma_shape <- gamma_expected * gamma_expected / gamma_variance
-        out <- qnorm(norm_obs, mean = norm_mean, sd = X) * dgamma(x = X, shape = gamma_shape, rate = gamma_shape / gamma_expected)
+        out <- qnorm(norm_obs, mean = norm_mean, sd = X)
+        if (!is.na(gamma_expected) && !is.na(gamma_variance)) {
+          if (gamma_expected > 0 && gamma_variance > 0) {
+            gamma_shape <- gamma_expected * gamma_expected / gamma_variance
+            out <- out * dgamma(x = X, shape = gamma_shape, rate = gamma_shape / gamma_expected)
+          } 
+        }
         return(out)
       }
       
       convolved_quantile <- rep(NA, n)
       for (i in 1:n) {
-        this_quantile <- integrate(
-          f = qnorm_dgamma_sd, 
-          lower = 0,
-          upper = Inf, 
-          norm_obs = (i - 0.5)/n, 
-          norm_mean = 0,
-          gamma_expected = sd_resid,
-          gamma_variance = dispersion[i]
-        )$value
+        if (is.na(dispersion[i])) {
+          this_quantile <- NA
+        } else {
+          this_quantile <- integrate(
+            f = qnorm_dgamma_sd, 
+            lower = 0,
+            upper = Inf, 
+            norm_obs = (i - 0.5)/n, 
+            norm_mean = 0,
+            gamma_expected = sd_resid,
+            gamma_variance = dispersion[i]
+          )$value
+        }
         convolved_quantile[i] <- this_quantile
       }
       
@@ -751,17 +758,11 @@ analyze.residuals <- function(
         child = df_wide$child,
         dispersion.matrix = wisp.results$gamma.dispersion
       )
-      # qq_resids_plot <- ggplot(df_wide, aes(sample = residuals)) +
-      #   stat_qq(color = "steelblue", size = 1) +  # Q-Q points
-      #   stat_qq_line(color = "black", linetype = "dashed") +  # Reference line
-      #   labs(x = "Theoretical Quantiles", y = "Sample Quantiles", 
-      #        title = paste0("Q-Q Plot of Log-residuals (", gp, ")")) +
-      #   theme_minimal()
+      plots.residuals[[paste0(gp,"_qq")]] <- qq_resids_plot
+      residual_plots <- list(hist_resids_plot, qq_resids_plot)
       
       # Save separately then combine
       plots.residuals[[paste0(gp,"_hist")]] <- hist_resids_plot
-      plots.residuals[[paste0(gp,"_qq")]] <- qq_resids_plot
-      residual_plots <- list(hist_resids_plot, qq_resids_plot)
       residual_plots <- do.call(arrangeGrob, c(residual_plots, ncol = 2))
       plots.residuals[[paste0(gp,"_resid")]] <- residual_plots
       
@@ -1116,7 +1117,7 @@ plot.parameters <- function(
     rate_mask <- grepl("Rt", param_names)
     slope_mask <- grepl("tslope", param_names)
     pointR_mask <- grepl("wfactor_point", param_names) # for random effect on point
-    rateR_mask <- grepl("wfactor_rate", param_names) # for random effect on rate
+    rateR_mask <- grepl("wfactor_rate", param_names)   # for random effect on rate
     slopeR_mask <- grepl("wfactor_slope", param_names) # for random effect on slope
     legpos <- "none"
     
@@ -1828,13 +1829,20 @@ plot.child.summary <- function(
         p_residuals <- p3[p_mask3 & c_mask3 & histqq]
         
         # Combine and print
-        resids <- do.call(arrangeGrob, c(p_residuals, ncol = length(p_residuals)))
-        rates_and_residuals <- arrangeGrob(ggplotGrob(p_rates[[1]]), resids, ncol = 1)
-        treatments <- do.call(arrangeGrob, c(as.list(p_treatment), ncol = length(p_treatment)))
-        other_params <- do.call(arrangeGrob, c(as.list(p_otherparams), ncol = length(p_otherparams)))
-        params <- arrangeGrob(treatments, other_params, ncol = 1)
-        p <- arrangeGrob(rates_and_residuals, params, ncol = 2, widths = c(0.4,0.6))
-        grid.arrange(p)
+        if (
+          length(p_rates) > 0 && 
+          length(p_treatment) > 0 &&
+          length(p_otherparams) > 0 &&
+          length(p_residuals) > 0
+        ) {
+          resids <- do.call(arrangeGrob, c(p_residuals, ncol = length(p_residuals)))
+          rates_and_residuals <- arrangeGrob(ggplotGrob(p_rates[[1]]), resids, ncol = 1)
+          treatments <- do.call(arrangeGrob, c(as.list(p_treatment), ncol = length(p_treatment)))
+          other_params <- do.call(arrangeGrob, c(as.list(p_otherparams), ncol = length(p_otherparams)))
+          params <- arrangeGrob(treatments, other_params, ncol = 1)
+          p <- arrangeGrob(rates_and_residuals, params, ncol = 2, widths = c(0.4,0.6))
+          grid.arrange(p)
+        }
         
       }
       
