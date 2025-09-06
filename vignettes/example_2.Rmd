@@ -1,5 +1,0 @@
----
-title: "Example 2"
----
-
-This is an example vignette.

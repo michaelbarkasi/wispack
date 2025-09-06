@@ -48,7 +48,7 @@ wspc::wspc(
     
     // Check structure of input data
     CharacterVector col_names = count_data.names();
-    CharacterVector required_cols = CharacterVector::create("count", "bin", "parent", "child", "ran");
+    CharacterVector required_cols = CharacterVector::create("count", "bin", "context", "species", "ran");
     int n_cols = col_names.size();
     int r_cols = required_cols.size();
     for (int i = 0; i < r_cols; i++) {
@@ -140,41 +140,41 @@ wspc::wspc(
     vprint("Pre-computed weight matrix rows", false);
     
     // Extract grouping variables 
-    parent_lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["parent"]));
-    child_lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["child"]));
+    context_lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["context"]));
+    species_lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["species"]));
     ran_lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["ran"]));
     // ... add "none" to represent no random effect (reference level)
     ran_lvls.push_front("none"); 
     // ... print extracted grouping variables
-    vprint("Parent grouping variables:", verbose);
-    vprintV(parent_lvls, verbose);
-    vprint("Child grouping variables:", verbose);
-    vprintV(child_lvls, verbose);
-    vprint("Random-effect grouping variables:", verbose);
+    vprint("Context grouping levels:", verbose);
+    vprintV(context_lvls, verbose);
+    vprint("Species grouping levels:", verbose);
+    vprintV(species_lvls, verbose);
+    vprint("Random-effect grouping levels:", verbose);
     vprintV(ran_lvls, verbose);
     
     // Temporarily extract tokenized-count columns 
     IntegerVector binT = Rcpp::as<IntegerVector>(count_data["bin"]); 
-    CharacterVector parentT = Rcpp::as<CharacterVector>(count_data["parent"]);
-    CharacterVector childT = Rcpp::as<CharacterVector>(count_data["child"]);
+    CharacterVector contextT = Rcpp::as<CharacterVector>(count_data["context"]);
+    CharacterVector speciesT = Rcpp::as<CharacterVector>(count_data["species"]);
     CharacterVector ranT = Rcpp::as<CharacterVector>(count_data["ran"]);
     vprint("Extracted tokenized count columns", false);
     
     // Create summed count data, size constants
     int idx = 0;
     int n_ran = ran_lvls.size();
-    int n_child = child_lvls.size();
-    int n_parent = parent_lvls.size();
+    int n_species = species_lvls.size();
+    int n_context = context_lvls.size();
     int bin_num_i = (int)bin_num.val();
-    n_count_rows = bin_num_i * n_parent * n_child * n_ran * treatment_num;
+    n_count_rows = bin_num_i * n_context * n_species * n_ran * treatment_num;
     count_row_nums = Rcpp::seq(0, n_count_rows - 1);
     vprint("Total rows in summed count data table: " + std::to_string(n_count_rows), verbose);
     
     // Create summed count data rows, initializations
     count.resize(n_count_rows);
     bin.resize(n_count_rows);
-    parent = CharacterVector(n_count_rows);
-    child = CharacterVector(n_count_rows);
+    context = CharacterVector(n_count_rows);
+    species = CharacterVector(n_count_rows);
     ran = CharacterVector(n_count_rows);
     treatment = CharacterVector(n_count_rows);
     weights.resize(n_count_rows, treatment_num);
@@ -201,14 +201,14 @@ wspc::wspc(
     for (int r = 0; r < n_ran; r++) {
       LogicalVector ran_mask = eq_left_broadcast(ranT, ran_lvls[r]) & nan_mask;
       
-      for (int p = 0; p < n_parent; p++) {
-        LogicalVector parent_mask = ran_mask & eq_left_broadcast(parentT, parent_lvls[p]);
+      for (int c = 0; c < n_context; c++) {
+        LogicalVector context_mask = ran_mask & eq_left_broadcast(contextT, context_lvls[c]);
         
-        for (int c = 0; c < n_child; c++) {
-          LogicalVector child_mask = parent_mask & eq_left_broadcast(childT, child_lvls[c]);
+        for (int s = 0; s < n_species; s++) {
+          LogicalVector species_mask = context_mask & eq_left_broadcast(speciesT, species_lvls[s]);
           
           for (int t = 0; t < treatment_num; t++) {
-            LogicalVector treatment_mask = Rcpp::clone(child_mask);
+            LogicalVector treatment_mask = Rcpp::clone(species_mask);
             for (int f = 0; f < n_fix; f++) {
               treatment_mask = treatment_mask & eq_left_broadcast(Rcpp::as<CharacterVector>(count_data[f + r_cols]), effects_rows(t, f));
             }
@@ -222,8 +222,8 @@ wspc::wspc(
               // Build columns 
               count(idx) = 0.0;
               bin(idx) = static_cast<sdouble>(b + 1.0);
-              parent(idx) = parent_lvls[p];
-              child(idx) = child_lvls[c];
+              context(idx) = context_lvls[c];
+              species(idx) = species_lvls[s];
               ran(idx) = ran_lvls[r];
               treatment(idx) = treatment_lvls[t];
               weights.row(idx) = weight_rows.row(t);
@@ -265,7 +265,7 @@ wspc::wspc(
     // Make extrapolation pool and extrapolate "none" rows
     vprint_header("Making extrapolation pool", verbose);
     extrapolation_pool.resize(count.size());
-    extrapolation_pool = make_extrapolation_pool(bin, count, parent, child, ran, treatment, verbose); 
+    extrapolation_pool = make_extrapolation_pool(bin, count, context, species, ran, treatment, verbose); 
     
     // Extrapolate "none" rows
     vprint_header("Making initial parameter estimates", verbose);
@@ -293,17 +293,17 @@ wspc::wspc(
     List gamma_ests = compute_gamma_dispersion(
       count,
       count_not_na_mask,
-      parent,
-      child,
-      parent_lvls,
-      child_lvls
+      context,
+      species,
+      context_lvls,
+      species_lvls
     );
     gamma_dispersion = to_sMat(Rcpp::as<NumericMatrix>(gamma_ests["gamma_dispersion"]));
-    gd_child_idx = Rcpp::as<IntegerVector>(gamma_ests["gd_child_idx"]);
-    gd_parent_idx = Rcpp::as<IntegerVector>(gamma_ests["gd_parent_idx"]);
+    gd_species_idx = Rcpp::as<IntegerVector>(gamma_ests["gd_species_idx"]);
+    gd_context_idx = Rcpp::as<IntegerVector>(gamma_ests["gd_context_idx"]);
     vprint("Estimated gamma dispersion of raw counts", verbose);
     
-    // Estimate degree of each parent-child combination at baseline using LRO change-point detection 
+    // Estimate degree of each context-species combination at baseline using LRO change-point detection 
     List cp_ests = estimate_change_points(
       bin,
       count_log,
@@ -312,36 +312,36 @@ wspc::wspc(
       ws,
       bin_num_i,
       LROcutoff,
-      parent,
-      child,
+      context,
+      species,
       ran,
       treatment,
-      parent_lvls,
-      child_lvls,
+      context_lvls,
+      species_lvls,
       ran_lvls,  
       treatment_lvls,
       treatment_components
     );
-    degMat = Rcpp::as<IntegerMatrix>(cp_ests["degMat"]);                              // matrix of degrees of each parent-child combination
-    found_cp_list = Rcpp::as<List>(cp_ests["found_cp_list"]);                         // list of found change points for each parent-child combination
-    found_cp_trt_list = Rcpp::as<List>(cp_ests["found_cp_trt_list"]);                 // list of found change points for each parent-child combination, averaged across treatments
+    degMat = Rcpp::as<IntegerMatrix>(cp_ests["degMat"]);                              // matrix of degrees of each context-species combination
+    found_cp_list = Rcpp::as<List>(cp_ests["found_cp_list"]);                         // list of found change points for each context-species combination
+    found_cp_trt_list = Rcpp::as<List>(cp_ests["found_cp_trt_list"]);                 // list of found change points for each context-species combination, averaged across treatments
     vprint("Estimated change points", verbose);
     
-    // Find average log counts for each parent-child combination
+    // Find average log counts for each context-species combination
     count_log_avg_mat_list = find_count_log_means(
       bin,
       count_log,
       count_not_na_mask,
       bin_num_i, 
-      parent,
-      child,
+      context,
+      species,
       treatment,
-      parent_lvls,
-      child_lvls,
+      context_lvls,
+      species_lvls,
       treatment_lvls,
       treatment_components
     );
-    vprint("Found average log counts for each parent-child combination", verbose);
+    vprint("Found average log counts for each context-species combination", verbose);
     
     // Find initial parameter estimates for fixed-effect treatments 
     List init_params = estimate_initial_parameters(
@@ -352,37 +352,37 @@ wspc::wspc(
       min_initialization_slope,
       weight_rows, 
       mc_list,
-      parent,
-      child,
-      parent_lvls,
-      child_lvls,
+      context,
+      species,
+      context_lvls,
+      species_lvls,
       degMat,
       found_cp_list, 
       found_cp_trt_list,
       count_log_avg_mat_list 
     );
-    List ref_values = Rcpp::as<List>(init_params["ref_values"]);       // reference values for each parent-child combination
-    List RtEffs = Rcpp::as<List>(init_params["RtEffs"]);               // rate effects for each parent-child combination
-    List tpointEffs = Rcpp::as<List>(init_params["tpointEffs"]);       // tpoint effects for each parent-child combination
-    List tslopeEffs = Rcpp::as<List>(init_params["tslopeEffs"]);       // tslope effects for each parent-child combination
+    List ref_values = Rcpp::as<List>(init_params["ref_values"]);       // reference values for each context-species combination
+    List RtEffs = Rcpp::as<List>(init_params["RtEffs"]);               // rate effects for each context-species combination
+    List tpointEffs = Rcpp::as<List>(init_params["tpointEffs"]);       // tpoint effects for each context-species combination
+    List tslopeEffs = Rcpp::as<List>(init_params["tslopeEffs"]);       // tslope effects for each context-species combination
     vprint("Estimated initial parameters for fixed-effect treatments", verbose);
     
     // Build default fixed-effects matrices in shell
-    List beta = build_beta_shell(mc_list, treatment_lvls, parent_lvls, child_lvls, ref_values, RtEffs, tpointEffs, tslopeEffs, degMat);
+    List beta = build_beta_shell(mc_list, treatment_lvls, context_lvls, species_lvls, ref_values, RtEffs, tpointEffs, tslopeEffs, degMat);
     vprint("Built initial beta (ref and fixed-effects) matrices", verbose); 
     
     // Initialize random effect warping factors 
     List wfactors = make_initial_random_effects(
       wfactors_names,
       ran_lvls.size(),
-      child_lvls.size()
+      species_lvls.size()
     );
-    vprint("Initialized random effect warping factors", verbose);
+    vprint("Initialized random-effect warping factors", verbose);
     
     // Make and map parameter vector
     List params = make_parameter_vector(
       beta, wfactors,
-      parent_lvls, child_lvls, ran_lvls,
+      context_lvls, species_lvls, ran_lvls,
       mc_list, 
       treatment_lvls,
       degMat
@@ -408,17 +408,17 @@ wspc::wspc(
     gv_fix_idx = IntegerVector(n_count_rows);
     for (int r = 0; r < n_count_rows; r++) {
       CharacterVector::iterator it_ran = std::find(ran_lvls.begin(), ran_lvls.end(), ran[r]);
-      CharacterVector::iterator it_fix = std::find(child_lvls.begin(), child_lvls.end(), child[r]);
+      CharacterVector::iterator it_fix = std::find(species_lvls.begin(), species_lvls.end(), species[r]);
       gv_ran_idx[r] = std::distance(ran_lvls.begin(), it_ran);
-      gv_fix_idx[r] = std::distance(child_lvls.begin(), it_fix);
+      gv_fix_idx[r] = std::distance(species_lvls.begin(), it_fix);
     }
     vprint("Constructed grouping variable IDs", verbose);
     
     // Compute size of the parameter boundary vector 
     for (int r : idx_mc_unique) {
       // Grab degree for this row
-      int c_num = Rwhich(eq_left_broadcast(child_lvls, child[r]))[0];
-      int p_num = Rwhich(eq_left_broadcast(parent_lvls, parent[r]))[0];
+      int c_num = Rwhich(eq_left_broadcast(species_lvls, species[r]))[0];
+      int p_num = Rwhich(eq_left_broadcast(context_lvls, context[r]))[0];
       int deg = degMat(c_num, p_num);
       if (deg > 0){
         // Add slots for the boundary distance at each tpoint
@@ -432,7 +432,7 @@ wspc::wspc(
         boundary_vec_size++;
       } 
     }
-    vprint("Computed size of boundary vector: " + std::to_string(boundary_vec_size), verbose);
+    vprint("Size of boundary vector: " + std::to_string(boundary_vec_size), verbose);
     
     // Initialize list to hold results from model fit
     optim_results = List::create(
@@ -512,12 +512,12 @@ sVec wspc::compute_warped_mc(
     
     // Extract the parameter vector indexes for the current rate row, beta matrices
     List beta_idx_mc = Rcpp::as<List>(beta_idx[mc]);
-    List beta_idx_mc_prt = Rcpp::as<List>(beta_idx_mc[(String)parent[r]]);
-    IntegerVector betas_mc_idx = beta_idx_mc_prt[Rcpp::as<std::string>(child[r])];
+    List beta_idx_mc_prt = Rcpp::as<List>(beta_idx_mc[(String)context[r]]);
+    IntegerVector betas_mc_idx = beta_idx_mc_prt[Rcpp::as<std::string>(species[r])];
     
     // Grab degree
-    int c_num = Rwhich(eq_left_broadcast(child_lvls, child[r]))[0];
-    int p_num = Rwhich(eq_left_broadcast(parent_lvls, parent[r]))[0];
+    int c_num = Rwhich(eq_left_broadcast(species_lvls, species[r]))[0];
+    int p_num = Rwhich(eq_left_broadcast(context_lvls, context[r]))[0];
     int deg = degMat(c_num, p_num);
     int block_num = deg; 
     if (mc == "Rt") {block_num++;}
@@ -632,8 +632,8 @@ sVec wspc::predict_rates(
         } 
         
         // Compute the predicted rate
-        int c_num = Rwhich(eq_left_broadcast(child_lvls, child[r]))[0];
-        int p_num = Rwhich(eq_left_broadcast(parent_lvls, parent[r]))[0];
+        int c_num = Rwhich(eq_left_broadcast(species_lvls, species[r]))[0];
+        int p_num = Rwhich(eq_left_broadcast(context_lvls, context[r]))[0];
         
         // Compute the actual poly-sigmoid!! 
         predicted_rates(r) = poly_sigmoid(
@@ -679,9 +679,9 @@ sdouble wspc::neg_loglik(
       } else {
         
         // Find gamma variance for this row
-        // ... grab parent and child index numbers
-        int n_c = gd_child_idx[(String)child[r]];
-        int n_p = gd_parent_idx[(String)parent[r]];
+        // ... grab context and species index numbers
+        int n_c = gd_species_idx[(String)species[r]];
+        int n_p = gd_context_idx[(String)context[r]];
         // ... pull predicted rate from log space
         sdouble pred_rate_var = sexp(predicted_rates_log_var(r)) - 1.0;
         // ... estimate variance of rate outside log space
@@ -859,8 +859,8 @@ bool wspc::test_tpoints(
         }
         
         // Find degree
-        int c_num = Rwhich(eq_left_broadcast(child_lvls, child[r]))[0];
-        int p_num = Rwhich(eq_left_broadcast(parent_lvls, parent[r]))[0];
+        int c_num = Rwhich(eq_left_broadcast(species_lvls, species[r]))[0];
+        int p_num = Rwhich(eq_left_broadcast(context_lvls, context[r]))[0];
         int deg = degMat(c_num, p_num);
         if (deg > 0) {
           
@@ -1191,26 +1191,26 @@ dVec wspc::bs_fit(
     List gamma_ests = compute_gamma_dispersion(
       count,
       count_not_na_mask,
-      parent,
-      child,
-      parent_lvls,
-      child_lvls
+      context,
+      species,
+      context_lvls,
+      species_lvls
     );
     gamma_dispersion = to_sMat(Rcpp::as<NumericMatrix>(gamma_ests["gamma_dispersion"]));
-    gd_child_idx = Rcpp::as<IntegerVector>(gamma_ests["gd_child_idx"]);
-    gd_parent_idx = Rcpp::as<IntegerVector>(gamma_ests["gd_parent_idx"]);
+    gd_species_idx = Rcpp::as<IntegerVector>(gamma_ests["gd_species_idx"]);
+    gd_context_idx = Rcpp::as<IntegerVector>(gamma_ests["gd_context_idx"]);
     
-    // Find average these new re-sampled log counts for each parent-child combination
+    // Find average these new re-sampled log counts for each context-species combination
     count_log_avg_mat_list = find_count_log_means(
       bin,
       count_log,
       count_not_na_mask,
       (int)bin_num.val(), 
-      parent,
-      child,
+      context,
+      species,
       treatment,
-      parent_lvls,
-      child_lvls,
+      context_lvls,
+      species_lvls,
       treatment_lvls,
       treatment_components
     );
@@ -1224,34 +1224,34 @@ dVec wspc::bs_fit(
       min_initialization_slope,
       weight_rows, 
       mc_list,
-      parent,
-      child,
-      parent_lvls,
-      child_lvls,
+      context,
+      species,
+      context_lvls,
+      species_lvls,
       degMat,
       found_cp_list, 
       found_cp_trt_list,
       count_log_avg_mat_list 
     );
-    List ref_values = Rcpp::as<List>(init_params["ref_values"]);       // reference values for each parent-child combination
-    List RtEffs = Rcpp::as<List>(init_params["RtEffs"]);               // rate effects for each parent-child combination
-    List tpointEffs = Rcpp::as<List>(init_params["tpointEffs"]);       // tpoint effects for each parent-child combination
-    List tslopeEffs = Rcpp::as<List>(init_params["tslopeEffs"]);       // tslope effects for each parent-child combination
+    List ref_values = Rcpp::as<List>(init_params["ref_values"]);       // reference values for each context-species combination
+    List RtEffs = Rcpp::as<List>(init_params["RtEffs"]);               // rate effects for each context-species combination
+    List tpointEffs = Rcpp::as<List>(init_params["tpointEffs"]);       // tpoint effects for each context-species combination
+    List tslopeEffs = Rcpp::as<List>(init_params["tslopeEffs"]);       // tslope effects for each context-species combination
     
     // Build default fixed-effects matrices in shell
-    List beta = build_beta_shell(mc_list, treatment_lvls, parent_lvls, child_lvls, ref_values, RtEffs, tpointEffs, tslopeEffs, degMat);
+    List beta = build_beta_shell(mc_list, treatment_lvls, context_lvls, species_lvls, ref_values, RtEffs, tpointEffs, tslopeEffs, degMat);
     
     // Initialize new random effect warping factors 
     List wfactors = make_initial_random_effects(
       wfactors_names,
       ran_lvls.size(),
-      child_lvls.size()
+      species_lvls.size()
     );
     
     // Make and map parameter vector
     List params = make_parameter_vector(
       beta, wfactors,
-      parent_lvls, child_lvls, ran_lvls,
+      context_lvls, species_lvls, ran_lvls,
       mc_list, 
       treatment_lvls,
       degMat
@@ -1359,7 +1359,7 @@ Rcpp::NumericMatrix wspc::bs_batch(
           pipe(pipes[i].data()); // Create a pipe
           pid_t pid = fork();
           
-          if (pid == 0) { // Child process
+          if (pid == 0) { // species process
             
             // Close read end
             close(pipes[i][0]); 
@@ -1373,14 +1373,14 @@ Rcpp::NumericMatrix wspc::bs_batch(
             // Close write end
             close(pipes[i][1]); 
             
-            // Exit child process
+            // Exit species process
             _exit(0); 
             
             // implicitly recovers stan memory by killing the process which initiated it
             
-          } else if (pid > 0) { // Parent process
+          } else if (pid > 0) { // context process
             
-            // Grab child pid
+            // Grab species pid
             pids[i] = pid;
             
             // Close write end
@@ -1395,7 +1395,7 @@ Rcpp::NumericMatrix wspc::bs_batch(
         // Fetch results from pipes
         for (int i = 0; i < max_fork; i++) {
           
-          // Wait for child process
+          // Wait for species process
           waitpid(pids[i], NULL, 0); 
           
           // Create a temporary buffer to hold the row data
@@ -1549,7 +1549,8 @@ Rcpp::NumericMatrix wspc::MCMC(
         for (int i = 0; i < n_params; i++) {
           
           // ... calculate step size
-          double normalized_step_size = step_size * std::log10(std::abs(params_current(i)) + 1.0);
+          int param_oom = static_cast<int>(std::floor(std::log10(std::abs(params_current(i)))));
+          double normalized_step_size = step_size * std::pow(10, static_cast<double>(param_oom + 1.0));
           double bounded_step_size = normalized_step_size / bd_current_transformed.val();
           if (bounded_step_size == 0.0) {
             // ... presumably this case means current parameter is extremely close to zero or very close to boundary
@@ -1909,8 +1910,8 @@ Rcpp::List wspc::results() {
       _["pred"] = predicted_rates_out,
       _["count.log"] = to_NumVec(count_log),
       _["pred.log"] = predicted_rates_log_out,
-      _["parent"] = parent,
-      _["child"] = child,
+      _["context"] = context,
+      _["species"] = species,
       _["ran"] = ran,
       _["treatment"] = treatment
     );
@@ -1935,8 +1936,8 @@ Rcpp::List wspc::results() {
     
     // Put grouping variable information into list
     List grouping_variables = List::create(
-      _["parent.lvls"] = parent_lvls,
-      _["child.lvls"] = child_lvls,
+      _["context.lvls"] = context_lvls,
+      _["species.lvls"] = species_lvls,
       _["ran.lvls"] = ran_lvls
     );
     
@@ -1956,8 +1957,8 @@ Rcpp::List wspc::results() {
     
     // Reformat gamma dispersion parameters 
     NumericMatrix g_dispersion = to_NumMat(gamma_dispersion);
-    rownames(g_dispersion) = child_lvls;
-    colnames(g_dispersion) = parent_lvls;
+    rownames(g_dispersion) = species_lvls;
+    colnames(g_dispersion) = context_lvls;
     
     // Make final list to return 
     List results_list = List::create(

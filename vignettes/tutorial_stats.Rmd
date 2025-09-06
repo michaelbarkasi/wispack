@@ -1,0 +1,5 @@
+---
+title: "Customizing statistical analyses"
+---
+
+This is an example vignette. Discuss bootstrapping vs MCMC, the settings, etc. 

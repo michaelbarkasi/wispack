@@ -1,6 +1,11 @@
 
 # Introduction
 
+<div class="figure">
+  <img src="man/figures/wisp_art.png" alt="Artistic rendering of wisp model" width="90%">
+  <p class="caption">Artistic rendering of a wisp model. See [this tutorial](articles/tutorial_wispplots.html) for an explanation.</p>
+</div>
+
 Wispack (pronounced "wisp package" or "wisp pack") is an R package for testing for between-group effects on spatial variation in spatial transcriptomics data, i.e., functional spatial effects (FSE). 
 
 <div class="figure">

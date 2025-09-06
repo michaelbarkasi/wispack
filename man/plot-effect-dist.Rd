@@ -4,10 +4,12 @@
 \alias{plot.effect.dist}
 \title{Plot parameter distributions from WISP results as histograms}
 \usage{
-\method{plot}{effect.dist}(wisp.results, verbose = TRUE)
+plot.effect.dist(wisp.results, print.plots = TRUE, verbose = TRUE)
 }
 \arguments{
 \item{wisp.results}{List, output of the wisp function.}
+
+\item{print.plots}{Logical, if TRUE, prints the plots to the current device.}
 
 \item{verbose}{Logical, if TRUE, prints information during plotting.}
 }

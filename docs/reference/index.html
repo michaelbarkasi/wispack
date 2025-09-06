@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -23,9 +23,11 @@
     <li><h6 class="dropdown-header" data-toc-skip>Installation</h6></li>
     <li><a class="dropdown-item" href="../articles/install.html">Installation instructions</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Examples</h6></li>
-    <li><a class="dropdown-item" href="../articles/example_2.html">Example 2</a></li>
-    <li><a class="dropdown-item" href="../articles/example_corticallaminar_basic.html">Example: RORB in barrel cortex</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar_basic.html">RORB along the cortical laminar axis</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling celltypes</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">The wisp plot</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -127,46 +129,46 @@
 
       <dl><dt>
 
-          <code><a href="plot.MCMC.bs.comparison.html">plot(<i>&lt;MCMC.bs.comparison&gt;</i>)</a></code>
+          <code><a href="plot-MCMC-bs-comparison.html">plot.MCMC.bs.comparison()</a></code>
 
         </dt>
         <dd>Visually compare normality and autocorrelation of bootstrap and MCMC parameter estimates</dd>
       </dl><dl><dt>
 
-          <code><a href="plot.MCMC.walks.html">plot(<i>&lt;MCMC.walks&gt;</i>)</a></code>
+          <code><a href="plot-MCMC-walks.html">plot.MCMC.walks()</a></code>
 
         </dt>
         <dd>Plot sampling of random walks and negative log likelihood from MCMC simulations</dd>
       </dl><dl><dt>
 
-          <code><a href="plot.child.summary.html">plot(<i>&lt;child.summary&gt;</i>)</a></code>
+          <code><a href="plot-decomposition.html">plot.decomposition()</a></code>
 
         </dt>
-        <dd>Print rate-count, residual, and parameter plots for one child level together.</dd>
+        <dd>Plot individual components of wisp fit for a single species level</dd>
       </dl><dl><dt>
 
-          <code><a href="plot.decomposition.html">plot(<i>&lt;decomposition&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Plot individual components of wisp fit for a single child level</dd>
-      </dl><dl><dt>
-
-          <code><a href="plot.effect.dist.html">plot(<i>&lt;effect.dist&gt;</i>)</a></code>
+          <code><a href="plot-effect-dist.html">plot.effect.dist()</a></code>
 
         </dt>
         <dd>Plot parameter distributions from WISP results as histograms</dd>
       </dl><dl><dt>
 
-          <code><a href="plot.parameters.html">plot(<i>&lt;parameters&gt;</i>)</a></code>
+          <code><a href="plot-parameters.html">plot.parameters()</a></code>
 
         </dt>
         <dd>Plot of wisp parameters</dd>
       </dl><dl><dt>
 
-          <code><a href="plot.ratecount.html">plot(<i>&lt;ratecount&gt;</i>)</a></code>
+          <code><a href="plot-ratecount.html">plot.ratecount()</a></code>
 
         </dt>
         <dd>Plot fitted model and data</dd>
+      </dl><dl><dt>
+
+          <code><a href="plot-species-summary.html">plot.species.summary()</a></code>
+
+        </dt>
+        <dd>Print rate-count, residual, and parameter plots for one species level together.</dd>
       </dl><dl><dt>
 
           <code><a href="demo.sigmoid.plots.html">demo.sigmoid.plots()</a></code>
@@ -179,6 +181,41 @@
 
         </dt>
         <dd>Make plot demonstrating how the wisp function is warped by the warping factors</dd>
+      </dl></div><div class="section level2">
+      <h2 id="merfish-preprocessing-functions">MERFISH preprocessing functions<a class="anchor" aria-label="anchor" href="#merfish-preprocessing-functions"></a></h2>
+
+
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="make_count_data.html">make_count_data()</a></code>
+
+        </dt>
+        <dd>Load and parse data, HDF5</dd>
+      </dl><dl><dt>
+
+          <code><a href="make_count_data_csv.html">make_count_data_csv()</a></code>
+
+        </dt>
+        <dd>Load and parse data, csv</dd>
+      </dl><dl><dt>
+
+          <code><a href="cortical_coordinate_transform.html">cortical_coordinate_transform()</a></code>
+
+        </dt>
+        <dd>Function to transform coordinates for each mouse and extract layer boundary estimates</dd>
+      </dl><dl><dt>
+
+          <code><a href="create.count.data.WSPmm.html">create.count.data.WSPmm()</a></code>
+
+        </dt>
+        <dd>Function to convert to WSPmm format</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
