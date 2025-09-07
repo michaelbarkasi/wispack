@@ -1,10 +1,10 @@
 ---
-title: "RORB in barrel cortex"
+title: "RORB along the cortical laminar axis"
 ---
 
-The gene RORB plays a key role in the development of sensorimotor cortex in rodents. RORB expression leads axons from thalamic neurons to innervate layer 4 of the cortex. These thalamocortical projections organize into discrete "barrel" formations, each barrel containing the inputs from neurons responsive to a single whisker. 
+The gene RORB plays a key role in the development of sensorimotor cortex in rodents. RORB expression leads axons from thalamic neurons to innervate cortical layer 4. These thalamocortical projections organize into discrete "barrel" formations, each barrel containing the inputs from a single whisker. 
 
-While it's generally assumed that there are no major differences between barrel formations in the left and right hemispheres ("laterality"), over the years there have been several histological studies suggesting age and sex-dependent hemispheric differences. Given the established role of RORB in barrel formation, one might want to test for age or sex-dependent laterality in RORB expression. 
+While it's generally assumed that there are no major differences in barrel formations between the left and right hemispheres ("laterality"), over the years there have been several histological studies suggesting age and sex-dependent hemispheric differences. Given the established role of RORB in barrel formation, one might want to test for age or sex-dependent laterality in RORB expression. 
 
 <h1> Preprocessing the raw data </h1>
 
@@ -15,14 +15,14 @@ This example uses data collected from four male wild-type mice to test for age e
   <p class="caption">Left: Example horizontal slice as reconstructed from MERFISH data. Red highlight indicates the right primary sensorimotor cortex. Right: The right sensorimotor cortex, with RORB molecules in red and laminar and columnar axes labeled.</p>
 </div>
 
-As wisp can only model one dimension of spatial variation (at least, as-of the writing of this demo for v1.0), we need to identify this axis and transform the RORB molecule coordinates into it. As we are primarily concerned with how RORB is distributed across cortical layers, the laminar axis is the obviously candidate. Coordinate transformation into an axis of interest must be done outside of wispack. For this case, we wrote a custom coordinate transformation described in this [preprint](https://doi.org/10.1101/2025.06.11.659209) and available as code in this [repo](https://github.com/Oviedo-Lab/wspmm_methods.git) (see function cortical_coordinate_transform in script merfish_preprocessing.R). 
+As wisp can only model one dimension of spatial variation (at least, as-of the writing of this demo for v1.0), we need to identify this axis and transform the RORB molecule coordinates into it. As we are primarily concerned with how RORB is distributed across cortical layers, the laminar axis is the obvious candidate. Coordinate transformation into an axis of interest must be done outside of wispack. For this case, we wrote a custom coordinate transformation described in this [preprint](https://doi.org/10.1101/2025.06.11.659209) and available as code in this [repo](https://github.com/Oviedo-Lab/wspmm_methods.git) (see function cortical_coordinate_transform in script merfish_preprocessing.R). 
 
 <div class="figure">
   <img src="fig_coordtrans.png" alt="Image showing the steps to transform coordinates from the CCFv3 registration to laminar and columnar axes" width="90%">
   <p class="caption">Visualization of coordinate transform steps from initial CCFv3 registration to laminar and columnar axes.</p>
 </div>
 
-<h1> Loading the data </h1>
+<h1> Data format </h1>
 
 Wispack contains a csv file with the results of this coordinate transformation applied to the raw data. To start, load this data and print its first few rows: 
 
@@ -51,9 +51,9 @@ Which genes?
 cat("Gene names:", paste0(unique(countdata$gene), collapse = ", "))
 ```
 
-These additional genes are included for two reasons. First, just as RORB is known to be localized to L4, the other genes are also known to be localized to specific layers. So, the modeling results can be compared to known biology in all cases. Second, including multiple genes provides more implicit information for estimating things like random effects, and thus helps to avoid overfitting to the noise of any one gene. 
+Just as RORB is known to be localized to L4, the other genes are also known to be localized to specific layers (see [here](https://doi.org/10.1101/2025.06.11.659209)). So, the modeling results can be compared to known biology in all cases. 
 
-Each row in the data frame represents a cell from the left or right S1 region of one of the four mice. Each cell is represented in multiple rows, one row per gene. Hence, we can find the number of cells by dividing by the number of genes. 
+Each row in the data frame represents a cell from the left or right S1 region of one of the four mice. Each cell is represented in multiple rows, one row per gene. Hence, we can find the number of cells by dividing the number of rows by the number of genes. 
 
 ```{r n_cells}
 num_cells <- nrow(countdata)/num_genes
@@ -62,4 +62,8 @@ cat("Number of cells:", num_cells, "\n")
 
 Notice that the count column thus gives the number of molecules of the RNA species listed in the gene column, found in the cell represented by a given row. Each cell, of course, comes from a specific mouse and brain hemisphere, information given in the correspondingly named columns. The age column gives the age of the mouse. 
 
-This leaves two columns to explain: cortex and bin. The goal is to test for interacting effects of age and laterality, with mouse as a random effect grouping factor
+This leaves two columns to explain: cortex and bin. For this example, the cortex column is a dummy variable placed by wispack when no celltype variable is provided. The bin column gives the position of the cell along the laminar axis, in units of "bins". The raw wispack data gave cell positions in microns. Any position coordinates could be used, including ones with non-integer values. However, we have binned the position coordinates into 100 (roughly) equal-width bins to allow for bootstrapping. 
+
+<h1> Fitting the model </h1>
+
+The goal is to test for interacting effects of age and laterality, with mouse as a random effect grouping factor
