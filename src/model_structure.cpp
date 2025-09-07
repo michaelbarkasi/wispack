@@ -88,8 +88,8 @@ std::vector<CharacterVector> make_treatments(
 List build_beta_shell(
     const CharacterVector& mc_names,
     const CharacterVector& treatment_lvls,
-    const CharacterVector& parent_lvls,
-    const CharacterVector& child_lvls,
+    const CharacterVector& context_lvls,
+    const CharacterVector& species_lvls,
     const List& ref_values,
     const List& RtEffs,
     const List& tpointEffs,
@@ -101,23 +101,23 @@ List build_beta_shell(
     beta.names() = mc_names;
     
     int treat_num = treatment_lvls.size(); 
-    int parent_num = parent_lvls.size();
-    int child_num = child_lvls.size();
+    int context_num = context_lvls.size();
+    int species_num = species_lvls.size();
     
     // Loop through model components 
     for (String mc : mc_names) {
-      List beta_mc(parent_num);
-      beta_mc.names() = parent_lvls;
+      List beta_mc(context_num);
+      beta_mc.names() = context_lvls;
      
-      // Loop through parent values
-      for (int p = 0; p < parent_num; p++) {
-        List beta_mc_prt(child_num);
-        beta_mc_prt.names() = child_lvls;
+      // Loop through context values
+      for (int c = 0; c < context_num; c++) {
+        List beta_mc_cxt(species_num);
+        beta_mc_cxt.names() = species_lvls;
        
-        // Loop through child values
-        for (int c = 0; c < child_num; c++) {
+        // Loop through species values
+        for (int s = 0; s < species_num; s++) {
           
-          int deg = degs(c, p);
+          int deg = degs(s, c);
           int col_num = deg; 
           if (mc == "Rt") {col_num++;}
           NumericMatrix bta(treat_num, col_num);
@@ -125,21 +125,21 @@ List build_beta_shell(
           
           if (deg > 0 || mc == "Rt") {
          
-            List RtEffs_prt = RtEffs[p];
-            NumericMatrix RtEffs_Mat = RtEffs_prt[c];
+            List RtEffs_cxt = RtEffs[c];
+            NumericMatrix RtEffs_Mat = RtEffs_cxt[s];
             
-            List tpointEffs_prt = tpointEffs[p];
-            NumericMatrix tpointEffs_Mat = tpointEffs_prt[c];
+            List tpointEffs_cxt = tpointEffs[c];
+            NumericMatrix tpointEffs_Mat = tpointEffs_cxt[s];
             
-            List tslopeEffs_prt = tslopeEffs[p];
-            NumericMatrix tslopeEffs_Mat = tslopeEffs_prt[c];
+            List tslopeEffs_cxt = tslopeEffs[c];
+            NumericMatrix tslopeEffs_Mat = tslopeEffs_cxt[s];
            
             for (int t = 0; t < treat_num; t++) {
               for (int i = 0; i < col_num; i++) {
                 if (t == 0) {
-                  List ref_values_prt = ref_values[p];
-                  List ref_values_cld = ref_values_prt[c];
-                  List ref_values_mc = ref_values_cld[mc];
+                  List ref_values_cxt = ref_values[c];
+                  List ref_values_sps = ref_values_cxt[s];
+                  List ref_values_mc = ref_values_sps[mc];
                   bta(t,i) = ref_values_mc(i);  // set ref level
                 } else {
                   if (mc == "Rt") {
@@ -156,9 +156,9 @@ List build_beta_shell(
               }
             }
           }
-          beta_mc_prt[c] = bta;
+          beta_mc_cxt[s] = bta;
         } 
-        beta_mc[p] = beta_mc_prt;
+        beta_mc[c] = beta_mc_cxt;
       } 
       beta[mc] = beta_mc;
     } 
@@ -171,8 +171,8 @@ List build_beta_shell(
 List make_parameter_vector(
     const List& beta, 
     const List& wfactor, 
-    const CharacterVector& prt_lvls, 
-    const CharacterVector& cld_lvls, 
+    const CharacterVector& cxt_lvls, 
+    const CharacterVector& sps_lvls, 
     const CharacterVector& rn_lvls, 
     const CharacterVector& mc_list, 
     const CharacterVector& treatment_lvls,
@@ -201,8 +201,8 @@ List make_parameter_vector(
     List beta_idx = clone(beta);
     List wfactor_idx = clone(wfactor); 
     
-    int n_parent = prt_lvls.size();
-    int n_child = cld_lvls.size();
+    int n_context = cxt_lvls.size();
+    int n_species = sps_lvls.size();
     int n_ran = rn_lvls.size();
    
     /*
@@ -217,29 +217,29 @@ List make_parameter_vector(
       // For map
       List beta_idx_mc = clone(beta_mc);
       
-      // Loop through parent values
-      for (int p = 0; p < n_parent; p++) {
-        String prt = prt_lvls[p];
+      // Loop through context values
+      for (int c = 0; c < n_context; c++) {
+        String cxt = cxt_lvls[c];
         
         // For make
-        List beta_mc_prt = beta_mc[prt];
+        List beta_mc_cxt = beta_mc[cxt];
         // For map
-        List beta_idx_mc_prt = clone(beta_mc_prt);
+        List beta_idx_mc_cxt = clone(beta_mc_cxt);
         
-        // Loop through child values
-        for (int c = 0; c < n_child; c++) {
-          String cld = cld_lvls[c];
+        // Loop through species values
+        for (int s = 0; s < n_species; s++) {
+          String sps = sps_lvls[s];
           
           // For make
-          int deg = degs(c, p);
+          int deg = degs(s, c);
           // For map
-          iVec beta_idx_mc_prt_cld;
+          iVec beta_idx_mc_cxt_sps;
           
           if (deg > 0 || mc == "Rt") { 
-            NumericMatrix beta_mc_prt_cld = beta_mc_prt[cld];
+            NumericMatrix beta_mc_cxt_sps = beta_mc_cxt[sps];
             
             // Unroll the effects matrices
-            for (int t = 0; t < beta_mc_prt_cld.ncol(); t++) {
+            for (int t = 0; t < beta_mc_cxt_sps.ncol(); t++) {
               
               // For map
               String t_name = "Tns/Blk" + std::to_string(t + 1);
@@ -249,9 +249,9 @@ List make_parameter_vector(
                 // Map
                 CharacterVector param_name;
                 if (i == 0) {
-                  param_name = CharacterVector::create("baseline", prt, mc, cld, t_name);
+                  param_name = CharacterVector::create("baseline", cxt, mc, sps, t_name);
                 } else {
-                  param_name = CharacterVector::create("beta", mc, prt, cld, treatment_lvls[i], "X", t_name);
+                  param_name = CharacterVector::create("beta", mc, cxt, sps, treatment_lvls[i], "X", t_name);
                 }
                 
                 // Add name
@@ -269,18 +269,18 @@ List make_parameter_vector(
                 } else {
                   param_baseline_idx.push_back(idx);
                 }
-                beta_idx_mc_prt_cld.push_back(idx);
+                beta_idx_mc_cxt_sps.push_back(idx);
                 idx++;  
                 
                 // Make
-                param_vector.push_back(beta_mc_prt_cld(i,t));
+                param_vector.push_back(beta_mc_cxt_sps(i,t));
                 
               } 
             }
           } 
-          beta_idx_mc_prt[cld] = beta_idx_mc_prt_cld;
+          beta_idx_mc_cxt[sps] = beta_idx_mc_cxt_sps;
         } 
-        beta_idx_mc[prt] = beta_idx_mc_prt;
+        beta_idx_mc[cxt] = beta_idx_mc_cxt;
       }
       beta_idx[mc] = beta_idx_mc;
     }
@@ -300,39 +300,39 @@ List make_parameter_vector(
     NumericMatrix wfactor_idx_rate = clone(wfactor_rate); 
     NumericMatrix wfactor_idx_slope = clone(wfactor_slope);
     
-    for (int c = 0; c < n_child; c++) {
+    for (int s = 0; s < n_species; s++) {
       // Intentionally skip the first level, which is "none"
       for (int r = 1; r < n_ran; r++) {
         
         // Map
-        String c_name = cld_lvls[c];
+        String c_name = sps_lvls[s];
         String r_name = rn_lvls[r];
         // ... Point warp
         CharacterVector param_name_point = CharacterVector::create("wfactor", "point", r_name, "X", c_name);
         param_names.push_back(param_name_point);
         param_wfactor_point_idx.push_back(idx);
-        wfactor_idx_point(r, c) = idx;
+        wfactor_idx_point(r, s) = idx;
         idx++;
         // ... Rate warp
         CharacterVector param_name_rate = CharacterVector::create("wfactor", "rate", r_name, "X", c_name);
         param_names.push_back(param_name_rate);
         param_wfactor_rate_idx.push_back(idx);
-        wfactor_idx_rate(r, c) = idx; 
+        wfactor_idx_rate(r, s) = idx; 
         idx++;
         // ... Slope warp
         CharacterVector param_name_slope = CharacterVector::create("wfactor", "slope", r_name, "X", c_name);
         param_names.push_back(param_name_slope);
         param_wfactor_slope_idx.push_back(idx);
-        wfactor_idx_slope(r, c) = idx;
+        wfactor_idx_slope(r, s) = idx;
         idx++;
        
         // Make
         // ... Point warp
-        param_vector.push_back(wfactor_point(r, c));
+        param_vector.push_back(wfactor_point(r, s));
         // ... Rate warp
-        param_vector.push_back(wfactor_rate(r, c));
+        param_vector.push_back(wfactor_rate(r, s));
         // ... Slope warp
-        param_vector.push_back(wfactor_slope(r, c));
+        param_vector.push_back(wfactor_slope(r, s));
         
       }
     } 
@@ -379,8 +379,8 @@ List make_parameter_vector(
 std::vector<IntegerVector> make_extrapolation_pool(
     const sVec& bin,
     const sVec& count, 
-    const CharacterVector& parent,
-    const CharacterVector& child,
+    const CharacterVector& context,
+    const CharacterVector& species,
     const CharacterVector& ran, 
     const CharacterVector& treatment,
     bool verbose
@@ -401,20 +401,20 @@ std::vector<IntegerVector> make_extrapolation_pool(
     NumericVector bin_NumVec = to_NumVec(bin);
     int max_bin = Rcpp::max(bin_NumVec);
     
-    // Pre-make masks for bin, parent, child, and treatment levels
-    CharacterVector parent_lvls = Rcpp::unique(parent);
-    CharacterVector child_lvls = Rcpp::unique(child);
+    // Pre-make masks for bin, context, species, and treatment levels
+    CharacterVector context_lvls = Rcpp::unique(context);
+    CharacterVector species_lvls = Rcpp::unique(species);
     CharacterVector treatment_lvls = Rcpp::unique(treatment);
     LogicalMatrix bin_masks(bin_NumVec.size(), max_bin);
-    LogicalMatrix parent_masks(parent.size(), parent_lvls.size());
-    LogicalMatrix child_masks(child.size(), child_lvls.size());
+    LogicalMatrix context_masks(context.size(), context_lvls.size());
+    LogicalMatrix species_masks(species.size(), species_lvls.size());
     LogicalMatrix treatment_masks(treatment.size(), treatment_lvls.size());
-    colnames(parent_masks) = parent_lvls;
-    colnames(child_masks) = child_lvls;
+    colnames(context_masks) = context_lvls;
+    colnames(species_masks) = species_lvls;
     colnames(treatment_masks) = treatment_lvls;
     for (int i = 0; i < bin_masks.ncol(); i++) {bin_masks.column(i) = eq_left_broadcast(bin_NumVec, i + 1);}
-    for (int i = 0; i < parent_lvls.size(); i++) {parent_masks.column(i) = eq_left_broadcast(parent, parent_lvls[i]);}
-    for (int i = 0; i < child_lvls.size(); i++) {child_masks.column(i) = eq_left_broadcast(child, child_lvls[i]);}
+    for (int i = 0; i < context_lvls.size(); i++) {context_masks.column(i) = eq_left_broadcast(context, context_lvls[i]);}
+    for (int i = 0; i < species_lvls.size(); i++) {species_masks.column(i) = eq_left_broadcast(species, species_lvls[i]);}
     for (int i = 0; i < treatment_lvls.size(); i++) {treatment_masks.column(i) = eq_left_broadcast(treatment, treatment_lvls[i]);}
     
     // Loop through none rows and find their interpolation pools
@@ -429,8 +429,8 @@ std::vector<IntegerVector> make_extrapolation_pool(
       
       // Find all rows with the same fixed effects and bin
       LogicalVector mask = bin_masks.column(bin(r).val() - 1)
-        & parent_masks.column(Rwhich(eq_left_broadcast(parent_lvls, parent(r)))[0])
-        & child_masks.column(Rwhich(eq_left_broadcast(child_lvls, child(r)))[0])
+        & context_masks.column(Rwhich(eq_left_broadcast(context_lvls, context(r)))[0])
+        & species_masks.column(Rwhich(eq_left_broadcast(species_lvls, species(r)))[0])
         & treatment_masks.column(Rwhich(eq_left_broadcast(treatment_lvls, treatment(r)))[0])
         & nan_mask
         & none_mask;

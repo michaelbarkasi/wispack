@@ -17,8 +17,8 @@ NULL
 #'
 #' This function takes a data frame of wisp variables (as columns) and fits a wisp model to it. Statistical analyses and plots are generated from the fitted model.
 #'
-#' @param count.data Data.frame, data to be modeled, with columns for model variables (count, bin, parent, child, ran, fixedeffects), or equivalent variables as specified in the \code{variables} argument.
-#' @param variables List, names of the columns in \code{count.data} that correspond to the model variables. The list should contain only (but not necessarily all) named elements: \code{count}, \code{bin}, \code{parent}, \code{child}, \code{ran}, and \code{fixedeffects}.
+#' @param count.data Data.frame, data to be modeled, with columns for model variables (count, bin, context, species, ran, fixedeffects), or equivalent variables as specified in the \code{variables} argument.
+#' @param variables List, names of the columns in \code{count.data} that correspond to the model variables. The list should contain only (but not necessarily all) named elements: \code{count}, \code{bin}, \code{context}, \code{species}, \code{ran}, and \code{fixedeffects}.
 #' @param use.median Logical, if TRUE, the median of the resamples is used as the final parameter estimates; if FALSE, the initial fit by L-BFGS is used.
 #' @param MCMC.settings List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.
 #' @param bootstraps.num Integer, number of bootstrap resamples to perform. If 0, only MCMC is run.
@@ -26,7 +26,7 @@ NULL
 #' @param max.fork Integer, maximum number of parallel processes to use for bootstrapping.
 #' @param dim.bounds Numeric vector, block boundaries for plotting in rate-count plots. If empty, the argument is ignored.
 #' @param verbose Logical, if TRUE, prints information during the fitting process.
-#' @param print.child.summaries Logical, if TRUE, prints summaries of each child level. 
+#' @param print.species.summaries Logical, if TRUE, prints summaries of each species level. 
 #' @param model.settings List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, and \code{warp_precision}. Default values are provided.
 #' @return List giving the results of the fitted model, including: \code{model.component.list}, \code{count.data.summed}, \code{fitted.parameters}, \code{gamma.disperson}, \code{param.names}, \code{fix}, \code{treatment}, \code{grouping.variables}, \code{param.idx0}, \code{settings}, \code{sample.params}, \code{sample.params.bs}, \code{sample.params.MCMC}, \code{diagnostics.bs}, \code{diagnostics.MCMC}, \code{stats}, and \code{plots}
 #' @export
@@ -43,7 +43,7 @@ wisp <- function(
     max.fork = 1,
     dim.bounds = c(), 
     verbose = TRUE,
-    print.child.summaries = TRUE,
+    print.species.summaries = TRUE,
     # Setting to pass to C++ model
     model.settings = list()
   ) {
@@ -90,8 +90,8 @@ wisp <- function(
     variables.internal <- list( 
       count = "count",
       bin = "bin", 
-      parent = "parent", 
-      child = "child",
+      context = "context", 
+      species = "species",
       ran = "ran",
       fixedeffects = c()
     )
@@ -415,11 +415,11 @@ wisp <- function(
     results[["plots"]] <- plots
     
     # Print summary plots
-    if (print.child.summaries) {
-      plot.child.summary(
+    if (print.species.summaries) {
+      plot.species.summary(
         wisp.results = results,
-        these.parents = NULL,
-        these.childs = NULL,
+        these.contexts = NULL,
+        these.speciess = NULL,
         verbose = TRUE
       )
     }
@@ -623,13 +623,13 @@ analyze.residuals <- function(
     qq_convolved <- function(
       gp, 
       resids = wisp.results$count.data.summed$residuals.log,
-      parents = wisp.results$count.data.summed$parent,
-      child = wisp.results$count.data.summed$child,
+      contexts = wisp.results$count.data.summed$context,
+      species = wisp.results$count.data.summed$species,
       dispersion.matrix = wisp.results$gamma.dispersion
     ) {
       
-      clean_parents <- parents[!is.na(resids)]
-      clean_child <- child[!is.na(resids)]
+      clean_contexts <- contexts[!is.na(resids)]
+      clean_species <- species[!is.na(resids)]
       resids <- resids[!is.na(resids)] 
       n <- length(resids)
       sd_resid <- sd(resids)
@@ -637,7 +637,7 @@ analyze.residuals <- function(
       dispersion <- rep(NA, n)
       for (j in colnames(dispersion.matrix)) {
         for (i in rownames(dispersion.matrix)) {
-          mask <- clean_parents == j & clean_child == i
+          mask <- clean_contexts == j & clean_species == i
           if (dispersion.matrix[i, j] > 0) dispersion[mask] <- dispersion.matrix[i, j]
         }
       }
@@ -722,10 +722,10 @@ analyze.residuals <- function(
     for (trt_lvl in wisp.results$treatment$names) {
       mask_list[[paste0("treatment_", trt_lvl)]] <- wisp.results$count.data.summed$treatment == trt_lvl
     }
-    for (gvp_lvl in wisp.results$grouping.variables$parent.lvls) {
-      for (gv_lvl in wisp.results$grouping.variables$child.lvls) {
-        mask_list[[paste0(gvp_lvl,"_",gv_lvl)]] <- wisp.results$count.data.summed$child == gv_lvl & 
-          wisp.results$count.data.summed$parent == gvp_lvl
+    for (gvp_lvl in wisp.results$grouping.variables$context.lvls) {
+      for (gv_lvl in wisp.results$grouping.variables$species.lvls) {
+        mask_list[[paste0(gvp_lvl,"_",gv_lvl)]] <- wisp.results$count.data.summed$species == gv_lvl & 
+          wisp.results$count.data.summed$context == gvp_lvl
       }
     }
     
@@ -754,8 +754,8 @@ analyze.residuals <- function(
       qq_resids_plot <- qq_convolved(
         gp = gp,
         resids = df_wide$residuals.log,
-        parents = df_wide$parent,
-        child = df_wide$child,
+        contexts = df_wide$context,
+        species = df_wide$species,
         dispersion.matrix = wisp.results$gamma.dispersion
       )
       plots.residuals[[paste0(gp,"_qq")]] <- qq_resids_plot
@@ -821,8 +821,8 @@ analyze.residuals <- function(
 #' @param count.alpha.ran Numeric, transparency for count points when random level is not "none". If left NA, defaults to 0.25.
 #' @param pred.alpha.none Numeric, transparency for predicted lines when random level is "none". If left NA, defaults to 1.0.
 #' @param pred.alpha.ran Numeric, transparency for predicted lines when random level is not "none". If left NA, defaults to 0.9.
-#' @param rans.to.print Character vector, list of random levels to include on each child plot. If c(), all random levels are included.
-#' @param childs.to.print Character vector, list of child levels to place on their own plot. If c(), all child levels are plotted individually.
+#' @param rans.to.print Character vector, list of random levels to include on each species plot. If c(), all random levels are included.
+#' @param speciess.to.print Character vector, list of species levels to place on their own plot. If c(), all species levels are plotted individually.
 #' @param verbose Logical, if TRUE, prints updates about the plotting process.
 #' @return List of ggplot objects for rate-count plots.
 #' @export
@@ -838,7 +838,7 @@ plot.ratecount <- function(
     pred.alpha.none = NA,
     pred.alpha.ran = NA,
     rans.to.print = c(),
-    childs.to.print = c(),
+    speciess.to.print = c(),
     verbose = TRUE
   ) {
     
@@ -853,15 +853,15 @@ plot.ratecount <- function(
     if (sum(colnames(df) == count.type) == 0) stop("count.type not found in count.data.summed")
     
     # aes (aesthetics) settings 
-    make_parent_ref <- FALSE
+    make_context_ref <- FALSE
     if (is.na(count.alpha.ran)) count.alpha.ran <- 0.25
     if (is.na(count.alpha.none)) count.alpha.none <- 0.25
     if (is.na(pred.alpha.ran)) pred.alpha.ran <- 0.9
     if (is.na(pred.alpha.none)) pred.alpha.none <- 1.0
     if (length(rans.to.print) == 0) rans.to.print <- unique(df[,"ran"])
-    if (length(childs.to.print) == 0) {
-      make_parent_ref <- TRUE
-      childs.to.print <- wisp.results$grouping.variables$child.lvls
+    if (length(speciess.to.print) == 0) {
+      make_context_ref <- TRUE
+      speciess.to.print <- wisp.results$grouping.variables$species.lvls
       } 
     count_size <- 1.5
     ran_size <- 0.75
@@ -874,9 +874,9 @@ plot.ratecount <- function(
     tpoint_linetype <- "dashed"
     
     # Make color palettes
-    num_of_colors <- length(wisp.results$grouping.variables$child.lvls)
+    num_of_colors <- length(wisp.results$grouping.variables$species.lvls)
     colors_hues <- seq(0,360,length.out = num_of_colors + 1)[2:num_of_colors]
-    child_colors <- colorspace::qualitative_hcl(
+    species_colors <- colorspace::qualitative_hcl(
       n = num_of_colors,
       h = c(colors_hues[1], colors_hues[num_of_colors]),
       c = 80,
@@ -905,25 +905,25 @@ plot.ratecount <- function(
     names(treatment_colors) <- wisp.results$treatment$names
     
     # Create function for plotting reference and random effects
-    plot_parent_ref <- function(df, fvp) {
+    plot_context_ref <- function(df, fvp) {
       
       # Reference-level filtering 
-      ref_idx_fvp <- df[,"treatment"] == "ref" & df[,"parent"] == fvp
+      ref_idx_fvp <- df[,"treatment"] == "ref" & df[,"context"] == fvp
       
       # Initial ggplot with jittered points from df
       plot <- ggplot() +
         geom_jitter(
           data = df[ ref_idx_fvp & df[,"ran"] == "none", ], 
-          aes(x = bin, y = .data[[count.type]], color = child), 
+          aes(x = bin, y = .data[[count.type]], color = species), 
           width = 0.5, height = 0, alpha = count.alpha.none, size = count_size, na.rm = TRUE
         ) +  
         geom_line(
           data = df[ ref_idx_fvp & df[,"ran"] == "none", ],  
-          aes(x = bin, y = .data[[pred.type]], color = child),
+          aes(x = bin, y = .data[[pred.type]], color = species),
           linewidth = 2, alpha = pred.alpha.none, na.rm = TRUE
         ) +  
         labs(y = y_lab, x = "Bin", color = "fixed GV") +
-        scale_colour_manual(values = child_colors ) +  
+        scale_colour_manual(values = species_colors ) +  
         theme_minimal() +
         ggtitle(paste0("Ref-Class Dynamics and RE (", pred.type, "), ", fvp))
       
@@ -932,12 +932,12 @@ plot.ratecount <- function(
         plot <- plot + 
           geom_jitter(
             data = df[ ref_idx_fvp & df[,"ran"] == rl, ], 
-            aes(x = bin, y = .data[[count.type]], color = child), 
+            aes(x = bin, y = .data[[count.type]], color = species), 
             width = 0.5, height = 0, alpha = count.alpha.ran, size = count_size, na.rm = TRUE
           ) + 
           geom_line(
             data = df[ ref_idx_fvp & df[,"ran"] == rl, ],                
-            aes(x = bin, y = .data[[pred.type]], color = child), 
+            aes(x = bin, y = .data[[pred.type]], color = species), 
             linetype = ran_linetype, linewidth = ran_size, alpha = pred.alpha.ran, na.rm = TRUE
           )  
       }
@@ -957,14 +957,14 @@ plot.ratecount <- function(
     }
    
     # Create function for plotting fixed effects
-    plot_parent_fixEff <- function(df, fvp, fv) {
+    plot_context_fixEff <- function(df, fvp, fv) {
       
       # Grab treatment level names
       treatment_levels = unique(df[,"treatment"])
       
-      # Grab index mask for this parent-child level combination
-      gvf_idx_fvp <- df[,"child"] == fv &                         # only rates for this level of fixed-effects grouping 
-        df[,"parent"] == fvp                                      # only rates for this parent fixed grouping variable
+      # Grab index mask for this context-species level combination
+      gvf_idx_fvp <- df[,"species"] == fv &                         # only rates for this level of fixed-effects grouping 
+        df[,"context"] == fvp                                      # only rates for this context fixed grouping variable
       
       # Grab index mask for case without random effects
       gvf_idx_fvp_noRanEff <- gvf_idx_fvp & df[,"ran"] == "none"  # only rates without random effects
@@ -1039,22 +1039,22 @@ plot.ratecount <- function(
     plot_list <- list()
     
     # Generate, save, and print the plots
-    for (fvp in wisp.results$grouping.variables$parent.lvls) {
+    for (fvp in wisp.results$grouping.variables$context.lvls) {
       
       # Make reference class and random-effects plot
-      if (make_parent_ref) {
-        plot_list[[paste0("plot_",pred.type,"_parent_",fvp)]] <- plot_parent_ref(df,fvp)
+      if (make_context_ref) {
+        plot_list[[paste0("plot_",pred.type,"_context_",fvp)]] <- plot_context_ref(df,fvp)
         if (print.all) {
-          print(plot_list[[paste0("plot_",pred.type,"_parent_",fvp)]])
+          print(plot_list[[paste0("plot_",pred.type,"_context_",fvp)]])
         }
       }
       
-      # Make fixed effects plot, for each child level
-      for (fv in childs.to.print) {
+      # Make fixed effects plot, for each species level
+      for (fv in speciess.to.print) {
         # Make the plot
-        plot_list[[paste0("plot_",pred.type,"_parent_",fvp,"_fixEff_",fv)]] <- plot_parent_fixEff(df,fvp,fv)
+        plot_list[[paste0("plot_",pred.type,"_context_",fvp,"_fixEff_",fv)]] <- plot_context_fixEff(df,fvp,fv)
         if (print.all) {
-          print(plot_list[[paste0("plot_",pred.type,"_parent_",fvp,"_fixEff_",fv)]])
+          print(plot_list[[paste0("plot_",pred.type,"_context_",fvp,"_fixEff_",fv)]])
         }
       }
       
@@ -1069,19 +1069,19 @@ plot.ratecount <- function(
 #' Function to make nicely formatted violin (or bar) plots of the fitted wisp parameters, including confidence intervals if stat information is available.
 #'
 #' @param wisp.results List, output of the wisp function.
-#' @param child.lvl Character string, the child level to be plotted. If NULL, all child levels are plotted.
+#' @param species.lvl Character string, the species level to be plotted. If NULL, all species levels are plotted.
 #' @param violin Logical, if TRUE, plots violin plots for each parameter; if FALSE, uses bar plots. 
 #' @param print.plots Logical, if TRUE, prints the plots to the console; if FALSE, only returns a list of plots without printing.
-#' @param child.classes List, a list of character vectors specifying which child levels to include together in plots. If NULL, all child levels are included in a single plot.
+#' @param species.classes List, a list of character vectors specifying which species levels to include together in plots. If NULL, all species levels are included in a single plot.
 #' @param verbose Logical, if TRUE, prints updates about the plotting process.
 #' @return List of ggplot objects for parameter plots.
 #' @export
 plot.parameters <- function(
     wisp.results,
-    child.lvl = NULL, # NULL (plot all) or a single child level to be plotted
+    species.lvl = NULL, # NULL (plot all) or a single species level to be plotted
     violin = TRUE,
     print.plots = TRUE,
-    child.classes = NULL,
+    species.classes = NULL,
     verbose = TRUE
   ) {
     
@@ -1123,11 +1123,11 @@ plot.parameters <- function(
     
     # Format parameter names for nice printing
     param_names_saved <- param_names
-    for (gvp_lvl in as.character(wisp.results$grouping.variables$parent.lvls)) {
+    for (gvp_lvl in as.character(wisp.results$grouping.variables$context.lvls)) {
       param_names <- gsub(paste0("baseline_",gvp_lvl,"_"), "", param_names)
       param_names <- gsub(paste0("_",gvp_lvl), "", param_names)
     }
-    for (gv_lvl in as.character(wisp.results$grouping.variables$child.lvls)) {
+    for (gv_lvl in as.character(wisp.results$grouping.variables$species.lvls)) {
       param_names <- gsub(paste0("_",gv_lvl,"_"), "_", param_names)
     }
     param_names <- gsub(paste0("wfactor_point_"), "level_", param_names)
@@ -1149,27 +1149,27 @@ plot.parameters <- function(
       sig_marks <- wisp.results$stats$parameters$significance
     }
     
-    # Check child.classes
-    if (length(child.classes) != 0) {
-      if (class(child.classes) != "list") stop("child.classes must be a list")
-      for (cc in 1:length(child.classes)) {
-        if (length(child.classes[[cc]]) == 0) stop("child.classes must have at least one element")
-        if (class(child.classes[[cc]] != "character")) stop("child.classes must be a list of character vectors")
-        if (!all(child.classes[[cc]] %in% as.character(wisp.results$grouping.variables$child.lvls))) {
-          stop("child.classes must be a list of character vectors containing only levels of the child grouping variable")
+    # Check species.classes
+    if (length(species.classes) != 0) {
+      if (class(species.classes) != "list") stop("species.classes must be a list")
+      for (cc in 1:length(species.classes)) {
+        if (length(species.classes[[cc]]) == 0) stop("species.classes must have at least one element")
+        if (class(species.classes[[cc]] != "character")) stop("species.classes must be a list of character vectors")
+        if (!all(species.classes[[cc]] %in% as.character(wisp.results$grouping.variables$species.lvls))) {
+          stop("species.classes must be a list of character vectors containing only levels of the species grouping variable")
           }
       }
     }
-    if (length(child.classes) == 0 || length(child.lvl) != 0) {
-      # If classes not provided, plot all children together
-      # If a single child is provided for plotting, disregard any classes provided
-      child.classes <- list(all = as.character(wisp.results$grouping.variables$child.lvls))
+    if (length(species.classes) == 0 || length(species.lvl) != 0) {
+      # If classes not provided, plot all speciesren together
+      # If a single species is provided for plotting, disregard any classes provided
+      species.classes <- list(all = as.character(wisp.results$grouping.variables$species.lvls))
       }
-    child_class_names <- names(child.classes)
+    species_class_names <- names(species.classes)
     
-    for (gvp_lvl in as.character(wisp.results$grouping.variables$parent.lvls)) {
+    for (gvp_lvl in as.character(wisp.results$grouping.variables$context.lvls)) {
       
-      for (cc in 1:length(child.classes)) {
+      for (cc in 1:length(species.classes)) {
         
         baseline_df <- data.frame() 
         ranEff_df <- data.frame() 
@@ -1178,9 +1178,9 @@ plot.parameters <- function(
         
         # Make baseline and ranEff data frames ####
         
-        for (gv_lvl in child.classes[[cc]]) {
+        for (gv_lvl in species.classes[[cc]]) {
           
-          if (length(child.lvl) != 0 && gv_lvl != child.lvl) next
+          if (length(species.lvl) != 0 && gv_lvl != species.lvl) next
           
           # Make data frame for baseline plot
           baseline_mask <- grepl(gvp_lvl, param_names_saved) & grepl(gv_lvl, param_names_saved) & grepl("baseline", param_names_saved) 
@@ -1200,7 +1200,7 @@ plot.parameters <- function(
             value = baseline_fitted_tpoint, 
             parameter = params,
             type = rep("tpoint", length(baseline_fitted_tpoint)),
-            child = rep(gv_lvl, length(baseline_fitted_tpoint))
+            species = rep(gv_lvl, length(baseline_fitted_tpoint))
           )
           if (print_stats) {
             if (violin) {
@@ -1230,7 +1230,7 @@ plot.parameters <- function(
             value = baseline_fitted_rate, 
             parameter = params,
             type = rep("rate", length(baseline_fitted_rate)),
-            child = rep(gv_lvl, length(baseline_fitted_rate))
+            species = rep(gv_lvl, length(baseline_fitted_rate))
           )
           if (print_stats) {
             if (violin) {
@@ -1260,7 +1260,7 @@ plot.parameters <- function(
             value = baseline_fitted_slope, 
             parameter = params,
             type = rep("tslope", length(baseline_fitted_slope)),
-            child = rep(gv_lvl, length(baseline_fitted_slope))
+            species = rep(gv_lvl, length(baseline_fitted_slope))
           )
           if (print_stats) {
             if (violin) {
@@ -1289,13 +1289,13 @@ plot.parameters <- function(
             means <- fitted_params[ranEff_mask & pointR_mask]
           }
           if (sum(ranEff_fitted_point, na.rm = TRUE) != 0) {
-            # If zero, this was a degree-zero child, and we don't want to plot it
+            # If zero, this was a degree-zero species, and we don't want to plot it
             ranEff_fitted_point_df <- data.frame(
               means = means, 
               value = ranEff_fitted_point, 
               parameter = params, 
               type = rep("point", length(ranEff_fitted_point)),
-              child = rep(gv_lvl, length(ranEff_fitted_point))
+              species = rep(gv_lvl, length(ranEff_fitted_point))
             )
             if (print_stats) {
               if (violin) {
@@ -1326,7 +1326,7 @@ plot.parameters <- function(
             value = ranEff_fitted_rate, 
             parameter = params, 
             type = rep("rate", length(ranEff_fitted_rate)),
-            child = rep(gv_lvl, length(ranEff_fitted_rate))
+            species = rep(gv_lvl, length(ranEff_fitted_rate))
           )
           if (print_stats) {
             if (violin) {
@@ -1356,7 +1356,7 @@ plot.parameters <- function(
             value = ranEff_fitted_slope, 
             parameter = params, 
             type = rep("slope", length(ranEff_fitted_slope)),
-            child = rep(gv_lvl, length(ranEff_fitted_slope))
+            species = rep(gv_lvl, length(ranEff_fitted_slope))
           )
           if (print_stats) {
             if (violin) {
@@ -1374,18 +1374,18 @@ plot.parameters <- function(
         }
         
         # Make character columns into factors
-        baseline_df$child <- as.factor(baseline_df$child)
+        baseline_df$species <- as.factor(baseline_df$species)
         baseline_df$parameter <- as.factor(baseline_df$parameter)
         baseline_df$type <- as.factor(baseline_df$type)
-        ranEff_df$child <- as.factor(ranEff_df$child)
+        ranEff_df$species <- as.factor(ranEff_df$species)
         ranEff_df$parameter <- as.factor(ranEff_df$parameter)
         ranEff_df$type <- as.factor(ranEff_df$type)
         
         # Make baseline plots ####
         
         title_bl <- paste0("Baseline parameters, fitted (", gvp_lvl, ")")
-        plot_name <- paste0("plot_baseline_", gvp_lvl, "_", child_class_names[cc])
-        if (length(child.lvl) != 0) plot_name <- paste0("plot_baseline_", gvp_lvl, "_", child.lvl)
+        plot_name <- paste0("plot_baseline_", gvp_lvl, "_", species_class_names[cc])
+        if (length(species.lvl) != 0) plot_name <- paste0("plot_baseline_", gvp_lvl, "_", species.lvl)
         
         parameter_comparison_plots[[plot_name]] <- ggplot(baseline_df, aes(x = parameter, y = value, fill = type)) 
         if (violin) {
@@ -1398,7 +1398,7 @@ plot.parameters <- function(
         }
         
         parameter_comparison_plots[[plot_name]] <- parameter_comparison_plots[[plot_name]] +
-          facet_wrap(~ interaction(child,type), scales = "free") +
+          facet_wrap(~ interaction(species,type), scales = "free") +
           theme_minimal() +
           labs(title = title_bl) +
           theme(legend.position = legpos) +
@@ -1422,8 +1422,8 @@ plot.parameters <- function(
         # Make ranEff plots ####
         
         title_ran <- paste0("RanEff parameters, fitted (", gvp_lvl, ")")
-        plot_name <- paste0("plot_ranEff_", gvp_lvl, "_", child_class_names[cc])
-        if (length(child.lvl) != 0) plot_name <- paste0("plot_ranEff_", gvp_lvl, "_", child.lvl)
+        plot_name <- paste0("plot_ranEff_", gvp_lvl, "_", species_class_names[cc])
+        if (length(species.lvl) != 0) plot_name <- paste0("plot_ranEff_", gvp_lvl, "_", species.lvl)
         
         parameter_comparison_plots[[plot_name]] <- ggplot(ranEff_df, aes(x = parameter, y = value, fill = type)) 
         if (violin) {
@@ -1436,7 +1436,7 @@ plot.parameters <- function(
         }
         
         parameter_comparison_plots[[plot_name]] <- parameter_comparison_plots[[plot_name]] +
-          facet_wrap(~ interaction(child, type), scales = "free") +
+          facet_wrap(~ interaction(species, type), scales = "free") +
           theme_minimal() +
           labs(title = title_ran) +
           theme(legend.position = legpos) +
@@ -1469,10 +1469,10 @@ plot.parameters <- function(
           
           # Make treatment data frames ####
           treatment_dfL[[treatment]] <- data.frame()
-          for (gv_lvl in child.classes[[cc]]) {
+          for (gv_lvl in species.classes[[cc]]) {
             
-            # If only printing one child level, skip the rest
-            if (length(child.lvl) != 0 && gv_lvl != child.lvl) next
+            # If only printing one species level, skip the rest
+            if (length(species.lvl) != 0 && gv_lvl != species.lvl) next
             
             # Grab index masks
             treatment_mask <- grepl(gvp_lvl, param_names_saved) & 
@@ -1496,7 +1496,7 @@ plot.parameters <- function(
               value = treatment_fitted, 
               parameter = params, 
               type = rep("rate", length(treatment_fitted)),
-              child = rep(gv_lvl, length(treatment_fitted))
+              species = rep(gv_lvl, length(treatment_fitted))
             )
             if (print_stats) {
               if (violin) {
@@ -1526,7 +1526,7 @@ plot.parameters <- function(
               value = treatment_fitted, 
               parameter = params, 
               type = rep("tslope", length(treatment_fitted)),
-              child = rep(gv_lvl, length(treatment_fitted))
+              species = rep(gv_lvl, length(treatment_fitted))
             )
             if (print_stats) {
               if (violin) {
@@ -1556,7 +1556,7 @@ plot.parameters <- function(
               value = treatment_fitted, 
               parameter = params, 
               type = rep("tpoint", length(treatment_fitted)),
-              child = rep(gv_lvl, length(treatment_fitted))
+              species = rep(gv_lvl, length(treatment_fitted))
             )
             if (print_stats) {
               if (violin) {
@@ -1575,10 +1575,10 @@ plot.parameters <- function(
           
           # Make treatment plots ####
           title_fe <- paste0("treatment parameters, fitted (", gvp_lvl, ", ", treatment, ")")
-          plot_name <- paste0("plot_treatment_",treatment,"_",gvp_lvl, "_", child_class_names[cc])
-          if (length(child.lvl) != 0) plot_name <- paste0("plot_treatment_",treatment,"_", gvp_lvl, "_", child.lvl)
+          plot_name <- paste0("plot_treatment_",treatment,"_",gvp_lvl, "_", species_class_names[cc])
+          if (length(species.lvl) != 0) plot_name <- paste0("plot_treatment_",treatment,"_", gvp_lvl, "_", species.lvl)
           
-          treatment_dfL[[treatment]]$child <- as.factor(treatment_dfL[[treatment]]$child)
+          treatment_dfL[[treatment]]$species <- as.factor(treatment_dfL[[treatment]]$species)
           treatment_dfL[[treatment]]$parameter <- as.factor(treatment_dfL[[treatment]]$parameter)
           treatment_dfL[[treatment]]$type <- as.factor(treatment_dfL[[treatment]]$type)
           
@@ -1593,7 +1593,7 @@ plot.parameters <- function(
           }
           
           parameter_comparison_plots[[plot_name]] <- parameter_comparison_plots[[plot_name]] +
-            facet_wrap(~ interaction(child,type), scales = "free") +
+            facet_wrap(~ interaction(species,type), scales = "free") +
             theme_minimal() +
             labs(title = title_fe) +
             theme(legend.position = legpos) +
@@ -1749,20 +1749,20 @@ plot.effect.dist <- function(
     
   }
 
-#' Print rate-count, residual, and parameter plots for one child level together.
+#' Print rate-count, residual, and parameter plots for one species level together.
 #'
-#' Function to summarize all important information for an individual child level on one plot.
+#' Function to summarize all important information for an individual species level on one plot.
 #'
 #' @param wisp.results List, output of the wisp function.
-#' @param these.parents Character vector, optional, specifies which parent levels to summarize. Defaults to all. 
-#' @param these.childs Character vector, optional, specifies which child levels to summarize. Defaults to all.
+#' @param these.contexts Character vector, optional, specifies which context levels to summarize. Defaults to all. 
+#' @param these.speciess Character vector, optional, specifies which species levels to summarize. Defaults to all.
 #' @param verbose Logical, if TRUE, prints information during plotting.
 #' @return Nothing, plots are printed to the current graphics device.
 #' @export
-plot.child.summary <- function(
+plot.species.summary <- function(
     wisp.results,
-    these.parents = NULL,
-    these.childs = NULL,
+    these.contexts = NULL,
+    these.speciess = NULL,
     verbose = TRUE
   ) {
     
@@ -1775,15 +1775,15 @@ plot.child.summary <- function(
       stop("No rate or parameter plots found in wisp.results")
     }
     
-    # Specify parent and child levels to summarize
-    gvp_lvls <- as.character(wisp.results$grouping.variables$parent.lvls)
-    if (length(these.parents) != 0) gvp_lvls <- gvp_lvls[gvp_lvls %in% these.parents]
-    gv_lvls <- as.character(wisp.results$grouping.variables$child.lvls)
-    if (length(these.childs) != 0) gv_lvls <- gv_lvls[gv_lvls %in% these.childs]
+    # Specify context and species levels to summarize
+    gvp_lvls <- as.character(wisp.results$grouping.variables$context.lvls)
+    if (length(these.contexts) != 0) gvp_lvls <- gvp_lvls[gvp_lvls %in% these.contexts]
+    gv_lvls <- as.character(wisp.results$grouping.variables$species.lvls)
+    if (length(these.speciess) != 0) gv_lvls <- gv_lvls[gv_lvls %in% these.speciess]
     
     for (gvp_lvl in gvp_lvls) {
       
-      if (verbose) snk.report(paste0("Printing child summary plots for ", gvp_lvl))
+      if (verbose) snk.report(paste0("Printing species summary plots for ", gvp_lvl))
       first_print <- TRUE
       
       for (gv_lvl in gv_lvls) {
@@ -1796,7 +1796,7 @@ plot.child.summary <- function(
         }
         wisp.results$plots$parameters <- plot.parameters(
           wisp.results = wisp.results,
-          child.lvl = gv_lvl, 
+          species.lvl = gv_lvl, 
           print.plots = FALSE, 
           verbose = FALSE 
         )
@@ -1806,12 +1806,12 @@ plot.child.summary <- function(
         p2 <- wisp.results$plots$parameters
         p3 <- wisp.results$plots$residuals
         
-        # Find plots for this parent
+        # Find plots for this context
         p_mask1 <- grepl(gvp_lvl, names(p1))
         p_mask2 <- grepl(gvp_lvl, names(p2))
         p_mask3 <- grepl(gvp_lvl, names(p3))
         
-        # Find plots for this child
+        # Find plots for this species
         c_mask1 <- grepl(gv_lvl, names(p1))
         c_mask2 <- grepl(gv_lvl, names(p2)) 
         c_mask3 <- grepl(gv_lvl, names(p3))
@@ -1993,12 +1993,12 @@ plot.MCMC.walks <- function(
     
   }
 
-#' Plot individual components of wisp fit for a single child level
+#' Plot individual components of wisp fit for a single species level
 #'
-#' Extension of \code{plot.ratecount} which plots the individual pieces of the rate-count plot for a single child separately. Returns individual plots for data points only, fit lines only, and data points plus fit lines for individual random levels.
+#' Extension of \code{plot.ratecount} which plots the individual pieces of the rate-count plot for a single species separately. Returns individual plots for data points only, fit lines only, and data points plus fit lines for individual random levels.
 #'
 #' @param wisp.results List, output of the wisp function.
-#' @param child Character string, the child level to plot. Must be provided, and only one at a time. 
+#' @param species Character string, the species level to plot. Must be provided, and only one at a time. 
 #' @param log Logical, if TRUE, plots on a log scale. Defaults to FALSE.
 #' @param dim.boundaries Numeric vector, independent block boundaries to plot for comparison. If empty, the argument is ignored.
 #' @param y.lim Numeric vector of length 2, limits for the y-axis of the plots. If NA, defaults to automatic limits.
@@ -2006,13 +2006,13 @@ plot.MCMC.walks <- function(
 #' @export
 plot.decomposition <- function(
     wisp.results,
-    child, # "Nptxr"
+    species, # "Nptxr"
     log = FALSE, 
     dim.boundaries = c(), # colMeans(count_data_WSPmm.y$db)
     y.lim = NULL
   ) {
     
-    # Comment for future development: Function assumes there is only one parent level. Needs to handle case of multiple parent levels. 
+    # Comment for future development: Function assumes there is only one context level. Needs to handle case of multiple context levels. 
     
     ran_lvls <- wisp.results$grouping.variables$ran.lvls
     ran_lvls <- ran_lvls[ran_lvls != "none"]
@@ -2067,7 +2067,7 @@ plot.decomposition <- function(
         pred.alpha.none = input$pred.alpha.none[r],
         pred.alpha.ran = input$pred.alpha.ran[r],
         rans.to.print = input$rans.to.print[r],
-        childs.to.print = c(child)
+        speciess.to.print = c(species)
       )
       
     }

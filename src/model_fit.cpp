@@ -183,60 +183,60 @@ sdouble delta_var_est(
 
 // Formula to calculate gamme dispersion factor from mean and variance of counts
 sdouble gamma_dispersion_formula(
-    const sdouble& count_pc_mean, // mean of counts for parent-child combination
-    const sdouble& count_pc_var   // variance of counts for parent-child combination
+    const sdouble& count_cs_mean, // mean of counts for context-species combination
+    const sdouble& count_cs_var   // variance of counts for context-species combination
   ) {
     
-    if (count_pc_var > count_pc_mean) {
-      // Have: count_pc_var = count_pc_mean + count_pc_mean^2 * gdis
-      // ... count_pc_var = count_pc_mean * (1 + count_pc_mean * gdis)
-      // ... count_pc_var / count_pc_mean = 1 + count_pc_mean * gdis
-      // ... (count_pc_var / count_pc_mean) - 1 = count_pc_mean * gdis
-      return ((count_pc_var / count_pc_mean) - 1.0) / count_pc_mean;
+    if (count_cs_var > count_cs_mean) {
+      // Have: count_cs_var = count_cs_mean + count_cs_mean^2 * gdis
+      // ... count_cs_var = count_cs_mean * (1 + count_cs_mean * gdis)
+      // ... count_cs_var / count_cs_mean = 1 + count_cs_mean * gdis
+      // ... (count_cs_var / count_cs_mean) - 1 = count_cs_mean * gdis
+      return ((count_cs_var / count_cs_mean) - 1.0) / count_cs_mean;
     } else {
       return 0.0; // no dispersion if variance is less than or equal to mean
     }
   }
 
-// Recomputes gamma_dispersion matrix, but not gd_child_idx and gd_parent_idx
+// Recomputes gamma_dispersion matrix, but not gd_species_idx and gd_context_idx
 List compute_gamma_dispersion(
     const sVec& count,                             // count data vector (raw, not log)
     const LogicalVector& count_not_na_mask,        // mask for non-NA counts
-    const CharacterVector& parent,                 // parent column of summed data
-    const CharacterVector& child,                  // child column of summed data
-    const CharacterVector& parent_lvls,            // levels of parent grouping variable (fixed-effects)
-    const CharacterVector& child_lvls              // levels of child grouping variable (fixed-effects)
+    const CharacterVector& context,                 // context column of summed data
+    const CharacterVector& species,                  // species column of summed data
+    const CharacterVector& context_lvls,            // levels of context grouping variable (fixed-effects)
+    const CharacterVector& species_lvls              // levels of species grouping variable (fixed-effects)
   ) {
     
-    // Grab number of parent and child levels
-    int n_child = child_lvls.size();
-    int n_parent = parent_lvls.size();
+    // Grab number of context and species levels
+    int n_species = species_lvls.size();
+    int n_context = context_lvls.size();
     
     // Initialize gamma dispersion matrix
-    NumericMatrix gamma_dispersion(n_child, n_parent);
+    NumericMatrix gamma_dispersion(n_species, n_context);
     // ... initialized with all zeros
-    IntegerVector gd_child_idx(n_child);
-    IntegerVector gd_parent_idx(n_parent);
-    gd_child_idx.names() = child_lvls;
-    gd_parent_idx.names() = parent_lvls;
+    IntegerVector gd_species_idx(n_species);
+    IntegerVector gd_context_idx(n_context);
+    gd_species_idx.names() = species_lvls;
+    gd_context_idx.names() = context_lvls;
     
-    // Loop through parent levels
-    for (int p = 0; p < n_parent; p++) {
+    // Loop through context levels
+    for (int c = 0; c < n_context; c++) {
       
-      LogicalVector parent_mask = eq_left_broadcast(parent, parent_lvls[p]);
-      gd_parent_idx[(String)parent_lvls[p]] = p;
+      LogicalVector context_mask = eq_left_broadcast(context, context_lvls[c]);
+      gd_context_idx[(String)context_lvls[c]] = c;
       
-      // Loop through child levels
-      for (int c = 0; c < n_child; c++) { 
+      // Loop through species levels
+      for (int s = 0; s < n_species; s++) { 
         
         // Estimate dispersion of raw count (not log)
-        LogicalVector child_mask = eq_left_broadcast(child, child_lvls[c]);
-        LogicalVector pc_mask = parent_mask & child_mask & count_not_na_mask;
-        sVec count_pc_masked = masked_vec(count, pc_mask); 
-        sdouble count_pc_mean = vmean(count_pc_masked);
-        sdouble count_pc_var = vvar(count_pc_masked);
-        gamma_dispersion(c, p) = gamma_dispersion_formula(count_pc_mean, count_pc_var).val();
-        gd_child_idx[(String)child_lvls[c]] = c;
+        LogicalVector species_mask = eq_left_broadcast(species, species_lvls[s]);
+        LogicalVector cs_mask = context_mask & species_mask & count_not_na_mask;
+        sVec count_cs_masked = masked_vec(count, cs_mask); 
+        sdouble count_cs_mean = vmean(count_cs_masked);
+        sdouble count_cs_var = vvar(count_cs_masked);
+        gamma_dispersion(s, c) = gamma_dispersion_formula(count_cs_mean, count_cs_var).val();
+        gd_species_idx[(String)species_lvls[s]] = s;
         
       }
       
@@ -244,8 +244,8 @@ List compute_gamma_dispersion(
     
     return List::create(
       _["gamma_dispersion"] = gamma_dispersion,
-      _["gd_child_idx"] = gd_child_idx,
-      _["gd_parent_idx"] = gd_parent_idx
+      _["gd_species_idx"] = gd_species_idx,
+      _["gd_context_idx"] = gd_context_idx
     );
     
   }
@@ -739,76 +739,76 @@ List estimate_change_points(
     const int& ws,                                 // running window size
     const int& bin_num_i,                          // number of bins in the count data
     const double& LROcutoff,                       // cutoff for outlier detection in change-point detection
-    const CharacterVector& parent,                 // parent column of summed data
-    const CharacterVector& child,                  // child column of summed data
+    const CharacterVector& context,                 // context column of summed data
+    const CharacterVector& species,                  // species column of summed data
     const CharacterVector& ran,                    // random effect column of summed data
     const CharacterVector& treatment,              // treatment column of summed data
-    const CharacterVector& parent_lvls,            // levels of parent grouping variable (fixed-effects)
-    const CharacterVector& child_lvls,             // levels of child grouping variable (fixed-effects)
+    const CharacterVector& context_lvls,            // levels of context grouping variable (fixed-effects)
+    const CharacterVector& species_lvls,             // levels of species grouping variable (fixed-effects)
     const CharacterVector& ran_lvls,               // levels of random effect grouping variable (random-effects)
     const CharacterVector& treatment_lvls,                      // all possible treatment combinations, levels as single-string name
     const std::vector<CharacterVector>& treatment_components    // all possible treatment combinations, level components
   ) {
     
-    // Grab number of parent and child levels
+    // Grab number of context and species levels
     const int n_ran = ran_lvls.size();
-    const int n_child = child_lvls.size();
-    const int n_parent = parent_lvls.size();
+    const int n_species = species_lvls.size();
+    const int n_context = context_lvls.size();
     const int treatment_num = treatment_components.size();
     const int n_ran_trt = n_ran * treatment_num;
     
-    // Initialize matrix to hold degrees of each parent-child combination
-    IntegerMatrix degMat(n_child, n_parent);
-    rownames(degMat) = child_lvls;
-    colnames(degMat) = parent_lvls;
+    // Initialize matrix to hold degrees of each context-species combination
+    IntegerMatrix degMat(n_species, n_context);
+    rownames(degMat) = species_lvls;
+    colnames(degMat) = context_lvls;
     
-    // Initialize lists to hold results matrices for each parent-child combination 
+    // Initialize lists to hold results matrices for each context-species combination 
     // ... for found_cp
-    List found_cp_list(n_parent);
-    found_cp_list.names() = parent_lvls;
+    List found_cp_list(n_context);
+    found_cp_list.names() = context_lvls;
     // ... for found_cp_trt
-    List found_cp_trt_list(n_parent);
-    found_cp_trt_list.names() = parent_lvls;
+    List found_cp_trt_list(n_context);
+    found_cp_trt_list.names() = context_lvls;
     
-    // Loop through parent levels
-    for (int p = 0; p < n_parent; p++) {
+    // Loop through context levels
+    for (int c = 0; c < n_context; c++) {
       
-      // Make parent mask
-      LogicalVector parent_mask = eq_left_broadcast(parent, parent_lvls[p]);
+      // Make context mask
+      LogicalVector context_mask = eq_left_broadcast(context, context_lvls[c]);
       
-      // Set up lists for results matrices for this parent
+      // Set up lists for results matrices for this context
       // ... for found_cp
-      found_cp_list[(String)parent_lvls[p]] = List(n_child);
-      name_proxylist(found_cp_list[(String)parent_lvls[p]], child_lvls);
+      found_cp_list[(String)context_lvls[c]] = List(n_species);
+      name_proxylist(found_cp_list[(String)context_lvls[c]], species_lvls);
       // ... for found_cp_trt
-      found_cp_trt_list[(String)parent_lvls[p]] = List(n_child);
-      name_proxylist(found_cp_trt_list[(String)parent_lvls[p]], child_lvls);
+      found_cp_trt_list[(String)context_lvls[c]] = List(n_species);
+      name_proxylist(found_cp_trt_list[(String)context_lvls[c]], species_lvls);
       
-      // Loop through child levels
-      for (int c = 0; c < n_child; c++) { 
+      // Loop through species levels
+      for (int s = 0; s < n_species; s++) { 
         
-        // Make child mask and parent-child mask
-        LogicalVector child_mask = eq_left_broadcast(child, child_lvls[c]);
-        LogicalVector pc_mask = parent_mask & child_mask & count_not_na_mask;
+        // Make species mask and context-species mask
+        LogicalVector species_mask = eq_left_broadcast(species, species_lvls[s]);
+        LogicalVector cs_mask = context_mask & species_mask & count_not_na_mask;
         
         // Initialize count array for change-point detection
         sMat count_masked_array(bin_num_i, n_ran_trt);
         count_masked_array.setZero();
         LogicalVector good_col(n_ran_trt);
         
-        // Collect count values for each treatment-ran level interaction of this child-parent pair
+        // Collect count values for each treatment-ran level interaction of this species-context pair
         for (int t = 0; t < treatment_num; t++) {
           String trt = treatment_lvls[t];
           
-          // Make mask for treatment rows of this parent-child pair
+          // Make mask for treatment rows of this context-species pair
           LogicalVector trt_mask = eq_left_broadcast(treatment, trt);
-          LogicalVector pc_trt_mask = pc_mask & trt_mask;
+          LogicalVector cs_trt_mask = cs_mask & trt_mask;
           
           // Collect count values for each ran level and this treatment trt
           for (int r = 0; r < n_ran; r++) {
-            // Make mask for ran level rows of this treatment (of this parent-child pair)
+            // Make mask for ran level rows of this treatment (of this context-species pair)
             LogicalVector ran_mask = eq_left_broadcast(ran, ran_lvls[r]);
-            LogicalVector mask = pc_trt_mask & ran_mask;
+            LogicalVector mask = cs_trt_mask & ran_mask;
             
             // Make masked copies of count_log and bin
             sVec count_masked = masked_vec(count_log, mask);  
@@ -847,18 +847,17 @@ List estimate_change_points(
           cp_buffer                   // Minimum distance between two change points
         );
         
-        // Estimate degree of this parent-child pair 
+        // Estimate degree of this context-species pair 
         int deg = found_cp_good.rows();
-        degMat(c, p) = deg;
+        degMat(s, c) = deg;
         
         // Fill columns into the found_cp matrix
         IntegerMatrix found_cp(deg, n_ran_trt);
         // ^ ... Rcpp should initialize these matrices with all zeros
         if (deg > 0) {
           for (int si = 0; si < good_col_idx.size(); si++) {
-            int s = good_col_idx[si];
             // ... grab change points
-            found_cp.column(s) = found_cp_good.column(si);
+            found_cp.column(good_col_idx[si]) = found_cp_good.column(si);
           }
         }
         
@@ -878,17 +877,17 @@ List estimate_change_points(
           }
         }
         
-        // Assign results matrices to the parent-child list
-        assign_proxylist(found_cp_list[(String)parent_lvls[p]], (String)child_lvls[c], found_cp);
-        assign_proxylist(found_cp_trt_list[(String)parent_lvls[p]], (String)child_lvls[c], found_cp_trt);
+        // Assign results matrices to the context-species list
+        assign_proxylist(found_cp_list[(String)context_lvls[c]], (String)species_lvls[s], found_cp);
+        assign_proxylist(found_cp_trt_list[(String)context_lvls[c]], (String)species_lvls[s], found_cp_trt);
         
       }
     }
     
     return List::create(
-      _["degMat"] = degMat,                                 // matrix of degrees of each parent-child combination
-      _["found_cp_list"] = found_cp_list,                   // list of found change points for each parent-child combination
-      _["found_cp_trt_list"] = found_cp_trt_list            // list of found change points for each parent-child combination, averaged across treatments
+      _["degMat"] = degMat,                                 // matrix of degrees of each context-species combination
+      _["found_cp_list"] = found_cp_list,                   // list of found change points for each context-species combination
+      _["found_cp_trt_list"] = found_cp_trt_list            // list of found change points for each context-species combination, averaged across treatments
     );
     
   }
@@ -899,54 +898,54 @@ List find_count_log_means(
     const sVec& count_log,                         // log of count data vector
     const LogicalVector& count_not_na_mask,        // mask for non-NA counts
     const int& bin_num_i,                          // number of bins in the count data
-    const CharacterVector& parent,                 // parent column of summed data
-    const CharacterVector& child,                  // child column of summed data
+    const CharacterVector& context,                 // context column of summed data
+    const CharacterVector& species,                  // species column of summed data
     const CharacterVector& treatment,              // treatment column of summed data
-    const CharacterVector& parent_lvls,            // levels of parent grouping variable (fixed-effects)
-    const CharacterVector& child_lvls,             // levels of child grouping variable (fixed-effects)
+    const CharacterVector& context_lvls,            // levels of context grouping variable (fixed-effects)
+    const CharacterVector& species_lvls,             // levels of species grouping variable (fixed-effects)
     const CharacterVector& treatment_lvls,                      // all possible treatment combinations, levels as single-string name
     const std::vector<CharacterVector>& treatment_components    // all possible treatment combinations, level components
   ) {
     
-    // Grab number of parent and child levels
-    const int n_child = child_lvls.size();
-    const int n_parent = parent_lvls.size();
+    // Grab number of context and species levels
+    const int n_species = species_lvls.size();
+    const int n_context = context_lvls.size();
     const int treatment_num = treatment_components.size();
     
-    // Initialize lists to hold count_log_avg_mat for each parent-child combination 
-    List count_log_avg_mat_list(n_parent);
-    count_log_avg_mat_list.names() = parent_lvls;
+    // Initialize lists to hold count_log_avg_mat for each context-species combination 
+    List count_log_avg_mat_list(n_context);
+    count_log_avg_mat_list.names() = context_lvls;
     
-    // Loop through parent levels
-    for (int p = 0; p < n_parent; p++) {
+    // Loop through context levels
+    for (int c = 0; c < n_context; c++) {
       
-      // Make parent mask
-      LogicalVector parent_mask = eq_left_broadcast(parent, parent_lvls[p]);
+      // Make context mask
+      LogicalVector context_mask = eq_left_broadcast(context, context_lvls[c]);
       
-      // Set up lists for count_log_avg_mat for this parent
-      count_log_avg_mat_list[(String)parent_lvls[p]] = List(n_child);
-      name_proxylist(count_log_avg_mat_list[(String)parent_lvls[p]], child_lvls);
+      // Set up lists for count_log_avg_mat for this context
+      count_log_avg_mat_list[(String)context_lvls[c]] = List(n_species);
+      name_proxylist(count_log_avg_mat_list[(String)context_lvls[c]], species_lvls);
       
-      // Loop through child levels
-      for (int c = 0; c < n_child; c++) { 
+      // Loop through species levels
+      for (int s = 0; s < n_species; s++) { 
         
-        // Make child mask and parent-child mask
-        LogicalVector child_mask = eq_left_broadcast(child, child_lvls[c]);
-        LogicalVector pc_mask = parent_mask & child_mask & count_not_na_mask;
+        // Make species mask and context-species mask
+        LogicalVector species_mask = eq_left_broadcast(species, species_lvls[s]);
+        LogicalVector cs_mask = context_mask & species_mask & count_not_na_mask;
         
-        // Find mean of count_log for each child-parent pair
+        // Find mean of count_log for each species-context pair
         NumericMatrix count_log_avg_mat(bin_num_i, treatment_num);
         for (int t = 0; t < treatment_num; t++) {
           String trt = treatment_lvls[t];
           
-          // Make mask for treatment rows of this parent-child pair
+          // Make mask for treatment rows of this context-species pair
           LogicalVector trt_mask = eq_left_broadcast(treatment, trt);
-          LogicalVector pc_trt_mask = pc_mask & trt_mask;
+          LogicalVector cs_trt_mask = cs_mask & trt_mask;
           
           // Grab average counts for this treatment level (used later to set initial values)
           dVec count_log_avg(bin_num_i); 
-          sVec count_trt_masked = masked_vec(count_log, pc_trt_mask);
-          sVec bin_trt_masked = masked_vec(bin, pc_trt_mask);
+          sVec count_trt_masked = masked_vec(count_log, cs_trt_mask);
+          sVec bin_trt_masked = masked_vec(bin, cs_trt_mask);
           for (int b = 0; b < bin_num_i; b++) {
             LogicalVector mask_b = eq_left_broadcast(to_NumVec(bin_trt_masked), (double)b + 1.0);
             sVec count_b = masked_vec(count_trt_masked, mask_b);
@@ -956,13 +955,13 @@ List find_count_log_means(
           
         }
        
-        // Assign results matrix to the parent-child list
-        assign_proxylist(count_log_avg_mat_list[(String)parent_lvls[p]], (String)child_lvls[c], count_log_avg_mat);
+        // Assign results matrix to the context-species list
+        assign_proxylist(count_log_avg_mat_list[(String)context_lvls[c]], (String)species_lvls[s], count_log_avg_mat);
         
       }
     }
     
-    return count_log_avg_mat_list; // return the list of average log counts for each parent-child combination
+    return count_log_avg_mat_list; // return the list of average log counts for each context-species combination
     
   }
 
@@ -975,73 +974,73 @@ List estimate_initial_parameters(
     const double& min_initialization_slope,        // minimum slope for initial parameterization
     const sMat& weight_rows,                       // ... for making weights matrix and initial effects estimates
     const CharacterVector& mc_list,                // list of model component types to estimate initial parameters for
-    const CharacterVector& parent,                 // parent column of summed data
-    const CharacterVector& child,                  // child column of summed data
-    const CharacterVector& parent_lvls,            // levels of parent grouping variable (fixed-effects)
-    const CharacterVector& child_lvls,             // levels of child grouping variable (fixed-effects)
-    const IntegerMatrix& degMat,                   // matrix of degrees of each parent-child combination
-    const List& found_cp_list,                     // list of found change points (IntegerMatrix) for each parent-child combination
-    const List& found_cp_trt_list,                 // list of found change points (NumericMatrix) for each parent-child combination, averaged across treatments
-    const List& count_log_avg_mat_list             // list of average log counts (NumericMatrix) for each parent-child combination
+    const CharacterVector& context,                 // context column of summed data
+    const CharacterVector& species,                  // species column of summed data
+    const CharacterVector& context_lvls,            // levels of context grouping variable (fixed-effects)
+    const CharacterVector& species_lvls,             // levels of species grouping variable (fixed-effects)
+    const IntegerMatrix& degMat,                   // matrix of degrees of each context-species combination
+    const List& found_cp_list,                     // list of found change points (IntegerMatrix) for each context-species combination
+    const List& found_cp_trt_list,                 // list of found change points (NumericMatrix) for each context-species combination, averaged across treatments
+    const List& count_log_avg_mat_list             // list of average log counts (NumericMatrix) for each context-species combination
   ) {
     
-    // Grab number of parent and child levels
-    int n_child = child_lvls.size();
-    int n_parent = parent_lvls.size();
+    // Grab number of context and species levels
+    int n_species = species_lvls.size();
+    int n_context = context_lvls.size();
     
-    // Estimate degree of each parent-child combination at baseline using LRO change-point detection 
+    // Estimate degree of each context-species combination at baseline using LRO change-point detection 
     // ... store ref values in list
-    List ref_values(n_parent);
-    ref_values.names() = parent_lvls;
+    List ref_values(n_context);
+    ref_values.names() = context_lvls;
     // ... store rate effects in list
-    List RtEffs(n_parent);
-    RtEffs.names() = parent_lvls;
+    List RtEffs(n_context);
+    RtEffs.names() = context_lvls;
     // ... store tpoint effects in list
-    List tpointEffs(n_parent);
-    tpointEffs.names() = parent_lvls;
+    List tpointEffs(n_context);
+    tpointEffs.names() = context_lvls;
     // ... store tslope effects in list 
-    List tslopeEffs(n_parent);
-    tslopeEffs.names() = parent_lvls;
+    List tslopeEffs(n_context);
+    tslopeEffs.names() = context_lvls;
     
-    // Loop through parent levels
-    for (int p = 0; p < n_parent; p++) {
+    // Loop through context levels
+    for (int c = 0; c < n_context; c++) {
       
-      // Make parent mask
-      LogicalVector parent_mask = eq_left_broadcast(parent, parent_lvls[p]);
+      // Make context mask
+      LogicalVector context_mask = eq_left_broadcast(context, context_lvls[c]);
       
       // Set up list for ref values
-      ref_values[(String)parent_lvls[p]] = List(n_child);
-      name_proxylist(ref_values[(String)parent_lvls[p]], child_lvls);
+      ref_values[(String)context_lvls[c]] = List(n_species);
+      name_proxylist(ref_values[(String)context_lvls[c]], species_lvls);
       // ... for rate effect values
-      RtEffs[(String)parent_lvls[p]] = List(n_child);
-      name_proxylist(RtEffs[(String)parent_lvls[p]], child_lvls);
+      RtEffs[(String)context_lvls[c]] = List(n_species);
+      name_proxylist(RtEffs[(String)context_lvls[c]], species_lvls);
       // ... for tpoint effect values 
-      tpointEffs[(String)parent_lvls[p]] = List(n_child);
-      name_proxylist(tpointEffs[(String)parent_lvls[p]], child_lvls);
+      tpointEffs[(String)context_lvls[c]] = List(n_species);
+      name_proxylist(tpointEffs[(String)context_lvls[c]], species_lvls);
       // ... for tslope effect values 
-      tslopeEffs[(String)parent_lvls[p]] = List(n_child);
-      name_proxylist(tslopeEffs[(String)parent_lvls[p]], child_lvls);
+      tslopeEffs[(String)context_lvls[c]] = List(n_species);
+      name_proxylist(tslopeEffs[(String)context_lvls[c]], species_lvls);
       
-      // Extract found_cp, found_cp_trt, and count_log_avg_mat for this parent-child pair
-      List found_cp_list_p = found_cp_list[(String)parent_lvls[p]];
-      List found_cp_trt_list_p = found_cp_trt_list[(String)parent_lvls[p]];
-      List count_log_avg_mat_list_p = count_log_avg_mat_list[(String)parent_lvls[p]];
+      // Extract found_cp, found_cp_trt, and count_log_avg_mat for this context-species pair
+      List found_cp_list_c = found_cp_list[(String)context_lvls[c]];
+      List found_cp_trt_list_c = found_cp_trt_list[(String)context_lvls[c]];
+      List count_log_avg_mat_list_c = count_log_avg_mat_list[(String)context_lvls[c]];
       
-      // Loop through child levels
-      for (int c = 0; c < n_child; c++) { 
+      // Loop through species levels
+      for (int s = 0; s < n_species; s++) { 
         
         // Extract deg and block num 
-        int deg = degMat(c, p);
+        int deg = degMat(s, p);
         int n_blocks = deg + 1;
         
-        // Extract found_cp, found_cp_trt, and count_log_avg_mat for this parent-child pair
-        IntegerMatrix found_cp = found_cp_list_p[(String)child_lvls[c]];
-        NumericMatrix found_cp_trt = found_cp_trt_list_p[(String)child_lvls[c]];
-        NumericMatrix count_log_avg_mat = count_log_avg_mat_list_p[(String)child_lvls[c]];
+        // Extract found_cp, found_cp_trt, and count_log_avg_mat for this context-species pair
+        IntegerMatrix found_cp = found_cp_list_c[(String)species_lvls[s]];
+        NumericMatrix found_cp_trt = found_cp_trt_list_c[(String)species_lvls[s]];
+        NumericMatrix count_log_avg_mat = count_log_avg_mat_list_c[(String)species_lvls[s]];
         
-        // Make child mask and parent-child mask
-        LogicalVector child_mask = eq_left_broadcast(child, child_lvls[c]);
-        LogicalVector pc_mask = parent_mask & child_mask & count_not_na_mask;
+        // Make species mask and context-species mask
+        LogicalVector species_mask = eq_left_broadcast(species, species_lvls[s]);
+        LogicalVector cs_mask = context_mask & species_mask & count_not_na_mask;
         
         // Set initial parameters for fixed-effect treatments
         List placeholder_ref_values(mc_list.size());
@@ -1134,19 +1133,19 @@ List estimate_initial_parameters(
           }
           
         }
-        assign_proxylist(ref_values[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_ref_values);
-        assign_proxylist(RtEffs[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_RtEffs);
-        assign_proxylist(tpointEffs[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_tpointEffs);
-        assign_proxylist(tslopeEffs[(String)parent_lvls[p]], (String)child_lvls[c], placeholder_tslopeEffs);
+        assign_proxylist(ref_values[(String)context_lvls[c]], (String)species_lvls[s], placeholder_ref_values);
+        assign_proxylist(RtEffs[(String)context_lvls[c]], (String)species_lvls[s], placeholder_RtEffs);
+        assign_proxylist(tpointEffs[(String)context_lvls[c]], (String)species_lvls[s], placeholder_tpointEffs);
+        assign_proxylist(tslopeEffs[(String)context_lvls[c]], (String)species_lvls[s], placeholder_tslopeEffs);
         
       }
     }
     
     return List::create(
-      _["ref_values"] = ref_values,                   // list of reference values for each parent-child combination
-      _["RtEffs"] = RtEffs,                           // list of rate effects for each parent-child combination
-      _["tpointEffs"] = tpointEffs,                   // list of tpoint effects for each parent-child combination
-      _["tslopeEffs"] = tslopeEffs                    // list of tslope effects for each parent-child combination
+      _["ref_values"] = ref_values,                   // list of reference values for each context-species combination
+      _["RtEffs"] = RtEffs,                           // list of rate effects for each context-species combination
+      _["tpointEffs"] = tpointEffs,                   // list of tpoint effects for each context-species combination
+      _["tslopeEffs"] = tslopeEffs                    // list of tslope effects for each context-species combination
     );
     
   }
@@ -1155,7 +1154,7 @@ List estimate_initial_parameters(
 List make_initial_random_effects(
   const CharacterVector& wfactors_names,  // names of warping factors to initialize
   const int& n_ran,                       // number of random effects
-  const int& n_child                      // number of child levels
+  const int& n_species                      // number of species levels
   ) {
     
     // Initialize new random effect warping factors 
@@ -1165,11 +1164,11 @@ List make_initial_random_effects(
     // Loop through warping factors (point and rate)
     for (String wf : wfactors_names) {
       // Initialize array to hold warping factors 
-      NumericMatrix wf_array(n_ran, n_child);
-      // Loop through child levels and make random assignments
-      for (int c = 0; c < n_child; c++) {
-        NumericVector wfs_c = Rcpp::runif(n_ran, -0.1, 0.1);
-        wf_array.column(c) = wfs_c;
+      NumericMatrix wf_array(n_ran, n_species);
+      // Loop through species levels and make random assignments
+      for (int s = 0; s < n_species; s++) {
+        NumericVector wfs_s = Rcpp::runif(n_ran, -0.1, 0.1);
+        wf_array.column(s) = wfs_s;
       } 
       wfactors[wf] = wf_array;
     } 
