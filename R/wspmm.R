@@ -26,7 +26,7 @@ NULL
 #' @param max.fork Integer, maximum number of parallel processes to use for bootstrapping.
 #' @param dim.bounds Numeric vector, block boundaries for plotting in rate-count plots. If empty, the argument is ignored.
 #' @param verbose Logical, if TRUE, prints information during the fitting process.
-#' @param print.species.summaries Logical, if TRUE, prints summaries of each species level. 
+#' @param print.plots Logical, if TRUE, prints plot made during the modeling process.
 #' @param model.settings List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, and \code{warp_precision}. Default values are provided.
 #' @return List giving the results of the fitted model, including: \code{model.component.list}, \code{count.data.summed}, \code{fitted.parameters}, \code{gamma.disperson}, \code{param.names}, \code{fix}, \code{treatment}, \code{grouping.variables}, \code{param.idx0}, \code{settings}, \code{sample.params}, \code{sample.params.bs}, \code{sample.params.MCMC}, \code{diagnostics.bs}, \code{diagnostics.MCMC}, \code{stats}, and \code{plots}
 #' @export
@@ -43,7 +43,7 @@ wisp <- function(
     max.fork = 1,
     dim.bounds = c(), 
     verbose = TRUE,
-    print.species.summaries = TRUE,
+    print.plots = TRUE,
     # Setting to pass to C++ model
     model.settings = list()
   ) {
@@ -180,10 +180,10 @@ wisp <- function(
     
     # Parse MCMC settings
     MCMC.settings.internal <- list(
-      MCMC.burnin = 0,
+      MCMC.burnin = 1e2,
       MCMC.steps = 1e3,
-      MCMC.step.size = 1.0,
-      MCMC.prior = 1.0,
+      MCMC.step.size = 0.5,
+      MCMC.prior = 1.0, 
       MCMC.neighbor.filter = 2
     )
     # ... check that provided MCMC.settings is a list with valid names
@@ -372,18 +372,21 @@ wisp <- function(
     # Plot MCMC walks, both parameters and negloglik
     plots.MCMC <- plot.MCMC.walks(
       wisp.results = results,
+      print.plots = print.plots,
       verbose = verbose
     )
     
     # Plot normality comparison of MCMC and bootstrap estimates
     plots.MCMC.bs.comparison <- plot.MCMC.bs.comparison(
       wisp.results = results,
+      print.plots = print.plots,
       verbose = verbose
     )
     
     # Plot effect parameter distribution
     plots.effect.dist <- plot.effect.dist(
       wisp.results = results,
+      print.plots = print.plots,
       verbose = verbose
     )
     
@@ -399,7 +402,6 @@ wisp <- function(
     # Make parameter plots 
     plots.parameters <- plot.parameters(
       wisp.results = results,
-      print.plots = FALSE, 
       verbose = verbose
     )
     
@@ -415,7 +417,7 @@ wisp <- function(
     results[["plots"]] <- plots
     
     # Print summary plots
-    if (print.species.summaries) {
+    if (print.plots) {
       plot.species.summary(
         wisp.results = results,
         these.contexts = NULL,
@@ -1080,7 +1082,7 @@ plot.parameters <- function(
     wisp.results,
     species.lvl = NULL, # NULL (plot all) or a single species level to be plotted
     violin = TRUE,
-    print.plots = TRUE,
+    print.plots = FALSE,
     species.classes = NULL,
     verbose = TRUE
   ) {
@@ -1645,6 +1647,7 @@ plot.parameters <- function(
 #' @export
 plot.effect.dist <- function(
     wisp.results,
+    print.plots = TRUE,
     verbose = TRUE 
   ) {
     
@@ -1654,7 +1657,6 @@ plot.effect.dist <- function(
     bs_fitted_params <- wisp.results$sample.params
     
     # Warping factor distributions
-    if (verbose) snk.report...("Warping factors distributions")
     
     # ... for point
     wfactors_point_mask <- grepl("wfactor_point", wisp.results$param.names)
@@ -1686,15 +1688,14 @@ plot.effect.dist <- function(
       labs(title = "Distribution of random slope effects (warping factors)", x = "Warping factor, slope", y = "Count") +
       theme_minimal()
     
-    if (verbose) print(plot_wfactor_point_effects_dist)
+    if (print.plots) print(plot_wfactor_point_effects_dist)
     plots.effects_dist[["plot_wfactor_point_effects_dist"]] <- plot_wfactor_point_effects_dist
-    if (verbose) print(plot_wfactor_rate_effects_dist)
+    if (print.plots) print(plot_wfactor_rate_effects_dist)
     plots.effects_dist[["plot_wfactor_rate_effects_dist"]] <- plot_wfactor_rate_effects_dist
-    if (verbose) print(plot_wfactor_slope_effects_dist)
+    if (print.plots) print(plot_wfactor_slope_effects_dist)
     plots.effects_dist[["plot_wfactor_slope_effects_dist"]] <- plot_wfactor_slope_effects_dist
     
     # Rate effects distribution
-    if (verbose) snk.report...("Rate effects distribution")
     rate_effs_mask <- grepl("Rt", wisp.results$param.names) & grepl("beta", wisp.results$param.names)
     rate_effects <- c(bs_fitted_params[,rate_effs_mask])
     plot_rate_effects_effects_dist <- ggplot() +
@@ -1705,11 +1706,10 @@ plot.effect.dist <- function(
       labs(title = "Distribution of fixed rate effects", x = "Rate effect", y = "Count") +
       theme_minimal() 
     
-    if (verbose) print(plot_rate_effects_effects_dist)
+    if (print.plots) print(plot_rate_effects_effects_dist)
     plots.effects_dist[["plot_rate_effects_effects_dist"]] <- plot_rate_effects_effects_dist
     
     # Slope effects distribution
-    if (verbose) snk.report...("Slope effects distribution")
     tslope_effs_mask <- grepl("tslope", wisp.results$param.names) & grepl("beta", wisp.results$param.names)
     if (any(tslope_effs_mask)) {
       
@@ -1722,13 +1722,12 @@ plot.effect.dist <- function(
         labs(title = "Distribution of fixed slope effects", x = "t-slope effect", y = "Count") +
         theme_minimal() 
       
-      if (verbose) print(plot_slope_effects_effects_dist)
+      if (print.plots) print(plot_slope_effects_effects_dist)
       plots.effects_dist[["plot_slope_effects_effects_dist"]] <- plot_slope_effects_effects_dist
       
     }
     
     # Point effects distribution
-    if (verbose) snk.report...("tpoint effects distribution")
     tpoint_effs_mask <- grepl("tpoint", wisp.results$param.names) & grepl("beta", wisp.results$param.names)
     if (any(tpoint_effs_mask)) {
       
@@ -1740,7 +1739,7 @@ plot.effect.dist <- function(
         labs(title = "Distribution of fixed t-point effects", x = "t-point effect", y = "Count") +
         theme_minimal() 
       
-      if (verbose) print(plot_tpoint_effects_effects_dist)
+      if (print.plots) print(plot_tpoint_effects_effects_dist)
       plots.effects_dist[["plot_tpoint_effects_effects_dist"]] <- plot_tpoint_effects_effects_dist
       
     }
@@ -1783,7 +1782,7 @@ plot.species.summary <- function(
     
     for (gvp_lvl in gvp_lvls) {
       
-      if (verbose) snk.report(paste0("Printing species summary plots for ", gvp_lvl))
+      if (verbose) snk.report(paste0("Printing species summary plots for ", gvp_lvl, ": "))
       first_print <- TRUE
       
       for (gv_lvl in gv_lvls) {
@@ -1861,6 +1860,7 @@ plot.species.summary <- function(
 #' @export
 plot.MCMC.walks <- function(
     wisp.results,
+    print.plots = TRUE,
     verbose = TRUE,
     low_samples = 10
   ) {
@@ -1977,11 +1977,13 @@ plot.MCMC.walks <- function(
         legend.text = element_text(size = legend_size)
       )
     
-    grid.arrange(
-      plot.walks.parameters_low, 
-      plot.walks.parameters_high, 
-      plot.walks.nll,
-      ncol = 1)
+    if (print.plots) {
+      grid.arrange(
+        plot.walks.parameters_low, 
+        plot.walks.parameters_high, 
+        plot.walks.nll,
+        ncol = 1)
+    }
     
     return(
       list(
@@ -2086,6 +2088,7 @@ plot.decomposition <- function(
 #' @export
 plot.MCMC.bs.comparison <- function(
     wisp.results,
+    print.plots = TRUE,
     verbose = TRUE
   ) {
     
@@ -2300,12 +2303,14 @@ plot.MCMC.bs.comparison <- function(
         legend.text = element_text(size = legend_size)
       )
     
-    grid.arrange(
-      plot_comparison_density,
-      plot_comparison_Shaprio,
-      plot_sample_correlations,
-      ncol = 1
-    )
+    if (print.plots) {
+      grid.arrange(
+        plot_comparison_density,
+        plot_comparison_Shaprio,
+        plot_sample_correlations,
+        ncol = 1
+      )
+    }
     
     return(
       list(

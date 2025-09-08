@@ -146,11 +146,11 @@ wspc::wspc(
     // ... add "none" to represent no random effect (reference level)
     ran_lvls.push_front("none"); 
     // ... print extracted grouping variables
-    vprint("context grouping variables:", verbose);
+    vprint("Context grouping levels:", verbose);
     vprintV(context_lvls, verbose);
-    vprint("species grouping variables:", verbose);
+    vprint("Species grouping levels:", verbose);
     vprintV(species_lvls, verbose);
-    vprint("Random-effect grouping variables:", verbose);
+    vprint("Random-effect grouping levels:", verbose);
     vprintV(ran_lvls, verbose);
     
     // Temporarily extract tokenized-count columns 
@@ -377,7 +377,7 @@ wspc::wspc(
       ran_lvls.size(),
       species_lvls.size()
     );
-    vprint("Initialized random effect warping factors", verbose);
+    vprint("Initialized random-effect warping factors", verbose);
     
     // Make and map parameter vector
     List params = make_parameter_vector(
@@ -432,7 +432,7 @@ wspc::wspc(
         boundary_vec_size++;
       } 
     }
-    vprint("Computed size of boundary vector: " + std::to_string(boundary_vec_size), verbose);
+    vprint("Size of boundary vector: " + std::to_string(boundary_vec_size), verbose);
     
     // Initialize list to hold results from model fit
     optim_results = List::create(
@@ -1549,7 +1549,8 @@ Rcpp::NumericMatrix wspc::MCMC(
         for (int i = 0; i < n_params; i++) {
           
           // ... calculate step size
-          double normalized_step_size = step_size * std::log10(std::abs(params_current(i)) + 1.0);
+          int param_oom = static_cast<int>(std::floor(std::log10(std::abs(params_current(i)))));
+          double normalized_step_size = step_size * std::pow(10, static_cast<double>(param_oom + 1.0));
           double bounded_step_size = normalized_step_size / bd_current_transformed.val();
           if (bounded_step_size == 0.0) {
             // ... presumably this case means current parameter is extremely close to zero or very close to boundary

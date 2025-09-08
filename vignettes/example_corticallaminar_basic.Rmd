@@ -2,6 +2,10 @@
 title: "RORB along the cortical laminar axis"
 ---
 
+```{r setup, include=FALSE}
+options(width = 10000)
+```
+
 The gene RORB plays a key role in the development of sensorimotor cortex in rodents. RORB expression leads axons from thalamic neurons to innervate cortical layer 4. These thalamocortical projections organize into discrete "barrel" formations, each barrel containing the inputs from a single whisker. 
 
 While it's generally assumed that there are no major differences in barrel formations between the left and right hemispheres (i.e., no "laterality"), over the years there have been several histological studies suggesting age and sex-dependent hemispheric differences. Given the established role of RORB in barrel formation, one might want to test for age or sex-dependent laterality in RORB expression. 
@@ -91,54 +95,102 @@ model <- lme4::lmer(
   )
 ```
 
-The obvious problem with this linear model is that it makes no use of the bin variable and thus loses all spatial information. A slightly less obvious problem is that the model makes no use of the gene variable, although this problem could be addressed by subsetting countdata to just a single gene of interest. (We do not want to treat gene as another fixed-effect factor along with age and hemisphere, as there's no reason to think age or hemisphere have any effect independent of RNA species.) Nevertheless, this model shows the basic effects structure we're trying to capture. 
+The problem with this linear model is that it makes no use of the bin variable and thus loses all spatial information. A second problem is that the model makes no use of the gene variable, although this problem could be addressed by subsetting countdata to just a single gene of interest. (We do not want to treat gene as another fixed-effect factor along with age and hemisphere, as there's no reason to think age or hemisphere have any effect independent of RNA species.) Nevertheless, this model shows the basic effects structure we're trying to capture. 
 
 A wisp captures this effects structure without discarding spatial information, and while segregating counts by gene. Unlike a mixed-effects linear model from the lme4 package, there is no model formula to specify in wispack. Instead of using a syntactic description (a formula), the effects structure in wispack is set "semantically", i.e., by specifying which variables in the data frame correspond to which roles in the model. The roles are: 
 
-1. count: a non-negative integer (not normalized or log-transformed) giving the number of RNA molecules of a given species in a given cell.
-2. bin: the position of the cell along the axis of interest (whether or not the actual unit is "bin"). 
-3. context: the biological context of the cell, typically a celltype label.
-4. species: the RNA species (gene) being modeled.
-5. ran: the random-effect grouping factor, typically a sample or animal ID.
-6. fixedeffects: a vector of fixed-effect factors, typically biological or experimental conditions.
+1. **count:** a non-negative integer (not normalized or log-transformed) giving the number of RNA molecules of a given species in a given cell.
+2. **bin:** the position of the cell along the axis of interest (whether or not the actual unit is "bin"). 
+3. **context:** the biological context of the cell, typically a celltype label.
+4. **species:** the RNA species (gene) being modeled.
+5. **ran:** the random-effect grouping factor, typically a sample or animal ID.
+6. **fixedeffects:** a vector of fixed-effect factors, typically biological or experimental conditions.
 
-In the data frame loaded above, the count, bin, and context columns match the names of the roles to which they respond. Wispack will find those columns. However, as the species and ran roles have different names in the data frame, and thus we need to specify for wispack which data columns carry these variables. While wispack has no default names for fixed effects, if no fixed effects are specified, all columns not identified as one of the other roles will be treated as fixed effects.
+In the data frame loaded above, the count, bin, and context columns match the names of the roles to which they correspond. Wispack will find those columns automatically. However, the species and ran roles have different names in the data frame, and thus we need to specify for wispack which data columns carry these variables. While wispack has no default names for fixed effects, if no fixed effects are specified, all columns not identified as one of the other roles will be treated as fixed effects.
 
 ```{r wisp_setup}
-# Specify needed variables for wisp
+# Specify variables for wisp
 data.variables <- list(
     species = "gene",
     ran = "mouse"
   )
 ```
 
-<h1> Spatial parameterization </h1>
+It would be redundant, but all roles would be specified as follows: 
 
-```{r fit_wisp, eval=FALSE}
+```{r all_roles, eval=FALSE}
+# Specify all variables for wisp
+data.variables <- list(
+    count = "count",
+    bin = "bin", 
+    context = "context", 
+    species = "gene",
+    ran = "mouse",
+    fixedeffects = c("hemisphere", "age")
+  )
+```
 
+<h1> Spatial parameterization and warping </h1>
+
+In wisp, a semantic specification of the variable roles suffices because, with respect to those roles, all wisp models have the same effects structure. This effects structure is defined over a parameterization of the spatial distribution of RNA molecules. Wisp models describe the distribution of RNA molecules along a one-dimensional axis (the bin variable) as a log-transformed rate that is constant across space, except for transition points where the rate changes with a slope given by a logistic function. Within this spatial parameterization, fixed effects from fixed-effect factors or their interactions are simple linear effects, being multiplicative on rates and additive on transition points and slopes. (As it turns out, the multiplicative effects on rate are log-fold changes, and so mesh nicely with standard practice.) Random effects from the random-effect grouping factor are a nonlinear "warping" of the three spatial parameters. 
+
+<div class="figure">
+  <img src="fig_WSPfunctions.png" alt="Demo plots of functions involved in wisp" width="90%">
+  <p class="caption">Demo plots of the functions involved in wisp. (A) The logistic function, used to model a single change point in gene expression. (B) The wisp poly-sigmoid function, built from three logistic components, representing three change points. (C) The warping function used to represent random effects, e.g., variation due to differences between individual animals or due to measurement noise. (D) The wisp poly-sigmoid from (B) with warping function applied.</p>
+</div>
+
+<h1> Fitting the model </h1>
+
+Thus, the goal of fitting a wisp model to spatial transcriptomics data is to estimate, for each gene: 
+
+1. The number of transition points.
+2. The spatial parameters (expression rates, transition-point locations, and transition-point slopes) in the reference condition.
+3. The linear effects of fixed-effect factors and their interactions on the spatial parameters.
+4. The nonlinear warping effects of the random-effect grouping factor on spatial parameters.
+
+Although wispack includes many settings for fine-tuning the modeling process, fitting a wisp model and estimating its parameters is done with a single R function, wisp(). This function only needs one argument, the data to be modeled (count.data). If, as above, the variable roles are filled by data columns with with names besides the roles, then the variables (data.variables) must be provided via another argument. The following code fits a wisp model to the data loaded above, with verbose output. Plots are suppressed as well, as by default many are generated in the fitting process. As noted above, layer boundaries are provided to the model, but are used only in making plots so that the model fit and parameter estimates can be compared to the laminar boundaries estimated by the CCFv3 registration.
+
+```{r fit_wisp}
 # Set random seed for reproducibility
 set.seed(123)
 # Load wispack
-library(wispack)
-
+library(wispack, quietly = TRUE)
 # Fit model
-# ... all settings shown here are defaults
-laminar.model <- wisp(
-    # Data to model
+model <- wisp(
     count.data = countdata,
-    # Variable labels
     variables = data.variables,
-    # Settings used on R side
-    use.median = FALSE,
-    MCMC.settings = MCMC.settings,
-    bootstraps.num = 0,
-    converged.resamples.only = TRUE,
-    max.fork = bs_chunksize,
     dim.bounds = colMeans(layer.boundary.bins),
     verbose = TRUE,
-    print.child.summaries = TRUE,
-    # Setting to pass to C++ model
-    model.settings = model.settings
+    print.plots = FALSE
   )
+```
 
+<h1> Interpreting the results </h1> 
+
+As can be seen in the print out above, wisp models typically have hundreds of parameters, which means that they usually lack the kind of brief-yet-informative summary familiar from R packages for linear models. The most flat-footed way to extract desired results is to simply hunt through the output. The output of wisp() is a list with the following named components: 
+
+```{r wisp_model_components}
+for (n in names(model)) cat(n, ": ", class(model[[n]]), "\n", sep = "")
+```
+
+Within the "stats" object (another list itself), we find the following: 
+
+```{r stats_components}
+for (n in names(model$stats)) cat(n, ": ", class(model$stats[[n]]), "\n", sep = "")
+```
+
+The parameter object (stats$parameter) is a data frame the rows of which are the model parameters, the columns of which are various statistical results of interest, e.g., confidence intervals and p-values: 
+
+```{r parameter_components}
+print(head(model$stats$parameter))
+```
+
+If we want to extract all fixed-effects of hemisphere (i.e., laterality) on the expression rate of RORB, we can do so as follows:
+
+```{r hemisphere_effects_RORB}
+mask <- grepl("Rorb", model$stats$parameters$parameter) &    # just this gene
+  grepl("right", model$stats$parameters$parameter) &         # just the effect of hemisphere
+  grepl("beta", model$stats$parameters$parameter) &          # just the fixed effects of the above factor
+  grepl("Rt", model$stats$parameters$parameter)              # just the effects on rate
+print(model$stats$parameter[mask, ])
 ```

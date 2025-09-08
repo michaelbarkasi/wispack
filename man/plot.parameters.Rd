@@ -8,7 +8,7 @@
   wisp.results,
   species.lvl = NULL,
   violin = TRUE,
-  print.plots = TRUE,
+  print.plots = FALSE,
   species.classes = NULL,
   verbose = TRUE
 )

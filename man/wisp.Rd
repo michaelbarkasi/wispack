@@ -14,7 +14,7 @@ wisp(
   max.fork = 1,
   dim.bounds = c(),
   verbose = TRUE,
-  print.species.summaries = TRUE,
+  print.plots = TRUE,
   model.settings = list()
 )
 }
@@ -37,7 +37,7 @@ wisp(
 
 \item{verbose}{Logical, if TRUE, prints information during the fitting process.}
 
-\item{print.species.summaries}{Logical, if TRUE, prints summaries of each species level.}
+\item{print.plots}{Logical, if TRUE, prints plot made during the modeling process.}
 
 \item{model.settings}{List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, and \code{warp_precision}. Default values are provided.}
 }

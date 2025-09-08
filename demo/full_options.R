@@ -77,9 +77,9 @@ model.settings <- list(
 # Settings for MCMC walk
 # ... all settings shown here are defaults
 MCMC.settings <- list(
-    MCMC.burnin = 0,
+    MCMC.burnin = 1e2,
     MCMC.steps = 1e3,
-    MCMC.step.size = 1.0,
+    MCMC.step.size = 0.5,
     MCMC.prior = 1.0, 
     MCMC.neighbor.filter = 2
   )
@@ -99,7 +99,7 @@ laminar.model <- wisp(
     max.fork = bs_chunksize,
     dim.bounds = colMeans(layer.boundary.bins),
     verbose = TRUE,
-    print.child.summaries = TRUE,
+    print.species.summaries = TRUE,
     # Setting to pass to C++ model
     model.settings = model.settings
   )
