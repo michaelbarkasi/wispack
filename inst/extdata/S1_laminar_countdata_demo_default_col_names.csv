@@ -1,4 +1,4 @@
-"count","bin","parent","child","ran","hemisphere","age"
+"count","bin","context","species","ran","hemisphere","age"
 0,100,"cortex","Bcl11b",1,"left",12
 0,99,"cortex","Bcl11b",1,"left",12
 0,93,"cortex","Bcl11b",1,"left",12

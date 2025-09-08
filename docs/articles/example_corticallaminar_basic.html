@@ -40,8 +40,9 @@
     <li><a class="dropdown-item" href="../articles/install.html">Installation instructions</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Examples</h6></li>
-    <li><a class="dropdown-item" href="../articles/example_2.html">Example 2</a></li>
     <li><a class="dropdown-item" href="../articles/example_corticallaminar_basic.html">RORB along the cortical laminar axis</a></li>
+    <li><a class="dropdown-item" href="../articles/example_multicontext.html">Modeling celltypes</a></li>
+    <li><a class="dropdown-item" href="../articles/example_stats.html">Customizing statistical analyses</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -82,13 +83,13 @@ innervate cortical layer 4. These thalamocortical projections organize
 into discrete “barrel” formations, each barrel containing the inputs
 from a single whisker.</p>
 <p>While it’s generally assumed that there are no major differences in
-barrel formations between the left and right hemispheres (“laterality”),
-over the years there have been several histological studies suggesting
-age and sex-dependent hemispheric differences. Given the established
-role of RORB in barrel formation, one might want to test for age or
-sex-dependent laterality in RORB expression.</p>
+barrel formations between the left and right hemispheres (i.e., no
+“laterality”), over the years there have been several histological
+studies suggesting age and sex-dependent hemispheric differences. Given
+the established role of RORB in barrel formation, one might want to test
+for age or sex-dependent laterality in RORB expression.</p>
 <h1>
-Preprocessing the raw data
+Labeling the ROI
 </h1>
 <p>This example uses data collected from four male wild-type mice to
 test for age effects on laterality in RORB expression. The mice are
@@ -105,6 +106,9 @@ right sensorimotor cortex, with RORB molecules in red and laminar and
 columnar axes labeled.
 </p>
 </div>
+<h1>
+Coordinate transform into axis of interest
+</h1>
 <p>As wisp can only model one dimension of spatial variation (at least,
 as-of the writing of this demo for v1.0), we need to identify this axis
 and transform the RORB molecule coordinates into it. As we are primarily
@@ -121,6 +125,11 @@ Visualization of coordinate transform steps from initial CCFv3
 registration to laminar and columnar axes.
 </p>
 </div>
+<p>Note that the laminar axis is encoded as <em>y</em>, with 0 being the
+bottom of L6b, 100 the top of L2/3. The columnar axis is encoded as
+<em>x</em>, with 0 being the most posterior point, 100 the most anterior
+point. L1 was removed from the analysis, as it contains very few
+cells.</p>
 <h1>
 Data format
 </h1>
@@ -137,17 +146,17 @@ print its first few rows:</p>
 <span>  <span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##   count bin cortex   gene mouse hemisphere age</span></span>
-<span><span class="co">## 1     0 100 cortex Bcl11b     1       left  12</span></span>
-<span><span class="co">## 2     0  99 cortex Bcl11b     1       left  12</span></span>
-<span><span class="co">## 3     0  93 cortex Bcl11b     1       left  12</span></span>
-<span><span class="co">## 4     0  98 cortex Bcl11b     1       left  12</span></span>
-<span><span class="co">## 5     0  94 cortex Bcl11b     1       left  12</span></span>
-<span><span class="co">## 6     0  94 cortex Bcl11b     1       left  12</span></span></code></pre>
-<p>As can be seen, the imported data is a data frame with the columns:
-count, bin, cortex, gene, mouse, hemisphere, age. Although we’re focused
-on RORB, these first few rows show that there are other genes in the
-data as well. How many?</p>
+<pre><code><span><span class="co">##   count bin context   gene mouse hemisphere age</span></span>
+<span><span class="co">## 1     0 100  cortex Bcl11b     1       left  12</span></span>
+<span><span class="co">## 2     0  99  cortex Bcl11b     1       left  12</span></span>
+<span><span class="co">## 3     0  93  cortex Bcl11b     1       left  12</span></span>
+<span><span class="co">## 4     0  98  cortex Bcl11b     1       left  12</span></span>
+<span><span class="co">## 5     0  94  cortex Bcl11b     1       left  12</span></span>
+<span><span class="co">## 6     0  94  cortex Bcl11b     1       left  12</span></span></code></pre>
+<p>As can be seen, the imported data has the columns: count, bin,
+context, gene, mouse, hemisphere, age. Although we’re focused on RORB,
+these first few rows show that there are other genes in the data as
+well. How many?</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">num_genes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">$</span><span class="va">gene</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Number of genes:"</span>, <span class="va">num_genes</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
@@ -158,33 +167,125 @@ data as well. How many?</p>
 <pre><code><span><span class="co">## Gene names: Bcl11b, Fezf2, Satb2, Nxph3, Cux2, Rorb</span></span></code></pre>
 <p>Just as RORB is known to be localized to L4, the other genes are also
 known to be localized to specific layers (see <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">here</a>). So, the
-modeling results can be compared to known biology in all cases.</p>
+modeling results can be compared to known biology in all cases. To
+facilitate this comparison, we also load the layer boundaries gotten
+from the CCFv3 registration. Note that these boundaries are not used to
+fit the model.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">layer.boundary.bins</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
+<span>    <span class="st">"extdata"</span>, </span>
+<span>    <span class="st">"layer_boundary_bins.csv"</span>, </span>
+<span>    package <span class="op">=</span> <span class="st">"wispack"</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
 <p>Each row in the data frame represents a cell from the left or right
 S1 region of one of the four mice. Each cell is represented in multiple
 rows, one row per gene. Hence, we can find the number of cells by
 dividing the number of rows by the number of genes.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">num_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">)</span><span class="op">/</span><span class="va">num_genes</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Number of cells:"</span>, <span class="va">num_cells</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Number of cells: 54116</span></span></code></pre>
-<p>Notice that the count column thus gives the number of molecules of
-the RNA species listed in the gene column, found in the cell represented
-by a given row. Each cell, of course, comes from a specific mouse and
-brain hemisphere, information given in the correspondingly named
-columns. The age column gives the age of the mouse.</p>
-<p>This leaves two columns to explain: cortex and bin. For this example,
-the cortex column is a dummy variable placed by wispack when no celltype
-variable is provided. The bin column gives the position of the cell
-along the laminar axis, in units of “bins”. The raw wispack data gave
-cell positions in microns. Any position coordinates could be used,
-including ones with non-integer values. However, we have binned the
-position coordinates into 100 (roughly) equal-width bins to allow for
-bootstrapping.</p>
+<p>The count column thus gives the number of molecules of the RNA
+species listed in the gene column, found in the cell represented by a
+given row. Each cell, of course, comes from a specific mouse and brain
+hemisphere, information given in the correspondingly named columns. The
+age column gives the age of the mouse.</p>
+<p>This leaves two columns to explain: context and bin. “Context” refers
+to the biological context of the cell. In this case, all the cells are
+simply labeled as “cortex”, thus making context a dummy variable. An
+obvious use of the context variable would be to label the type of each
+cell, e.g., glutamatergic vs. GABAergic neurons (see <a href="example_multicontext.html">Modeling celltypes</a>).</p>
+<p>The bin column gives the position of the cell along the axis of
+interest (in this case, the laminar axis), in units of “bins”. Any
+position coordinates could be used, including ones with non-integer
+values such as microns. However, we have binned the position coordinates
+into 100 (roughly) equal-width bins to allow for bootstrapping (see <a href="example_stats.html">Customizing statistical analyses</a>).</p>
 <h1>
-Fitting the model
+Effects structure
 </h1>
 <p>The goal is to test for interacting effects of age and laterality,
-with mouse as a random effect grouping factor</p>
+with mouse as a random-effect grouping factor. If we were using a linear
+model from the well-known R package lme4, we would have the
+following:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu">lme4</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span></span>
+<span>  <span class="va">count</span> <span class="op">~</span> <span class="va">age</span> <span class="op">*</span> <span class="va">hemisphere</span> <span class="op">+</span> <span class="op">(</span><span class="va">age</span> <span class="op">*</span> <span class="va">hemisphere</span><span class="op">|</span><span class="va">mouse</span><span class="op">)</span>, </span>
+<span>  data <span class="op">=</span> <span class="va">countdata</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p>The obvious problem with this linear model is that it makes no use of
+the bin variable and thus loses all spatial information. A slightly less
+obvious problem is that the model makes no use of the gene variable,
+although this problem could be addressed by subsetting countdata to just
+a single gene of interest. (We do not want to treat gene as another
+fixed-effect factor along with age and hemisphere, as there’s no reason
+to think age or hemisphere have any effect independent of RNA species.)
+Nevertheless, this model shows the basic effects structure we’re trying
+to capture.</p>
+<p>A wisp captures this effects structure without discarding spatial
+information, and while segregating counts by gene. Unlike a
+mixed-effects linear model from the lme4 package, there is no model
+formula to specify in wispack. Instead of using a syntactic description
+(a formula), the effects structure in wispack is set “semantically”,
+i.e., by specifying which variables in the data frame correspond to
+which roles in the model. The roles are:</p>
+<ol style="list-style-type: decimal">
+<li>count: a non-negative integer (not normalized or log-transformed)
+giving the number of RNA molecules of a given species in a given
+cell.</li>
+<li>bin: the position of the cell along the axis of interest (whether or
+not the actual unit is “bin”).</li>
+<li>context: the biological context of the cell, typically a celltype
+label.</li>
+<li>species: the RNA species (gene) being modeled.</li>
+<li>ran: the random-effect grouping factor, typically a sample or animal
+ID.</li>
+<li>fixedeffects: a vector of fixed-effect factors, typically biological
+or experimental conditions.</li>
+</ol>
+<p>In the data frame loaded above, the count, bin, and context columns
+match the names of the roles to which they respond. Wispack will find
+those columns. However, as the species and ran roles have different
+names in the data frame, and thus we need to specify for wispack which
+data columns carry these variables. While wispack has no default names
+for fixed effects, if no fixed effects are specified, all columns not
+identified as one of the other roles will be treated as fixed
+effects.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Specify needed variables for wisp</span></span>
+<span><span class="va">data.variables</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    species <span class="op">=</span> <span class="st">"gene"</span>,</span>
+<span>    ran <span class="op">=</span> <span class="st">"mouse"</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<h1>
+Spatial parameterization
+</h1>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Set random seed for reproducibility</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
+<span><span class="co"># Load wispack</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Fit model</span></span>
+<span><span class="co"># ... all settings shown here are defaults</span></span>
+<span><span class="va">laminar.model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
+<span>    <span class="co"># Data to model</span></span>
+<span>    count.data <span class="op">=</span> <span class="va">countdata</span>,</span>
+<span>    <span class="co"># Variable labels</span></span>
+<span>    variables <span class="op">=</span> <span class="va">data.variables</span>,</span>
+<span>    <span class="co"># Settings used on R side</span></span>
+<span>    use.median <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>    MCMC.settings <span class="op">=</span> <span class="va">MCMC.settings</span>,</span>
+<span>    bootstraps.num <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>    converged.resamples.only <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    max.fork <span class="op">=</span> <span class="va">bs_chunksize</span>,</span>
+<span>    dim.bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span>,</span>
+<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    print.child.summaries <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    <span class="co"># Setting to pass to C++ model</span></span>
+<span>    model.settings <span class="op">=</span> <span class="va">model.settings</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
   </main>
 </div>
 

@@ -4,9 +4,9 @@ title: "RORB along the cortical laminar axis"
 
 The gene RORB plays a key role in the development of sensorimotor cortex in rodents. RORB expression leads axons from thalamic neurons to innervate cortical layer 4. These thalamocortical projections organize into discrete "barrel" formations, each barrel containing the inputs from a single whisker. 
 
-While it's generally assumed that there are no major differences in barrel formations between the left and right hemispheres ("laterality"), over the years there have been several histological studies suggesting age and sex-dependent hemispheric differences. Given the established role of RORB in barrel formation, one might want to test for age or sex-dependent laterality in RORB expression. 
+While it's generally assumed that there are no major differences in barrel formations between the left and right hemispheres (i.e., no "laterality"), over the years there have been several histological studies suggesting age and sex-dependent hemispheric differences. Given the established role of RORB in barrel formation, one might want to test for age or sex-dependent laterality in RORB expression. 
 
-<h1> Preprocessing the raw data </h1>
+<h1> Labeling the ROI </h1>
 
 This example uses data collected from four male wild-type mice to test for age effects on laterality in RORB expression. The mice are split between two ages: postnatal day 12 (P12) and postnatal day 18 (P18). We started with raw, non-normalized mRNA counts from the cells within the primary sensorimotor cortex (S1), both left and right hemispheres. Before using any functions from wispack, we identified S1 in each sample by manually fitting the entire slice to the CCFv3.
 
@@ -15,12 +15,16 @@ This example uses data collected from four male wild-type mice to test for age e
   <p class="caption">Left: Example horizontal slice as reconstructed from MERFISH data. Red highlight indicates the right primary sensorimotor cortex. Right: The right sensorimotor cortex, with RORB molecules in red and laminar and columnar axes labeled.</p>
 </div>
 
+<h1> Coordinate transform into axis of interest </h1>
+
 As wisp can only model one dimension of spatial variation (at least, as-of the writing of this demo for v1.0), we need to identify this axis and transform the RORB molecule coordinates into it. As we are primarily concerned with how RORB is distributed across cortical layers, the laminar axis is the obvious candidate. Coordinate transformation into an axis of interest must be done outside of wispack. For this case, we wrote a custom coordinate transformation described in this [preprint](https://doi.org/10.1101/2025.06.11.659209) and available as code in this [repo](https://github.com/Oviedo-Lab/wspmm_methods.git) (see function cortical_coordinate_transform in script merfish_preprocessing.R). 
 
 <div class="figure">
   <img src="fig_coordtrans.png" alt="Image showing the steps to transform coordinates from the CCFv3 registration to laminar and columnar axes" width="90%">
   <p class="caption">Visualization of coordinate transform steps from initial CCFv3 registration to laminar and columnar axes.</p>
 </div>
+
+Note that the laminar axis is encoded as _y_, with 0 being the bottom of L6b, 100 the top of L2/3. The columnar axis is encoded as _x_, with 0 being the most posterior point, 100 the most anterior point. L1 was removed from the analysis, as it contains very few cells.
 
 <h1> Data format </h1>
 
@@ -38,7 +42,7 @@ countdata <- read.csv(
 print(head(countdata))
 ```
 
-As can be seen, the imported data is a data frame with the columns: count, bin, cortex, gene, mouse, hemisphere, age. Although we're focused on RORB, these first few rows show that there are other genes in the data as well. How many? 
+As can be seen, the imported data has the columns: count, bin, context, gene, mouse, hemisphere, age. Although we're focused on RORB, these first few rows show that there are other genes in the data as well. How many? 
 
 ```{r n_genes}
 num_genes <- length(unique(countdata$gene))
@@ -51,7 +55,17 @@ Which genes?
 cat("Gene names:", paste0(unique(countdata$gene), collapse = ", "))
 ```
 
-Just as RORB is known to be localized to L4, the other genes are also known to be localized to specific layers (see [here](https://doi.org/10.1101/2025.06.11.659209)). So, the modeling results can be compared to known biology in all cases. 
+Just as RORB is known to be localized to L4, the other genes are also known to be localized to specific layers (see [here](https://doi.org/10.1101/2025.06.11.659209)). So, the modeling results can be compared to known biology in all cases. To facilitate this comparison, we also load the layer boundaries gotten from the CCFv3 registration. Note that these boundaries are not used to fit the model.
+
+```{r load_boundaries}
+layer.boundary.bins <- read.csv(
+  system.file(
+    "extdata", 
+    "layer_boundary_bins.csv", 
+    package = "wispack"
+    )
+  )
+```
 
 Each row in the data frame represents a cell from the left or right S1 region of one of the four mice. Each cell is represented in multiple rows, one row per gene. Hence, we can find the number of cells by dividing the number of rows by the number of genes. 
 
@@ -60,10 +74,71 @@ num_cells <- nrow(countdata)/num_genes
 cat("Number of cells:", num_cells, "\n")
 ```
 
-Notice that the count column thus gives the number of molecules of the RNA species listed in the gene column, found in the cell represented by a given row. Each cell, of course, comes from a specific mouse and brain hemisphere, information given in the correspondingly named columns. The age column gives the age of the mouse. 
+The count column thus gives the number of molecules of the RNA species listed in the gene column, found in the cell represented by a given row. Each cell, of course, comes from a specific mouse and brain hemisphere, information given in the correspondingly named columns. The age column gives the age of the mouse. 
 
-This leaves two columns to explain: cortex and bin. For this example, the cortex column is a dummy variable placed by wispack when no celltype variable is provided. The bin column gives the position of the cell along the laminar axis, in units of "bins". The raw wispack data gave cell positions in microns. Any position coordinates could be used, including ones with non-integer values. However, we have binned the position coordinates into 100 (roughly) equal-width bins to allow for bootstrapping. 
+This leaves two columns to explain: context and bin. "Context" refers to the biological context of the cell. In this case, all the cells are simply labeled as "cortex", thus making context a dummy variable. An obvious use of the context variable would be to label the type of each cell, e.g., glutamatergic vs. GABAergic neurons (see [Modeling celltypes](example_multicontext.html)).
 
-<h1> Fitting the model </h1>
+The bin column gives the position of the cell along the axis of interest (in this case, the laminar axis), in units of "bins". Any position coordinates could be used, including ones with non-integer values such as microns. However, we have binned the position coordinates into 100 (roughly) equal-width bins to allow for bootstrapping (see [Customizing statistical analyses](example_stats.html)). 
 
-The goal is to test for interacting effects of age and laterality, with mouse as a random effect grouping factor
+<h1> Effects structure </h1>
+
+The goal is to test for interacting effects of age and laterality, with mouse as a random-effect grouping factor. If we were using a linear model from the well-known R package lme4, we would have the following: 
+
+```{r lmer_formula, eval=FALSE}
+model <- lme4::lmer(
+  count ~ age * hemisphere + (age * hemisphere|mouse), 
+  data = countdata
+  )
+```
+
+The obvious problem with this linear model is that it makes no use of the bin variable and thus loses all spatial information. A slightly less obvious problem is that the model makes no use of the gene variable, although this problem could be addressed by subsetting countdata to just a single gene of interest. (We do not want to treat gene as another fixed-effect factor along with age and hemisphere, as there's no reason to think age or hemisphere have any effect independent of RNA species.) Nevertheless, this model shows the basic effects structure we're trying to capture. 
+
+A wisp captures this effects structure without discarding spatial information, and while segregating counts by gene. Unlike a mixed-effects linear model from the lme4 package, there is no model formula to specify in wispack. Instead of using a syntactic description (a formula), the effects structure in wispack is set "semantically", i.e., by specifying which variables in the data frame correspond to which roles in the model. The roles are: 
+
+1. count: a non-negative integer (not normalized or log-transformed) giving the number of RNA molecules of a given species in a given cell.
+2. bin: the position of the cell along the axis of interest (whether or not the actual unit is "bin"). 
+3. context: the biological context of the cell, typically a celltype label.
+4. species: the RNA species (gene) being modeled.
+5. ran: the random-effect grouping factor, typically a sample or animal ID.
+6. fixedeffects: a vector of fixed-effect factors, typically biological or experimental conditions.
+
+In the data frame loaded above, the count, bin, and context columns match the names of the roles to which they respond. Wispack will find those columns. However, as the species and ran roles have different names in the data frame, and thus we need to specify for wispack which data columns carry these variables. While wispack has no default names for fixed effects, if no fixed effects are specified, all columns not identified as one of the other roles will be treated as fixed effects.
+
+```{r wisp_setup}
+# Specify needed variables for wisp
+data.variables <- list(
+    species = "gene",
+    ran = "mouse"
+  )
+```
+
+<h1> Spatial parameterization </h1>
+
+```{r fit_wisp, eval=FALSE}
+
+# Set random seed for reproducibility
+set.seed(123)
+# Load wispack
+library(wispack)
+
+# Fit model
+# ... all settings shown here are defaults
+laminar.model <- wisp(
+    # Data to model
+    count.data = countdata,
+    # Variable labels
+    variables = data.variables,
+    # Settings used on R side
+    use.median = FALSE,
+    MCMC.settings = MCMC.settings,
+    bootstraps.num = 0,
+    converged.resamples.only = TRUE,
+    max.fork = bs_chunksize,
+    dim.bounds = colMeans(layer.boundary.bins),
+    verbose = TRUE,
+    print.child.summaries = TRUE,
+    # Setting to pass to C++ model
+    model.settings = model.settings
+  )
+
+```

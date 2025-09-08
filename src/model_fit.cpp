@@ -1030,7 +1030,7 @@ List estimate_initial_parameters(
       for (int s = 0; s < n_species; s++) { 
         
         // Extract deg and block num 
-        int deg = degMat(s, p);
+        int deg = degMat(s, c);
         int n_blocks = deg + 1;
         
         // Extract found_cp, found_cp_trt, and count_log_avg_mat for this context-species pair

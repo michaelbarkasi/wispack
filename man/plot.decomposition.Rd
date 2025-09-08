@@ -2,14 +2,14 @@
 % Please edit documentation in R/wspmm.R
 \name{plot.decomposition}
 \alias{plot.decomposition}
-\title{Plot individual components of wisp fit for a single child level}
+\title{Plot individual components of wisp fit for a single species level}
 \usage{
-\method{plot}{decomposition}(wisp.results, child, log = FALSE, dim.boundaries = c(), y.lim = NULL)
+\method{plot}{decomposition}(wisp.results, species, log = FALSE, dim.boundaries = c(), y.lim = NULL)
 }
 \arguments{
 \item{wisp.results}{List, output of the wisp function.}
 
-\item{child}{Character string, the child level to plot. Must be provided, and only one at a time.}
+\item{species}{Character string, the species level to plot. Must be provided, and only one at a time.}
 
 \item{log}{Logical, if TRUE, plots on a log scale. Defaults to FALSE.}
 
@@ -21,5 +21,5 @@
 List of ggplot objects containing the decomposed rate-count plots.
 }
 \description{
-Extension of \code{plot.ratecount} which plots the individual pieces of the rate-count plot for a single child separately. Returns individual plots for data points only, fit lines only, and data points plus fit lines for individual random levels.
+Extension of \code{plot.ratecount} which plots the individual pieces of the rate-count plot for a single species separately. Returns individual plots for data points only, fit lines only, and data points plus fit lines for individual random levels.
 }

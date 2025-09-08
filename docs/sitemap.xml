@@ -3,6 +3,8 @@
 <url><loc>https://michaelbarkasi.github.io/wispack/LICENSE-text.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/example_2.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/example_corticallaminar_basic.html</loc></url>
+<url><loc>https://michaelbarkasi.github.io/wispack/articles/example_multicontext.html</loc></url>
+<url><loc>https://michaelbarkasi.github.io/wispack/articles/example_stats.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/index.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/install.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/license.html</loc></url>
@@ -19,6 +21,7 @@
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot.effect.dist.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot.parameters.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot.ratecount.html</loc></url>
+<url><loc>https://michaelbarkasi.github.io/wispack/reference/plot.species.summary.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/pvalues.samples.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/sample.stats.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/wisp.html</loc></url>

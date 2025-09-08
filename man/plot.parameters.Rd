@@ -6,23 +6,23 @@
 \usage{
 \method{plot}{parameters}(
   wisp.results,
-  child.lvl = NULL,
+  species.lvl = NULL,
   violin = TRUE,
   print.plots = TRUE,
-  child.classes = NULL,
+  species.classes = NULL,
   verbose = TRUE
 )
 }
 \arguments{
 \item{wisp.results}{List, output of the wisp function.}
 
-\item{child.lvl}{Character string, the child level to be plotted. If NULL, all child levels are plotted.}
+\item{species.lvl}{Character string, the species level to be plotted. If NULL, all species levels are plotted.}
 
 \item{violin}{Logical, if TRUE, plots violin plots for each parameter; if FALSE, uses bar plots.}
 
 \item{print.plots}{Logical, if TRUE, prints the plots to the console; if FALSE, only returns a list of plots without printing.}
 
-\item{child.classes}{List, a list of character vectors specifying which child levels to include together in plots. If NULL, all child levels are included in a single plot.}
+\item{species.classes}{List, a list of character vectors specifying which species levels to include together in plots. If NULL, all species levels are included in a single plot.}
 
 \item{verbose}{Logical, if TRUE, prints updates about the plotting process.}
 }

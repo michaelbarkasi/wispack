@@ -16,7 +16,7 @@
   pred.alpha.none = NA,
   pred.alpha.ran = NA,
   rans.to.print = c(),
-  childs.to.print = c(),
+  speciess.to.print = c(),
   verbose = TRUE
 )
 }
@@ -41,9 +41,9 @@
 
 \item{pred.alpha.ran}{Numeric, transparency for predicted lines when random level is not "none". If left NA, defaults to 0.9.}
 
-\item{rans.to.print}{Character vector, list of random levels to include on each child plot. If c(), all random levels are included.}
+\item{rans.to.print}{Character vector, list of random levels to include on each species plot. If c(), all random levels are included.}
 
-\item{childs.to.print}{Character vector, list of child levels to place on their own plot. If c(), all child levels are plotted individually.}
+\item{speciess.to.print}{Character vector, list of species levels to place on their own plot. If c(), all species levels are plotted individually.}
 
 \item{verbose}{Logical, if TRUE, prints updates about the plotting process.}
 }

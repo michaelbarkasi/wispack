@@ -45,8 +45,8 @@ fixed.effect.names <- c("hemisphere", "age")
 data.variables <- list(
     count = "count",
     bin = "bin", 
-    parent = "cortex", 
-    child = "gene",
+    context = "cortex", 
+    species = "gene",
     ran = "mouse",
     fixedeffects = fixed.effect.names
   )

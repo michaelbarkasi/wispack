@@ -2,11 +2,12 @@ pandoc: '3.4'
 pkgdown: 2.1.3
 pkgdown_sha: ~
 articles:
-  example_2: example_2.html
   example_corticallaminar_basic: example_corticallaminar_basic.html
+  example_multicontext: example_multicontext.html
+  example_stats: example_stats.html
   install: install.html
   license: license.html
-last_built: 2025-09-07T03:17Z
+last_built: 2025-09-08T00:34Z
 urls:
   reference: https://michaelbarkasi.github.io/wispack/reference
   article: https://michaelbarkasi.github.io/wispack/articles

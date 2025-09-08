@@ -24,8 +24,9 @@
     <li><a class="dropdown-item" href="../articles/install.html">Installation instructions</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Examples</h6></li>
-    <li><a class="dropdown-item" href="../articles/example_2.html">Example 2</a></li>
     <li><a class="dropdown-item" href="../articles/example_corticallaminar_basic.html">RORB along the cortical laminar axis</a></li>
+    <li><a class="dropdown-item" href="../articles/example_multicontext.html">Modeling celltypes</a></li>
+    <li><a class="dropdown-item" href="../articles/example_stats.html">Customizing statistical analyses</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -63,7 +64,7 @@
 <span>  max.fork <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  dim.bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  print.child.summaries <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  print.species.summaries <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  model.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -73,11 +74,11 @@
 
 
 <dl><dt id="arg-count-data">count.data<a class="anchor" aria-label="anchor" href="#arg-count-data"></a></dt>
-<dd><p>Data.frame, data to be modeled, with columns for model variables (count, bin, parent, child, ran, fixedeffects), or equivalent variables as specified in the <code>variables</code> argument.</p></dd>
+<dd><p>Data.frame, data to be modeled, with columns for model variables (count, bin, context, species, ran, fixedeffects), or equivalent variables as specified in the <code>variables</code> argument.</p></dd>
 
 
 <dt id="arg-variables">variables<a class="anchor" aria-label="anchor" href="#arg-variables"></a></dt>
-<dd><p>List, names of the columns in <code>count.data</code> that correspond to the model variables. The list should contain only (but not necessarily all) named elements: <code>count</code>, <code>bin</code>, <code>parent</code>, <code>child</code>, <code>ran</code>, and <code>fixedeffects</code>.</p></dd>
+<dd><p>List, names of the columns in <code>count.data</code> that correspond to the model variables. The list should contain only (but not necessarily all) named elements: <code>count</code>, <code>bin</code>, <code>context</code>, <code>species</code>, <code>ran</code>, and <code>fixedeffects</code>.</p></dd>
 
 
 <dt id="arg-use-median">use.median<a class="anchor" aria-label="anchor" href="#arg-use-median"></a></dt>
@@ -108,8 +109,8 @@
 <dd><p>Logical, if TRUE, prints information during the fitting process.</p></dd>
 
 
-<dt id="arg-print-child-summaries">print.child.summaries<a class="anchor" aria-label="anchor" href="#arg-print-child-summaries"></a></dt>
-<dd><p>Logical, if TRUE, prints summaries of each child level.</p></dd>
+<dt id="arg-print-species-summaries">print.species.summaries<a class="anchor" aria-label="anchor" href="#arg-print-species-summaries"></a></dt>
+<dd><p>Logical, if TRUE, prints summaries of each species level.</p></dd>
 
 
 <dt id="arg-model-settings">model.settings<a class="anchor" aria-label="anchor" href="#arg-model-settings"></a></dt>

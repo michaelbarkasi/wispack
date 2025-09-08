@@ -14,14 +14,14 @@ wisp(
   max.fork = 1,
   dim.bounds = c(),
   verbose = TRUE,
-  print.child.summaries = TRUE,
+  print.species.summaries = TRUE,
   model.settings = list()
 )
 }
 \arguments{
-\item{count.data}{Data.frame, data to be modeled, with columns for model variables (count, bin, parent, child, ran, fixedeffects), or equivalent variables as specified in the \code{variables} argument.}
+\item{count.data}{Data.frame, data to be modeled, with columns for model variables (count, bin, context, species, ran, fixedeffects), or equivalent variables as specified in the \code{variables} argument.}
 
-\item{variables}{List, names of the columns in \code{count.data} that correspond to the model variables. The list should contain only (but not necessarily all) named elements: \code{count}, \code{bin}, \code{parent}, \code{child}, \code{ran}, and \code{fixedeffects}.}
+\item{variables}{List, names of the columns in \code{count.data} that correspond to the model variables. The list should contain only (but not necessarily all) named elements: \code{count}, \code{bin}, \code{context}, \code{species}, \code{ran}, and \code{fixedeffects}.}
 
 \item{use.median}{Logical, if TRUE, the median of the resamples is used as the final parameter estimates; if FALSE, the initial fit by L-BFGS is used.}
 
@@ -37,7 +37,7 @@ wisp(
 
 \item{verbose}{Logical, if TRUE, prints information during the fitting process.}
 
-\item{print.child.summaries}{Logical, if TRUE, prints summaries of each child level.}
+\item{print.species.summaries}{Logical, if TRUE, prints summaries of each species level.}
 
 \item{model.settings}{List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, and \code{warp_precision}. Default values are provided.}
 }
