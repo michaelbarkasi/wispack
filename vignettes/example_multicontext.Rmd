@@ -1,5 +1,0 @@
----
-title: "Modeling celltypes"
----
-
-This is an example vignette. Show how to model different celltypes with the context variable. 

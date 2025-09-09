@@ -1,5 +1,0 @@
----
-title: "The wisp plot"
----
-
-This is an example vignette. Make and explain wisp plots here. 

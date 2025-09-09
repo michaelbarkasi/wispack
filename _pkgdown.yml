@@ -27,10 +27,10 @@ articles:
   contents:
   - install
 
-- title: Examples
-  navbar: Examples
+- title: Tutorials
+  navbar: Tutorials
   contents: 
-  - starts_with("example_")
+  - starts_with("tutorial_")
 
 - title: Legal
   navbar: Legal
