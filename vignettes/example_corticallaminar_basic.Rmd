@@ -165,7 +165,7 @@ model <- wisp(
   )
 ```
 
-<h1> Interpreting the results </h1> 
+<h1> Extracting the results </h1> 
 
 As can be seen in the print out above, wisp models typically have hundreds of parameters, which means that they usually lack the kind of brief-yet-informative summary familiar from R packages for linear models. The most flat-footed way to extract desired results is to simply hunt through the output. The output of wisp() is a list with the following named components: 
 
@@ -185,7 +185,7 @@ The parameter object (stats$parameter) is a data frame the rows of which are the
 print(head(model$stats$parameter))
 ```
 
-If we want to extract all fixed-effects of hemisphere (i.e., laterality) on the expression rate of RORB, we can do so as follows:
+If we want to extract all fixed-effects of hemisphere (i.e., laterality) on the expression rate of RORB, we can do so by masking with the treatment variable name for the factor hemisphere (which is "right", with "left" as the reference level), the name of the gene of interest ("Rorb"), and the type of parameter (fixed effect on rate, which is "beta" on "Rt"):
 
 ```{r hemisphere_effects_RORB}
 mask <- grepl("Rorb", model$stats$parameters$parameter) &    # just this gene
@@ -194,3 +194,7 @@ mask <- grepl("Rorb", model$stats$parameters$parameter) &    # just this gene
   grepl("Rt", model$stats$parameters$parameter)              # just the effects on rate
 print(model$stats$parameter[mask, ])
 ```
+
+Notice that all of the parameter names end in "Tns/Blk1", "Tns/Blk2", "Tns/Blk3", or "Tns/Blk4". This is because the model fit found three transition points, thus dividing the laminar axis into four "blocks" of roughly constant expression rate. The estimated effect of hemisphere on rate is given for each of the four blocks. Each block lists two estimates, one for the effect of laterality at the reference age (P12), and one for the interaction of laterality with age (the effect of laterality at P18). As can be seen, RORB expression is up-regulated in the right hemisphere (compared to left) across all blocks, but the interaction of age and hemisphere decreases that up-regulation, i.e., the laterality effect is less pronounced at P18 than at P12.
+
+However, it's difficult to get a handle on the results as pure effect numbers. A better way to understand the results is through visualization. Wispack provides a number of functions for [making intuitive spatial plots](example_wispplots.html). Indeed; a strength of wisp models is their use of concrete spatial parameters. 

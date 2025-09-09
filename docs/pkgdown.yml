@@ -5,9 +5,10 @@ articles:
   example_corticallaminar_basic: example_corticallaminar_basic.html
   example_multicontext: example_multicontext.html
   example_stats: example_stats.html
+  example_wispplots: example_wispplots.html
   install: install.html
   license: license.html
-last_built: 2025-09-08T18:48Z
+last_built: 2025-09-09T11:15Z
 urls:
   reference: https://michaelbarkasi.github.io/wispack/reference
   article: https://michaelbarkasi.github.io/wispack/articles

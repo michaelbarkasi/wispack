@@ -813,6 +813,9 @@ analyze.residuals <- function(
 #'
 #' This function takes wisp model results (a fitted line) and observed data (counts) and plots them together for visual comparison. It can also include independent block boundaries for comparison if provided.
 #'
+#' @name plot.ratecount
+#' @rdname plot-ratecount
+#' @usage plot.ratecount(wisp.results, pred.type = "pred.log", count.type = "count.log", dim.boundaries = c(), print.all = FALSE, y.lim = NA, count.alpha.none = NA, count.alpha.ran = NA, pred.alpha.none = NA, pred.alpha.ran = NA, rans.to.print = c(), speciess.to.print = c(), verbose = TRUE)
 #' @param wisp.results List, output of the wisp function.
 #' @param pred.type Character string, the name of the predicted rate column in the count data (e.g., "pred.log" or "pred").
 #' @param count.type Character string, the name of the observed count column in the count data (e.g., "count.log" or "count").
@@ -1070,6 +1073,9 @@ plot.ratecount <- function(
 #'
 #' Function to make nicely formatted violin (or bar) plots of the fitted wisp parameters, including confidence intervals if stat information is available.
 #'
+#' @name plot.parameters
+#' @rdname plot-parameters
+#' @usage plot.parameters(wisp.results, species.lvl = NULL, violin = TRUE, print.plots = FALSE, species.classes = NULL, verbose = TRUE)
 #' @param wisp.results List, output of the wisp function.
 #' @param species.lvl Character string, the species level to be plotted. If NULL, all species levels are plotted.
 #' @param violin Logical, if TRUE, plots violin plots for each parameter; if FALSE, uses bar plots. 
@@ -1641,7 +1647,11 @@ plot.parameters <- function(
 #'
 #' Function to make nicely formatted histograms of fitted parameters from WISP results.
 #'
+#' @name plot.effect.dist
+#' @rdname plot-effect-dist
+#' @usage plot.effect.dist(wisp.results, print.plots = TRUE, verbose = TRUE)
 #' @param wisp.results List, output of the wisp function.
+#' @param print.plots Logical, if TRUE, prints the plots to the current device.
 #' @param verbose Logical, if TRUE, prints information during plotting.
 #' @return List of ggplot objects containing histograms of fitted parameters.
 #' @export
@@ -1752,6 +1762,9 @@ plot.effect.dist <- function(
 #'
 #' Function to summarize all important information for an individual species level on one plot.
 #'
+#' @name plot.species.summary
+#' @rdname plot-species-summary
+#' @usage plot.species.summary(wisp.results, these.contexts = NULL, these.speciess = NULL, verbose = TRUE)
 #' @param wisp.results List, output of the wisp function.
 #' @param these.contexts Character vector, optional, specifies which context levels to summarize. Defaults to all. 
 #' @param these.speciess Character vector, optional, specifies which species levels to summarize. Defaults to all.
@@ -1853,7 +1866,11 @@ plot.species.summary <- function(
 #'
 #' Function to make nicely formatted histograms of fitted parameters from WISP results.
 #'
+#' @name plot.MCMC.walks
+#' @rdname plot-MCMC-walks
+#' @usage plot.MCMC.walks(wisp.results, print.plots = TRUE, verbose = TRUE, low_samples = 10)
 #' @param wisp.results List, output of the wisp function.
+#' @param print.plots Logical, if TRUE, prints the plots to the current device.
 #' @param verbose Logical, if TRUE, prints information during plotting.
 #' @param low_samples Integer, number of low-value parameters to plot. Defaults to 10.
 #' @return List of ggplot objects containing plots of walks for low-value parameters, high-value parameters, and normalized negative log likelihood.
@@ -1999,6 +2016,9 @@ plot.MCMC.walks <- function(
 #'
 #' Extension of \code{plot.ratecount} which plots the individual pieces of the rate-count plot for a single species separately. Returns individual plots for data points only, fit lines only, and data points plus fit lines for individual random levels.
 #'
+#' @name plot.decomposition
+#' @rdname plot-decomposition
+#' @usage plot.decomposition(wisp.results, species, log = FALSE, dim.boundaries = c(), y.lim = NULL)
 #' @param wisp.results List, output of the wisp function.
 #' @param species Character string, the species level to plot. Must be provided, and only one at a time. 
 #' @param log Logical, if TRUE, plots on a log scale. Defaults to FALSE.
@@ -2082,7 +2102,11 @@ plot.decomposition <- function(
 #'
 #' Function allowing for visual comparison of the parameter estimates from bootstrapping vs MCMC simulation. Shows density for ten representative parameters from bootstrapping and MCMC walk, the distributions of Shapiro-Walk p-values for bootstrapping vs MCMC walks, and the density of autocorrelation results for bootstrapping vs MCMC walks.
 #'
+#' @name plot.MCMC.bs.comparison
+#' @rdname plot-MCMC-bs-comparison
+#' @usage plot.MCMC.bs.comparison(wisp.results, print.plots = TRUE, verbose = TRUE)
 #' @param wisp.results List, output of the wisp function.
+#' @param print.plots Logical, if TRUE, prints the plots to the current graphics device.
 #' @param verbose Logical, if TRUE, prints information during plotting.
 #' @return List of ggplot objects containing plots of representative parameter distributions, Shapiro-Wilk normality test results, and autocorrelation plots for bootstrap and MCMC parameter estimates.
 #' @export
