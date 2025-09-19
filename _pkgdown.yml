@@ -60,3 +60,11 @@ reference:
   contents:
   - starts_with("plot")
   - starts_with("demo.")
+
+- title: MERFISH preprocessing functions 
+  navbar: MERFISH preprocessing functions 
+  contents:
+  - make_count_data
+  - make_count_data_csv
+  - cortical_coordinate_transform
+  - create.count.data.WSPmm

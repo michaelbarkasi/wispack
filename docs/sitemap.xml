@@ -16,9 +16,13 @@
 <url><loc>https://michaelbarkasi.github.io/wispack/authors.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/index.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/analyze.residuals.html</loc></url>
+<url><loc>https://michaelbarkasi.github.io/wispack/reference/cortical_coordinate_transform.html</loc></url>
+<url><loc>https://michaelbarkasi.github.io/wispack/reference/create.count.data.WSPmm.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/demo.sigmoid.plots.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/demo.warp.plots.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/index.html</loc></url>
+<url><loc>https://michaelbarkasi.github.io/wispack/reference/make_count_data.html</loc></url>
+<url><loc>https://michaelbarkasi.github.io/wispack/reference/make_count_data_csv.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot-MCMC-bs-comparison.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot-MCMC-walks.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot-decomposition.html</loc></url>
