@@ -5,13 +5,13 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Implements warped-sigmoid Poisson-process mixed-effects models (WSPmm) • wispack</title>
+<title>Warped-sigmoid Poisson-process mixed-effects models (WSPmm) • wispack</title>
 <script src="lightswitch.js"></script><script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
-<meta property="og:title" content="Implements warped-sigmoid Poisson-process mixed-effects models (WSPmm)">
+<meta property="og:title" content="Warped-sigmoid Poisson-process mixed-effects models (WSPmm)">
 <meta name="description" content="WSPmm are intended for hypothesis testing of spatially or temporally variable count data. They parameterize data in terms of blocks separated by transition points, each block having a process rate and each transition point having both a position and slope.">
 <meta property="og:description" content="WSPmm are intended for hypothesis testing of spatially or temporally variable count data. They parameterize data in terms of blocks separated by transition points, each block having a process rate and each transition point having both a position and slope.">
 </head>
@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,9 +41,11 @@
     <li><h6 class="dropdown-header" data-toc-skip>Installation</h6></li>
     <li><a class="dropdown-item" href="articles/install.html">Installation instructions</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Examples</h6></li>
-    <li><a class="dropdown-item" href="articles/example_2.html">Example 2</a></li>
-    <li><a class="dropdown-item" href="articles/example_corticallaminar_basic.html">Example: RORB in barrel cortex</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
+    <li><a class="dropdown-item" href="articles/tutorial_corticallaminar_basic.html">RORB along the cortical laminar axis</a></li>
+    <li><a class="dropdown-item" href="articles/tutorial_multicontext.html">Modeling celltypes</a></li>
+    <li><a class="dropdown-item" href="articles/tutorial_stats.html">Customizing statistical analyses</a></li>
+    <li><a class="dropdown-item" href="articles/tutorial_wispplots.html">The wisp plot</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="articles/license.html">Dependency licenses</a></li>
@@ -66,6 +68,11 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h1></div>
+<div class="figure">
+<img src="reference/figures/wisp_art.png" alt="Artistic rendering of wisp model" width="90%"><p class="caption">
+Artistic rendering of a wisp model. See <a href="articles/tutorial_wispplots.html">this tutorial</a> for an explanation.
+</p>
+</div>
 <p>Wispack (pronounced “wisp package” or “wisp pack”) is an R package for testing for between-group effects on spatial variation in spatial transcriptomics data, i.e., functional spatial effects (FSE).</p>
 <div class="figure">
 <img src="reference/figures/stack_0_1475_L1_truecolor.png" alt="True-color MERFISH image" width="50%"><p class="caption">

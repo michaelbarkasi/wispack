@@ -91,8 +91,8 @@ class wspc {
     sVec count_tokenized;                   // tokenized count data
     
     // Data variables, Rcpp ("factors")
-    CharacterVector parent;                 // parent column of summed data
-    CharacterVector child;                  // child column of summed data
+    CharacterVector context;                // context column of summed data (i.e., context of tokening for a species)
+    CharacterVector species;                // species column of summed data (i.e., species tokens of which are counted)
     CharacterVector ran;                    // random effect column of summed data
     CharacterVector treatment;              // treatment column of summed data
     
@@ -114,8 +114,8 @@ class wspc {
     CharacterVector fix_ref;                // reference level for each fixed effect
     
     // Grouping variables
-    CharacterVector parent_lvls;            // levels of parent grouping variable (fixed-effects)
-    CharacterVector child_lvls;             // levels of child grouping variable (fixed-effects)
+    CharacterVector context_lvls;           // levels of context grouping variable (fixed-effects)
+    CharacterVector species_lvls;           // levels of species grouping variable (fixed-effects)
     CharacterVector ran_lvls;               // levels of random effect grouping variable
     
     // Variables to help with data manipulation
@@ -133,10 +133,10 @@ class wspc {
       "tslope",                             // ... transition slopes
       "tpoint"                              // ... transition points
       }; 
-    IntegerMatrix degMat;                   // matrix of degrees for each parent (column) -- child (rows) pair
-    List found_cp_list;                     // list of found change points (IntegerMatrix) for each parent-child combination
-    List found_cp_trt_list;                 // list of found change points (NumericMatrix) for each parent-child combination, averaged across treatments
-    List count_log_avg_mat_list;            // list of average log counts (NumericMatrix) for each parent-child combination
+    IntegerMatrix degMat;                   // matrix of degrees for each context (column) -- species (rows) pair
+    List found_cp_list;                     // list of found change points (IntegerMatrix) for each context-species combination
+    List found_cp_trt_list;                 // list of found change points (NumericMatrix) for each context-species combination, averaged across treatments
+    List count_log_avg_mat_list;            // list of average log counts (NumericMatrix) for each context-species combination
     NumericVector fitted_parameters;        // vector holding the model parameters
     CharacterVector param_names;            // list holding the names of the model parameters as they appear in fitted_parameters
     sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
@@ -175,8 +175,8 @@ class wspc {
     double ctol = 5e-6;                         // convergence tolerance
     unsigned int rng_seed = 42u;                // seed for random number generator
     sMat gamma_dispersion;                      // dispersion terms for "kernel" of gamma-Poisson model
-    IntegerVector gd_child_idx;                 // indexes of child levels in gamma_dispersion
-    IntegerVector gd_parent_idx;                // indexes of parent levels in gamma_dispersion
+    IntegerVector gd_species_idx;               // indexes of species levels in gamma_dispersion
+    IntegerVector gd_context_idx;               // indexes of context levels in gamma_dispersion
     
     // Boundary penalty variables
     int boundary_vec_size = 0;                           // number of boundary components
@@ -596,8 +596,8 @@ std::vector<CharacterVector> make_treatments(
 List build_beta_shell(
   const CharacterVector& mc_names,
   const CharacterVector& treatment_lvls,
-  const CharacterVector& parent_lvls,
-  const CharacterVector& child_lvls,
+  const CharacterVector& context_lvls,
+  const CharacterVector& species_lvls,
   const List& ref_values,
   const List& RtEffs,
   const List& tpointEffs,
@@ -624,8 +624,8 @@ List make_parameter_vector(
  std::vector<IntegerVector> make_extrapolation_pool(
   const sVec& bin,
   const sVec& count, 
-  const CharacterVector& parent,
-  const CharacterVector& child,
+  const CharacterVector& context,
+  const CharacterVector& species,
   const CharacterVector& ran, 
   const CharacterVector& treatment,
   bool verbose
@@ -724,18 +724,18 @@ sdouble delta_var_est(
 
 // Formula to calculate gamme dispersion factor from mean and variance of counts
 sdouble gamma_dispersion_formula(
-    const sdouble& count_pc_mean, // mean of counts for parent-child combination
-    const sdouble& count_pc_var   // variance of counts for parent-child combination
+    const sdouble& count_cs_mean, // mean of counts for context-species combination
+    const sdouble& count_cs_var   // variance of counts for context-species combination
   );
 
-// Recomputes gamma_dispersion matrix, but not gd_child_idx and gd_parent_idx
+// Recomputes gamma_dispersion matrix, but not gd_species_idx and gd_context_idx
 List compute_gamma_dispersion(
     const sVec& count,                             // count data vector (raw, not log)
     const LogicalVector& count_not_na_mask,        // mask for non-NA counts
-    const CharacterVector& parent,                 // parent column of summed data
-    const CharacterVector& child,                  // child column of summed data
-    const CharacterVector& parent_lvls,            // levels of parent grouping variable (fixed-effects)
-    const CharacterVector& child_lvls              // levels of child grouping variable (fixed-effects)
+    const CharacterVector& context,                // context column of summed data
+    const CharacterVector& species,                // species column of summed data
+    const CharacterVector& context_lvls,           // levels of context grouping variable (fixed-effects)
+    const CharacterVector& species_lvls            // levels of species grouping variable (fixed-effects)
   );
 
 // Function to set warping ratios 
@@ -824,12 +824,12 @@ List estimate_change_points(
     const int& ws,                                 // running window size
     const int& bin_num_i,                          // number of bins in the count data
     const double& LROcutoff,                       // cutoff for outlier detection in change-point detection
-    const CharacterVector& parent,                 // parent column of summed data
-    const CharacterVector& child,                  // child column of summed data
+    const CharacterVector& context,                // context column of summed data
+    const CharacterVector& species,                // species column of summed data
     const CharacterVector& ran,                    // random effect column of summed data
     const CharacterVector& treatment,              // treatment column of summed data
-    const CharacterVector& parent_lvls,            // levels of parent grouping variable (fixed-effects)
-    const CharacterVector& child_lvls,             // levels of child grouping variable (fixed-effects)
+    const CharacterVector& context_lvls,           // levels of context grouping variable (fixed-effects)
+    const CharacterVector& species_lvls,           // levels of species grouping variable (fixed-effects)
     const CharacterVector& ran_lvls,               // levels of random effect grouping variable (random-effects)
     const CharacterVector& treatment_lvls,                      // all possible treatment combinations, levels as single-string name
     const std::vector<CharacterVector>& treatment_components    // all possible treatment combinations, level components
@@ -841,11 +841,11 @@ List find_count_log_means(
     const sVec& count_log,                         // log of count data vector
     const LogicalVector& count_not_na_mask,        // mask for non-NA counts
     const int& bin_num_i,                          // number of bins in the count data
-    const CharacterVector& parent,                 // parent column of summed data
-    const CharacterVector& child,                  // child column of summed data
+    const CharacterVector& context,                // context column of summed data
+    const CharacterVector& species,                // species column of summed data
     const CharacterVector& treatment,              // treatment column of summed data
-    const CharacterVector& parent_lvls,            // levels of parent grouping variable (fixed-effects)
-    const CharacterVector& child_lvls,             // levels of child grouping variable (fixed-effects)
+    const CharacterVector& context_lvls,           // levels of context grouping variable (fixed-effects)
+    const CharacterVector& species_lvls,           // levels of species grouping variable (fixed-effects)
     const CharacterVector& treatment_lvls,                      // all possible treatment combinations, levels as single-string name
     const std::vector<CharacterVector>& treatment_components    // all possible treatment combinations, level components
   );
@@ -859,21 +859,21 @@ List estimate_initial_parameters(
     const double& min_initialization_slope,        // minimum slope for initial parameterization
     const sMat& weight_rows,                       // ... for making weights matrix and initial effects estimates
     const CharacterVector& mc_list,                // list of model component types to estimate initial parameters for
-    const CharacterVector& parent,                 // parent column of summed data
-    const CharacterVector& child,                  // child column of summed data
-    const CharacterVector& parent_lvls,            // levels of parent grouping variable (fixed-effects)
-    const CharacterVector& child_lvls,             // levels of child grouping variable (fixed-effects)
-    const IntegerMatrix& degMat,                   // matrix of degrees of each parent-child combination
-    const List& found_cp_list,                     // list of found change points (IntegerMatrix) for each parent-child combination
-    const List& found_cp_trt_list,                 // list of found change points (NumericMatrix) for each parent-child combination, averaged across treatments
-    const List& count_log_avg_mat_list             // list of average log counts (NumericMatrix) for each parent-child combination
+    const CharacterVector& context,                // context column of summed data
+    const CharacterVector& species,                // species column of summed data
+    const CharacterVector& context_lvls,           // levels of context grouping variable (fixed-effects)
+    const CharacterVector& species_lvls,           // levels of species grouping variable (fixed-effects)
+    const IntegerMatrix& degMat,                   // matrix of degrees of each context-species combination
+    const List& found_cp_list,                     // list of found change points (IntegerMatrix) for each context-species combination
+    const List& found_cp_trt_list,                 // list of found change points (NumericMatrix) for each context-species combination, averaged across treatments
+    const List& count_log_avg_mat_list             // list of average log counts (NumericMatrix) for each context-species combination
   );
 
 // Function to initialize random effect warping factors 
 List make_initial_random_effects(
     const CharacterVector& wfactors_names,  // names of warping factors to initialize
     const int& n_ran,                       // number of random effects
-    const int& n_child                      // number of child levels
+    const int& n_species                    // number of species levels
   );
 
 #endif // WSPC_H

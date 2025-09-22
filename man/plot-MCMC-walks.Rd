@@ -4,10 +4,12 @@
 \alias{plot.MCMC.walks}
 \title{Plot sampling of random walks and negative log likelihood from MCMC simulations}
 \usage{
-\method{plot}{MCMC.walks}(wisp.results, verbose = TRUE, low_samples = 10)
+plot.MCMC.walks(wisp.results, print.plots = TRUE, verbose = TRUE, low_samples = 10)
 }
 \arguments{
 \item{wisp.results}{List, output of the wisp function.}
+
+\item{print.plots}{Logical, if TRUE, prints the plots to the current device.}
 
 \item{verbose}{Logical, if TRUE, prints information during plotting.}
 

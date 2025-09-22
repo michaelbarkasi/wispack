@@ -4,10 +4,12 @@
 \alias{plot.MCMC.bs.comparison}
 \title{Visually compare normality and autocorrelation of bootstrap and MCMC parameter estimates}
 \usage{
-\method{plot}{MCMC.bs.comparison}(wisp.results, verbose = TRUE)
+plot.MCMC.bs.comparison(wisp.results, print.plots = TRUE, verbose = TRUE)
 }
 \arguments{
 \item{wisp.results}{List, output of the wisp function.}
+
+\item{print.plots}{Logical, if TRUE, prints the plots to the current graphics device.}
 
 \item{verbose}{Logical, if TRUE, prints information during plotting.}
 }
