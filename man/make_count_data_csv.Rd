@@ -8,6 +8,7 @@ make_count_data_csv(
   data_path,
   remove_L1 = TRUE,
   initialize_zeros = FALSE,
+  load_first_file_only = FALSE,
   verbose = TRUE
 )
 }
@@ -17,6 +18,8 @@ make_count_data_csv(
 \item{remove_L1}{Logical, whether to exclude cells in layer 1 (default is TRUE)}
 
 \item{initialize_zeros}{Logical, whether to initialize new coordinate columns to zero (default is FALSE)}
+
+\item{load_first_file_only}{Logical, whether to load only the first file found (default is FALSE)}
 
 \item{verbose}{Logical, whether to print progress messages (default is TRUE)}
 }
