@@ -389,6 +389,7 @@ parse_csv <- function(
 #' @param remove_L1 Logical, whether to exclude cells in layer 1 (default is TRUE)
 #' @param ROIname Name of the region of interest (default is "Primary auditory area")
 #' @param raw Logical, whether to use raw transcript counts vs normalized ones (default is TRUE)
+#' @param load_first_file_only Logical, whether to load only the first file found (default is FALSE)
 #' @param verbose Logical, whether to print progress messages (default is TRUE)
 #' @return A list containing the combined count data and a list of slice plots for each mouse
 #' @export
@@ -397,6 +398,7 @@ make_count_data <- function(
     remove_L1 = TRUE,
     ROIname = "Primary auditory area",
     raw = TRUE,
+    load_first_file_only = FALSE,
     verbose = TRUE
   ) {
     
@@ -409,6 +411,10 @@ make_count_data <- function(
     files_short <- basename(files)
     names(files) <- paste("mouse", seq_along(files)) # These numbers will correspond to the ran levels assigned latter
     names(files_short) <- names(files)
+    if (load_first_file_only) {
+      files <- files[1]
+      files_short <- files_short[1]
+      }
     if (verbose) {
       snk.report("Loading raw data")
       snk.horizontal_rule(reps = snk.simple_break_reps)
@@ -488,6 +494,7 @@ make_count_data <- function(
 #' @param data_path Path to the directory containing the HDF5 files@aliases 
 #' @param remove_L1 Logical, whether to exclude cells in layer 1 (default is TRUE)
 #' @param initialize_zeros Logical, whether to initialize new coordinate columns to zero (default is FALSE)
+#' @param load_first_file_only Logical, whether to load only the first file found (default is FALSE)
 #' @param verbose Logical, whether to print progress messages (default is TRUE)
 #' @return A list containing the combined count data and a list of slice plots for each mouse
 #' @export
@@ -495,6 +502,7 @@ make_count_data_csv <- function(
     data_path, 
     remove_L1 = TRUE,
     initialize_zeros = FALSE,
+    load_first_file_only = FALSE,
     verbose = TRUE
   ) {
     
@@ -507,7 +515,10 @@ make_count_data_csv <- function(
     files_short <- basename(files)
     names(files) <- paste("mouse", seq_along(files)) # These numbers will correspond to the ran levels assigned latter
     names(files_short) <- names(files)
-    
+    if (load_first_file_only) {
+      files <- files[1]
+      files_short <- files_short[1]
+    }
     if (verbose) {
       snk.report("Loading raw data")
       snk.horizontal_rule(reps = snk.simple_break_reps)
