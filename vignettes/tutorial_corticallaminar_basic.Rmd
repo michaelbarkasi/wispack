@@ -12,7 +12,7 @@ While it's generally assumed that there are no major differences in barrel forma
 
 <h1> Labeling the ROI </h1>
 
-This tutorial uses data collected from four male wild-type mice to test for age effects on laterality in RORB expression. The mice are split between two ages: postnatal day 12 (P12) and postnatal day 18 (P18). We started with raw, non-normalized mRNA counts from the cells within the primary sensorimotor cortex (S1), both left and right hemispheres. Before using any functions from wispack, we identified S1 in each sample by manually fitting the entire slice to the CCFv3.
+This tutorial uses data collected from four male wild-type mice to test for age effects on laterality in RORB expression. The mice are split between two ages: postnatal day 12 (P12) and postnatal day 18 (P18). The starting point was raw, non-normalized mRNA counts from the cells within the primary sensorimotor cortex (S1), both left and right hemispheres. Before using any functions from wispack, S1 was identified in each sample by manually fitting the entire slice to the CCFv3.
 
 <div class="figure">
   <img src="fig_S1_Rorb.png" alt="Image of horizontal mouse brain slice with primary sensorimotor cortex highlight and second image of the laminar and columnar axes of the cortex" width="90%">
@@ -21,7 +21,7 @@ This tutorial uses data collected from four male wild-type mice to test for age 
 
 <h1> Coordinate transform into axis of interest </h1>
 
-As wisp can only model one dimension of spatial variation (at least, as-of the writing of this demo for v1.0), we need to identify this axis and transform the RORB molecule coordinates into it. As we are primarily concerned with how RORB is distributed across cortical layers, the laminar axis is the obvious candidate. Coordinate transformation into an axis of interest must be done outside of wispack. For this case, we wrote a custom coordinate transformation described in this [preprint](https://doi.org/10.1101/2025.06.11.659209) and available as code in this [repo](https://github.com/Oviedo-Lab/wspmm_methods.git) (see function cortical_coordinate_transform in script merfish_preprocessing.R). 
+As wisp can only model one dimension of spatial variation (at least, as-of the writing of this demo for v1.0), this axis must be identified and the RORB molecule coordinates must be transformed into it. As the primary concern is with how RORB is distributed across cortical layers, the laminar axis is the obvious candidate. Coordinate transformation into an axis of interest must be done outside of wispack. For this case, a custom coordinate transformation, described in this [preprint](https://doi.org/10.1101/2025.06.11.659209) and available as code in this [repo](https://github.com/Oviedo-Lab/wspmm_methods.git) (see function cortical_coordinate_transform in script merfish_preprocessing.R), was written. 
 
 <div class="figure">
   <img src="fig_coordtrans.png" alt="Image showing the steps to transform coordinates from the CCFv3 registration to laminar and columnar axes" width="90%">
@@ -37,16 +37,16 @@ Wispack contains a csv file with the results of this coordinate transformation a
 ```{r load_data}
 countdata <- read.csv(
   system.file(
-    "extdata", 
-    "S1_laminar_countdata_demo.csv", 
-    package = "wispack"
+      "extdata", 
+      "S1_laminar_countdata_demo.csv", 
+      package = "wispack"
     )
   )
 
 print(head(countdata))
 ```
 
-As can be seen, the imported data has the columns: count, bin, context, gene, mouse, hemisphere, age. Although we're focused on RORB, these first few rows show that there are other genes in the data as well. How many? 
+As can be seen, the imported data has the columns: count, bin, context, gene, mouse, hemisphere, age. Although the focus is on RORB, these first few rows show that there are other genes in the data as well. How many? 
 
 ```{r n_genes}
 num_genes <- length(unique(countdata$gene))
@@ -59,19 +59,19 @@ Which genes?
 cat("Gene names:", paste0(unique(countdata$gene), collapse = ", "))
 ```
 
-Just as RORB is known to be localized to L4, the other genes are also known to be localized to specific layers (see [here](https://doi.org/10.1101/2025.06.11.659209)). So, the modeling results can be compared to known biology in all cases. To facilitate this comparison, we also load the layer boundaries gotten from the CCFv3 registration. Note that these boundaries are not used to fit the model.
+Just as RORB is known to be localized to L4, the other genes are also known to be localized to specific layers (see [here](https://doi.org/10.1101/2025.06.11.659209)). So, the modeling results can be compared to known biology in all cases. To facilitate this comparison, the layer boundaries gotten from the CCFv3 registration are also loaded. Note that these boundaries are not used to fit the model.
 
 ```{r load_boundaries}
 layer.boundary.bins <- read.csv(
   system.file(
-    "extdata", 
-    "layer_boundary_bins.csv", 
-    package = "wispack"
+      "extdata", 
+      "layer_boundary_bins.csv", 
+      package = "wispack"
     )
   )
 ```
 
-Each row in the data frame represents a cell from the left or right S1 region of one of the four mice. Each cell is represented in multiple rows, one row per gene. Hence, we can find the number of cells by dividing the number of rows by the number of genes. 
+Each row in the data frame represents a cell from the left or right S1 region of one of the four mice. Each cell is represented in multiple rows, one row per gene. Hence, the number of cells can be found by dividing the number of rows by the number of genes. 
 
 ```{r n_cells}
 num_cells <- nrow(countdata)/num_genes
@@ -86,16 +86,16 @@ The bin column gives the position of the cell along the axis of interest (in thi
 
 <h1> Effects structure </h1>
 
-The goal is to test for interacting effects of age and laterality, with mouse as a random-effect grouping factor. If we were using a linear model from the well-known R package lme4, we would have the following: 
+The goal is to test for interacting effects of age and laterality, with mouse as a random-effect grouping factor. A linear model from the well-known R package lme4 would have the following: 
 
 ```{r lmer_formula, eval=FALSE}
 model <- lme4::lmer(
-  count ~ age * hemisphere + (age * hemisphere|mouse), 
-  data = countdata
+    count ~ age * hemisphere + (age * hemisphere|mouse), 
+    data = countdata
   )
 ```
 
-The problem with this linear model is that it makes no use of the bin variable and thus loses all spatial information. A second problem is that the model makes no use of the gene variable, although this problem could be addressed by subsetting countdata to just a single gene of interest. (We do not want to treat gene as another fixed-effect factor along with age and hemisphere, as there's no reason to think age or hemisphere have any effect independent of RNA species.) Nevertheless, this model shows the basic effects structure we're trying to capture. 
+The problem with this linear model is that it makes no use of the bin variable and thus loses all spatial information. A second problem is that the model makes no use of the gene variable, although this problem could be addressed by subsetting countdata to just a single gene of interest. (Gene should not be treated as another fixed-effect factor along with age and hemisphere, as there's no reason to think age or hemisphere have any effect independent of RNA species.) Nevertheless, this model shows the basic effects structure wisp aims to capture. 
 
 A wisp captures this effects structure without discarding spatial information, and while segregating counts by gene. Unlike a mixed-effects linear model from the lme4 package, there is no model formula to specify in wispack. Instead of using a syntactic description (a formula), the effects structure in wispack is set "semantically", i.e., by specifying which variables in the data frame correspond to which roles in the model. The roles are: 
 
@@ -106,11 +106,12 @@ A wisp captures this effects structure without discarding spatial information, a
 5. **ran:** the random-effect grouping factor, typically a sample or animal ID.
 6. **fixedeffects:** a vector of fixed-effect factors, typically biological or experimental conditions.
 
-In the data frame loaded above, the count, bin, and context columns match the names of the roles to which they correspond. Wispack will find those columns automatically. However, the species and ran roles have different names in the data frame, and thus we need to specify for wispack which data columns carry these variables. While wispack has no default names for fixed effects, if no fixed effects are specified, all columns not identified as one of the other roles will be treated as fixed effects.
+In the data frame loaded above, the count, bin, and context columns match the names of the roles to which they correspond. Wispack will find those columns automatically. However, the species and ran roles have different names in the data frame, and thus wispack needs to know which data columns carry these variables. While wispack has no default names for fixed effects, if no fixed effects are specified, all columns not identified as one of the other roles will be treated as fixed effects.
 
 ```{r wisp_setup}
 # Specify variables for wisp
 data.variables <- list(
+    context = "cortex",
     species = "gene",
     ran = "mouse"
   )
@@ -123,7 +124,7 @@ It would be redundant, but all roles would be specified as follows:
 data.variables <- list(
     count = "count",
     bin = "bin", 
-    context = "context", 
+    context = "cortex", 
     species = "gene",
     ran = "mouse",
     fixedeffects = c("hemisphere", "age")
@@ -167,13 +168,13 @@ model <- wisp(
 
 <h1> Extracting the results </h1> 
 
-As can be seen in the print out above, wisp models typically have hundreds of parameters, which means that they usually lack the kind of brief-yet-informative summary familiar from R packages for linear models. The most flat-footed way to extract desired results is to simply hunt through the output. The output of wisp() is a list with the following named components: 
+As can be seen in the print out above, wisp models typically have hundreds of parameters, which means that they usually lack the kind of brief-yet-informative summary familiar from R packages for linear models. The most flat-footed way to extract desired results is to hunt through the output. The output of wisp() is a list with the following named components: 
 
 ```{r wisp_model_components}
 for (n in names(model)) cat(n, ": ", class(model[[n]]), "\n", sep = "")
 ```
 
-Within the "stats" object (another list itself), we find the following: 
+Within the "stats" object (another list itself), the following is found: 
 
 ```{r stats_components}
 for (n in names(model$stats)) cat(n, ": ", class(model$stats[[n]]), "\n", sep = "")
@@ -185,7 +186,7 @@ The parameter object (stats$parameter) is a data frame the rows of which are the
 print(head(model$stats$parameter))
 ```
 
-If we want to extract all fixed-effects of hemisphere (i.e., laterality) on the expression rate of RORB, we can do so by masking with the treatment variable name for the factor hemisphere (which is "right", with "left" as the reference level), the name of the gene of interest ("Rorb"), and the type of parameter (fixed effect on rate, which is "beta" on "Rt"):
+All fixed-effects of hemisphere (i.e., laterality) on the expression rate of RORB can be extracted by masking with the treatment variable name for the factor hemisphere (which is "right", with "left" as the reference level), the name of the gene of interest ("Rorb"), and the type of parameter (fixed effect on rate, which is "beta" on "Rt"):
 
 ```{r hemisphere_effects_RORB}
 mask <- grepl("Rorb", model$stats$parameters$parameter) &    # just this gene

@@ -95,9 +95,9 @@ Labeling the ROI
 <p>This tutorial uses data collected from four male wild-type mice to
 test for age effects on laterality in RORB expression. The mice are
 split between two ages: postnatal day 12 (P12) and postnatal day 18
-(P18). We started with raw, non-normalized mRNA counts from the cells
-within the primary sensorimotor cortex (S1), both left and right
-hemispheres. Before using any functions from wispack, we identified S1
+(P18). The starting point was raw, non-normalized mRNA counts from the
+cells within the primary sensorimotor cortex (S1), both left and right
+hemispheres. Before using any functions from wispack, S1 was identified
 in each sample by manually fitting the entire slice to the CCFv3.</p>
 <div class="figure">
 <img src="fig_S1_Rorb.png" alt="Image of horizontal mouse brain slice with primary sensorimotor cortex highlight and second image of the laminar and columnar axes of the cortex" width="90%"><p class="caption">
@@ -111,15 +111,15 @@ columnar axes labeled.
 Coordinate transform into axis of interest
 </h1>
 <p>As wisp can only model one dimension of spatial variation (at least,
-as-of the writing of this demo for v1.0), we need to identify this axis
-and transform the RORB molecule coordinates into it. As we are primarily
-concerned with how RORB is distributed across cortical layers, the
-laminar axis is the obvious candidate. Coordinate transformation into an
-axis of interest must be done outside of wispack. For this case, we
-wrote a custom coordinate transformation described in this <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">preprint</a> and
+as-of the writing of this demo for v1.0), this axis must be identified
+and the RORB molecule coordinates must be transformed into it. As the
+primary concern is with how RORB is distributed across cortical layers,
+the laminar axis is the obvious candidate. Coordinate transformation
+into an axis of interest must be done outside of wispack. For this case,
+a custom coordinate transformation, described in this <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">preprint</a> and
 available as code in this <a href="https://github.com/Oviedo-Lab/wspmm_methods.git" class="external-link">repo</a> (see
 function cortical_coordinate_transform in script
-merfish_preprocessing.R).</p>
+merfish_preprocessing.R), was written.</p>
 <div class="figure">
 <img src="fig_coordtrans.png" alt="Image showing the steps to transform coordinates from the CCFv3 registration to laminar and columnar axes" width="90%"><p class="caption">
 Visualization of coordinate transform steps from initial CCFv3
@@ -140,22 +140,22 @@ print its first few rows:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">countdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
-<span>    <span class="st">"extdata"</span>, </span>
-<span>    <span class="st">"S1_laminar_countdata_demo.csv"</span>, </span>
-<span>    package <span class="op">=</span> <span class="st">"wispack"</span></span>
+<span>      <span class="st">"extdata"</span>, </span>
+<span>      <span class="st">"S1_laminar_countdata_demo.csv"</span>, </span>
+<span>      package <span class="op">=</span> <span class="st">"wispack"</span></span>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##   count bin context   gene mouse hemisphere age</span></span>
-<span><span class="co">## 1     0 100  cortex Bcl11b     1       left  12</span></span>
-<span><span class="co">## 2     0  99  cortex Bcl11b     1       left  12</span></span>
-<span><span class="co">## 3     0  93  cortex Bcl11b     1       left  12</span></span>
-<span><span class="co">## 4     0  98  cortex Bcl11b     1       left  12</span></span>
-<span><span class="co">## 5     0  94  cortex Bcl11b     1       left  12</span></span>
-<span><span class="co">## 6     0  94  cortex Bcl11b     1       left  12</span></span></code></pre>
+<pre><code><span><span class="co">##   count bin cortex   gene mouse hemisphere age</span></span>
+<span><span class="co">## 1     0 100 cortex Bcl11b     1       left  12</span></span>
+<span><span class="co">## 2     0  99 cortex Bcl11b     1       left  12</span></span>
+<span><span class="co">## 3     0  93 cortex Bcl11b     1       left  12</span></span>
+<span><span class="co">## 4     0  98 cortex Bcl11b     1       left  12</span></span>
+<span><span class="co">## 5     0  94 cortex Bcl11b     1       left  12</span></span>
+<span><span class="co">## 6     0  94 cortex Bcl11b     1       left  12</span></span></code></pre>
 <p>As can be seen, the imported data has the columns: count, bin,
-context, gene, mouse, hemisphere, age. Although we’re focused on RORB,
+context, gene, mouse, hemisphere, age. Although the focus is on RORB,
 these first few rows show that there are other genes in the data as
 well. How many?</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -169,20 +169,20 @@ well. How many?</p>
 <p>Just as RORB is known to be localized to L4, the other genes are also
 known to be localized to specific layers (see <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">here</a>). So, the
 modeling results can be compared to known biology in all cases. To
-facilitate this comparison, we also load the layer boundaries gotten
-from the CCFv3 registration. Note that these boundaries are not used to
+facilitate this comparison, the layer boundaries gotten from the CCFv3
+registration are also loaded. Note that these boundaries are not used to
 fit the model.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">layer.boundary.bins</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
-<span>    <span class="st">"extdata"</span>, </span>
-<span>    <span class="st">"layer_boundary_bins.csv"</span>, </span>
-<span>    package <span class="op">=</span> <span class="st">"wispack"</span></span>
+<span>      <span class="st">"extdata"</span>, </span>
+<span>      <span class="st">"layer_boundary_bins.csv"</span>, </span>
+<span>      package <span class="op">=</span> <span class="st">"wispack"</span></span>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p>Each row in the data frame represents a cell from the left or right
 S1 region of one of the four mice. Each cell is represented in multiple
-rows, one row per gene. Hence, we can find the number of cells by
+rows, one row per gene. Hence, the number of cells can be found by
 dividing the number of rows by the number of genes.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">num_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">)</span><span class="op">/</span><span class="va">num_genes</span></span>
@@ -207,23 +207,21 @@ into 100 (roughly) equal-width bins to allow for bootstrapping (see <a href="tut
 Effects structure
 </h1>
 <p>The goal is to test for interacting effects of age and laterality,
-with mouse as a random-effect grouping factor. If we were using a linear
-model from the well-known R package lme4, we would have the
-following:</p>
+with mouse as a random-effect grouping factor. A linear model from the
+well-known R package lme4 would have the following:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu">lme4</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span></span>
-<span>  <span class="va">count</span> <span class="op">~</span> <span class="va">age</span> <span class="op">*</span> <span class="va">hemisphere</span> <span class="op">+</span> <span class="op">(</span><span class="va">age</span> <span class="op">*</span> <span class="va">hemisphere</span><span class="op">|</span><span class="va">mouse</span><span class="op">)</span>, </span>
-<span>  data <span class="op">=</span> <span class="va">countdata</span></span>
+<span>    <span class="va">count</span> <span class="op">~</span> <span class="va">age</span> <span class="op">*</span> <span class="va">hemisphere</span> <span class="op">+</span> <span class="op">(</span><span class="va">age</span> <span class="op">*</span> <span class="va">hemisphere</span><span class="op">|</span><span class="va">mouse</span><span class="op">)</span>, </span>
+<span>    data <span class="op">=</span> <span class="va">countdata</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p>The problem with this linear model is that it makes no use of the bin
 variable and thus loses all spatial information. A second problem is
 that the model makes no use of the gene variable, although this problem
 could be addressed by subsetting countdata to just a single gene of
-interest. (We do not want to treat gene as another fixed-effect factor
+interest. (Gene should not be treated as another fixed-effect factor
 along with age and hemisphere, as there’s no reason to think age or
 hemisphere have any effect independent of RNA species.) Nevertheless,
-this model shows the basic effects structure we’re trying to
-capture.</p>
+this model shows the basic effects structure wisp aims to capture.</p>
 <p>A wisp captures this effects structure without discarding spatial
 information, and while segregating counts by gene. Unlike a
 mixed-effects linear model from the lme4 package, there is no model
@@ -254,14 +252,15 @@ typically biological or experimental conditions.</li>
 <p>In the data frame loaded above, the count, bin, and context columns
 match the names of the roles to which they correspond. Wispack will find
 those columns automatically. However, the species and ran roles have
-different names in the data frame, and thus we need to specify for
-wispack which data columns carry these variables. While wispack has no
-default names for fixed effects, if no fixed effects are specified, all
-columns not identified as one of the other roles will be treated as
-fixed effects.</p>
+different names in the data frame, and thus wispack needs to know which
+data columns carry these variables. While wispack has no default names
+for fixed effects, if no fixed effects are specified, all columns not
+identified as one of the other roles will be treated as fixed
+effects.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Specify variables for wisp</span></span>
 <span><span class="va">data.variables</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    context <span class="op">=</span> <span class="st">"cortex"</span>,</span>
 <span>    species <span class="op">=</span> <span class="st">"gene"</span>,</span>
 <span>    ran <span class="op">=</span> <span class="st">"mouse"</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
@@ -272,7 +271,7 @@ follows:</p>
 <span><span class="va">data.variables</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    count <span class="op">=</span> <span class="st">"count"</span>,</span>
 <span>    bin <span class="op">=</span> <span class="st">"bin"</span>, </span>
-<span>    context <span class="op">=</span> <span class="st">"context"</span>, </span>
+<span>    context <span class="op">=</span> <span class="st">"cortex"</span>, </span>
 <span>    species <span class="op">=</span> <span class="st">"gene"</span>,</span>
 <span>    ran <span class="op">=</span> <span class="st">"mouse"</span>,</span>
 <span>    fixedeffects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"hemisphere"</span>, <span class="st">"age"</span><span class="op">)</span></span>
@@ -371,7 +370,7 @@ by the CCFv3 registration.</p>
 <span><span class="co">## Variable dictionary:</span></span>
 <span><span class="co">##  count: count</span></span>
 <span><span class="co">##  bin: bin</span></span>
-<span><span class="co">##  context: context</span></span>
+<span><span class="co">##  context: cortex</span></span>
 <span><span class="co">##  species: gene</span></span>
 <span><span class="co">##  ran: mouse</span></span>
 <span><span class="co">##  fixedeffects: hemisphere, age</span></span>
@@ -467,9 +466,9 @@ by the CCFv3 registration.</p>
 <span><span class="co">## Acceptance rate (aim for 0.2-0.3): 0.24339</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## MCMC simulation complete... </span></span>
-<span><span class="co">## MCMC run time (total), minutes: 2.759</span></span>
-<span><span class="co">## MCMC run time (per retained step), seconds: 0.151</span></span>
-<span><span class="co">## MCMC run time (per step), seconds: 0.075</span></span>
+<span><span class="co">## MCMC run time (total), minutes: 3.032</span></span>
+<span><span class="co">## MCMC run time (per retained step), seconds: 0.165</span></span>
+<span><span class="co">## MCMC run time (per step), seconds: 0.083</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Setting full-data fit as parameters... </span></span>
 <span><span class="co">## Checking feasibility of provided parameters</span></span>
@@ -530,9 +529,9 @@ Extracting the results
 <p>As can be seen in the print out above, wisp models typically have
 hundreds of parameters, which means that they usually lack the kind of
 brief-yet-informative summary familiar from R packages for linear
-models. The most flat-footed way to extract desired results is to simply
-hunt through the output. The output of wisp() is a list with the
-following named components:</p>
+models. The most flat-footed way to extract desired results is to hunt
+through the output. The output of wisp() is a list with the following
+named components:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">n</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">n</span>, <span class="st">": "</span>, <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">model</span><span class="op">[[</span><span class="va">n</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span>, sep <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## model.component.list: character</span></span>
@@ -552,8 +551,8 @@ following named components:</p>
 <span><span class="co">## variables: list</span></span>
 <span><span class="co">## stats: list</span></span>
 <span><span class="co">## plots: list</span></span></code></pre>
-<p>Within the “stats” object (another list itself), we find the
-following:</p>
+<p>Within the “stats” object (another list itself), the following is
+found:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">n</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">n</span>, <span class="st">": "</span>, <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">[[</span><span class="va">n</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span>, sep <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## parameters: data.frame</span></span>
@@ -574,12 +573,11 @@ p-values:</p>
 <span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0476934492 0.03545305 0.06643012 0.000000    0.000000 0.0002941176          ***</span></span>
 <span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786 1.79843456 2.46718433       NA          NA           NA             </span></span>
 <span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 0.03141496 0.09459949 0.000000    0.000000 0.0002958580          ***</span></span></code></pre>
-<p>If we want to extract all fixed-effects of hemisphere (i.e.,
-laterality) on the expression rate of RORB, we can do so by masking with
-the treatment variable name for the factor hemisphere (which is “right”,
-with “left” as the reference level), the name of the gene of interest
-(“Rorb”), and the type of parameter (fixed effect on rate, which is
-“beta” on “Rt”):</p>
+<p>All fixed-effects of hemisphere (i.e., laterality) on the expression
+rate of RORB can be extracted by masking with the treatment variable
+name for the factor hemisphere (which is “right”, with “left” as the
+reference level), the name of the gene of interest (“Rorb”), and the
+type of parameter (fixed effect on rate, which is “beta” on “Rt”):</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mask</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Rorb"</span>, <span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">parameter</span><span class="op">)</span> <span class="op">&amp;</span>    <span class="co"># just this gene</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"right"</span>, <span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">parameter</span><span class="op">)</span> <span class="op">&amp;</span>         <span class="co"># just the effect of hemisphere</span></span>

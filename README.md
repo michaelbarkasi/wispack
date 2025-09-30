@@ -1,26 +1,26 @@
 
-# Introduction
+# wispack: An R package for warped sigmoidal Poisson-process mixed-effects modeling
 
 <div class="figure">
   <img src="man/figures/wisp_art.png" alt="Artistic rendering of wisp model" width="90%">
   <p class="caption">Artistic rendering of a wisp model. See [this tutorial](articles/tutorial_wispplots.html) for an explanation.</p>
 </div>
 
-Wispack (pronounced "wisp package" or "wisp pack") is an R package for testing for between-group effects on spatial variation in spatial transcriptomics data, i.e., functional spatial effects (FSE). 
+Wispack (pronounced "wisp package" or "wisp pack") is an R package for testing for between-group effects on spatial variation in spatial transcriptomics data, i.e., testing for functional spatial effects (FSE). 
 
 <div class="figure">
   <img src="man/figures/stack_0_1475_L1_truecolor.png" alt="True-color MERFISH image" width="50%">
   <p class="caption">True-color image of fluorescing probes bound to mRNA molecules in cortical cells, the raw data of spatial transcriptomics.</p>
 </div>
 
-Unlike SVG testing (spatially variable gene) which only involves testing for spatial variation of gene expression within a group, and unlike differential expression (DE) analysis which tests for between-group effects without regard to spatial distribution, testing for FSE involves testing whether a factor such as age or rearing conditions has a nonzero effect on spatial variation between groups differing on that factor.
+Unlike SVG testing (spatially variable gene) which only involves testing for spatial variation of gene expression within a group, and unlike differential expression (DE) analysis which tests for between-group effects without regard to spatial distribution, testing for FSEs involves testing whether a factor such as age or rearing conditions has a nonzero effect on spatial variation between groups differing on that factor.
 
 <div class="figure">
   <img src="man/figures/fig_FSE.png" alt="DE vs SVG vs FSE" width="90%">
-  <p class="caption">Comparison between testing for differentially expressed genes, spatially variable genes, and genes with function spatial effects. For visualization purposes, mouse brain slices represent the </p>
+  <p class="caption">Comparison between testing for differentially expressed genes, spatially variable genes, and genes with function spatial effects. For visualization purposes, mouse brain slices represent the tissue sample and laterality (left vs right hemisphere) represents a fixed effect (i.e., covariate).</p>
 </div>
 
-Wispack performs FSE testing by first using change-point detection to find spatial variation in samples, then fitting a nonlinear mixed-effect model to the detected change points. The core of the nonlinear model is a parameterization of the found change-points as inflections in logistic functions representing gradients of gene expression change. Multiple change-points are handled by summing the component logistic functions into a "poly-sigmoid" function. Fixed effects (such as age or rearing conditions) are then modeled as effects on the underlying logistic parameters. Random (within group) effects are modeled as further nonlinear warping of the poly-sigmoid. Significance testing is performed on the effects through either bootstrapping or MCMC resampling. A complete technical description of wisp models can be found in this [preprint](https://doi.org/10.1101/2025.06.11.659209). 
+Wispack performs FSE testing by first using change-point detection to find spatial variation in samples, then fitting a nonlinear mixed-effect model to the detected change points. The core of the nonlinear model is a parameterization of the found change-points as inflections in logistic functions representing gradients of gene expression change. Multiple change-points are handled by summing the component logistic functions into a "poly-sigmoid" function. Fixed effects (such as age or rearing conditions) are then modeled as effects on the underlying logistic parameters. Random (within group) effects are modeled as further nonlinear warping of the poly-sigmoid. Significance testing is performed on the effects through either bootstrapping or MCMC resampling. A complete mathematical description of wisp models can be found in this [preprint](https://doi.org/10.1101/2025.06.11.659209). 
 
 <div class="figure">
   <img src="man/figures/fig_WSPfunctions.png" alt="Demo plots of functions involved in wisp" width="90%">
@@ -53,10 +53,11 @@ library(wispack)
 
 # Load demo data
 countdata <- read.csv(system.file(
-  "extdata", 
-  "S1_laminar_countdata_demo_default_col_names.csv", 
-  package = "wispack"
-  ))
+      "extdata", 
+      "S1_laminar_countdata_demo_default_col_names.csv", 
+      package = "wispack"
+    )
+  )
 
 # Fit model
 laminar.model <- wisp(countdata)
@@ -72,17 +73,15 @@ No model formula is required, as all wisp models have the same mathematical form
 data.variables <- list(
     count = "count",
     bin = "bin", 
-    parent = "cortex", 
-    child = "gene",
+    context = "cortex", 
+    species = "gene",
     ran = "mouse",
     fixedeffects = c("hemisphere", "age")
   )
   
 # Fit model
 laminar.model <- wisp(
-    # Data to model
     count.data = countdata,
-    # Variable labels
     variables = data.variables
   )
 ```
