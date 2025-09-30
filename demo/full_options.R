@@ -23,7 +23,11 @@ if (sys_name == "Darwin" || sys_name == "Linux") {
 
 # Load demo data
 # ... from horizontal (axial) slice of mouse cortex, primary somatosensory cortex (L1 removed)
-data_path <- system.file("extdata", "S1_laminar_countdata_demo.csv", package = "wispack")
+data_path <- system.file(
+    "extdata", 
+    "S1_laminar_countdata_demo.csv", 
+    package = "wispack"
+  )
 countdata <- read.csv(data_path)
 # ... Manual load: countdata <- read.csv("S1_laminar_countdata_demo.csv")
 # ... Note on spatial coordinates: 
@@ -34,7 +38,11 @@ countdata <- read.csv(data_path)
 # ... Not used to fit model; used only for comparison
 # ... Numbers represent the lower boundary of each layer, in bins
 # ... Higher numbers closer to cortical surface
-boundary_path <- system.file("extdata", "layer_boundary_bins.csv", package = "wispack")
+boundary_path <- system.file(
+    "extdata", 
+    "layer_boundary_bins.csv", 
+    package = "wispack"
+  )
 layer.boundary.bins <- read.csv(boundary_path)
 # ... Manual load: layer.boundary.bins <- read.csv("layer_boundary_bins.csv")
 
@@ -99,7 +107,7 @@ laminar.model <- wisp(
     max.fork = bs_chunksize,
     dim.bounds = colMeans(layer.boundary.bins),
     verbose = TRUE,
-    print.species.summaries = TRUE,
+    print.plots = TRUE,
     # Setting to pass to C++ model
     model.settings = model.settings
   )
