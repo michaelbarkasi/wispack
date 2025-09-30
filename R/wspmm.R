@@ -2568,8 +2568,8 @@ demo.warp.plots <- function(
         color = "deeppink4", linetype = "dashed", linewidth = 0.75) +
       annotate("text", x = 10, y = 95, label = "upper asymptote", size = label_size, color = "black") +
       annotate("text", x = 90, y = 5, label = "lower asymptote", size = label_size, color = "black") +
-      annotate("text", x = point_pos - 10, y = (y_pos + point_pos)/2, label = expression(varphi * "(z)(b - z)"), size = label_size, color = "black") +
-      annotate("text", x = point_neg + 10, y = (y_neg + point_neg)/2, label = expression(varphi * "(b - z)z"), size = label_size, color = "black") +
+      annotate("text", x = point_pos - 10, y = (y_pos + point_pos)/2, label = "varphi * (z)(b - z)", parse = TRUE, size = label_size, color = "black") +
+      annotate("text", x = point_neg + 10, y = (y_neg + point_neg)/2, label = "varphi * (b - z) * z", parse = TRUE, size = label_size, color = "black") +
       labs(
         x = "z",
         y = expression(omega * "(z, " * rho * ", b)"),
