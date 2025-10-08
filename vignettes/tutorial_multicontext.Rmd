@@ -2,4 +2,4 @@
 title: "Modeling celltypes"
 ---
 
-Under construction! Will show how to model different celltypes with the context variable. 
+Under construction! Will show how to model different celltypes (as determined by the Allen Institute's [MapMyCells](https://portal.brain-map.org/atlases-and-data/bkp/mapmycells) tool) with the context variable. 

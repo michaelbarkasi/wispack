@@ -40,9 +40,11 @@
     <li><a class="dropdown-item" href="../articles/install.html">Installation instructions</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_basic.html">The basics of wisps</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar_basic.html">RORB along the cortical laminar axis</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling celltypes</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Modeling time-series data</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">The wisp plot</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
@@ -70,7 +72,10 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>RORB along the cortical laminar axis</h1>
+                        <h4 data-toc-skip class="author">Michael
+Barkasi</h4>
             
+            <h4 data-toc-skip class="date">2025-10-11</h4>
       
 
       <div class="d-none name"><code>tutorial_corticallaminar_basic.Rmd</code></div>
@@ -78,6 +83,9 @@
 
     
     
+<h2>
+Introduction
+</h2>
 <p>The gene RORB plays a key role in the development of sensorimotor
 cortex in rodents. RORB expression leads axons from thalamic neurons to
 innervate cortical layer 4. These thalamocortical projections organize
@@ -89,9 +97,9 @@ barrel formations between the left and right hemispheres (i.e., no
 studies suggesting age and sex-dependent hemispheric differences. Given
 the established role of RORB in barrel formation, one might want to test
 for age or sex-dependent laterality in RORB expression.</p>
-<h1>
+<h2>
 Labeling the ROI
-</h1>
+</h2>
 <p>This tutorial uses data collected from four male wild-type mice to
 test for age effects on laterality in RORB expression. The mice are
 split between two ages: postnatal day 12 (P12) and postnatal day 18
@@ -107,9 +115,9 @@ right sensorimotor cortex, with RORB molecules in red and laminar and
 columnar axes labeled.
 </p>
 </div>
-<h1>
+<h2>
 Coordinate transform into axis of interest
-</h1>
+</h2>
 <p>As wisp can only model one dimension of spatial variation (at least,
 as-of the writing of this demo for v1.0), this axis must be identified
 and the RORB molecule coordinates must be transformed into it. As the
@@ -131,9 +139,9 @@ bottom of L6b, 100 the top of L2/3. The columnar axis is encoded as
 <em>x</em>, with 0 being the most posterior point, 100 the most anterior
 point. L1 was removed from the analysis, as it contains very few
 cells.</p>
-<h1>
+<h2>
 Data format
-</h1>
+</h2>
 <p>Wispack contains a csv file with the results of this coordinate
 transformation applied to the raw data. To start, load this data and
 print its first few rows:</p>
@@ -147,13 +155,13 @@ print its first few rows:</p>
 <span>  <span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##   count bin cortex   gene mouse hemisphere age</span></span>
-<span><span class="co">## 1     0 100 cortex Bcl11b     1       left  12</span></span>
-<span><span class="co">## 2     0  99 cortex Bcl11b     1       left  12</span></span>
-<span><span class="co">## 3     0  93 cortex Bcl11b     1       left  12</span></span>
-<span><span class="co">## 4     0  98 cortex Bcl11b     1       left  12</span></span>
-<span><span class="co">## 5     0  94 cortex Bcl11b     1       left  12</span></span>
-<span><span class="co">## 6     0  94 cortex Bcl11b     1       left  12</span></span></code></pre>
+<pre><code><span><span class="co">##   count bin context   gene mouse hemisphere age</span></span>
+<span><span class="co">## 1     0 100  cortex Bcl11b     1       left  12</span></span>
+<span><span class="co">## 2     0  99  cortex Bcl11b     1       left  12</span></span>
+<span><span class="co">## 3     0  93  cortex Bcl11b     1       left  12</span></span>
+<span><span class="co">## 4     0  98  cortex Bcl11b     1       left  12</span></span>
+<span><span class="co">## 5     0  94  cortex Bcl11b     1       left  12</span></span>
+<span><span class="co">## 6     0  94  cortex Bcl11b     1       left  12</span></span></code></pre>
 <p>As can be seen, the imported data has the columns: count, bin,
 context, gene, mouse, hemisphere, age. Although the focus is on RORB,
 these first few rows show that there are other genes in the data as
@@ -176,7 +184,7 @@ fit the model.</p>
 <code class="sourceCode R"><span><span class="va">layer.boundary.bins</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
 <span>      <span class="st">"extdata"</span>, </span>
-<span>      <span class="st">"layer_boundary_bins.csv"</span>, </span>
+<span>      <span class="st">"S1_layer_boundary_bins.csv"</span>, </span>
 <span>      package <span class="op">=</span> <span class="st">"wispack"</span></span>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
@@ -203,9 +211,9 @@ interest (in this case, the laminar axis), in units of “bins”. Any
 position coordinates could be used, including ones with non-integer
 values such as microns. However, we have binned the position coordinates
 into 100 (roughly) equal-width bins to allow for bootstrapping (see <a href="tutorial_stats.html">Customizing statistical analyses</a>).</p>
-<h1>
+<h2>
 Effects structure
-</h1>
+</h2>
 <p>The goal is to test for interacting effects of age and laterality,
 with mouse as a random-effect grouping factor. A linear model from the
 well-known R package lme4 would have the following:</p>
@@ -246,6 +254,9 @@ typically a celltype label.</li>
 <strong>ran:</strong> the random-effect grouping factor, typically a
 sample or animal ID.</li>
 <li>
+<strong>timeseries:</strong> a fixed-effects factor to treat as a
+time series, typically developmental or experimental time points (<a href="articles/tutorial_timeseries.html">optional</a>).</li>
+<li>
 <strong>fixedeffects:</strong> a vector of fixed-effect factors,
 typically biological or experimental conditions.</li>
 </ol>
@@ -260,7 +271,6 @@ effects.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Specify variables for wisp</span></span>
 <span><span class="va">data.variables</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    context <span class="op">=</span> <span class="st">"cortex"</span>,</span>
 <span>    species <span class="op">=</span> <span class="st">"gene"</span>,</span>
 <span>    ran <span class="op">=</span> <span class="st">"mouse"</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
@@ -271,14 +281,14 @@ follows:</p>
 <span><span class="va">data.variables</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    count <span class="op">=</span> <span class="st">"count"</span>,</span>
 <span>    bin <span class="op">=</span> <span class="st">"bin"</span>, </span>
-<span>    context <span class="op">=</span> <span class="st">"cortex"</span>, </span>
+<span>    context <span class="op">=</span> <span class="st">"context"</span>, </span>
 <span>    species <span class="op">=</span> <span class="st">"gene"</span>,</span>
 <span>    ran <span class="op">=</span> <span class="st">"mouse"</span>,</span>
 <span>    fixedeffects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"hemisphere"</span>, <span class="st">"age"</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<h1>
+<h2>
 Spatial parameterization and warping
-</h1>
+</h2>
 <p>In wisp, a semantic specification of the variable roles suffices
 because, with respect to those roles, all wisp models have the same
 effects structure. This effects structure is defined over a
@@ -304,9 +314,9 @@ individual animals or due to measurement noise. (D) The wisp
 poly-sigmoid from (B) with warping function applied.
 </p>
 </div>
-<h1>
+<h2>
 Fitting the model
-</h1>
+</h2>
 <p>Thus, the goal of fitting a wisp model to spatial transcriptomics
 data is to estimate, for each gene:</p>
 <ol style="list-style-type: decimal">
@@ -370,9 +380,10 @@ by the CCFv3 registration.</p>
 <span><span class="co">## Variable dictionary:</span></span>
 <span><span class="co">##  count: count</span></span>
 <span><span class="co">##  bin: bin</span></span>
-<span><span class="co">##  context: cortex</span></span>
+<span><span class="co">##  context: context</span></span>
 <span><span class="co">##  species: gene</span></span>
 <span><span class="co">##  ran: mouse</span></span>
+<span><span class="co">##  timeseries: timeseries</span></span>
 <span><span class="co">##  fixedeffects: hemisphere, age</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Parsed data (head only):</span></span>
@@ -401,6 +412,7 @@ by the CCFv3 registration.</p>
 <span><span class="co">## "hemisphere" "age"</span></span>
 <span><span class="co">## Ref levels:</span></span>
 <span><span class="co">## "left" "12"</span></span>
+<span><span class="co">## No time series detected.</span></span>
 <span><span class="co">## Created treatment levels:</span></span>
 <span><span class="co">## "ref" "right" "18" "right18"</span></span>
 <span><span class="co">## Context grouping levels:</span></span>
@@ -412,7 +424,7 @@ by the CCFv3 registration.</p>
 <span><span class="co">## Total rows in summed count data table: 12000</span></span>
 <span><span class="co">## Number of rows with unique model components: 120</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## Creating summed-count data columns:</span></span>
+<span><span class="co">## Creating summed-count data columns and weight matrix:</span></span>
 <span><span class="co">## Random level 0, 1/5 complete</span></span>
 <span><span class="co">## Random level 1, 2/5 complete</span></span>
 <span><span class="co">## Random level 2, 3/5 complete</span></span>
@@ -466,9 +478,9 @@ by the CCFv3 registration.</p>
 <span><span class="co">## Acceptance rate (aim for 0.2-0.3): 0.24339</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## MCMC simulation complete... </span></span>
-<span><span class="co">## MCMC run time (total), minutes: 3.032</span></span>
-<span><span class="co">## MCMC run time (per retained step), seconds: 0.165</span></span>
-<span><span class="co">## MCMC run time (per step), seconds: 0.083</span></span>
+<span><span class="co">## MCMC run time (total), minutes: 2.98</span></span>
+<span><span class="co">## MCMC run time (per retained step), seconds: 0.163</span></span>
+<span><span class="co">## MCMC run time (per step), seconds: 0.081</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Setting full-data fit as parameters... </span></span>
 <span><span class="co">## Checking feasibility of provided parameters</span></span>
@@ -523,9 +535,9 @@ by the CCFv3 registration.</p>
 <span><span class="co">## Making effect parameter distribution plots... </span></span>
 <span><span class="co">## Making rate-count plots... </span></span>
 <span><span class="co">## Making parameter plots...</span></span></code></pre>
-<h1>
+<h2>
 Extracting the results
-</h1>
+</h2>
 <p>As can be seen in the print out above, wisp models typically have
 hundreds of parameters, which means that they usually lack the kind of
 brief-yet-informative summary familiar from R packages for linear
@@ -609,7 +621,8 @@ numbers. A better way to understand the results is through
 visualization. Wispack provides a number of functions for <a href="tutorial_wispplots.html">making intuitive spatial plots</a>.
 Indeed; a strength of wisp models is their use of concrete spatial
 parameters.</p>
-  </main>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
 

@@ -1,0 +1,116 @@
+---
+title: "Modeling time-series data"
+author: "Michael Barkasi"
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+options(width = 10000)
+```
+
+<h2>Introduction</h2>
+
+Wisps naturally model between-group effects describable as two-valued categorical factors, e.g., comparing controls vs a treatment or male vs female. Coarse-grain comparisons over time, such as young vs old or postnatal day $PX$ vs postnatal day $PY$, can be shoehorned into this framework. However, it's often desirable to model longer time series $T$. 
+
+<h2>Time series as factor series</h2>
+
+While wisps are limited to binary covariate fixed-effect factors $\xi$, i.e., $\xi\in\{0,1\}$, the number of factor levels can be increased to accommodate more time points by modeling time factors $\xi_T$ as an ordered series of factors $\xi_{T_m}$ with additive effects $\beta_{T_m}$. Given a series of time points:
+\[T_1 < T_2 < \cdots < T_n\]
+a corresponding time-factor series $\xi_T$ is defined with $n$ ordinal binary factors:
+\[\xi_{T_1} < \xi_{T_2} < \cdots < \xi_{T_n}\]
+For binary factors $\xi$ with corresponding effect term $\beta$, the effect on a model parameter $z$ is:
+\[z \mapsto z + \beta + \text{interaction terms}\]
+To achieve the cumulative effect of time, the effect of a time factor $\xi_{T_m}$, for $m\leq n$, is given by summing the series of effects $\beta_{T_i}$ from time factors $\xi_{T_i}$ for $T_i\leq T_m$:
+\[z \mapsto z + \sum_{i=1}^{m} \beta_{T_i} + \text{interaction terms}\]
+Wispack implements this cumulative effect by defining the effect of $\xi_T$ to be:
+\[z \mapsto z + \sum_{i=1}^{n} \beta_{T_i}\xi_{T_i} + \text{interaction terms}\]
+and stipulating, for each sampled data point $s$, that if $\xi_{T_m}(s)=1$ then $\xi_{T_i}(s)=1$ for all $i<m$. 
+
+<h2>Demo data</h2>
+
+This tutorial will use MERFISH data collected from the auditory cortex of mice and preprocessed into laminar coordinates as described in [the introductory tutorial](articles/tutorial_corticallaminar.html) (see also [this preprint](https://doi.org/10.1101/2025.06.11.659209)). As with all data appropriate for wispack and in line with well-known modeling functions in R (e.g., lm(), lmer()), the data must be in long format. That is, each row must correspond to a single observation, which when modeling spatial transcriptomics data will typically be a count of transcripts from an RNA species in a single cell. 
+
+```{r load_data}
+countdata <- read.csv(
+  system.file(
+      "extdata", 
+      "ACx_laminar_countdata_demo.csv", 
+      package = "wispack"
+    )
+  )
+
+print(head(countdata))
+```
+
+As in the introductory tutorial, the data used here includes a dummy context variable filled with "cortex", a variable giving the hemisphere (left vs right) of each observation, and counts (by cell) for the following six layer specific genes:
+
+```{r check_genes}
+print(unique(countdata$gene))
+```
+
+However, the data used in the introductory tutorial was collected from four mice of only two distinct ages: P12 and P18. This tutorial includes data from these original four mice, plus a fifth mouse at age P7. 
+
+```{r check_ages}
+for (m in unique(countdata$mouse)) {
+  cat(
+    paste0(
+      "Mouse ", m, 
+      " is age P", unique(countdata$age[countdata$mouse==m]), 
+      "\n"
+    )
+  )
+}
+```
+
+<h2>Modeling time series in wispack</h2>
+
+The parts of a wisp model must be defined, relative to the column names of the data. Wispack expects columns for the count to be modeled (**count**), the spatial coordinate (**bin**), the context (e.g., brain region, **context**), the species being counted (e.g., gene, **species**), and the random effect factor (**ran**). As the data includes explicit **count** and **bin** columns, these do not need to be redefined. As the names are different, wispack does need to be told that the RNA species data is included in the **gene** column and the random effect factor is given by the **mouse** column. It would be natural to use the **celltype_MMC** column as the context, but as this tutorial is focused on time series modeling, the context will be set to a constant value of "cortex" for all data points. Finally, the time series factor will be defined as the **age** column.
+
+```{r define_variables}
+# Define variables in the dataframe for the model
+data.variables <- list(
+    species = "gene",
+    ran = "mouse",
+    timeseries = "age",
+    fixedeffects = c("hemisphere", "age")
+  )
+```
+
+Let's model the time-dependent lateralization of layer-specific gene expression of the auditory cortex of developing mice. Hence, hemisphere and age will be fixed-effect factors.
+
+```{r fixed_effects}
+library(wispack, quietly = TRUE)
+
+boundary_path <- system.file(
+    "extdata", 
+    "ACx_layer_boundary_bins.csv", 
+    package = "wispack"
+  )
+layer.boundary.bins <- read.csv(boundary_path)
+
+MCMC.settings <- list(
+    MCMC.burnin = 1e2,
+    MCMC.steps = 1e3,
+    MCMC.step.size = 0.5,
+    MCMC.prior = 1.0, 
+    MCMC.neighbor.filter = 2
+  )
+
+laminar.model <- wisp(
+    # Data to model
+    count.data = countdata,
+    # Variable labels
+    variables = data.variables,
+    # Single fit or parameter estimation?
+    fit_only = FALSE,
+    MCMC.settings = MCMC.settings,
+    bootstraps.num = 0,
+    converged.resamples.only = TRUE,
+    dim.bounds = colMeans(layer.boundary.bins),
+    verbose = TRUE,
+    print.plots = TRUE
+  )
+
+```
+
+

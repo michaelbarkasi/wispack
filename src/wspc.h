@@ -112,6 +112,7 @@ class wspc {
     std::vector<CharacterVector> treatment_components;   // all possible treatment combinations, level components
     CharacterVector treatment_lvls;                      // all possible treatment combinations, levels as single-string name
     CharacterVector fix_ref;                // reference level for each fixed effect
+    IntegerVector timeseries_rank;          // integer sequence the elements of which are ranks, element names as elements from the special "timeseries" fixed effect variable, giving order of time series
     
     // Grouping variables
     CharacterVector context_lvls;           // levels of context grouping variable (fixed-effects)

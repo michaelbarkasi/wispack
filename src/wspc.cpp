@@ -56,11 +56,9 @@ wspc::wspc(
         Rcpp::stop("Input data is missing required column (or out of order): " + required_cols[i]);
       }
     }
-    vprint("Data structure check passed", false);
     
     // Save tokenized count column before collapsing to sums 
     count_tokenized = to_sVec(Rcpp::as<NumericVector>(count_data["count"]));
-    vprint("Saving tokenized count", false);
     
     // Find max bins and set warp bounds
     vprint_header("Extracting variables and data information", verbose);
@@ -73,25 +71,64 @@ wspc::wspc(
     vprint("Found max bin: " + std::to_string(bin_num.val()), verbose);
     
     // Extract fixed effects 
-    int n_fix = n_cols - r_cols;
+    int n_fix = n_cols - r_cols;                                        // number of fixed effect variables, assume all non-required columns are fixed effects
     fix_names = CharacterVector(n_fix);                                 // names of fixed effect variables 
     fix_ref = CharacterVector(n_fix);                                   // reference level for each fixed effect
-    fix_lvls.resize(n_fix);                                             // levels for each fixed effect
-    fix_trt.resize(n_fix);                                              // treatments for each fixed effect
+    fix_lvls.resize(n_fix);                                             // levels for each fixed effect, fix_lvls is a std vector holding an Rcpp CharacterVector
+    fix_trt.resize(n_fix);                                              // treatments for each fixed effect, fix_trt is a std vector holding an Rcpp CharacterVector
+    LogicalVector is_time = {false};                                    // logical vector to track which fixed effect levels are in "timeseries"
+    CharacterVector is_time_name = {"ref"};
+    CharacterVector time_series_names = {"no time series"};
     for (int i = 0; i < n_fix; i++) {
       fix_names[i] = col_names[i + r_cols];
-      CharacterVector lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data[i + r_cols]));
+      
+      SEXP col = count_data[i + r_cols];
+      CharacterVector lvls;
+      
+      if (Rf_isNumeric(col)) {
+        // Sort numerically, then convert to character
+        NumericVector tmp = Rcpp::sort_unique(Rcpp::as<NumericVector>(col));
+        lvls = Rcpp::as<CharacterVector>(tmp);
+      } else {
+        // Sort lexicographically
+        lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(col));
+      }
+      
       if (lvls.size() < 2) {
         Rcpp::stop("Fixed effect " + fix_names[i] + " has less than 2 levels.");
+      } else if (lvls.size() > 2 && fix_names[i] != "timeseries") {
+        Rcpp::stop("Fixed effect " + fix_names[i] + " has more than 2 levels. Only binary fixed effects are currently supported, except for 'timeseries'.");
       }
       fix_lvls[i] = lvls;
       fix_ref[i] = lvls[0];                                             // assume first level is reference
-      fix_trt[i] = lvls[Rcpp::Range(1, lvls.size() - 1)]; 
+      fix_trt[i] = lvls[Rcpp::Range(1, lvls.size() - 1)];               // assume all other levels are treatment levels
+      if (fix_names[i] == "timeseries") {                               // make it easy to access time-series element rank from the element name
+        timeseries_rank = seq(1, lvls.size());
+        timeseries_rank.names() = lvls;
+        time_series_names = lvls;
+        for (String l : lvls) {
+          is_time.push_back(true);
+          is_time_name.push_back(l);
+        }
+      } else {
+        for (String l : lvls) {
+          is_time.push_back(false);
+          is_time_name.push_back(l);
+        }
+      }
     }
-    vprint("Fixed effects:", verbose);
-    vprintV(fix_names, verbose);
-    vprint("Ref levels:", verbose);
-    vprintV(fix_ref, verbose);
+    is_time.names() = is_time_name;
+    if (fix_names.size() == 0) {
+      vprint("No fixed effects detected.", verbose);
+    } else {
+      vprint("Fixed effects:", verbose);
+      vprintV(fix_names, verbose);
+      vprint("Ref levels:", verbose);
+      vprintV(fix_ref, verbose);
+    }
+    vprint("No time series detected.", verbose && !any_true(is_time));
+    vprint("Time series detected:", verbose && any_true(is_time));
+    vprintV(time_series_names, verbose && any_true(is_time));
     
     // Create all possible treatment combinations 
     CharacterVector ref_lvl = {"ref"};                                  // define a baseline (i.e., reference) level
@@ -110,41 +147,83 @@ wspc::wspc(
     // ... each cell should contain the value of the treatment column n_fix, for the given treatment level
     CharacterMatrix effects_rows(treatment_num, n_fix);
     for (int tr = 0; tr < treatment_num; tr++) {
-      CharacterVector trt_given = treatment_components[tr];
+      CharacterVector trt_components = treatment_components[tr];
       for (int f = 0; f < n_fix; f++) {
         CharacterVector lvls = fix_lvls[f];
         effects_rows(tr, f) = lvls[0]; 
         // ^ ... Assume it's the reference level
         for (String l : lvls) {
           // If treatment level found, replace
-          if (any_true(eq_left_broadcast(trt_given, l))) {effects_rows(tr, f) = l;}
+          if (any_true(eq_left_broadcast(trt_components, l))) {effects_rows(tr, f) = l;}
         }
       }
     }
-    vprint("Created treatment-to-fix translation matrix", false);
     
-    // Pre-compute weight-matrix rows 
-    // ... for making weights matrix
+    // When predicting parameter values for treatment level tr_predict, should treatment level tr_input's effect be applied?
+    // ... i.e., what's the "weight" of each treatment level (columns of weight matrix) relative to the others (rows of weight matrix)? 
     weight_rows.resize(treatment_num, treatment_num);
-    weight_rows.setOnes();
-    for (int tr = 0; tr < treatment_num; tr++) {
-      CharacterVector trt_given = treatment_components[tr];
-      for (int tc = 0; tc < treatment_num; tc++) {
-        CharacterVector trt_testing = treatment_components[tc];
-        for (String trt : trt_testing) {
-          if(!any_true(eq_left_broadcast(trt_given, trt)) && trt != "ref") {weight_rows(tr, tc) = 0.0;}
-          // ^ ... ref level must always have weight 1
+    weight_rows.setOnes(); // ... assume "yes"
+    for (int tr_predict = 0; tr_predict < treatment_num; tr_predict++) {
+      // Grab components of treatment level tr_predict
+      CharacterVector tr_predict_components = treatment_components[tr_predict];
+      for (int tr_input = 0; tr_input < treatment_num; tr_input++) {
+        // Grab components of treatment level tr_input
+        CharacterVector tr_input_components = treatment_components[tr_input];
+        // ... if tr_input is the base reference level, tr_input must be applied
+        if (tr_input_components.size() == 1 && tr_input_components[0] == "ref") {continue;} 
+        // ... else, must check whether all trc_i of tr_input are in tr_predict
+        LogicalVector input_comp_included;
+        for (String trc_i : tr_input_components) {
+          // if trc_i is not in tr_predict ...
+          if(!any_true(eq_left_broadcast(tr_predict_components, trc_i))) {
+            // ... check whether trc_i is a time point from "timeseries" ...
+            if (is_time[trc_i]) {
+              // ... then check if any component trc_p of tr_predict ...
+              bool pred_has_time = false;
+              for (String trc_p : tr_predict_components) {
+                // ... is a time point in "timeseries" ...
+                if (is_time[trc_p]) { 
+                  pred_has_time = true;
+                  // ... that is greater than or equal to trc_i
+                  int i_rank = timeseries_rank[trc_i];
+                  int p_rank = timeseries_rank[trc_p];
+                  if (i_rank <= p_rank) {
+                    // ... if so, trc_i is included in tr_predict
+                    input_comp_included.push_back(true);
+                  } else {
+                    // ... else, trc_i is not included in tr_predict
+                    input_comp_included.push_back(false);
+                  }
+                  // ... if so, tr_input applies and should be left at 1.0
+                } 
+              }
+              if (!pred_has_time) {
+                // trc_i is not in tr_predict
+                input_comp_included.push_back(false);
+              }
+            } else {
+              // trc_i is not in tr_predict
+              input_comp_included.push_back(false);
+            }
+          } else {
+            // trc_i is in tr_predict
+            input_comp_included.push_back(true);
+          }
         }
+        // Sanity check 
+        if (input_comp_included.size() != tr_input_components.size()) {
+          Rcpp::stop("Error in constructing weight matrix.");
+        }
+        if (!all_true(input_comp_included)) {weight_rows(tr_predict, tr_input) = 0.0;}
       }
     }
-    vprint("Pre-computed weight matrix rows", false);
-    
+   
     // Extract grouping variables 
     context_lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["context"]));
     species_lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["species"]));
     ran_lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["ran"]));
     // ... add "none" to represent no random effect (reference level)
-    ran_lvls.push_front("none"); 
+    if (ran_lvls.size() > 1) {ran_lvls.push_front("none");} 
     // ... print extracted grouping variables
     vprint("Context grouping levels:", verbose);
     vprintV(context_lvls, verbose);
@@ -158,7 +237,6 @@ wspc::wspc(
     CharacterVector contextT = Rcpp::as<CharacterVector>(count_data["context"]);
     CharacterVector speciesT = Rcpp::as<CharacterVector>(count_data["species"]);
     CharacterVector ranT = Rcpp::as<CharacterVector>(count_data["ran"]);
-    vprint("Extracted tokenized count columns", false);
     
     // Create summed count data, size constants
     int idx = 0;
@@ -178,7 +256,6 @@ wspc::wspc(
     ran = CharacterVector(n_count_rows);
     treatment = CharacterVector(n_count_rows);
     weights.resize(n_count_rows, treatment_num);
-    vprint("Initialized columns for summed count data", false);
     
     // Initiate count indexes 
     int idx_mcu = 0;
@@ -189,14 +266,13 @@ wspc::wspc(
     vprint("Number of rows with unique model components: " + std::to_string(idx_mc_unique.size()), verbose);
     
     // Pre-compute bin masks
-    vprint("Pre-computing bin masks", false);
     LogicalMatrix bin_masks(binT.size(), bin_num_i);
     for (int b = 0; b < bin_num_i; b++) { 
       bin_masks.column(b) = eq_left_broadcast(binT, b + 1);
     }
     
     // Create summed count data columns and weight matrix
-    vprint_header("Creating summed-count data columns", verbose); 
+    vprint_header("Creating summed-count data columns and weight matrix", verbose); 
     LogicalVector nan_mask = !Rcpp::is_na(to_NumVec(count_tokenized));
     for (int r = 0; r < n_ran; r++) {
       LogicalVector ran_mask = eq_left_broadcast(ranT, ran_lvls[r]) & nan_mask;
@@ -227,7 +303,8 @@ wspc::wspc(
               ran(idx) = ran_lvls[r];
               treatment(idx) = treatment_lvls[t];
               weights.row(idx) = weight_rows.row(t);
-              // ^ ... weights (and weight_rows) is a matrix saying whether the effect from a given treatment level should apply when computing the effect of another treatment level.
+              // ^ ... weights (and weight_rows) is a matrix specifying whether the effect from a given treatment level should apply when computing the effect of another treatment level.
+              // note: a complex treatment level like "right, KO, P12" is giving an interaction effect, not the effect of any one of its components. 
               
               // Find token pool
               LogicalVector token_mask = treatment_mask & bin_masks.column(b);
@@ -260,17 +337,18 @@ wspc::wspc(
     
     // Extract idx from count_not_na_mask
     count_not_na_idx = Rwhich(count_not_na_mask);
-    vprint("Extracted non-NA indexes", false);
     
     // Make extrapolation pool and extrapolate "none" rows
-    vprint_header("Making extrapolation pool", verbose);
+    if (n_ran > 1) {vprint_header("Making extrapolation pool", verbose);}
     extrapolation_pool.resize(count.size());
     extrapolation_pool = make_extrapolation_pool(bin, count, context, species, ran, treatment, verbose); 
     
     // Extrapolate "none" rows
     vprint_header("Making initial parameter estimates", verbose);
-    count = extrapolate_none(count, ran, extrapolation_pool, true);
-    vprint("Extrapolated 'none' rows", verbose);
+    if (ran_lvls.size() > 1) {
+      count = extrapolate_none(count, ran, extrapolation_pool, true);
+      vprint("Extrapolated 'none' rows", verbose);
+    }
     
     // Take log of observed counts 
     count_log.resize(n_count_rows); 
@@ -512,8 +590,8 @@ sVec wspc::compute_warped_mc(
     
     // Extract the parameter vector indexes for the current rate row, beta matrices
     List beta_idx_mc = Rcpp::as<List>(beta_idx[mc]);
-    List beta_idx_mc_prt = Rcpp::as<List>(beta_idx_mc[(String)context[r]]);
-    IntegerVector betas_mc_idx = beta_idx_mc_prt[Rcpp::as<std::string>(species[r])];
+    List beta_idx_mc_context = Rcpp::as<List>(beta_idx_mc[(String)context[r]]);
+    IntegerVector betas_mc_idx = beta_idx_mc_context[Rcpp::as<std::string>(species[r])];
     
     // Grab degree
     int c_num = Rwhich(eq_left_broadcast(species_lvls, species[r]))[0];
@@ -1071,6 +1149,7 @@ void wspc::fit(
   ) { 
     
     // Set boundary-penalty coefficients 
+    vprint("Setting boundary penalty coefficients", verbose);
     sVec initial_params_var = to_sVec(fitted_parameters);
     sdouble max_penalty_at_distance = neg_loglik(initial_params_var) * max_penalty_at_distance_factor;
     sdouble coefs_square = static_cast<double>(boundary_vec_size)/max_penalty_at_distance;
@@ -1113,7 +1192,7 @@ void wspc::fit(
       success_code = 0;
     } 
     
-    // Find final neg_loglik for bs diagnostics
+    // Find final neg_loglik for diagnostics
     sVec parameters_final = to_sVec(x);
     sdouble final_nll = neg_loglik(parameters_final);
     
@@ -1135,7 +1214,6 @@ void wspc::fit(
     } 
     
     // Save optimization results
-    //fitted_parameters = to_NumVec(x);
     optim_results["fitted_parameters"] = to_NumVec(x); // for predicting log-linked count
     optim_results["penalized_neg_loglik"] = min_fx;
     optim_results["neg_loglik"] = final_nll.val();
@@ -1474,7 +1552,6 @@ Rcpp::NumericMatrix wspc::MCMC(
     const int r_num = n_steps + 1;
     NumericMatrix RMW_steps(r_num, c_num);
     
-    
     // Make baseline parameter mask 
     LogicalVector baseline_mask(n_params);
     baseline_mask.fill(false);
@@ -1554,7 +1631,8 @@ Rcpp::NumericMatrix wspc::MCMC(
           double bounded_step_size = normalized_step_size / bd_current_transformed.val();
           if (bounded_step_size == 0.0) {
             // ... presumably this case means current parameter is extremely close to zero or very close to boundary
-            params_next(i) = pcg_rnorm(params_current(i), step_size, walk_rng);
+            params_next(i) = pcg_rnorm(params_current(i), step_size/1e3, walk_rng);
+            // vprint("Bounded step size for param " + std::to_string(i) + " is zero, OOM: " + std::to_string(std::pow(10, static_cast<double>(param_oom + 1.0))) + ", bd transformed: " + std::to_string(bd_current_transformed.val()), true);
           } else {
             // ... take next step
             params_next(i) = pcg_rnorm(params_current(i), bounded_step_size, walk_rng);
@@ -1597,7 +1675,15 @@ Rcpp::NumericMatrix wspc::MCMC(
         (loglik_current + prior_current) 
       );
       if (acceptance > 1.0) {acceptance = 1.0;}
-      if (std::isnan(acceptance)) {acceptance = 0.0;}
+      if (std::isnan(acceptance)) {
+        acceptance = 0.0;
+      } else if (acceptance == 0.0) {
+        vprint("Acceptance: " + std::to_string(acceptance), true);
+        vprint("loglik_current: " + std::to_string(loglik_current), true);
+        vprint("loglik_next: " + std::to_string(loglik_next), true);
+        vprint("prior_current: " + std::to_string(prior_current), true);
+        vprint("prior_next: " + std::to_string(prior_next), true);
+      }
       
       // Accept or reject the proposed step
       double ran_draw = R::runif(0.0, 1.0); 
@@ -1820,7 +1906,7 @@ Rcpp::List wspc::check_parameter_feasibility(
     // Find and report initial distance to boundary
     sdouble initial_dist = min_boundary_dist(parameters_var); 
     if (verbose) {
-      vprint("Initial boundary distance (want >0): ", initial_dist);
+      vprint("Initial boundary distance (want > 0): ", initial_dist);
     }
     
     // If not feasible, attempt to find a feasible starting point
@@ -1852,7 +1938,7 @@ Rcpp::List wspc::check_parameter_feasibility(
       
       // Find and report final distance to boundary
       if (verbose) {
-        vprint("Numer of evals: ", (int)opt.get_numevals());
+        vprint("Number of evals: ", (int)opt.get_numevals());
         vprint("Success code: ", (int)success_code);
         vprint("Final boundary distance: ", (double)max_fx);
       }
@@ -1904,7 +1990,6 @@ Rcpp::List wspc::results() {
     
     // Create summed count data frame
     DataFrame count_data_summed = DataFrame::create(
-      _["row"] = count_row_nums,
       _["bin"] = to_NumVec(bin),
       _["count"] = to_NumVec(count),
       _["pred"] = predicted_rates_out,
@@ -1960,6 +2045,11 @@ Rcpp::List wspc::results() {
     rownames(g_dispersion) = species_lvls;
     colnames(g_dispersion) = context_lvls;
     
+    // Convert weight matrix 
+    NumericMatrix weight_matrix = to_NumMat(weight_rows);
+    rownames(weight_matrix) = treatment_lvls;
+    colnames(weight_matrix) = treatment_lvls;
+    
     // Make final list to return 
     List results_list = List::create(
       _["model.component.list"] = mc_list,
@@ -1969,6 +2059,7 @@ Rcpp::List wspc::results() {
       _["param.names"] = param_names,
       _["fix"] = fixed_effects,
       _["treatment"] = treat,
+      _["weight.matrix"] = weight_matrix,
       _["grouping.variables"] = grouping_variables,
       _["param.idx0"] = param_idx, // "0" to indicate this goes out w/ C++ zero-based indexing
       _["token.pool"] = token_pool_list,

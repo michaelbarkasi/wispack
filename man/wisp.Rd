@@ -7,6 +7,7 @@
 wisp(
   count.data,
   variables = list(),
+  fit_only = FALSE,
   use.median = FALSE,
   MCMC.settings = list(),
   bootstraps.num = 0,
@@ -22,6 +23,8 @@ wisp(
 \item{count.data}{Data.frame, data to be modeled, with columns for model variables (count, bin, context, species, ran, fixedeffects), or equivalent variables as specified in the \code{variables} argument.}
 
 \item{variables}{List, names of the columns in \code{count.data} that correspond to the model variables. The list should contain only (but not necessarily all) named elements: \code{count}, \code{bin}, \code{context}, \code{species}, \code{ran}, and \code{fixedeffects}.}
+
+\item{fit_only}{Logical, if TRUE, only fits the model to the full data set using L-BFGS and returns the fitted model without running MCMC or bootstrapping; if FALSE, runs MCMC and/or bootstrapping to estimate parameter uncertainty.}
 
 \item{use.median}{Logical, if TRUE, the median of the resamples is used as the final parameter estimates; if FALSE, the initial fit by L-BFGS is used.}
 

@@ -1,0 +1,6 @@
+
+1. Data is coordinate-transformed into laminar coordinates per the 2025 preprint for both S1_laminar_countdata_demo.csv and ACx_laminar_countdata_demo.csv.
+2. The same list of layer-specific genes is used for both as well: "Bcl11b", "Fezf2", "Satb2", "Nxph3", "Cux2", "Rorb".
+3. L1 was removed from both as well. 
+4. The celltypes included in the ACx file were made from just the smaller list of genes which passed false-positive quality control. 
+5. The layer boundary bins come from a manual CCFv3 registration, done separately for the S1 and ACx data. 

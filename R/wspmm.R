@@ -19,6 +19,7 @@ NULL
 #'
 #' @param count.data Data.frame, data to be modeled, with columns for model variables (count, bin, context, species, ran, fixedeffects), or equivalent variables as specified in the \code{variables} argument.
 #' @param variables List, names of the columns in \code{count.data} that correspond to the model variables. The list should contain only (but not necessarily all) named elements: \code{count}, \code{bin}, \code{context}, \code{species}, \code{ran}, and \code{fixedeffects}.
+#' @param fit_only Logical, if TRUE, only fits the model to the full data set using L-BFGS and returns the fitted model without running MCMC or bootstrapping; if FALSE, runs MCMC and/or bootstrapping to estimate parameter uncertainty.
 #' @param use.median Logical, if TRUE, the median of the resamples is used as the final parameter estimates; if FALSE, the initial fit by L-BFGS is used.
 #' @param MCMC.settings List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.
 #' @param bootstraps.num Integer, number of bootstrap resamples to perform. If 0, only MCMC is run.
@@ -35,6 +36,8 @@ wisp <- function(
     count.data, 
     # Variable labels
     variables = list(), 
+    # Single fit or parameter estimation?
+    fit_only = FALSE,
     # Settings used on R side
     use.median = FALSE,
     MCMC.settings = list(),
@@ -61,7 +64,7 @@ wisp <- function(
     ) {
       list_name <- deparse(substitute(user_input))
       default_list.names <- names(default_list)
-      # ... check if variables is provided 
+      # ... check if variables are provided 
       if (length(user_input) > 0) {
         # ... check that provided input is a list with valid names
         if (class(user_input) != "list") {
@@ -75,7 +78,7 @@ wisp <- function(
           for (v in names(user_input)) {
             if (length(default_list[[v]]) > 0) {
               expected_type <- class(default_list[[v]]) 
-              if (class(user_input[[v]]) != expected_type) {
+              if (class(user_input[[v]]) != expected_type && !is.null(user_input[[v]])) {
                 stop(paste0(list_name, "$", v, " must be of type ", expected_type))
               }
             }
@@ -93,32 +96,65 @@ wisp <- function(
       context = "context", 
       species = "species",
       ran = "ran",
+      timeseries = "timeseries", 
       fixedeffects = c()
     )
     # ... check that provided variables is a list with valid names
     variables.names <- check_list(variables, variables.internal)
-    variables.names <- variables.names[-c(which(variables.names == "fixedeffects"))]  # remove fixedeffects from list of variable names
+    variables.names <- variables.names[variables.names != "fixedeffects" & variables.names != "timeseries"] 
     # ... load 
     for (v in names(variables)) {
       variables.internal[[v]] <- variables[[v]]
     }
     
     # Relabel and rearrange data columns 
+    # ... check that count.data is a dataframe
     if (class(count.data) != "data.frame") {
       stop("count.data must be a data frame")
     }
-    old_names <- colnames(count.data)
+    # ... check for context, species, and ran in data frame
+    check_col <- function(c_name, var, dat) {
+      oldn <- colnames(dat)
+      # if column name provided ...
+      if (c_name %in% names(var)) {
+        # ... but not in dataframe
+        if (!(var[[c_name]] %in% oldn)) {
+          # ... then add column repping the provided name
+          oldn <- c(oldn, var[[c_name]])
+          dat <- cbind(dat, rep(var[[c_name]], nrow(dat)))
+        }
+      } else { # if no column name provided ...
+        # ... and the default name is not in dataframe
+        if (!(c_name %in% oldn)) {
+          # ... then add the default as a column repping c_name
+          oldn <- c(oldn, c_name)
+          dat <- cbind(dat, rep(c_name, nrow(dat)))
+        }
+      }
+      colnames(dat) <- oldn
+      return(dat)
+    }
+    for (cn in c("context", "species", "ran")) {
+      count.data <- check_col(cn, variables, count.data)
+      old_names <- colnames(count.data)
+    }
     ordered_cols <- unlist(variables.internal[variables.names])
+    # ... check for count and bin columns
     if (!all(ordered_cols %in% old_names)) {
       stop(
         paste0(
           "Not all needed variable names found as column names in count.data, missing: ", 
-          paste(ordered_cols[!(ordered_cols %in% old_names)], collapse = ", ")))
+          paste(ordered_cols[!(ordered_cols %in% old_names)], collapse = ", ")
+        )
+      )
     }
+    # ... parse fixed effects
     if (length(variables.internal$fixedeffects) == 0) {
-      # ... extract fixed effect names, if not given
+      # ... extract fixed effect names (if any), if not given
       fe_cols <- !(old_names %in% ordered_cols)
-      variables.internal$fixedeffects <- old_names[fe_cols]
+      if (sum(fe_cols) > 0) {
+        variables.internal$fixedeffects <- old_names[fe_cols]
+      } 
     } else {
       # ... if fixed effects name given, load
       fe_cols <- old_names %in% variables.internal$fixedeffects
@@ -126,12 +162,17 @@ wisp <- function(
         stop(
           paste0(
             "Not all fixed effect names found as column names in count.data, missing: ", 
-            paste(variables.internal$fixedeffects[!(variables.internal$fixedeffects %in% old_names)], collapse = ", ")))
+            paste(variables.internal$fixedeffects[!(variables.internal$fixedeffects %in% old_names)], collapse = ", ")
+          )
+        )
       }
     } 
-    if (sum(fe_cols) == 0) {
-      stop("No fixed effects found in count.data")
-    } 
+    
+    # Update the time series column, if any
+    timeseries_mask <- old_names == variables.internal$timeseries
+    # ... if timeseries is null, mask has length zero and nothing will happen on next line
+    old_names[timeseries_mask] <- "timeseries"
+    # Update count data 
     new_names <- c(variables.names, old_names[fe_cols])
     data <- cbind(count.data[,ordered_cols], count.data[,fe_cols])
     colnames(data) <- new_names
@@ -186,29 +227,43 @@ wisp <- function(
       MCMC.prior = 1.0, 
       MCMC.neighbor.filter = 2
     )
-    # ... check that provided MCMC.settings is a list with valid names
-    MCMC.settings.names <- check_list(MCMC.settings, MCMC.settings.internal)
-    # ... check and load values
-    for (s in names(MCMC.settings)) {
-      ms <- MCMC.settings[[s]]
-      if (!(ms >= 0)) {
-        stop("All MCMC.settings values must be >= 0")
-      } else if (s == "MCMC.steps" && ms < 100) {
-        warning(paste0("MCMC.settings$", s, " should be at least 100"))
-      } else if (s == "MCMC.step.size" && ms >= 2.0) {
-        warning(paste0("Consider setting MCMC.settings$", s, " below 2.0"))
-      } 
-      # ... load value 
-      MCMC.settings.internal[[s]] <- ms
-    }
-    
-    if (verbose) {
-      snk.report("Parsing data and settings for wisp model")
-      snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 1)
-      snk.print_var_list("Model settings", model.settings.internal, vert = TRUE, end_breaks = 1)
-      snk.print_var_list("MCMC settings", MCMC.settings.internal, vert = TRUE, end_breaks = 1)
-      snk.print_var_list("Variable dictionary", variables.internal, vert = TRUE, end_breaks = 1)
-      snk.print_table("Parsed data", data, end_breaks = 0)
+    if (!fit_only) {
+      
+      # ... check that provided MCMC.settings is a list with valid names
+      MCMC.settings.names <- check_list(MCMC.settings, MCMC.settings.internal)
+      # ... check and load values
+      for (s in names(MCMC.settings)) {
+        ms <- MCMC.settings[[s]]
+        if (!(ms >= 0)) {
+          stop("All MCMC.settings values must be >= 0")
+        } else if (s == "MCMC.steps" && ms < 100) {
+          warning(paste0("MCMC.settings$", s, " should be at least 100"))
+        } else if (s == "MCMC.step.size" && ms >= 2.0) {
+          warning(paste0("Consider setting MCMC.settings$", s, " below 2.0"))
+        } 
+        # ... load value 
+        MCMC.settings.internal[[s]] <- ms
+      }
+      
+      if (verbose) {
+        snk.report("Parsing data and settings for wisp model")
+        snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 1)
+        snk.print_var_list("Model settings", model.settings.internal, vert = TRUE, end_breaks = 1)
+        snk.print_var_list("MCMC settings", MCMC.settings.internal, vert = TRUE, end_breaks = 1)
+        snk.print_var_list("Variable dictionary", variables.internal, vert = TRUE, end_breaks = 1)
+        snk.print_table("Parsed data", data, end_breaks = 0)
+      }
+      
+    } else {
+      
+      if (verbose) {
+        snk.report("Parsing data and settings for wisp model")
+        snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 1)
+        snk.print_var_list("Model settings", model.settings.internal, vert = TRUE, end_breaks = 1)
+        snk.print_var_list("Variable dictionary", variables.internal, vert = TRUE, end_breaks = 1)
+        snk.print_table("Parsed data", data, end_breaks = 0)
+      }
+      
     }
     
     # Initialize cpp model ####
@@ -223,210 +278,256 @@ wisp <- function(
       verbose
     )
     
-    # Estimate model parameters with MCMC or bootstrapping ####
-    if (verbose) {
-      snk.report("Estimating model parameters", initial_breaks = 1)
-      snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 0)
-    }
-    
-    # Confirm forking is possible
-    if (!(Sys.info()["sysname"] == "Darwin" || Sys.info()["sysname"] == "Linux")) {
-      if (bootstraps.num > 0 && max.fork > 1) {
-        if (verbose) snk.report...("Forking not available on Windows, cannot bootstrap in parallel, setting max fork to 1")
-        max.fork <- 1
-      }
-    } 
-    
-    # Run MCMC simulation
-    if (verbose) snk.report("Running MCMC stimulations", end_breaks = 1)
-    start_time_MCMC <- Sys.time()
-    MCMC_walk <- cpp_model$MCMC(
-      MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin, 
-      MCMC.settings.internal$MCMC.neighbor.filter,
-      MCMC.settings.internal$MCMC.step.size,
-      MCMC.settings.internal$MCMC.prior,
-      verbose 
-    )
-    run_time_MCMC <- Sys.time() - start_time_MCMC
-    if (verbose) {
-      snk.report...("MCMC simulation complete")
-      snk.print_vec("MCMC run time (total), minutes", c(as.numeric(run_time_MCMC, units = "mins")))
-      snk.print_vec("MCMC run time (per retained step), seconds", c(as.numeric(run_time_MCMC, units = "secs") / (MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin)))
-      snk.print_vec("MCMC run time (per step), seconds", c((as.numeric(run_time_MCMC, units = "secs") / (MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin))/MCMC.settings.internal$MCMC.neighbor.filter), end_breaks = 0)
-    }
-    
-    # Clear out burn-in, if any
-    if (MCMC.settings.internal$MCMC.burnin > 0) {
-      MCMC_walk <- MCMC_walk[-c(2:(2+MCMC.settings.internal$MCMC.burnin-1)),]
-    }
-    
-    if (bootstraps.num > 0) {
+    if (fit_only) {
       
-      # Run bootstrap fits
-      start_time_bs <- Sys.time()
-      if (verbose) snk.report("Running bootstrap fits", end_breaks = 1)
-      sample_results <- cpp_model$bs_batch(
-        bootstraps.num, 
-        max.fork,
+      if (verbose) {
+        snk.report("Fitting model to data", initial_breaks = 1)
+        snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 2)
+      }
+      
+      # Fit model
+      cpp_model$fit(TRUE, verbose)
+      
+      # Grab model results 
+      results <- cpp_model$results()
+      
+      # Add variable names 
+      results[["variables"]] <- variables
+      
+      # Make rate plots 
+      plots.ratecount <- plot.ratecount(
+        wisp.results = results,
+        pred.type = "pred",
+        count.type = "count",
+        dim.boundaries = dim.bounds,
+        verbose = verbose
+      )
+      
+      # Gather plots
+      plots <- list(
+        ratecount = plots.ratecount
+      )
+      results[["plots"]] <- plots
+      
+      # Print summary plots
+      if (print.plots) {
+        print(plots.ratecount)
+      }
+      
+      return(results)
+      
+    } else {
+      
+      # Estimate model parameters with MCMC or bootstrapping ####
+      if (verbose) {
+        snk.report("Estimating model parameters", initial_breaks = 1)
+        snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 0)
+      }
+      
+      # Confirm forking is possible
+      if (!(Sys.info()["sysname"] == "Darwin" || Sys.info()["sysname"] == "Linux")) {
+        if (bootstraps.num > 0 && max.fork > 1) {
+          if (verbose) snk.report...("Forking not available on Windows, cannot bootstrap in parallel, setting max fork to 1")
+          max.fork <- 1
+        }
+      } 
+      
+      # Run MCMC simulation
+      if (verbose) snk.report("Running MCMC stimulations", end_breaks = 1)
+      start_time_MCMC <- Sys.time()
+      MCMC_walk <- cpp_model$MCMC(
+        MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin, 
+        MCMC.settings.internal$MCMC.neighbor.filter,
+        MCMC.settings.internal$MCMC.step.size,
+        MCMC.settings.internal$MCMC.prior,
+        verbose 
+      )
+      run_time_MCMC <- Sys.time() - start_time_MCMC
+      if (verbose) {
+        snk.report...("MCMC simulation complete")
+        snk.print_vec("MCMC run time (total), minutes", c(as.numeric(run_time_MCMC, units = "mins")))
+        snk.print_vec("MCMC run time (per retained step), seconds", c(as.numeric(run_time_MCMC, units = "secs") / (MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin)))
+        snk.print_vec("MCMC run time (per step), seconds", c((as.numeric(run_time_MCMC, units = "secs") / (MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin))/MCMC.settings.internal$MCMC.neighbor.filter), end_breaks = 0)
+      }
+      
+      # Clear out burn-in, if any
+      if (MCMC.settings.internal$MCMC.burnin > 0) {
+        MCMC_walk <- MCMC_walk[-c(2:(2+MCMC.settings.internal$MCMC.burnin-1)),]
+      }
+      
+      if (bootstraps.num > 0) {
+        
+        # Run bootstrap fits
+        start_time_bs <- Sys.time()
+        if (verbose) snk.report("Running bootstrap fits", end_breaks = 1)
+        sample_results <- cpp_model$bs_batch(
+          bootstraps.num, 
+          max.fork,
+          verbose
+        )
+        run_time_bs <- Sys.time() - start_time_bs
+        if (verbose) {
+          snk.report...("Bootstrap simulation complete")
+          snk.print_vec("Bootstrap run time (total), minutes", c(as.numeric(run_time_bs, units = "mins")))
+          snk.print_vec("Bootstrap run time (per sample), seconds", c(as.numeric(run_time_bs, units = "secs") / bootstraps.num))
+          snk.print_vec("Bootstrap run time (per sample, per thread), seconds", c(as.numeric(run_time_bs, units = "secs") * max.fork / bootstraps.num), end_breaks = 0)
+        }
+        
+      }
+      
+      # Extract results and diagnostics
+      # ... Save MCMC estimates and diagnostics
+      n_params <- ncol(MCMC_walk) - 4
+      sample.params.MCMC <- MCMC_walk[,1:n_params]
+      diagnostics.MCMC <- data.frame(
+        pen.neg.value = MCMC_walk[,n_params + 1],
+        neg.loglik = MCMC_walk[,n_params + 2], 
+        acceptance.ratio = MCMC_walk[,n_params + 3],
+        ctr.num = MCMC_walk[,n_params + 4]
+      )
+      if (bootstraps.num > 0) {
+        
+        # ... Save bs estimates and diagnostics
+        n_params <- ncol(sample_results) - 4
+        sample.params.bs <- sample_results[,1:n_params]
+        diagnostics.bs <- data.frame( 
+          pen.neg.value = sample_results[,n_params + 1],
+          neg.loglik = sample_results[,n_params + 2], 
+          success.code = sample_results[,n_params + 3],
+          num.evals = sample_results[,n_params + 4]
+        )
+        
+      } else {
+        sample.params.bs <- NULL
+        diagnostics.bs <- NULL
+      }
+      
+      # Set resamples for analysis 
+      if (is.null(sample.params.bs)) {
+        sample.params <- sample.params.MCMC
+      } else {
+        sample.params <- sample.params.bs
+      }
+      
+      # Set final fitted parameters
+      if (use.median) {
+        if (verbose) snk.report...("Setting median parameter samples as final parameters", initial_breaks = 1, end_breaks = 1)
+        final_parameters <- apply(sample.params, 2, function(x) median(x, na.rm = TRUE))
+      } else {
+        if (verbose) snk.report...("Setting full-data fit as parameters", initial_breaks = 2, end_breaks = 1)
+        final_parameters <- sample.params[nrow(sample.params),]
+      }
+      cpp_model$set_parameters(
+        final_parameters,
         verbose
       )
-      run_time_bs <- Sys.time() - start_time_bs
-      if (verbose) {
-        snk.report...("Bootstrap simulation complete")
-        snk.print_vec("Bootstrap run time (total), minutes", c(as.numeric(run_time_bs, units = "mins")))
-        snk.print_vec("Bootstrap run time (per sample), seconds", c(as.numeric(run_time_bs, units = "secs") / bootstraps.num))
-        snk.print_vec("Bootstrap run time (per sample, per thread), seconds", c(as.numeric(run_time_bs, units = "secs") * max.fork / bootstraps.num), end_breaks = 0)
+      
+      # Grab model results and add samples
+      results <- cpp_model$results()
+      results[["sample.params"]] <- sample.params
+      results[["sample.params.bs"]] <- sample.params.bs
+      results[["sample.params.MCMC"]] <- sample.params.MCMC
+      results[["diagnostics.bs"]] <- diagnostics.bs
+      results[["diagnostics.MCMC"]] <- diagnostics.MCMC
+      
+      # Add variable names 
+      results[["variables"]] <- variables
+      
+      # Run statistical analysis ####
+      
+      # Initialize shell to hold stats
+      stats <- list(
+        parameters = data.frame(),
+        tps = data.frame(),
+        residuals = data.frame(),
+        residuals.log = data.frame(),
+        variance = data.frame()
+      )
+      results[["stats"]] <- stats
+      
+      # Run stats on samples
+      if (bootstraps.num == 0) converged.resamples.only <- FALSE
+      results$stats$parameters <- sample.stats(
+        wisp.results = results,
+        conv.resamples.only = converged.resamples.only,
+        verbose = verbose
+      )
+      
+      # Analyze residuals 
+      residuals <- analyze.residuals(
+        wisp.results = results,
+        verbose = verbose
+      )
+      results$stats$residuals <- residuals$stats
+      results$stats$residuals.log <- residuals$stats.log
+      plots.residuals <- residuals$plots
+      
+      # Make plots of results ####
+      
+      # Plot MCMC walks, both parameters and negloglik
+      plots.MCMC <- plot.MCMC.walks(
+        wisp.results = results,
+        print.plots = print.plots,
+        verbose = verbose
+      )
+      
+      # Plot normality comparison of MCMC and bootstrap estimates
+      if (bootstraps.num != 0) {
+        plots.MCMC.bs.comparison <- plot.MCMC.bs.comparison(
+          wisp.results = results,
+          print.plots = print.plots,
+          verbose = verbose
+        )
+      } else {
+        plots.MCMC.bs.comparison <- list()
       }
       
-    }
-    
-    # Extract results and diagnostics
-    # ... Save MCMC estimates and diagnostics
-    n_params <- ncol(MCMC_walk) - 4
-    sample.params.MCMC <- MCMC_walk[,1:n_params]
-    diagnostics.MCMC <- data.frame(
-      pen.neg.value = MCMC_walk[,n_params + 1],
-      neg.loglik = MCMC_walk[,n_params + 2], 
-      acceptance.ratio = MCMC_walk[,n_params + 3],
-      ctr.num = MCMC_walk[,n_params + 4]
-    )
-    if (bootstraps.num > 0) {
-      
-      # ... Save bs estimates and diagnostics
-      n_params <- ncol(sample_results) - 4
-      sample.params.bs <- sample_results[,1:n_params]
-      diagnostics.bs <- data.frame( 
-        pen.neg.value = sample_results[,n_params + 1],
-        neg.loglik = sample_results[,n_params + 2], 
-        success.code = sample_results[,n_params + 3],
-        num.evals = sample_results[,n_params + 4]
-      )
-      
-    } else {
-      sample.params.bs <- NULL
-      diagnostics.bs <- NULL
-    }
-    
-    # Set resamples for analysis 
-    if (is.null(sample.params.bs)) {
-      sample.params <- sample.params.MCMC
-    } else {
-      sample.params <- sample.params.bs
-    }
-    
-    # Set final fitted parameters
-    if (use.median) {
-      if (verbose) snk.report...("Setting median parameter samples as final parameters", initial_breaks = 1, end_breaks = 1)
-      final_parameters <- apply(sample.params, 2, function(x) median(x, na.rm = TRUE))
-    } else {
-      if (verbose) snk.report...("Setting full-data fit as parameters", initial_breaks = 2, end_breaks = 1)
-      final_parameters <- sample.params[nrow(sample.params),]
-    }
-    cpp_model$set_parameters(
-      final_parameters,
-      verbose
-    )
-    
-    # Grab model results and add samples
-    results <- cpp_model$results()
-    results[["sample.params"]] <- sample.params
-    results[["sample.params.bs"]] <- sample.params.bs
-    results[["sample.params.MCMC"]] <- sample.params.MCMC
-    results[["diagnostics.bs"]] <- diagnostics.bs
-    results[["diagnostics.MCMC"]] <- diagnostics.MCMC
-    
-    # Add variable names 
-    results[["variables"]] <- variables
-    
-    # Run statistical analysis ####
-    
-    # Initialize shell to hold stats
-    stats <- list(
-      parameters = data.frame(),
-      tps = data.frame(),
-      residuals = data.frame(),
-      residuals.log = data.frame(),
-      variance = data.frame()
-    )
-    results[["stats"]] <- stats
-    
-    # Run stats on samples
-    if (bootstraps.num == 0) converged.resamples.only <- FALSE
-    results$stats$parameters <- sample.stats(
-      wisp.results = results,
-      conv.resamples.only = converged.resamples.only,
-      verbose = verbose
-    )
-    
-    # Analyze residuals 
-    residuals <- analyze.residuals(
-      wisp.results = results,
-      verbose = verbose
-    )
-    results$stats$residuals <- residuals$stats
-    results$stats$residuals.log <- residuals$stats.log
-    plots.residuals <- residuals$plots
-    
-    # Make plots of results ####
-    
-    # Plot MCMC walks, both parameters and negloglik
-    plots.MCMC <- plot.MCMC.walks(
-      wisp.results = results,
-      print.plots = print.plots,
-      verbose = verbose
-    )
-    
-    # Plot normality comparison of MCMC and bootstrap estimates
-    plots.MCMC.bs.comparison <- plot.MCMC.bs.comparison(
-      wisp.results = results,
-      print.plots = print.plots,
-      verbose = verbose
-    )
-    
-    # Plot effect parameter distribution
-    plots.effect.dist <- plot.effect.dist(
-      wisp.results = results,
-      print.plots = print.plots,
-      verbose = verbose
-    )
-    
-    # Make rate plots 
-    plots.ratecount <- plot.ratecount(
-      wisp.results = results,
-      pred.type = "pred",
-      count.type = "count",
-      dim.boundaries = dim.bounds,
-      verbose = verbose
-    )
-    
-    # Make parameter plots 
-    plots.parameters <- plot.parameters(
-      wisp.results = results,
-      verbose = verbose
-    )
-    
-    # Gather plots
-    plots <- list(
-      residuals = plots.residuals,
-      ratecount = plots.ratecount,
-      parameters = plots.parameters,
-      MCMC = plots.MCMC,
-      parameter.normality = plots.MCMC.bs.comparison, 
-      effect.dist = plots.effect.dist
-    )
-    results[["plots"]] <- plots
-    
-    # Print summary plots
-    if (print.plots) {
-      plot.species.summary(
+      # Plot effect parameter distribution
+      plots.effect.dist <- plot.effect.dist(
         wisp.results = results,
-        these.contexts = NULL,
-        these.speciess = NULL,
-        verbose = TRUE
+        print.plots = print.plots,
+        verbose = verbose
       )
+      
+      # Make rate plots 
+      plots.ratecount <- plot.ratecount(
+        wisp.results = results,
+        pred.type = "pred",
+        count.type = "count",
+        dim.boundaries = dim.bounds,
+        verbose = verbose
+      )
+      
+      # Make parameter plots 
+      plots.parameters <- plot.parameters(
+        wisp.results = results,
+        verbose = verbose
+      )
+      
+      # Gather plots
+      plots <- list(
+        residuals = plots.residuals,
+        ratecount = plots.ratecount,
+        parameters = plots.parameters,
+        MCMC = plots.MCMC,
+        parameter.normality = plots.MCMC.bs.comparison, 
+        effect.dist = plots.effect.dist
+      )
+      results[["plots"]] <- plots
+      
+      # Print summary plots
+      if (print.plots) {
+        plot.species.summary(
+          wisp.results = results,
+          these.contexts = NULL,
+          these.speciess = NULL,
+          verbose = TRUE
+        )
+      }
+      
+      return(results)
+      
     }
-    
-    return(results)
     
   }
 
@@ -867,7 +968,10 @@ plot.ratecount <- function(
     if (length(speciess.to.print) == 0) {
       make_context_ref <- TRUE
       speciess.to.print <- wisp.results$grouping.variables$species.lvls
-      } 
+    } 
+    if (sum(df[,"ran"] == "none") == 0) {
+      make_context_ref <- FALSE
+    }
     count_size <- 1.5
     ran_size <- 0.75
     ran_linetype <- "longdash"
@@ -918,12 +1022,12 @@ plot.ratecount <- function(
       # Initial ggplot with jittered points from df
       plot <- ggplot() +
         geom_jitter(
-          data = df[ ref_idx_fvp & df[,"ran"] == "none", ], 
+          data = df[ref_idx_fvp & df[,"ran"] == "none", ], 
           aes(x = bin, y = .data[[count.type]], color = species), 
           width = 0.5, height = 0, alpha = count.alpha.none, size = count_size, na.rm = TRUE
         ) +  
         geom_line(
-          data = df[ ref_idx_fvp & df[,"ran"] == "none", ],  
+          data = df[ref_idx_fvp & df[,"ran"] == "none", ],  
           aes(x = bin, y = .data[[pred.type]], color = species),
           linewidth = 2, alpha = pred.alpha.none, na.rm = TRUE
         ) +  
@@ -956,6 +1060,12 @@ plot.ratecount <- function(
           na.rm = TRUE
         )
       }
+      
+      plot <- plot +
+        theme(
+          panel.background = ggplot2::element_rect(fill = "white", colour = NA),
+          plot.background  = ggplot2::element_rect(fill = "white", colour = NA)
+        )
       
       return(plot)
       
@@ -994,8 +1104,7 @@ plot.ratecount <- function(
             linetype = "solid", linewidth = 1.5, alpha = pred.alpha.none, na.rm = TRUE
           ) +  
           labs(y = y_lab, x = "Bin") +
-          theme_minimal() +
-          ggtitle(paste0("Fixed Effects for ", fv, " within ", fvp, " (", pred.type, ")")) 
+          theme_minimal() 
         
         # plot effect with random effects 
         for (rl in rans.to.print) { 
@@ -1015,6 +1124,7 @@ plot.ratecount <- function(
       }
       plot <- plot + scale_color_manual(values = treatment_colors)
       if (length(y.lim) == 2) plot <- plot + ylim(y.lim)
+      if (length(treatment_levels) < 2) plot <- plot + theme(legend.position = "none")
       
       if (length(dim.boundaries) > 0) {
         plot <- plot + geom_vline(
@@ -1025,6 +1135,12 @@ plot.ratecount <- function(
           na.rm = TRUE
         )
       }
+      
+      plot <- plot +
+        theme(
+          panel.background = ggplot2::element_rect(fill = "white", colour = NA),
+          plot.background  = ggplot2::element_rect(fill = "white", colour = NA)
+        )
       
       return(plot)
       
@@ -1057,7 +1173,22 @@ plot.ratecount <- function(
       # Make fixed effects plot, for each species level
       for (fv in speciess.to.print) {
         # Make the plot
-        plot_list[[paste0("plot_",pred.type,"_context_",fvp,"_fixEff_",fv)]] <- plot_context_fixEff(df,fvp,fv)
+        fv_plot <- plot_context_fixEff(df,fvp,fv)
+        if (length(wisp.results$grouping.variables$context.lvls) > 1) {
+          if (length(speciess.to.print) > 1) {
+            fv_title <- paste0("Counts and predicted rates for ", fv, " within ", fvp, " (", pred.type, ")")
+          } else {
+            fv_title <- paste0("Counts and predicted rates for ", fvp, " (", pred.type, ")")
+          }
+        } else {
+          if (length(speciess.to.print) > 1) {
+            fv_title <- paste0("Counts and predicted rates for ", fv, " (", pred.type, ")")
+          } else {
+            fv_title <- paste0("Counts and predicted rates (", pred.type, ")")
+          }
+        }
+        fv_plot <- fv_plot + ggtitle(fv_title) 
+        plot_list[[paste0("plot_",pred.type,"_context_",fvp,"_fixEff_",fv)]] <- fv_plot
         if (print.all) {
           print(plot_list[[paste0("plot_",pred.type,"_context_",fvp,"_fixEff_",fv)]])
         }
@@ -2145,46 +2276,49 @@ plot.MCMC.bs.comparison <- function(
     if (verbose) snk.report...("Making MCMC vs bootstrap parameter distribution comparison plots")
     
     # Find mean "normality" (p-value of shaprio test) for each parameter, on each method
-    dens_list <- lapply(1:ncol(param_mcmc), function(pnum) {
-      mcmc_vals <- param_mcmc[, pnum]
-      bs_vals   <- param_bs[, pnum]
-      n_resamples <- 100
-      mcmc_sw_stat <- rep(NA, n_resamples)
-      bs_sw_stat   <- rep(NA, n_resamples)
-      
-      sample_size <- 35
-      throw_bs_warning <- FALSE
-      throw_MCMC_warning <- FALSE
-      for (i in 1:n_resamples) {
-        mcmc_vals_sample <- sample(mcmc_vals, sample_size, replace = TRUE)
-        bs_vals_sample   <- sample(bs_vals, sample_size, replace = TRUE)
-        if (length(unique(mcmc_vals_sample)) > 1) {
-          mcmc_sw_stat[i] <- shapiro.test(mcmc_vals_sample)$p.value
-        } else {
-          mcmc_sw_stat[i] <- NA
-          throw_MCMC_warning <- TRUE
+    dens_list <- lapply(
+      1:ncol(param_mcmc), 
+      function(pnum) {
+        mcmc_vals <- param_mcmc[, pnum]
+        bs_vals   <- param_bs[, pnum]
+        n_resamples <- 100
+        mcmc_sw_stat <- rep(NA, n_resamples)
+        bs_sw_stat   <- rep(NA, n_resamples)
+        
+        sample_size <- 35
+        throw_bs_warning <- FALSE
+        throw_MCMC_warning <- FALSE
+        for (i in 1:n_resamples) {
+          mcmc_vals_sample <- sample(mcmc_vals, sample_size, replace = TRUE)
+          bs_vals_sample   <- sample(bs_vals, sample_size, replace = TRUE)
+          if (length(unique(mcmc_vals_sample)) > 1) {
+            mcmc_sw_stat[i] <- shapiro.test(mcmc_vals_sample)$p.value
+          } else {
+            mcmc_sw_stat[i] <- NA
+            throw_MCMC_warning <- TRUE
+          }
+          if (length(unique(bs_vals_sample)) > 1) {
+            bs_sw_stat[i]   <- shapiro.test(bs_vals_sample)$p.value
+          } else {
+            bs_sw_stat[i] <- NA
+            throw_bs_warning <- TRUE
+          }
         }
-        if (length(unique(bs_vals_sample)) > 1) {
-          bs_sw_stat[i]   <- shapiro.test(bs_vals_sample)$p.value
-        } else {
-          bs_sw_stat[i] <- NA
-          throw_bs_warning <- TRUE
+        if (throw_bs_warning) {
+          warning("Some parameters had only one unique bootstrap resample value, Shapiro test not computed for them.")
         }
-      }
-      if (throw_bs_warning) {
-        warning("Some parameters had only one unique bootstrap resample value, Shapiro test not computed for them.")
-      }
-      if (throw_MCMC_warning) {
-        warning("Some parameters had only one unique MCMC resample value, Shapiro test not computed for them.")
-      }
-      
-      return(
-        data.frame(
-          sw_stat = c(mean(mcmc_sw_stat), mean(bs_sw_stat)),
-          method = as.factor(c("MCMC", "Bootstrap"))
+        if (throw_MCMC_warning) {
+          warning("Some parameters had only one unique MCMC resample value, Shapiro test not computed for them.")
+        }
+        
+        return(
+          data.frame(
+            sw_stat = c(mean(mcmc_sw_stat), mean(bs_sw_stat)),
+            method = as.factor(c("MCMC", "Bootstrap"))
+          )
         )
-      )
-    })
+      }
+    )
     
     df_dens <- do.call(rbind, dens_list)
     
@@ -2234,24 +2368,29 @@ plot.MCMC.bs.comparison <- function(
     bs_pvals_order <- bs_pvals_order[as.integer(seq(1,length(bs_pvals_order), length.out = take))]
     
     # Precompute density estimates for each param and group
-    dens_list <- lapply(1:take, function(pnum) {
-      mcmc_vals <- param_mcmc[, mcmc_pvals_order[pnum]]
-      bs_vals   <- param_bs[, bs_pvals_order[pnum]]
-      
-      # Density and centering
-      d_mcmc <- density(mcmc_vals)
-      d_bs   <- density(bs_vals)
-      mcmc_peak <- d_mcmc$x[which.max(d_mcmc$y)]
-      bs_peak   <- d_bs$x[which.max(d_bs$y)]
-      
-      # Return centered density curves
-      data.frame(
-        x = c(d_mcmc$x - mcmc_peak, d_bs$x - bs_peak),
-        y = c(d_mcmc$y, d_bs$y),
-        method = rep(c("MCMC", "Bootstrap"), each = length(d_mcmc$x)),
-        param = factor(pnum)
-      )
-    })
+    dens_list <- lapply(
+      1:take, 
+      function(pnum) {
+        mcmc_vals <- param_mcmc[, mcmc_pvals_order[pnum]]
+        bs_vals   <- param_bs[, bs_pvals_order[pnum]]
+        
+        # Density and centering
+        d_mcmc <- density(mcmc_vals)
+        d_bs   <- density(bs_vals)
+        mcmc_peak <- d_mcmc$x[which.max(d_mcmc$y)]
+        bs_peak   <- d_bs$x[which.max(d_bs$y)]
+        
+        # Return centered density curves
+        return(
+          data.frame(
+            x = c(d_mcmc$x - mcmc_peak, d_bs$x - bs_peak),
+            y = c(d_mcmc$y, d_bs$y),
+            method = rep(c("MCMC", "Bootstrap"), each = length(d_mcmc$x)),
+            param = factor(pnum)
+          )
+        )
+      }
+    )
     
     df_dens <- do.call(rbind, dens_list)
     df_dens$y <- log(df_dens$y+1)

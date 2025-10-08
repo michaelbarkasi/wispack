@@ -21,7 +21,7 @@ create.count.data.WSPmm(
 
 \item{fixed.effect.names}{A character vector of column names in \code{df.merfish} to include as fixed effects in the count data}
 
-\item{context}{A character string specifying the context level for fixed effects; if NULL, will use "context"}
+\item{context}{A character string specifying the context level for fixed effects; if NULL, will use "context", if not a col name of df.merfish, will rep the value}
 }
 \value{
 A data frame in count data format suitable for input into the WSPmm model

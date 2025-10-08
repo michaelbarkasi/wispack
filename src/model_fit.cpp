@@ -620,27 +620,32 @@ IntegerMatrix LROcp_array(
     if (found_cp.size() > 0) {
       
       // Project found_cp back to original series 
-      // ... these will be one-based indices that need to be subtracted back to zero-based
       Function project_cp("project_cp");
       IntegerMatrix found_cp_array = project_cp(found_cp, centroid.column(1), loglik_ratio_array_midpass);
       // ... ^ in this matrix, rows are change points (by deg), columns are trt x ran interactions
      
+      // Ensure change points are separated by at least cp_buffer (and correct indexes to zero-indexing)
       IntegerVector collision_rows;
       for (int i = 0; i < found_cp_array.ncol(); i++) {
+        // Convert one-based indices from project_cp to zero-based indices
         found_cp_array.column(i) = found_cp_array.column(i) - 1;
         for (int k = 0; k < found_cp_array.nrow(); k++) {
-          if (k > 0) {
+          if (k == 0) {
+            if (found_cp_array(k, i) <= cp_buffer) {
+              found_cp_array(k, i) = cp_buffer + 1.0;
+            }
+          } else {
             int cp_gap = found_cp_array(k, i) - found_cp_array(k - 1, i);
-            if (cp_gap <= cp_buffer) {
-              found_cp_array(k, i) = found_cp_array(k - 1, i) + cp_buffer + 1;
-              }
-            if (found_cp_array(k, i) <= found_cp_array(k - 1, i) || found_cp_array(k, i) > n_samples - cp_buffer) {
-              // Change point collision!
+            if (cp_gap <= 0 || found_cp_array(k, i) >= n_samples - cp_buffer - 1.0) {
+              // Change point collision! Mark row for removal
               collision_rows.push_back(k);
-              }
+              // Advance counter k
+              k++;
+            } else if (cp_gap <= cp_buffer) {
+              // Change points too close together, so move this one forward
+              found_cp_array(k, i) = found_cp_array(k - 1, i) + cp_buffer + 1.0;
+            }
           }
-          if (found_cp_array(k, i) <= cp_buffer) {found_cp_array(k, i) = cp_buffer + 1.0;}
-          if (found_cp_array(k, i) >= n_samples - cp_buffer) {found_cp_array(k, i) = n_samples - cp_buffer - 1.0;}
         }
       }
       
@@ -739,12 +744,12 @@ List estimate_change_points(
     const int& ws,                                 // running window size
     const int& bin_num_i,                          // number of bins in the count data
     const double& LROcutoff,                       // cutoff for outlier detection in change-point detection
-    const CharacterVector& context,                 // context column of summed data
-    const CharacterVector& species,                  // species column of summed data
+    const CharacterVector& context,                // context column of summed data
+    const CharacterVector& species,                // species column of summed data
     const CharacterVector& ran,                    // random effect column of summed data
     const CharacterVector& treatment,              // treatment column of summed data
-    const CharacterVector& context_lvls,            // levels of context grouping variable (fixed-effects)
-    const CharacterVector& species_lvls,             // levels of species grouping variable (fixed-effects)
+    const CharacterVector& context_lvls,           // levels of context grouping variable (fixed-effects)
+    const CharacterVector& species_lvls,           // levels of species grouping variable (fixed-effects)
     const CharacterVector& ran_lvls,               // levels of random effect grouping variable (random-effects)
     const CharacterVector& treatment_lvls,                      // all possible treatment combinations, levels as single-string name
     const std::vector<CharacterVector>& treatment_components    // all possible treatment combinations, level components
@@ -795,7 +800,6 @@ List estimate_change_points(
         sMat count_masked_array(bin_num_i, n_ran_trt);
         count_masked_array.setZero();
         LogicalVector good_col(n_ran_trt);
-        
         // Collect count values for each treatment-ran level interaction of this species-context pair
         for (int t = 0; t < treatment_num; t++) {
           String trt = treatment_lvls[t];
@@ -830,7 +834,6 @@ List estimate_change_points(
             } else {
               good_col(t*n_ran + r) = false;
             }
-            
           }
           
         }
@@ -974,10 +977,10 @@ List estimate_initial_parameters(
     const double& min_initialization_slope,        // minimum slope for initial parameterization
     const sMat& weight_rows,                       // ... for making weights matrix and initial effects estimates
     const CharacterVector& mc_list,                // list of model component types to estimate initial parameters for
-    const CharacterVector& context,                 // context column of summed data
-    const CharacterVector& species,                  // species column of summed data
-    const CharacterVector& context_lvls,            // levels of context grouping variable (fixed-effects)
-    const CharacterVector& species_lvls,             // levels of species grouping variable (fixed-effects)
+    const CharacterVector& context,                // context column of summed data
+    const CharacterVector& species,                // species column of summed data
+    const CharacterVector& context_lvls,           // levels of context grouping variable (fixed-effects)
+    const CharacterVector& species_lvls,           // levels of species grouping variable (fixed-effects)
     const IntegerMatrix& degMat,                   // matrix of degrees of each context-species combination
     const List& found_cp_list,                     // list of found change points (IntegerMatrix) for each context-species combination
     const List& found_cp_trt_list,                 // list of found change points (NumericMatrix) for each context-species combination, averaged across treatments

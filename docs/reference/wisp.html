@@ -24,9 +24,11 @@
     <li><a class="dropdown-item" href="../articles/install.html">Installation instructions</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_basic.html">The basics of wisps</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar_basic.html">RORB along the cortical laminar axis</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling celltypes</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Modeling time-series data</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">The wisp plot</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
@@ -58,6 +60,7 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">wisp</span><span class="op">(</span></span>
 <span>  <span class="va">count.data</span>,</span>
 <span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  fit_only <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  use.median <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  MCMC.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  bootstraps.num <span class="op">=</span> <span class="fl">0</span>,</span>
@@ -80,6 +83,10 @@
 
 <dt id="arg-variables">variables<a class="anchor" aria-label="anchor" href="#arg-variables"></a></dt>
 <dd><p>List, names of the columns in <code>count.data</code> that correspond to the model variables. The list should contain only (but not necessarily all) named elements: <code>count</code>, <code>bin</code>, <code>context</code>, <code>species</code>, <code>ran</code>, and <code>fixedeffects</code>.</p></dd>
+
+
+<dt id="arg-fit-only">fit_only<a class="anchor" aria-label="anchor" href="#arg-fit-only"></a></dt>
+<dd><p>Logical, if TRUE, only fits the model to the full data set using L-BFGS and returns the fitted model without running MCMC or bootstrapping; if FALSE, runs MCMC and/or bootstrapping to estimate parameter uncertainty.</p></dd>
 
 
 <dt id="arg-use-median">use.median<a class="anchor" aria-label="anchor" href="#arg-use-median"></a></dt>

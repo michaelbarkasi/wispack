@@ -1181,7 +1181,7 @@ cortical_coordinate_transform <- function(
 #' @param bin.dim A character string specifying the dimension by which to bin the data; must be either "x_bins" or "y_bins"
 #' @param gene.list A character vector of genes to include in the count data, which will form the "species" level of the model
 #' @param fixed.effect.names A character vector of column names in \code{df.merfish} to include as fixed effects in the count data
-#' @param context A character string specifying the context level for fixed effects; if NULL, will use "context"
+#' @param context A character string specifying the context level for fixed effects; if NULL, will use "context", if not a col name of df.merfish, will rep the value 
 #' @return A data frame in count data format suitable for input into the WSPmm model
 #' @export
 create.count.data.WSPmm <- function(
@@ -1189,12 +1189,12 @@ create.count.data.WSPmm <- function(
     bin.dim = c("x_bins", "y_bins"),               # dimension by which to bin; must be one of these two; will collapse along the other
     gene.list,                                     # character vector of genes to include in count data, forms the "species" level of the model
     fixed.effect.names, 
-    context = NULL                                 # context level for fixed effects; if NULL, will use "context"
+    context = NULL                                 # context level for fixed effects; if NULL, will use "context", if not a col name of df.merfish, will rep the value 
   ) { 
     
     # Run checks 
     if (length(bin.dim) != 1 || !(bin.dim %in% c("x_bins","y_bins"))) stop("bin.dim must be one of 'x_bins' or 'y_bins'")
-    if (!all(c("mouse", "cell_num", fixed.effect.names, context) %in% colnames(df.merfish))) stop("df.merfish missing mouse, cell_num, context, or fixed effect column")
+    if (!all(c("mouse", "cell_num", fixed.effect.names) %in% colnames(df.merfish))) stop("df.merfish missing mouse, cell_num, or fixed effect column")
    
     # Make count data column names and find its dimensions 
     num_genes <- length(gene.list)
@@ -1204,7 +1204,8 @@ create.count.data.WSPmm <- function(
     
     # Make context column 
     if (context == "context") context_col <- rep("context", numrow)
-    else context_col <- rep(df.merfish[,context], num_genes)
+    else if (context %in% colnames(df.merfish)) context_col <- rep(df.merfish[,context], num_genes)
+    else context_col <- rep(context, numrow)
     
     # Pre-allocate as much of the count data as possible
     count_data <- data.frame(

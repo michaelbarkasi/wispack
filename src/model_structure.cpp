@@ -43,8 +43,9 @@ void cartesian_product_CharVec(
 std::vector<CharacterVector> make_treatments(
     std::vector<CharacterVector> fix_trt
   ) {
+   
+    // Initialize vector to hold all treatment combinations
     int n = fix_trt.size();
-    
     std::vector<CharacterVector> treatments;
     
     for (int j = 1; j <= n; j++) {
@@ -169,14 +170,14 @@ List build_beta_shell(
 
 // Function for converting structured encoding of parameters into a vector
 List make_parameter_vector(
-    const List& beta, 
-    const List& wfactor, 
-    const CharacterVector& cxt_lvls, 
-    const CharacterVector& sps_lvls, 
-    const CharacterVector& rn_lvls, 
-    const CharacterVector& mc_list, 
-    const CharacterVector& treatment_lvls,
-    const IntegerMatrix& degs
+    const List& beta,                       // Fixed-effect values
+    const List& wfactor,                    // Random-effect warping factors
+    const CharacterVector& cxt_lvls,        // Context levels
+    const CharacterVector& sps_lvls,        // Species levels
+    const CharacterVector& rn_lvls,         // Random effect levels
+    const CharacterVector& mc_list,         // Model components
+    const CharacterVector& treatment_lvls,  // Treatment levels
+    const IntegerMatrix& degs               // Degrees matrix
   ) {
     
     /*
@@ -439,7 +440,7 @@ std::vector<IntegerVector> make_extrapolation_pool(
       extrapolation_pool[r] = Rwhich(mask);
       
       // Track progress
-      if (any_true(eq_left_broadcast(tracker, ri))) {
+      if (any_true(eq_left_broadcast(tracker, ri)) || n_rows <= 5) {
         vprint("row: " + std::to_string(ri + 1) + "/" + std::to_string(n_rows), verbose);
       } 
       

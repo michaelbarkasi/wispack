@@ -7,6 +7,20 @@
   font-weight: 500;
   line-height: 1.2;
 }
+.container h2 {
+  border-bottom: 1.5px solid var(--bs-border-color);
+  padding-bottom: 0.3em;
+  margin-top: 2em;
+  margin-bottom: 1em;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.container h3 {
+  border-bottom: 1px solid var(--bs-border-color);
+  padding-bottom: 0.15em;
+  margin-top: 2em;
+  margin-bottom: 1em;
+}
 .page-header {
   border-bottom: none !important;
 }
@@ -23,4 +37,7 @@
   font-style: italic;
   color: #555;
   margin-top: 0.5em;
+}
+math[display="block"] {
+  margin: 1em 0;
 }

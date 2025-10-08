@@ -40,7 +40,7 @@ countdata <- read.csv(data_path)
 # ... Higher numbers closer to cortical surface
 boundary_path <- system.file(
     "extdata", 
-    "layer_boundary_bins.csv", 
+    "S1_layer_boundary_bins.csv", 
     package = "wispack"
   )
 layer.boundary.bins <- read.csv(boundary_path)
@@ -53,9 +53,10 @@ fixed.effect.names <- c("hemisphere", "age")
 data.variables <- list(
     count = "count",
     bin = "bin", 
-    context = "cortex", 
+    context = "context", 
     species = "gene",
     ran = "mouse",
+    timeseries = NULL,
     fixedeffects = fixed.effect.names
   )
 
@@ -99,6 +100,8 @@ laminar.model <- wisp(
     count.data = countdata,
     # Variable labels
     variables = data.variables,
+    # Single fit or parameter estimation?
+    fit_only = FALSE,
     # Settings used on R side
     use.median = FALSE,
     MCMC.settings = MCMC.settings,
