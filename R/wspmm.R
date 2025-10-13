@@ -333,31 +333,48 @@ wisp <- function(
       } 
       
       # Run MCMC simulation
-      if (verbose) snk.report("Running MCMC stimulations", end_breaks = 1)
-      start_time_MCMC <- Sys.time()
-      MCMC_walk <- cpp_model$MCMC(
-        MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin, 
-        MCMC.settings.internal$MCMC.neighbor.filter,
-        MCMC.settings.internal$MCMC.step.size,
-        MCMC.settings.internal$MCMC.prior,
-        verbose 
-      )
-      run_time_MCMC <- Sys.time() - start_time_MCMC
-      if (verbose) {
-        snk.report...("MCMC simulation complete")
-        snk.print_vec("MCMC run time (total), minutes", c(as.numeric(run_time_MCMC, units = "mins")))
-        snk.print_vec("MCMC run time (per retained step), seconds", c(as.numeric(run_time_MCMC, units = "secs") / (MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin)))
-        snk.print_vec("MCMC run time (per step), seconds", c((as.numeric(run_time_MCMC, units = "secs") / (MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin))/MCMC.settings.internal$MCMC.neighbor.filter), end_breaks = 0)
+      if (MCMC.settings.internal$MCMC.steps > 0) {
+        
+        if (verbose) snk.report("Running MCMC stimulations", end_breaks = 1)
+        start_time_MCMC <- Sys.time()
+        MCMC_walk <- cpp_model$MCMC(
+          MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin, 
+          MCMC.settings.internal$MCMC.neighbor.filter,
+          MCMC.settings.internal$MCMC.step.size,
+          MCMC.settings.internal$MCMC.prior,
+          verbose 
+        )
+        run_time_MCMC <- Sys.time() - start_time_MCMC
+        if (verbose) {
+          snk.report...("MCMC simulation complete")
+          snk.print_vec("MCMC run time (total), minutes", c(as.numeric(run_time_MCMC, units = "mins")))
+          snk.print_vec("MCMC run time (per retained step), seconds", c(as.numeric(run_time_MCMC, units = "secs") / (MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin)))
+          snk.print_vec("MCMC run time (per step), seconds", c((as.numeric(run_time_MCMC, units = "secs") / (MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin))/MCMC.settings.internal$MCMC.neighbor.filter), end_breaks = 0)
+        }
+        
+        # Clear out burn-in, if any
+        if (MCMC.settings.internal$MCMC.burnin > 0) {
+          MCMC_walk <- MCMC_walk[-c(2:(2+MCMC.settings.internal$MCMC.burnin-1)),]
+        }
+        
+        # Save MCMC estimates and diagnostics
+        n_params <- ncol(MCMC_walk) - 4
+        sample.params.MCMC <- MCMC_walk[,1:n_params]
+        diagnostics.MCMC <- data.frame(
+          pen.neg.value = MCMC_walk[,n_params + 1],
+          neg.loglik = MCMC_walk[,n_params + 2], 
+          acceptance.ratio = MCMC_walk[,n_params + 3],
+          ctr.num = MCMC_walk[,n_params + 4]
+        )
+        
+      } else {
+        sample.params.MCMC <- NULL
+        diagnostics.MCMC <- NULL
       }
       
-      # Clear out burn-in, if any
-      if (MCMC.settings.internal$MCMC.burnin > 0) {
-        MCMC_walk <- MCMC_walk[-c(2:(2+MCMC.settings.internal$MCMC.burnin-1)),]
-      }
-      
+      # Run bootstrap fits
       if (bootstraps.num > 0) {
         
-        # Run bootstrap fits
         start_time_bs <- Sys.time()
         if (verbose) snk.report("Running bootstrap fits", end_breaks = 1)
         sample_results <- cpp_model$bs_batch(
@@ -373,21 +390,7 @@ wisp <- function(
           snk.print_vec("Bootstrap run time (per sample, per thread), seconds", c(as.numeric(run_time_bs, units = "secs") * max.fork / bootstraps.num), end_breaks = 0)
         }
         
-      }
-      
-      # Extract results and diagnostics
-      # ... Save MCMC estimates and diagnostics
-      n_params <- ncol(MCMC_walk) - 4
-      sample.params.MCMC <- MCMC_walk[,1:n_params]
-      diagnostics.MCMC <- data.frame(
-        pen.neg.value = MCMC_walk[,n_params + 1],
-        neg.loglik = MCMC_walk[,n_params + 2], 
-        acceptance.ratio = MCMC_walk[,n_params + 3],
-        ctr.num = MCMC_walk[,n_params + 4]
-      )
-      if (bootstraps.num > 0) {
-        
-        # ... Save bs estimates and diagnostics
+        # Save bs estimates and diagnostics
         n_params <- ncol(sample_results) - 4
         sample.params.bs <- sample_results[,1:n_params]
         diagnostics.bs <- data.frame( 
@@ -403,10 +406,12 @@ wisp <- function(
       }
       
       # Set resamples for analysis 
-      if (is.null(sample.params.bs)) {
+      if (is.null(sample.params.bs) && !is.null(sample.params.MCMC)) {
         sample.params <- sample.params.MCMC
-      } else {
+      } else if (!is.null(sample.params.bs)) {
         sample.params <- sample.params.bs
+      } else {
+        stop("If not running MCMC or bootstrapping, set fit_only = TRUE")
       }
       
       # Set final fitted parameters
@@ -465,20 +470,27 @@ wisp <- function(
       # Make plots of results ####
       
       # Plot MCMC walks, both parameters and negloglik
-      plots.MCMC <- plot.MCMC.walks(
-        wisp.results = results,
-        print.plots = print.plots,
-        verbose = verbose
-      )
-      
-      # Plot normality comparison of MCMC and bootstrap estimates
-      if (bootstraps.num != 0) {
-        plots.MCMC.bs.comparison <- plot.MCMC.bs.comparison(
+      if (!is.null(diagnostics.MCMC)) {
+        
+        plots.MCMC <- plot.MCMC.walks(
           wisp.results = results,
           print.plots = print.plots,
           verbose = verbose
         )
+        
+        # Plot normality comparison of MCMC and bootstrap estimates
+        if (bootstraps.num != 0) {
+          plots.MCMC.bs.comparison <- plot.MCMC.bs.comparison(
+            wisp.results = results,
+            print.plots = print.plots,
+            verbose = verbose
+          )
+        } else {
+          plots.MCMC.bs.comparison <- list()
+        }
+        
       } else {
+        plots.MCMC <- list()
         plots.MCMC.bs.comparison <- list()
       }
       

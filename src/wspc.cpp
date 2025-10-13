@@ -1623,16 +1623,17 @@ Rcpp::NumericMatrix wspc::MCMC(
         bd_current_transformed += 1.0;
         
         // ... for each parameter
+        //NumericVector bss(n_params);
         for (int i = 0; i < n_params; i++) {
           
           // ... calculate step size
           int param_oom = static_cast<int>(std::floor(std::log10(std::abs(params_current(i)))));
           double normalized_step_size = step_size * std::pow(10, static_cast<double>(param_oom + 1.0));
           double bounded_step_size = normalized_step_size / bd_current_transformed.val();
+          //bss(i) = bounded_step_size;
           if (bounded_step_size == 0.0) {
             // ... presumably this case means current parameter is extremely close to zero or very close to boundary
-            params_next(i) = pcg_rnorm(params_current(i), step_size/1e3, walk_rng);
-            // vprint("Bounded step size for param " + std::to_string(i) + " is zero, OOM: " + std::to_string(std::pow(10, static_cast<double>(param_oom + 1.0))) + ", bd transformed: " + std::to_string(bd_current_transformed.val()), true);
+            params_next(i) = pcg_rnorm(params_current(i), step_size/10, walk_rng);
           } else {
             // ... take next step
             params_next(i) = pcg_rnorm(params_current(i), bounded_step_size, walk_rng);
@@ -1675,15 +1676,7 @@ Rcpp::NumericMatrix wspc::MCMC(
         (loglik_current + prior_current) 
       );
       if (acceptance > 1.0) {acceptance = 1.0;}
-      if (std::isnan(acceptance)) {
-        acceptance = 0.0;
-      } else if (acceptance == 0.0) {
-        vprint("Acceptance: " + std::to_string(acceptance), true);
-        vprint("loglik_current: " + std::to_string(loglik_current), true);
-        vprint("loglik_next: " + std::to_string(loglik_next), true);
-        vprint("prior_current: " + std::to_string(prior_current), true);
-        vprint("prior_next: " + std::to_string(prior_next), true);
-      }
+      if (std::isnan(acceptance)) {acceptance = 0.0;}
       
       // Accept or reject the proposed step
       double ran_draw = R::runif(0.0, 1.0); 

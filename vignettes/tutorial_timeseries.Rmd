@@ -88,14 +88,6 @@ boundary_path <- system.file(
   )
 layer.boundary.bins <- read.csv(boundary_path)
 
-MCMC.settings <- list(
-    MCMC.burnin = 1e2,
-    MCMC.steps = 1e3,
-    MCMC.step.size = 0.5,
-    MCMC.prior = 1.0, 
-    MCMC.neighbor.filter = 2
-  )
-
 laminar.model <- wisp(
     # Data to model
     count.data = countdata,
@@ -103,8 +95,8 @@ laminar.model <- wisp(
     variables = data.variables,
     # Single fit or parameter estimation?
     fit_only = FALSE,
-    MCMC.settings = MCMC.settings,
-    bootstraps.num = 0,
+    MCMC.settings = list(MCMC.steps = 0),
+    bootstraps.num = 100,
     converged.resamples.only = TRUE,
     dim.bounds = colMeans(layer.boundary.bins),
     verbose = TRUE,
