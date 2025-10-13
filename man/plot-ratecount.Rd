@@ -4,7 +4,7 @@
 \alias{plot.ratecount}
 \title{Plot fitted model and data}
 \usage{
-plot.ratecount(wisp.results, pred.type = "pred.log", count.type = "count.log", dim.boundaries = c(), print.all = FALSE, y.lim = NA, count.alpha.none = NA, count.alpha.ran = NA, pred.alpha.none = NA, pred.alpha.ran = NA, rans.to.print = c(), speciess.to.print = c(), verbose = TRUE)
+plot.ratecount(wisp.results, pred.type = "pred", count.type = "count", dim.boundaries = c(), print.all = FALSE, y.lim = NA, count.alpha.none = NA, count.alpha.ran = NA, pred.alpha.none = NA, pred.alpha.ran = NA, rans.to.print = c(), speciess.to.print = c(), verbose = TRUE)
 }
 \arguments{
 \item{wisp.results}{List, output of the wisp function.}
@@ -12,6 +12,8 @@ plot.ratecount(wisp.results, pred.type = "pred.log", count.type = "count.log", d
 \item{pred.type}{Character string, the name of the predicted rate column in the count data (e.g., "pred.log" or "pred").}
 
 \item{count.type}{Character string, the name of the observed count column in the count data (e.g., "count.log" or "count").}
+
+\item{CI_style}{Logical, if TRUE, plots predicted lines with confidence interval style shading; if FALSE, plots predicted lines as solid lines with random levels and data points}
 
 \item{dim.boundaries}{Numeric vector, independent block boundaries to plot for comparison. If empty, the argument is ignored.}
 

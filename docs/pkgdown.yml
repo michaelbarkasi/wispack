@@ -4,13 +4,15 @@ pkgdown_sha: ~
 articles:
   install: install.html
   license: license.html
-  tutorial_basic: tutorial_basic.html
-  tutorial_corticallaminar_basic: tutorial_corticallaminar_basic.html
+  release_notes: release_notes.html
+  tutorial_corticallaminar: tutorial_corticallaminar.html
   tutorial_multicontext: tutorial_multicontext.html
+  tutorial_Poisson: tutorial_Poisson.html
   tutorial_stats: tutorial_stats.html
   tutorial_timeseries: tutorial_timeseries.html
+  tutorial_warping: tutorial_warping.html
   tutorial_wispplots: tutorial_wispplots.html
-last_built: 2025-10-12T02:06Z
+last_built: 2025-10-22T13:29Z
 urls:
   reference: https://michaelbarkasi.github.io/wispack/reference
   article: https://michaelbarkasi.github.io/wispack/articles

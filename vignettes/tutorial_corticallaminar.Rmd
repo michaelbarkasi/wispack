@@ -10,17 +10,17 @@ options(width = 10000)
 
 <h2>Introduction</h2>
 
-The gene RORB plays a key role in the development of sensorimotor cortex in rodents. RORB expression leads axons from thalamic neurons to innervate cortical layer 4. These thalamocortical projections organize into discrete "barrel" formations, each barrel containing the inputs from a single whisker. 
+The gene RORB plays a key role in the development of somatosensory cortex in rodents. RORB expression leads axons from thalamic neurons to innervate cortical layer 4. These thalamocortical projections organize into discrete "barrel" formations, each barrel containing the inputs from a single whisker. 
 
 While it's generally assumed that there are no major differences in barrel formations between the left and right hemispheres (i.e., no "laterality"), over the years there have been several histological studies suggesting age and sex-dependent hemispheric differences. Given the established role of RORB in barrel formation, one might want to test for age or sex-dependent laterality in RORB expression. 
 
 <h2>Labeling the ROI</h2>
 
-This tutorial uses data collected from four male wild-type mice to test for age effects on laterality in RORB expression. The mice are split between two ages: postnatal day 12 (P12) and postnatal day 18 (P18). The starting point was raw, non-normalized mRNA counts from the cells within the primary sensorimotor cortex (S1), both left and right hemispheres. Before using any functions from wispack, S1 was identified in each sample by manually fitting the entire slice to the CCFv3.
+This tutorial uses data collected from four male wild-type mice to test for age effects on laterality in RORB expression. The mice are split between two ages: postnatal day 12 (P12) and postnatal day 18 (P18). The starting point was raw, non-normalized mRNA counts from the cells within the primary somatosensory cortex (S1), both left and right hemispheres. Before using any functions from wispack, S1 was identified in each sample by manually fitting the entire slice to the CCFv3.
 
 <div class="figure">
-  <img src="fig_S1_Rorb.png" alt="Image of horizontal mouse brain slice with primary sensorimotor cortex highlight and second image of the laminar and columnar axes of the cortex" width="90%">
-  <p class="caption">Left: Example horizontal slice as reconstructed from MERFISH data. Red highlight indicates the right primary sensorimotor cortex. Right: The right sensorimotor cortex, with RORB molecules in red and laminar and columnar axes labeled.</p>
+  <img src="fig_S1_Rorb.png" alt="Image of horizontal mouse brain slice with primary somatosensory cortex highlight and second image of the laminar and columnar axes of the cortex" width="90%">
+  <p class="caption">Left: Example horizontal slice as reconstructed from MERFISH data. Red highlight indicates the right primary somatosensory cortex. Right: The right somatosensory cortex, with RORB molecules in red and laminar and columnar axes labeled.</p>
 </div>
 
 <h2>Coordinate transform into axis of interest</h2>
@@ -164,9 +164,11 @@ library(wispack, quietly = TRUE)
 model <- wisp(
     count.data = countdata,
     variables = data.variables,
-    dim.bounds = colMeans(layer.boundary.bins),
+    plot.settings = list(
+        print.plots = FALSE, 
+        dim.bounds = colMeans(layer.boundary.bins)
+      ),
     verbose = TRUE,
-    print.plots = FALSE
   )
 ```
 
@@ -175,13 +177,13 @@ model <- wisp(
 As can be seen in the print out above, wisp models typically have hundreds of parameters, which means that they usually lack the kind of brief-yet-informative summary familiar from R packages for linear models. The most flat-footed way to extract desired results is to hunt through the output. The output of wisp() is a list with the following named components: 
 
 ```{r wisp_model_components}
-for (n in names(model)) cat(n, ": ", class(model[[n]]), "\n", sep = "")
+for (n in names(model)) cat(n, ": ", paste0(class(model[[n]]), collapse = ", "), "\n", sep = "")
 ```
 
 Within the "stats" object (another list itself), the following is found: 
 
 ```{r stats_components}
-for (n in names(model$stats)) cat(n, ": ", class(model$stats[[n]]), "\n", sep = "")
+for (n in names(model$stats)) cat(n, ": ", paste0(class(model$stats[[n]]), collapse = ", "), "\n", sep = "")
 ```
 
 The parameter object (stats$parameter) is a data frame the rows of which are the model parameters, the columns of which are various statistical results of interest, e.g., confidence intervals and p-values: 

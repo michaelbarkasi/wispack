@@ -93,26 +93,34 @@ MCMC.settings <- list(
     MCMC.neighbor.filter = 2
   )
 
+# Settings for plotting
+plot.settings <- list(
+  print.plots = TRUE,
+  dim.bounds = colMeans(layer.boundary.bins), 
+  pred.type = "pred",
+  count.type = "count",
+  splitting_factor = NULL,
+  CI_style = TRUE,
+  label_size = 5.5,
+  title_size = 20,
+  axis_size = 12, 
+  legend_size = 10
+)
+
 # Fit model
 # ... all settings shown here are defaults
 laminar.model <- wisp(
-    # Data to model
     count.data = countdata,
-    # Variable labels
     variables = data.variables,
-    # Single fit or parameter estimation?
     fit_only = FALSE,
-    # Settings used on R side
     use.median = FALSE,
-    MCMC.settings = MCMC.settings,
     bootstraps.num = 0,
     converged.resamples.only = TRUE,
     max.fork = bs_chunksize,
-    dim.bounds = colMeans(layer.boundary.bins),
     verbose = TRUE,
-    print.plots = TRUE,
-    # Setting to pass to C++ model
-    model.settings = model.settings
+    model.settings = model.settings,
+    MCMC.settings = MCMC.settings,
+    plot.settings = plot.settings
   )
 
 # Demo plots showing anatomy of a wisp

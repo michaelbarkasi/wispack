@@ -1998,18 +1998,33 @@ Rcpp::List wspc::results() {
     fitted_parameters.names() = param_names;
     
     // Collect fixed-effect names and levels 
+    List fix_lvls_list = List(fix_lvls.size());
+    for (int i = 0; i < fix_lvls.size(); i++) {
+      fix_lvls_list[i] = (CharacterVector)fix_lvls[i];
+    }
+    List fix_trt_list = List(fix_trt.size());
+    for (int i = 0; i < fix_trt.size(); i++) {
+      fix_trt_list[i] = (CharacterVector)fix_trt[i];
+    }
+    fix_lvls_list.names() = fix_names;
+    fix_trt_list.names() = fix_names;
     fix_ref.names() = fix_names;
     List fixed_effects = List::create(
-      _["name"] = fix_names,
-      _["lvls"] = fix_lvls,
-      _["treat.lvl"] = fix_trt,
+      _["names"] = fix_names,
+      _["lvls"] = fix_lvls_list,
+      _["treat.lvl"] = fix_trt_list,
       _["ref.lvl"] = fix_ref
     );
     
     // Pack up treatment name information
+    List treatment_components_list = List(treatment_components.size());
+    for (int i = 0; i < treatment_components.size(); i++) {
+      treatment_components_list[i] = (CharacterVector)treatment_components[i];
+    }
+    treatment_components_list.names() = treatment_lvls;
     List treat = List::create(
       _["names"] = treatment_lvls, 
-      _["components"] = treatment_components
+      _["components"] = treatment_components_list
     );
     
     // Put grouping variable information into list
@@ -2020,6 +2035,10 @@ Rcpp::List wspc::results() {
     );
     
     // Pack up parameter indexes into list
+    for (int i = 0; i < wfactor_idx.size(); i++) {
+      rownames(wfactor_idx[i]) = ran_lvls;
+      colnames(wfactor_idx[i]) = species_lvls;
+    }
     List param_idx = List::create(
       _["beta"] = beta_idx,
       _["w.factor"] = wfactor_idx
@@ -2154,5 +2173,6 @@ RCPP_MODULE(wspc) {
     .method("bs_batch", &wspc::bs_batch)
     .method("MCMC", &wspc::MCMC)
     .method("resample", &wspc::resample)
+    .method("clear_stan_mem", &wspc::clear_stan_mem)
     .method("results", &wspc::results);
   }

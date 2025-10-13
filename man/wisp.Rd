@@ -9,14 +9,13 @@ wisp(
   variables = list(),
   fit_only = FALSE,
   use.median = FALSE,
-  MCMC.settings = list(),
   bootstraps.num = 0,
   converged.resamples.only = TRUE,
   max.fork = 1,
-  dim.bounds = c(),
   verbose = TRUE,
-  print.plots = TRUE,
-  model.settings = list()
+  model.settings = list(),
+  MCMC.settings = list(),
+  plot.settings = list()
 )
 }
 \arguments{
@@ -28,21 +27,19 @@ wisp(
 
 \item{use.median}{Logical, if TRUE, the median of the resamples is used as the final parameter estimates; if FALSE, the initial fit by L-BFGS is used.}
 
-\item{MCMC.settings}{List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.}
-
 \item{bootstraps.num}{Integer, number of bootstrap resamples to perform. If 0, only MCMC is run.}
 
 \item{converged.resamples.only}{Logical, if TRUE, only resamples with a converged fit are used for statistical analysis; if FALSE, all resamples are used. Applies only to bootstraps.}
 
 \item{max.fork}{Integer, maximum number of parallel processes to use for bootstrapping.}
 
-\item{dim.bounds}{Numeric vector, block boundaries for plotting in rate-count plots. If empty, the argument is ignored.}
-
 \item{verbose}{Logical, if TRUE, prints information during the fitting process.}
 
-\item{print.plots}{Logical, if TRUE, prints plot made during the modeling process.}
-
 \item{model.settings}{List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, and \code{warp_precision}. Default values are provided.}
+
+\item{MCMC.settings}{List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.}
+
+\item{plot.settings}{List, settings for plots to make, including \code{print.plots}, \code{dim.bounds}, \code{pred.type}, \code{count.type}, \code{splitting_factor}, \code{CI_style}, \code{label_size}, \code{title_size}, \code{axis_size}, and \code{legend_size}. Default values are provided.}
 }
 \value{
 List giving the results of the fitted model, including: \code{model.component.list}, \code{count.data.summed}, \code{fitted.parameters}, \code{gamma.disperson}, \code{param.names}, \code{fix}, \code{treatment}, \code{grouping.variables}, \code{param.idx0}, \code{settings}, \code{sample.params}, \code{sample.params.bs}, \code{sample.params.MCMC}, \code{diagnostics.bs}, \code{diagnostics.MCMC}, \code{stats}, and \code{plots}

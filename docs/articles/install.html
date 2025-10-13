@@ -38,14 +38,16 @@
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Installation</h6></li>
     <li><a class="dropdown-item" href="../articles/install.html">Installation instructions</a></li>
+    <li><a class="dropdown-item" href="../articles/release_notes.html">Release Notes</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_basic.html">The basics of wisps</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar_basic.html">RORB along the cortical laminar axis</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling celltypes</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Modeling time-series data</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">The wisp plot</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Time-series data</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_warping.html">Random effects and warping</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">The wisp rate-count plot</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -113,7 +115,14 @@ be installed</p>
 <span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>    texlive-fonts-extra <span class="dt">\</span></span>
 <span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>    texlive-latex-extra</span></code></pre></div>
 </div>
-  </main>
+<div class="section level2">
+<h2 id="build-documentation">Build documentation<a class="anchor" aria-label="anchor" href="#build-documentation"></a>
+</h2>
+<p>In R, run:<br>
+pkgdown::build_site()</p>
+</div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
 

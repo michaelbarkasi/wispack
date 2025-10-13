@@ -22,14 +22,16 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Installation</h6></li>
     <li><a class="dropdown-item" href="../articles/install.html">Installation instructions</a></li>
+    <li><a class="dropdown-item" href="../articles/release_notes.html">Release Notes</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_basic.html">The basics of wisps</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar_basic.html">RORB along the cortical laminar axis</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling celltypes</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Modeling time-series data</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">The wisp plot</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Time-series data</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_warping.html">Random effects and warping</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">The wisp rate-count plot</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -62,14 +64,13 @@
 <span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  fit_only <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  use.median <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  MCMC.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  bootstraps.num <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  converged.resamples.only <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  max.fork <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  dim.bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  print.plots <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  model.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  model.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  MCMC.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  plot.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -93,10 +94,6 @@
 <dd><p>Logical, if TRUE, the median of the resamples is used as the final parameter estimates; if FALSE, the initial fit by L-BFGS is used.</p></dd>
 
 
-<dt id="arg-mcmc-settings">MCMC.settings<a class="anchor" aria-label="anchor" href="#arg-mcmc-settings"></a></dt>
-<dd><p>List, settings for the MCMC simulation, including <code>MCMC.burnin</code>, <code>MCMC.steps</code>, <code>MCMC.step.size</code>, <code>MCMC.prior</code>, and <code>MCMC.neighbor.filter</code>. Default values are provided.</p></dd>
-
-
 <dt id="arg-bootstraps-num">bootstraps.num<a class="anchor" aria-label="anchor" href="#arg-bootstraps-num"></a></dt>
 <dd><p>Integer, number of bootstrap resamples to perform. If 0, only MCMC is run.</p></dd>
 
@@ -109,20 +106,20 @@
 <dd><p>Integer, maximum number of parallel processes to use for bootstrapping.</p></dd>
 
 
-<dt id="arg-dim-bounds">dim.bounds<a class="anchor" aria-label="anchor" href="#arg-dim-bounds"></a></dt>
-<dd><p>Numeric vector, block boundaries for plotting in rate-count plots. If empty, the argument is ignored.</p></dd>
-
-
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>Logical, if TRUE, prints information during the fitting process.</p></dd>
 
 
-<dt id="arg-print-plots">print.plots<a class="anchor" aria-label="anchor" href="#arg-print-plots"></a></dt>
-<dd><p>Logical, if TRUE, prints plot made during the modeling process.</p></dd>
-
-
 <dt id="arg-model-settings">model.settings<a class="anchor" aria-label="anchor" href="#arg-model-settings"></a></dt>
 <dd><p>List, settings for the C++ model, including <code>buffer_factor</code>, <code>ctol</code>, <code>max_penalty_at_distance_factor</code>, <code>LROcutoff</code>, <code>LROwindow_factor</code>, <code>rise_threshold_factor</code>, <code>max_evals</code>, <code>rng_seed</code>, and <code>warp_precision</code>. Default values are provided.</p></dd>
+
+
+<dt id="arg-mcmc-settings">MCMC.settings<a class="anchor" aria-label="anchor" href="#arg-mcmc-settings"></a></dt>
+<dd><p>List, settings for the MCMC simulation, including <code>MCMC.burnin</code>, <code>MCMC.steps</code>, <code>MCMC.step.size</code>, <code>MCMC.prior</code>, and <code>MCMC.neighbor.filter</code>. Default values are provided.</p></dd>
+
+
+<dt id="arg-plot-settings">plot.settings<a class="anchor" aria-label="anchor" href="#arg-plot-settings"></a></dt>
+<dd><p>List, settings for plots to make, including <code>print.plots</code>, <code>dim.bounds</code>, <code>pred.type</code>, <code>count.type</code>, <code>splitting_factor</code>, <code>CI_style</code>, <code>label_size</code>, <code>title_size</code>, <code>axis_size</code>, and <code>legend_size</code>. Default values are provided.</p></dd>
 
 </dl></div>
     <div class="section level2">

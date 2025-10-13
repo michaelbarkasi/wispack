@@ -15,7 +15,8 @@ load_libs <- function(bundle = "wispack") {
       "colorspace",
       "roxygen2",
       "shiny",
-      "shinyjs"
+      "shinyjs",
+      "hdf5r"
     )
   }
 

@@ -9,11 +9,15 @@
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/index.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/install.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/license.html</loc></url>
+<url><loc>https://michaelbarkasi.github.io/wispack/articles/release_notes.html</loc></url>
+<url><loc>https://michaelbarkasi.github.io/wispack/articles/tutorial_Poisson.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/tutorial_basic.html</loc></url>
+<url><loc>https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar_basic.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/tutorial_multicontext.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/tutorial_timeseries.html</loc></url>
+<url><loc>https://michaelbarkasi.github.io/wispack/articles/tutorial_warping.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/tutorial_wispplots.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/authors.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/index.html</loc></url>
@@ -32,6 +36,7 @@
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot-parameters.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot-ratecount.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot-species-summary.html</loc></url>
+<url><loc>https://michaelbarkasi.github.io/wispack/reference/plot-timeseries.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot.MCMC.bs.comparison.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot.MCMC.walks.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot.child.summary.html</loc></url>

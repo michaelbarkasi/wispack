@@ -4,6 +4,8 @@
 # Additionally, for PDF documentation generation, pdflatex should be installed
 #
 # sudo apt install libxml2 r-base-dev libnlopt-dev libnlopt-cxx-dev texlive-latex-base texlive-fonts-recommended texlive-fonts-extra texlive-latex-extra
+# 
+# And for hd5f functionality, need: sudo apt-get install libhdf5-dev
 
 set -e  # Exit immediately if a command fails
 

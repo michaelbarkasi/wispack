@@ -21,34 +21,27 @@ NULL
 #' @param variables List, names of the columns in \code{count.data} that correspond to the model variables. The list should contain only (but not necessarily all) named elements: \code{count}, \code{bin}, \code{context}, \code{species}, \code{ran}, and \code{fixedeffects}.
 #' @param fit_only Logical, if TRUE, only fits the model to the full data set using L-BFGS and returns the fitted model without running MCMC or bootstrapping; if FALSE, runs MCMC and/or bootstrapping to estimate parameter uncertainty.
 #' @param use.median Logical, if TRUE, the median of the resamples is used as the final parameter estimates; if FALSE, the initial fit by L-BFGS is used.
-#' @param MCMC.settings List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.
 #' @param bootstraps.num Integer, number of bootstrap resamples to perform. If 0, only MCMC is run.
 #' @param converged.resamples.only Logical, if TRUE, only resamples with a converged fit are used for statistical analysis; if FALSE, all resamples are used. Applies only to bootstraps. 
 #' @param max.fork Integer, maximum number of parallel processes to use for bootstrapping.
-#' @param dim.bounds Numeric vector, block boundaries for plotting in rate-count plots. If empty, the argument is ignored.
 #' @param verbose Logical, if TRUE, prints information during the fitting process.
-#' @param print.plots Logical, if TRUE, prints plot made during the modeling process.
 #' @param model.settings List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, and \code{warp_precision}. Default values are provided.
+#' @param MCMC.settings List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.
+#' @param plot.settings List, settings for plots to make, including \code{print.plots}, \code{dim.bounds}, \code{pred.type}, \code{count.type}, \code{splitting_factor}, \code{CI_style}, \code{label_size}, \code{title_size}, \code{axis_size}, and \code{legend_size}. Default values are provided.
 #' @return List giving the results of the fitted model, including: \code{model.component.list}, \code{count.data.summed}, \code{fitted.parameters}, \code{gamma.disperson}, \code{param.names}, \code{fix}, \code{treatment}, \code{grouping.variables}, \code{param.idx0}, \code{settings}, \code{sample.params}, \code{sample.params.bs}, \code{sample.params.MCMC}, \code{diagnostics.bs}, \code{diagnostics.MCMC}, \code{stats}, and \code{plots}
 #' @export
 wisp <- function(
-    # Data to model
     count.data, 
-    # Variable labels
     variables = list(), 
-    # Single fit or parameter estimation?
     fit_only = FALSE,
-    # Settings used on R side
     use.median = FALSE,
-    MCMC.settings = list(),
     bootstraps.num = 0, 
     converged.resamples.only = TRUE,
     max.fork = 1,
-    dim.bounds = c(), 
     verbose = TRUE,
-    print.plots = TRUE,
-    # Setting to pass to C++ model
-    model.settings = list()
+    model.settings = list(),
+    MCMC.settings = list(),
+    plot.settings = list()
   ) {
    
     # Make reproducible
@@ -219,6 +212,26 @@ wisp <- function(
     # Add inf_warp 
     model.settings.internal$inf_warp <- model.settings.internal$warp_precision / .Machine$double.eps
     
+    # Parse plot settings 
+    plot.settings.internal <- list(
+      print.plots = TRUE,
+      dim.bounds = c(), 
+      pred.type = "pred",
+      count.type = "count",
+      splitting_factor = NULL,
+      CI_style = TRUE,
+      label_size = 5.5,
+      title_size = 20,
+      axis_size = 12, 
+      legend_size = 10
+    )
+    # ... check that provided plot.settings is a list with valid names 
+    plot.settings.names <- check_list(plot.settings, plot.settings.internal)
+    # ... check and load values 
+    for (s in names(plot.settings)) {
+      plot.settings.internal[[s]] <- plot.settings[[s]]
+    }
+    
     # Parse MCMC settings
     MCMC.settings.internal <- list(
       MCMC.burnin = 1e2,
@@ -249,6 +262,7 @@ wisp <- function(
         snk.report("Parsing data and settings for wisp model")
         snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 1)
         snk.print_var_list("Model settings", model.settings.internal, vert = TRUE, end_breaks = 1)
+        snk.print_var_list("Plot settings", plot.settings.internal, vert = TRUE, end_breaks = 1)
         snk.print_var_list("MCMC settings", MCMC.settings.internal, vert = TRUE, end_breaks = 1)
         snk.print_var_list("Variable dictionary", variables.internal, vert = TRUE, end_breaks = 1)
         snk.print_table("Parsed data", data, end_breaks = 0)
@@ -260,6 +274,7 @@ wisp <- function(
         snk.report("Parsing data and settings for wisp model")
         snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 1)
         snk.print_var_list("Model settings", model.settings.internal, vert = TRUE, end_breaks = 1)
+        snk.print_var_list("Plot settings", plot.settings.internal, vert = TRUE, end_breaks = 1)
         snk.print_var_list("Variable dictionary", variables.internal, vert = TRUE, end_breaks = 1)
         snk.print_table("Parsed data", data, end_breaks = 0)
       }
@@ -294,26 +309,41 @@ wisp <- function(
       # Add variable names 
       results[["variables"]] <- variables
       
+      # Add plot settings 
+      results[["plot.settings"]] <- plot.settings.internal
+      
       # Make rate plots 
       plots.ratecount <- plot.ratecount(
         wisp.results = results,
-        pred.type = "pred",
-        count.type = "count",
-        dim.boundaries = dim.bounds,
+        pred.type = plot.settings.internal$pred.type,
+        count.type = plot.settings.internal$count.type,
+        print.all = plot.settings.internal$print.plots,
+        CI_style = plot.settings.internal$CI_style,
+        dim.boundaries = plot.settings.internal$dim.bounds,
         verbose = verbose
       )
       
+      # Make timeseries plots 
+      if (any(timeseries_mask)) {
+        plots.timeseries <- plot.timeseries(
+          wisp.results = results,
+          splitting_factor = plot.settings.internal$splitting_factor,
+          pred.type = plot.settings.internal$pred.type,
+          print.all = plot.settings.internal$print.plots,
+          verbose = verbose
+        )
+      } else {
+        plots.timeseries <- NULL
+      }
+      
       # Gather plots
       plots <- list(
-        ratecount = plots.ratecount
+        ratecount = plots.ratecount,
+        timeseries = plots.timeseries
       )
       results[["plots"]] <- plots
       
-      # Print summary plots
-      if (print.plots) {
-        print(plots.ratecount)
-      }
-      
+      cpp_model$clear_stan_mem()
       return(results)
       
     } else {
@@ -438,6 +468,9 @@ wisp <- function(
       # Add variable names 
       results[["variables"]] <- variables
       
+      # Add plot settings 
+      results[["plot.settings"]] <- plot.settings.internal
+      
       # Run statistical analysis ####
       
       # Initialize shell to hold stats
@@ -474,7 +507,7 @@ wisp <- function(
         
         plots.MCMC <- plot.MCMC.walks(
           wisp.results = results,
-          print.plots = print.plots,
+          print.plots = plot.settings.internal$print.plots,
           verbose = verbose
         )
         
@@ -482,7 +515,7 @@ wisp <- function(
         if (bootstraps.num != 0) {
           plots.MCMC.bs.comparison <- plot.MCMC.bs.comparison(
             wisp.results = results,
-            print.plots = print.plots,
+            print.plots = plot.settings.internal$print.plots,
             verbose = verbose
           )
         } else {
@@ -497,18 +530,33 @@ wisp <- function(
       # Plot effect parameter distribution
       plots.effect.dist <- plot.effect.dist(
         wisp.results = results,
-        print.plots = print.plots,
+        print.plots = plot.settings.internal$print.plots,
         verbose = verbose
       )
       
       # Make rate plots 
       plots.ratecount <- plot.ratecount(
         wisp.results = results,
-        pred.type = "pred",
-        count.type = "count",
-        dim.boundaries = dim.bounds,
+        pred.type = plot.settings.internal$pred.type,
+        count.type = plot.settings.internal$count.type,
+        print.all = plot.settings.internal$print.plots,
+        CI_style = plot.settings.internal$CI_style,
+        dim.boundaries = plot.settings.internal$dim.bounds,
         verbose = verbose
       )
+      
+      # Make timeseries plots 
+      if (any(timeseries_mask)) {
+        plots.timeseries <- plot.timeseries(
+          wisp.results = results,
+          splitting_factor = plot.settings.internal$splitting_factor,
+          pred.type = plot.settings.internal$pred.type,
+          print.all = plot.settings.internal$print.plots,
+          verbose = verbose
+        )
+      } else {
+        plots.timeseries <- NULL
+      }
       
       # Make parameter plots 
       plots.parameters <- plot.parameters(
@@ -520,6 +568,7 @@ wisp <- function(
       plots <- list(
         residuals = plots.residuals,
         ratecount = plots.ratecount,
+        timeseries = plots.timeseries,
         parameters = plots.parameters,
         MCMC = plots.MCMC,
         parameter.normality = plots.MCMC.bs.comparison, 
@@ -528,7 +577,7 @@ wisp <- function(
       results[["plots"]] <- plots
       
       # Print summary plots
-      if (print.plots) {
+      if (plot.settings.internal$print.plots) {
         plot.species.summary(
           wisp.results = results,
           these.contexts = NULL,
@@ -723,12 +772,6 @@ analyze.residuals <- function(
       snk.horizontal_rule(reps = snk.simple_break_reps)
     }
     
-    # Font sizes 
-    label_size <- 5.5
-    title_size <- 20 
-    axis_size <- 12 
-    legend_size <- 12
-    
     if (verbose) snk.report...("Computing residuals")
     # Compute residuals 
     wisp.results$count.data.summed$residuals <- wisp.results$count.data.summed$pred - wisp.results$count.data.summed$count
@@ -814,11 +857,11 @@ analyze.residuals <- function(
         theme_minimal() +
         theme(
           legend.position = "bottom",
-          plot.title = element_text(hjust = 0.5, size = title_size),
-          axis.title = element_text(size = axis_size),
-          axis.text = element_text(size = axis_size),
-          legend.title = element_text(size = legend_size),
-          legend.text = element_text(size = legend_size)
+          plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+          axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+          axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+          legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+          legend.text = element_text(size = wisp.results$plot.settings$legend_size)
         )
       
       return(resid_plot)
@@ -858,11 +901,11 @@ analyze.residuals <- function(
         theme_minimal() + 
         theme(
           legend.position = "bottom",
-          plot.title = element_text(hjust = 0.5, size = title_size),
-          axis.title = element_text(size = axis_size),
-          axis.text = element_text(size = axis_size),
-          legend.title = element_text(size = legend_size),
-          legend.text = element_text(size = legend_size)
+          plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+          axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+          axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+          legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+          legend.text = element_text(size = wisp.results$plot.settings$legend_size)
         )
       
       # qq-plot
@@ -928,10 +971,11 @@ analyze.residuals <- function(
 #'
 #' @name plot.ratecount
 #' @rdname plot-ratecount
-#' @usage plot.ratecount(wisp.results, pred.type = "pred.log", count.type = "count.log", dim.boundaries = c(), print.all = FALSE, y.lim = NA, count.alpha.none = NA, count.alpha.ran = NA, pred.alpha.none = NA, pred.alpha.ran = NA, rans.to.print = c(), speciess.to.print = c(), verbose = TRUE)
+#' @usage plot.ratecount(wisp.results, pred.type = "pred", count.type = "count", dim.boundaries = c(), print.all = FALSE, y.lim = NA, count.alpha.none = NA, count.alpha.ran = NA, pred.alpha.none = NA, pred.alpha.ran = NA, rans.to.print = c(), speciess.to.print = c(), verbose = TRUE)
 #' @param wisp.results List, output of the wisp function.
 #' @param pred.type Character string, the name of the predicted rate column in the count data (e.g., "pred.log" or "pred").
 #' @param count.type Character string, the name of the observed count column in the count data (e.g., "count.log" or "count").
+#' @param CI_style Logical, if TRUE, plots predicted lines with confidence interval style shading; if FALSE, plots predicted lines as solid lines with random levels and data points
 #' @param dim.boundaries Numeric vector, independent block boundaries to plot for comparison. If empty, the argument is ignored.
 #' @param print.all Logical, if TRUE, prints all plots; if FALSE, only returns plots in list without printing any. 
 #' @param y.lim Numeric vector of length 2, limits for the y-axis of the plots. If NA, defaults to automatic limits.
@@ -946,8 +990,9 @@ analyze.residuals <- function(
 #' @export
 plot.ratecount <- function(
     wisp.results,
-    pred.type = "pred.log",
-    count.type = "count.log",
+    pred.type = "pred",
+    count.type = "count",
+    CI_style = TRUE,
     dim.boundaries = c(),
     print.all = FALSE,
     y.lim = NA,
@@ -961,12 +1006,15 @@ plot.ratecount <- function(
   ) {
     
     if (verbose) snk.report...("Making rate-count plots")
-   
+    
     # Grab data and run checks 
     df <- wisp.results$count.data.summed 
     df$treatment <- as.factor(df$treatment)
     df$treatment <- relevel(df$treatment, ref = "ref")
-    y_lab <- paste0("Rate (", pred.type, ")")
+    y_lab <- "Rate"
+    if (pred.type == "pred.log") {
+      y_lab <- "Rate (log scale)"
+    }
     if (sum(colnames(df) == pred.type) == 0) stop("pred.type not found in count.data.summed")
     if (sum(colnames(df) == count.type) == 0) stop("count.type not found in count.data.summed")
     
@@ -994,12 +1042,12 @@ plot.ratecount <- function(
     tpoint_linewidth <- 1
     tpoint_linetype <- "dashed"
     
-    # Make color palettes
-    num_of_colors <- length(wisp.results$grouping.variables$species.lvls)
-    colors_hues <- seq(0,360,length.out = num_of_colors + 1)[2:num_of_colors]
+    # Make color palettes for species
+    n_colors <- length(wisp.results$grouping.variables$species.lvls)
+    colors_hues <- seq(0,360,length.out = n_colors + 1)[2:n_colors]
     species_colors <- colorspace::qualitative_hcl(
-      n = num_of_colors,
-      h = c(colors_hues[1], colors_hues[num_of_colors]),
+      n = n_colors,
+      h = c(colors_hues[1], colors_hues[n_colors]),
       c = 80,
       l = 60,
       fixup = TRUE,
@@ -1009,55 +1057,141 @@ plot.ratecount <- function(
       register = ""
     )
     
-    num_of_colors <- length(wisp.results$treatment$names) - 1
-    colors_hues <- seq(0,360,length.out = num_of_colors + 1)[2:num_of_colors]
-    treatment_colors <- colorspace::qualitative_hcl(
-      n = num_of_colors,
-      h = c(colors_hues[1], colors_hues[num_of_colors]),
-      c = 80,
-      l = 60,
-      fixup = TRUE,
-      alpha = 1,
-      palette = NULL,
-      rev = FALSE,
-      register = ""
-    )
-    treatment_colors <- c( "black", treatment_colors )
-    names(treatment_colors) <- wisp.results$treatment$names
+    # Make color palettes for treatments
+    n_fe <- length(wisp.results$fix$names)
+    treatment_levels = wisp.results$treatment$names
+    treatment_components <- wisp.results$treatment$components
+    n_trt <- length(treatment_components)
+    treatment_components[[1]] <- wisp.results$fix$ref.lvl
+    if (n_trt > 1) {
+      for (trt in c(2:n_trt)) {
+        for (rfi in seq_along(wisp.results$fix$ref.lvl)) {
+          trt_refs_mask <- wisp.results$fix$treat.lvl[[rfi]] %in% wisp.results$treatment$components[[trt]]
+          if (!any(trt_refs_mask)) {
+            treatment_components[[trt]] <- c(treatment_components[[trt]], wisp.results$fix$ref.lvl[rfi])
+          }
+        }
+        
+      }
+    }
+    fe_lengths <- unlist(lapply(wisp.results$fix$lvls, length))
+    if (length(fe_lengths) > 0) {
+      non_ts <- wisp.results$fix$names[fe_lengths <= min(fe_lengths) & wisp.results$fix$names != "timeseries"]
+      if (length(non_ts) > 1) {
+        non_ts <- non_ts[1]
+      }
+      fix_lvls_ordered <- wisp.results$fix$lvls[c(non_ts, wisp.results$fix$names[wisp.results$fix$names != non_ts])]
+      for (trt in c(1:n_trt)) {
+        this_trt <- c()
+        for (lvl in seq_along(fix_lvls_ordered)) {
+          this_trt_mask <- fix_lvls_ordered[[lvl]] %in% treatment_components[[trt]]
+          this_trt <- c(this_trt, fix_lvls_ordered[[lvl]][this_trt_mask])
+        }
+        treatment_components[[trt]] <- this_trt
+      }
+    }
+    treatment_colors <- "black"
+    # ... if > 2 fixed effects, use an unstructured color range
+    if (n_fe > 2) {
+      n_hues <- length(treatment_levels)
+      n_colors <- n_hues
+      colors_hues <- seq(0,360,length.out = n_hues + 2)[2:(n_hues+1)]
+      treatment_colors <- colorspace::qualitative_hcl(
+        n = n_colors,
+        h = c(colors_hues[1], colors_hues[n_colors]),
+        c = 80,
+        l = 60,
+        fixup = TRUE,
+        alpha = 1,
+        palette = NULL,
+        rev = FALSE,
+        register = ""
+      )
+      names(treatment_colors) <- treatment_levels
+      names(treatment_components) <- treatment_levels
+    } else if (n_fe > 0) {
+      # ... structure colors by fixed effects
+      if (sum(fe_lengths > 2) > 1) {
+        stop("Error: More than one fixed effect has > 2 levels, cannot structure treatment colors by fixed effects")
+      }
+      n_hues <- 2
+      if (is.null(fe_lengths)) {
+        n_lum <- 1
+      } else {
+        n_lum <- max(fe_lengths)
+      }
+      n_chroma <- n_lum 
+      n_colors <- n_hues * n_lum
+      colors_hues <- seq(0,360,length.out = n_hues + 2)[2:(n_hues+1)]
+      colors_lum <- seq(0,100,length.out = n_lum + 2)[2:(n_lum+1)]
+      colors_chroma <- seq(0,100,length.out = n_chroma + 2)[2:(n_chroma+1)]
+      fe1_colors <- colorspace::sequential_hcl(
+        n = n_lum,
+        h = colors_hues[1],
+        c = c(colors_chroma[1], colors_chroma[n_chroma]),
+        l = c(colors_lum[n_lum], colors_lum[n_lum]),
+        fixup = TRUE,
+        alpha = 1,
+        palette = NULL,
+        rev = FALSE,
+        register = ""
+      )
+      fe2_colors <- colorspace::sequential_hcl(
+        n = n_lum,
+        h = colors_hues[n_hues],
+        c = c(colors_chroma[1], colors_chroma[n_chroma]),
+        l = c(colors_lum[n_lum], colors_lum[1]),
+        fixup = TRUE,
+        alpha = 1,
+        palette = NULL,
+        rev = FALSE,
+        register = ""
+      )
+      treatment_colors <- c(
+        c(fe1_colors[1], fe2_colors[1]),
+        fe1_colors[2:n_lum], fe2_colors[2:n_lum]
+      )
+      names(treatment_colors) <- treatment_levels
+      names(treatment_components) <- treatment_levels
+      new_order <- c(1, c(3:(n_lum + 1)), 2, c((n_lum + 2):(2 * n_lum)))
+      treatment_colors <- treatment_colors[new_order]
+      treatment_components <- treatment_components[new_order]
+      treatment_levels <- treatment_levels[new_order]
+    }
     
     # Create function for plotting reference and random effects
-    plot_context_ref <- function(df, fvp) {
+    plot_context_ref <- function(df, cxt) {
       
       # Reference-level filtering 
-      ref_idx_fvp <- df[,"treatment"] == "ref" & df[,"context"] == fvp
+      ref_idx_cxt <- df[,"treatment"] == "ref" & df[,"context"] == cxt
       
       # Initial ggplot with jittered points from df
       plot <- ggplot() +
         geom_jitter(
-          data = df[ref_idx_fvp & df[,"ran"] == "none", ], 
+          data = df[ref_idx_cxt & df[,"ran"] == "none", ], 
           aes(x = bin, y = .data[[count.type]], color = species), 
           width = 0.5, height = 0, alpha = count.alpha.none, size = count_size, na.rm = TRUE
         ) +  
         geom_line(
-          data = df[ref_idx_fvp & df[,"ran"] == "none", ],  
+          data = df[ref_idx_cxt & df[,"ran"] == "none", ],  
           aes(x = bin, y = .data[[pred.type]], color = species),
           linewidth = 2, alpha = pred.alpha.none, na.rm = TRUE
         ) +  
         labs(y = y_lab, x = "Bin", color = "fixed GV") +
         scale_colour_manual(values = species_colors ) +  
         theme_minimal() +
-        ggtitle(paste0("Ref-Class Dynamics and RE (", pred.type, "), ", fvp))
+        ggtitle(paste0("Ref-Class Dynamics and RE, ", cxt))
       
       # Add lines for random effects from df
       for (rl in seq_along(unique(df[,"ran"]))) {
         plot <- plot + 
           geom_jitter(
-            data = df[ ref_idx_fvp & df[,"ran"] == rl, ], 
+            data = df[ ref_idx_cxt & df[,"ran"] == rl, ], 
             aes(x = bin, y = .data[[count.type]], color = species), 
             width = 0.5, height = 0, alpha = count.alpha.ran, size = count_size, na.rm = TRUE
           ) + 
           geom_line(
-            data = df[ ref_idx_fvp & df[,"ran"] == rl, ],                
+            data = df[ ref_idx_cxt & df[,"ran"] == rl, ],                
             aes(x = bin, y = .data[[pred.type]], color = species), 
             linetype = ran_linetype, linewidth = ran_size, alpha = pred.alpha.ran, na.rm = TRUE
           )  
@@ -1071,10 +1205,34 @@ plot.ratecount <- function(
           linewidth = boundary_linewidth, 
           na.rm = TRUE
         )
+        if (!is.null(names(dim.boundaries))) {
+          plot <- plot + 
+            geom_label(
+              data = data.frame(
+                x = dim.boundaries,
+                label = names(dim.boundaries)
+              ),
+              aes(x = x, y = Inf, label = label),
+              vjust = 1,
+              hjust = -0.2,
+              color = "gray30",
+              fill = "gray90",
+              label.size = 0,
+              size = 0.4 * wisp.results$plot.settings$axis_size,
+              inherit.aes = FALSE,
+              fontface = "bold"
+            ) + 
+            coord_cartesian(clip = "off") 
+        }
       }
       
       plot <- plot +
         theme(
+          plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+          axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+          axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+          legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+          legend.text = element_text(size = wisp.results$plot.settings$legend_size),
           panel.background = ggplot2::element_rect(fill = "white", colour = NA),
           plot.background  = ggplot2::element_rect(fill = "white", colour = NA)
         )
@@ -1082,61 +1240,80 @@ plot.ratecount <- function(
       return(plot)
       
     }
-   
+    
     # Create function for plotting fixed effects
-    plot_context_fixEff <- function(df, fvp, fv) {
-      
-      # Grab treatment level names
-      treatment_levels = unique(df[,"treatment"])
+    plot_context_fixEff <- function(df, cxt, sps) {
       
       # Grab index mask for this context-species level combination
-      gvf_idx_fvp <- df[,"species"] == fv &                         # only rates for this level of fixed-effects grouping 
-        df[,"context"] == fvp                                      # only rates for this context fixed grouping variable
+      gvf_idx_cxt <- df[,"species"] == sps & df[,"context"] == cxt
       
       # Grab index mask for case without random effects
-      gvf_idx_fvp_noRanEff <- gvf_idx_fvp & df[,"ran"] == "none"  # only rates without random effects
+      gvf_idx_cxt_noRanEff <- gvf_idx_cxt
+      if (any(df[,"ran"] == "none")) {
+        gvf_idx_cxt_noRanEff <- gvf_idx_cxt_noRanEff & df[,"ran"] == "none"
+      }
       
       # Plot fixed effects for each treatment case / interaction, including baseline
       plot <- ggplot() 
-      for (fe in 1:length(treatment_levels)) {
+      for (fe in seq_along(treatment_levels)) {
         
         # Grab this fixed-effect level
         fe_name <- treatment_levels[fe]
         
-        # plot effect without random effects
+        # plot effect without random effects or points
         plot <- plot + 
-          geom_jitter(
-            data = df[gvf_idx_fvp_noRanEff & df[,"treatment"] == treatment_levels[fe], ], 
-            aes(x = bin, y = .data[[count.type]], color = treatment), 
-            width = 0.5, height = 0, alpha = count.alpha.none, size = count_size, na.rm = TRUE
-          ) +  
           geom_line(
-            data = df[gvf_idx_fvp_noRanEff & df[,"treatment"] == treatment_levels[fe], ], 
+            data = df[gvf_idx_cxt_noRanEff & df[,"treatment"] == fe_name, ], 
             aes(x = bin, y = .data[[pred.type]], color = treatment), 
             linetype = "solid", linewidth = 1.5, alpha = pred.alpha.none, na.rm = TRUE
           ) +  
           labs(y = y_lab, x = "Bin") +
           theme_minimal() 
         
-        # plot effect with random effects 
-        for (rl in rans.to.print) { 
+        if (!CI_style) {
+          
+          # plot effect with points
           plot <- plot + 
             geom_jitter(
-              data = df[ gvf_idx_fvp & df[,"ran"] == rl & df[,"treatment"] == treatment_levels[fe], ], 
+              data = df[gvf_idx_cxt_noRanEff & df[,"treatment"] == fe_name, ], 
               aes(x = bin, y = .data[[count.type]], color = treatment), 
-              width = 0.5, height = 0, alpha = count.alpha.ran, size = count_size, na.rm = TRUE
-            ) + 
-            geom_line(
-              data = df[ gvf_idx_fvp & df[,"ran"] == rl & df[,"treatment"] == treatment_levels[fe], ],                
-              aes(x = bin, y = .data[[pred.type]], color = treatment), 
-              linetype = ran_linetype, linewidth = ran_size, alpha = pred.alpha.ran, na.rm = TRUE
-            )  
+              width = 0.5, height = 0, alpha = count.alpha.none, size = count_size, na.rm = TRUE
+            ) +  
+            labs(y = y_lab, x = "Bin") +
+            theme_minimal() 
+          
+          # plot effect with random effects 
+          for (rl in rans.to.print) { 
+            plot <- plot + 
+              geom_jitter(
+                data = df[gvf_idx_cxt & df[,"ran"] == rl & df[,"treatment"] == fe_name, ], 
+                aes(x = bin, y = .data[[count.type]], color = treatment), 
+                width = 0.5, height = 0, alpha = count.alpha.ran, size = count_size, na.rm = TRUE
+              ) + 
+              geom_line(
+                data = df[ gvf_idx_cxt & df[,"ran"] == rl & df[,"treatment"] == fe_name, ],                
+                aes(x = bin, y = .data[[pred.type]], color = treatment), 
+                linetype = ran_linetype, linewidth = ran_size, alpha = pred.alpha.ran, na.rm = TRUE
+              )  
+          }
+          
         }
         
       }
-      plot <- plot + scale_color_manual(values = treatment_colors)
+      
+      if (length(treatment_levels) < 2) {
+        plot <- plot + theme(legend.position = "none")
+        plot <- plot + scale_color_manual(
+          values = treatment_colors
+        )
+      } else {
+        plot <- plot + scale_color_manual(
+          name = "factors",
+          labels = sapply(treatment_components, function(x) paste(x, collapse = ", ")),
+          values = treatment_colors
+        )
+      }
       if (length(y.lim) == 2) plot <- plot + ylim(y.lim)
-      if (length(treatment_levels) < 2) plot <- plot + theme(legend.position = "none")
       
       if (length(dim.boundaries) > 0) {
         plot <- plot + geom_vline(
@@ -1146,10 +1323,34 @@ plot.ratecount <- function(
           linewidth = boundary_linewidth, 
           na.rm = TRUE
         )
+        if (!is.null(names(dim.boundaries))) {
+          plot <- plot + 
+            geom_label(
+              data = data.frame(
+                x = dim.boundaries,
+                label = names(dim.boundaries)
+              ),
+              aes(x = x, y = Inf, label = label),
+              vjust = 1,
+              hjust = -0.2,
+              color = "gray30",
+              fill = "gray90",
+              label.size = 0,
+              size = 0.4 * wisp.results$plot.settings$axis_size,
+              inherit.aes = FALSE,
+              fontface = "bold"
+            ) + 
+            coord_cartesian(clip = "off")
+        }
       }
       
       plot <- plot +
         theme(
+          plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+          axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+          axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+          legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+          legend.text = element_text(size = wisp.results$plot.settings$legend_size),
           panel.background = ggplot2::element_rect(fill = "white", colour = NA),
           plot.background  = ggplot2::element_rect(fill = "white", colour = NA)
         )
@@ -1172,43 +1373,219 @@ plot.ratecount <- function(
     plot_list <- list()
     
     # Generate, save, and print the plots
-    for (fvp in wisp.results$grouping.variables$context.lvls) {
+    for (cxt in wisp.results$grouping.variables$context.lvls) {
       
       # Make reference class and random-effects plot
       if (make_context_ref) {
-        plot_list[[paste0("plot_",pred.type,"_context_",fvp)]] <- plot_context_ref(df,fvp)
+        plot_list[[paste0("plot_",pred.type,"_context_",cxt)]] <- plot_context_ref(df,cxt)
         if (print.all) {
-          print(plot_list[[paste0("plot_",pred.type,"_context_",fvp)]])
+          print(plot_list[[paste0("plot_",pred.type,"_context_",cxt)]])
         }
       }
       
       # Make fixed effects plot, for each species level
-      for (fv in speciess.to.print) {
+      for (sps in speciess.to.print) {
         # Make the plot
-        fv_plot <- plot_context_fixEff(df,fvp,fv)
+        sps_plot <- plot_context_fixEff(df,cxt,sps)
         if (length(wisp.results$grouping.variables$context.lvls) > 1) {
           if (length(speciess.to.print) > 1) {
-            fv_title <- paste0("Counts and predicted rates for ", fv, " within ", fvp, " (", pred.type, ")")
+            sps_title <- paste0("Counts and predicted rates for ", sps, " within ", cxt)
           } else {
-            fv_title <- paste0("Counts and predicted rates for ", fvp, " (", pred.type, ")")
+            sps_title <- paste0("Counts and predicted rates for ", cxt)
           }
         } else {
           if (length(speciess.to.print) > 1) {
-            fv_title <- paste0("Counts and predicted rates for ", fv, " (", pred.type, ")")
+            sps_title <- paste0("Counts and predicted rates for ", sps)
           } else {
-            fv_title <- paste0("Counts and predicted rates (", pred.type, ")")
+            sps_title <- paste0("Counts and predicted rates")
           }
         }
-        fv_plot <- fv_plot + ggtitle(fv_title) 
-        plot_list[[paste0("plot_",pred.type,"_context_",fvp,"_fixEff_",fv)]] <- fv_plot
-        if (print.all) {
-          print(plot_list[[paste0("plot_",pred.type,"_context_",fvp,"_fixEff_",fv)]])
+        sps_plot <- sps_plot + ggtitle(sps_title) 
+        plot_list[[paste0("plot_",pred.type,"_context_",cxt,"_fixEff_",sps)]] <- sps_plot
+        if (print.all && !is.null(sps_plot)) {
+          print(plot_list[[paste0("plot_",pred.type,"_context_",cxt,"_fixEff_",sps)]])
         }
       }
       
     }
     
     return(plot_list)
+    
+  }
+
+#' Plot timeseries effects from wisp results
+#' 
+#' Function to plot timeseries effects from wisp results, separated by a splitting factor (e.g., hemisphere).
+#'
+#' @name plot.timeseries
+#' @rdname plot-timeseries
+#' @usage plot.timeseries(wisp.results, splitting_factor = NULL, pred.type = "pred")
+#' @param wisp.results List, output of the wisp function.
+#' @param splitting_factor Character string, the name of the fixed effect by which to split the timeseries. If NULL, the first non-timeseries fixed effect is used. If "none", will not split.
+#' @param pred.type Character string, the name of the predicted rate column in the count data (e.g., "pred.log" or "pred").
+#' @param print.all Logical, if TRUE, prints all plots; if FALSE, only returns plots in list without printing any. 
+#' @param verbose Logical, if TRUE, prints updates about the plotting process.
+#' @return List of ggplot objects for timeseries plots.
+#' @export
+plot.timeseries <- function(
+    wisp.results, 
+    splitting_factor = NULL,
+    pred.type = "pred",
+    print.all = FALSE,
+    verbose = TRUE
+  ) {
+    
+    if (verbose) snk.report...("Making time series plots")
+    
+    # Run checks
+    if (!("timeseries" %in% wisp.results[["fix"]][["names"]])) {
+      stop("No timeseries found in wisp results")
+    } 
+    if (!is.null(splitting_factor)) {
+      if (!(splitting_factor %in% c(wisp.results[["fix"]][["names"]], "none"))) {
+        stop("Splitting factor not found in wisp results")
+      }
+    } 
+    if (!(pred.type %in% c("pred.log", "pred"))) {
+      stop("pred.type must be 'pred.log' or 'pred'")
+    }
+    
+    # Find splitting effect 
+    splitting_lvl <- NULL
+    splitting_name <- ""
+    if (is.null(splitting_factor) && length(wisp.results[["fix"]][["names"]]) > 1) {
+      splitting_idx <- min(which(wisp.results[["fix"]][["names"]] != "timeseries"))
+      splitting_name <- wisp.results[["fix"]][["names"]][[splitting_idx]]
+      splitting_lvl <- wisp.results[["fix"]][["lvls"]][[splitting_idx]]
+      splitting_factor <- wisp.results[["fix"]][["treat.lvl"]][[splitting_idx]]
+    } else if (!is.null(splitting_factor)) {
+      if (splitting_factor != "none") {
+        splitting_name <- splitting_factor
+        splitting_lvl <- wisp.results[["fix"]][["lvls"]][[splitting_factor]]
+        splitting_factor <- wisp.results[["fix"]][["treat.lvl"]][[splitting_factor]]
+      }
+    }
+    
+    # Get timeseries levels 
+    ts <- wisp.results[["fix"]][["lvls"]][["timeseries"]]
+    
+    # Get treatment components and make mask for those with splitting factor
+    trt_comps <- wisp.results[["treatment"]][["components"]]
+    split_mask <- rep(TRUE, length(trt_comps))
+    if (!is.null(splitting_factor)) {
+      for (t in seq_along(trt_comps)) {
+        if (!any(trt_comps[[t]] == splitting_factor)) {
+          split_mask[t] <- FALSE
+        }
+      }
+    }
+    
+    # Get weight matrix to reconstruct rates
+    wm <- wisp.results$weight.matrix # row i gives weights needed to compute treatment i
+    n_trt <- nrow(wm)
+    
+    # Get rate effects indices
+    beta_idx <- wisp.results[["param.idx0"]][["beta"]][["Rt"]]
+    
+    # Reconstruct treatment condition rates
+    df <- data.frame()
+    # ... for each context 
+    for (cxt in seq_along(beta_idx)) {
+      
+      # Get indices for this context
+      beta_idx_cxt <- beta_idx[[cxt]]
+      
+      # ... for each species
+      for (sps in seq_along(beta_idx_cxt)) {
+        
+        # Make effect matrix for this species
+        idx <- beta_idx_cxt[[sps]] + 1
+        ev <- wisp.results$fitted.parameters[idx]
+        em <- matrix(ev, nrow = n_trt) # columns as blocks, rows as treatments
+        
+        # Find rates
+        rates <- wm %*% em # row i of wm (= trt level) dot column j of em (= block level) gives rate for trt i in block j
+        colnames(rates) <- paste0("Block", seq_len(ncol(rates)))
+        rownames(rates) <- rownames(wm)
+        
+        split_lvl_ref_rates <- rates[!split_mask, ]
+        split_lvl_trt_rates <- rates[split_mask, ]
+        
+        for (b in c(1:ncol(rates))) {
+          df <- rbind(
+            df,
+            data.frame(
+              timeseries = ts,
+              rate = split_lvl_ref_rates[seq(1, length(ts)), b],
+              block = b,
+              splitting_factor = splitting_lvl[1],
+              context = names(beta_idx)[cxt],
+              species = names(beta_idx_cxt)[sps]
+            )
+          )
+          df <- rbind(
+            df,
+            data.frame(
+              timeseries = ts,
+              rate = split_lvl_trt_rates[seq(1, length(ts)), b],
+              block = b,
+              splitting_factor = splitting_lvl[2],
+              context = names(beta_idx)[cxt],
+              species = names(beta_idx_cxt)[sps]
+            )
+          )
+        }
+        
+      }
+      
+    }
+    
+    if (pred.type == "pred") df$rate <- exp(df$rate) - 1
+    df$timeseries <- as.numeric(df$timeseries)
+    rownames(df) <- NULL
+    df$block <- paste0("Block ", df$block)
+    df$block <- factor(df$block, levels = rev(sort(unique(df$block))))
+    y_lab <- "Rate"
+    if (pred.type == "pred.log") {
+      y_lab <- "Rate (log scale)"
+    }
+    
+    out <- list()
+    for (cxt in unique(df$context)) {
+      dfc <- df[df$context == cxt,]
+      for (sps in unique(dfc$species)) {
+        if (length(unique(df$context)) > 1) {
+          sps_title <- paste0("Predicted rates by time for ", sps, " within ", cxt)
+        } else {
+          sps_title <- paste0("Predicted rates by time for ", sps)
+        }
+        plt <- ggplot(dfc[dfc$species == sps,], aes(x = timeseries, y = rate, color = splitting_factor, group = interaction(splitting_factor, block))) +
+          geom_line(linewidth = 1) +
+          scale_x_continuous(breaks = unique(dfc$timeseries)) +
+          facet_grid(block ~., space = "free_y") + #  scales = "free_y",
+          theme_minimal() +
+          theme(
+            plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+            axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+            axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+            legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+            legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+            panel.background = ggplot2::element_rect(fill = "white", colour = NA),
+            plot.background  = ggplot2::element_rect(fill = "white", colour = NA)
+          ) +
+          labs(y = y_lab, x = "Time point", color = splitting_name) +
+          ggtitle(sps_title) + 
+          scale_color_manual(
+            labels = splitting_lvl,
+            values = c("green3", "dodgerblue")
+          ) + 
+          geom_hline(yintercept = 0, color = "gray", linewidth = 1, linetype = "dashed")
+        out[[paste0("plot_",pred.type,"_context_",cxt,"_timeseries_",sps)]] <- plt
+        if (print.all) print(plt)
+      }
+    }
+    
+    return(out)
     
   }
 
@@ -1229,7 +1606,7 @@ plot.ratecount <- function(
 #' @export
 plot.parameters <- function(
     wisp.results,
-    species.lvl = NULL, # NULL (plot all) or a single species level to be plotted
+    species.lvl = NULL,
     violin = TRUE,
     print.plots = FALSE,
     species.classes = NULL,
@@ -1552,8 +1929,15 @@ plot.parameters <- function(
           facet_wrap(~ interaction(species,type), scales = "free") +
           theme_minimal() +
           labs(title = title_bl) +
-          theme(legend.position = legpos) +
-          theme(axis.text.x = element_text(angle = 90, hjust = 1))
+          theme(
+            plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+            axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+            axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+            legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+            legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+            axis.text.x = element_text(angle = 90, hjust = 1),
+            legend.position = legpos
+            )
         
         if (print_stats) {
           parameter_comparison_plots[[plot_name]] <- parameter_comparison_plots[[plot_name]] + 
@@ -1590,8 +1974,15 @@ plot.parameters <- function(
           facet_wrap(~ interaction(species, type), scales = "free") +
           theme_minimal() +
           labs(title = title_ran) +
-          theme(legend.position = legpos) +
-          theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+          theme(
+            plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+            axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+            axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+            legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+            legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+            axis.text.x = element_text(angle = 90, hjust = 1),
+            legend.position = legpos
+          ) +
           scale_fill_manual(values = c("point" = "#c356ea", "rate" = "#ffc100", "slope" = "#00a99d")) 
         
         if (print_stats) {
@@ -1747,8 +2138,15 @@ plot.parameters <- function(
             facet_wrap(~ interaction(species,type), scales = "free") +
             theme_minimal() +
             labs(title = title_fe) +
-            theme(legend.position = legpos) +
-            theme(axis.text.x = element_text(angle = 90, hjust = 1))
+            theme(
+              plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+              axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+              axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+              legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+              legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+              axis.text.x = element_text(angle = 90, hjust = 1),
+              legend.position = legpos
+            )
           
           if (print_stats) {
             parameter_comparison_plots[[plot_name]] <- parameter_comparison_plots[[plot_name]] +
@@ -1819,7 +2217,14 @@ plot.effect.dist <- function(
         data = data.frame(vals = wfactors_point), aes(x = vals, y = after_stat(ndensity)),
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
       labs(title = "Distribution of random point effects (warping factors)", x = "Warping factor, point", y = "Count") +
-      theme_minimal() 
+      theme_minimal() +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+        axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+        axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+        legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+        legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+      )
     
     # ... for rate
     wfactors_rate_mask <- grepl("wfactor_rate", wisp.results$param.names)
@@ -1829,7 +2234,14 @@ plot.effect.dist <- function(
         data = data.frame(vals = wfactors_rate), aes(x = vals, y = after_stat(ndensity)),
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
       labs(title = "Distribution of random rate effects (warping factors)", x = "Warping factor, rate", y = "Count") +
-      theme_minimal() 
+      theme_minimal() +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+        axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+        axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+        legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+        legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+      )
     
     # ... for slope 
     wfactors_slope_mask <- grepl("wfactor_slope", wisp.results$param.names)
@@ -1839,7 +2251,14 @@ plot.effect.dist <- function(
         data = data.frame(vals = wfactors_slope), aes(x = vals, y = after_stat(ndensity)),
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
       labs(title = "Distribution of random slope effects (warping factors)", x = "Warping factor, slope", y = "Count") +
-      theme_minimal()
+      theme_minimal() +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+        axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+        axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+        legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+        legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+      )
     
     if (print.plots) print(plot_wfactor_point_effects_dist)
     plots.effects_dist[["plot_wfactor_point_effects_dist"]] <- plot_wfactor_point_effects_dist
@@ -1857,7 +2276,14 @@ plot.effect.dist <- function(
         bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
       xlim(min(rate_effects),max(rate_effects)) +
       labs(title = "Distribution of fixed rate effects", x = "Rate effect", y = "Count") +
-      theme_minimal() 
+      theme_minimal() +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+        axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+        axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+        legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+        legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+      )
     
     if (print.plots) print(plot_rate_effects_effects_dist)
     plots.effects_dist[["plot_rate_effects_effects_dist"]] <- plot_rate_effects_effects_dist
@@ -1873,7 +2299,14 @@ plot.effect.dist <- function(
           bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
         xlim(min(tslope_effects), max(tslope_effects)) +
         labs(title = "Distribution of fixed slope effects", x = "t-slope effect", y = "Count") +
-        theme_minimal() 
+        theme_minimal() +
+        theme(
+          plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+          axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+          axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+          legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+          legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+        )
       
       if (print.plots) print(plot_slope_effects_effects_dist)
       plots.effects_dist[["plot_slope_effects_effects_dist"]] <- plot_slope_effects_effects_dist
@@ -1890,7 +2323,14 @@ plot.effect.dist <- function(
           data = data.frame(vals = tpoint_effects), aes(x = vals, y = after_stat(ndensity)),
           bins = 75, fill = "skyblue", alpha = 0.5, na.rm = TRUE) +
         labs(title = "Distribution of fixed t-point effects", x = "t-point effect", y = "Count") +
-        theme_minimal() 
+        theme_minimal() +
+        theme(
+          plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+          axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+          axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+          legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+          legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+        )
       
       if (print.plots) print(plot_tpoint_effects_effects_dist)
       plots.effects_dist[["plot_tpoint_effects_effects_dist"]] <- plot_tpoint_effects_effects_dist
@@ -2025,12 +2465,6 @@ plot.MCMC.walks <- function(
     low_samples = 10
   ) {
     
-    # Font sizes 
-    label_size <- 5.5
-    title_size <- 20 
-    axis_size <- 12 
-    legend_size <- 10
-    
     # Grab sampled parameters
     sampled_params <- wisp.results$sample.params.MCMC
     if (length(sampled_params) == 0 || is.null(sampled_params)) return(NULL)
@@ -2076,11 +2510,11 @@ plot.MCMC.walks <- function(
       scale_color_manual(values = colors_low) +
       theme_minimal() + 
       theme(
-        plot.title = element_text(hjust = 0.5, size = title_size),
-        axis.title = element_text(size = axis_size),
-        axis.text = element_text(size = axis_size),
-        legend.title = element_text(size = legend_size),
-        legend.text = element_text(size = legend_size),
+        plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+        axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+        axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+        legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+        legend.text = element_text(size = wisp.results$plot.settings$legend_size),
         legend.position = "none"
       )
     plot.walks.parameters_high <- ggplot(
@@ -2092,11 +2526,11 @@ plot.MCMC.walks <- function(
       scale_color_manual(values = colors_high) +
       theme_minimal() + 
       theme(
-        plot.title = element_text(hjust = 0.5, size = title_size),
-        axis.title = element_text(size = axis_size),
-        axis.text = element_text(size = axis_size),
-        legend.title = element_text(size = legend_size),
-        legend.text = element_text(size = legend_size),
+        plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+        axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+        axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+        legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+        legend.text = element_text(size = wisp.results$plot.settings$legend_size),
         legend.position = "none"
       )
     
@@ -2130,11 +2564,11 @@ plot.MCMC.walks <- function(
         color = "Type"
       ) + 
       theme(
-        plot.title = element_text(hjust = 0.5, size = title_size),
-        axis.title = element_text(size = axis_size),
-        axis.text = element_text(size = axis_size),
-        legend.title = element_text(size = legend_size),
-        legend.text = element_text(size = legend_size)
+        plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+        axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+        axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+        legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+        legend.text = element_text(size = wisp.results$plot.settings$legend_size)
       )
     
     if (print.plots) {
@@ -2272,12 +2706,6 @@ plot.MCMC.bs.comparison <- function(
     # Ensure reproducibility (sampling via Shaprio test not very stable)
     set.seed(1234)
     
-    # Font sizes 
-    label_size <- 5.5
-    title_size <- 20 
-    axis_size <- 12 
-    legend_size <- 10
-    
     # Grab data
     param_mcmc <- wisp.results[["sample.params.MCMC"]]
     param_bs <- wisp.results[["sample.params.bs"]]
@@ -2344,11 +2772,11 @@ plot.MCMC.bs.comparison <- function(
         y = "Density"
       ) +
       theme(
-        plot.title = element_text(hjust = 0.5, size = title_size),
-        axis.title = element_text(size = axis_size),
-        axis.text = element_text(size = axis_size),
-        legend.title = element_text(size = legend_size),
-        legend.text = element_text(size = legend_size)
+        plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+        axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+        axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+        legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+        legend.text = element_text(size = wisp.results$plot.settings$legend_size)
       )
     
     # For each method, order parameters by "normality" (p-value of shaprio test)
@@ -2415,11 +2843,11 @@ plot.MCMC.bs.comparison <- function(
         title = "Resampled Parameter Distribution Comparison",
         x = "Parameter Value Centered with Peak Density at Zero", y = "Log Density + 1") +
       theme(
-        plot.title = element_text(hjust = 0.5, size = title_size),
-        axis.title = element_text(size = axis_size),
-        axis.text = element_text(size = axis_size),
-        legend.title = element_text(size = legend_size),
-        legend.text = element_text(size = legend_size)
+        plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+        axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+        axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+        legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+        legend.text = element_text(size = wisp.results$plot.settings$legend_size)
       )
     
     # Grab sample results
@@ -2471,11 +2899,11 @@ plot.MCMC.bs.comparison <- function(
         y = "Log Density + 1"
       ) +
       theme(
-        plot.title = element_text(hjust = 0.5, size = title_size),
-        axis.title = element_text(size = axis_size),
-        axis.text = element_text(size = axis_size),
-        legend.title = element_text(size = legend_size),
-        legend.text = element_text(size = legend_size)
+        plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+        axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+        axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+        legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+        legend.text = element_text(size = wisp.results$plot.settings$legend_size)
       )
     
     if (print.plots) {

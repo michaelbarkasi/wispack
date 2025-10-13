@@ -5,13 +5,13 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Modeling time-series data • wispack</title>
+<title>Time-series data • wispack</title>
 <script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
-<meta property="og:title" content="Modeling time-series data">
+<meta property="og:title" content="Time-series data">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -38,14 +38,16 @@
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Installation</h6></li>
     <li><a class="dropdown-item" href="../articles/install.html">Installation instructions</a></li>
+    <li><a class="dropdown-item" href="../articles/release_notes.html">Release Notes</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_basic.html">The basics of wisps</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar_basic.html">RORB along the cortical laminar axis</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling celltypes</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Modeling time-series data</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">The wisp plot</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Time-series data</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_warping.html">Random effects and warping</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">The wisp rate-count plot</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -71,11 +73,11 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Modeling time-series data</h1>
+      <h1>Time-series data</h1>
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2025-10-11</h4>
+            <h4 data-toc-skip class="date">2025-10-22</h4>
       
 
       <div class="d-none name"><code>tutorial_timeseries.Rmd</code></div>
@@ -88,8 +90,8 @@ Introduction
 </h2>
 <p>Wisps naturally model between-group effects describable as two-valued
 categorical factors, e.g., comparing controls vs a treatment or male vs
-female. Coarse-grain comparisons over time, such as young vs old or
-postnatal day
+female. Coarse-grain comparisons over time, such as pre-hearing-onset vs
+post-hearing-onset or postnatal day
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mi>X</mi></mrow><annotation encoding="application/x-tex">PX</annotation></semantics></math>
 vs postnatal day
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mi>Y</mi></mrow><annotation encoding="application/x-tex">PY</annotation></semantics></math>,
@@ -116,7 +118,7 @@ a corresponding time-factor series
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><mi>T</mi></msub><annotation encoding="application/x-tex">\xi_T</annotation></semantics></math>
 is defined with
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-ordinal binary factors:
+ordered binary factors:
 <math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ξ</mi><msub><mi>T</mi><mn>1</mn></msub></msub><mo>&lt;</mo><msub><mi>ξ</mi><msub><mi>T</mi><mn>2</mn></msub></msub><mo>&lt;</mo><mi>⋯</mi><mo>&lt;</mo><msub><mi>ξ</mi><msub><mi>T</mi><mi>n</mi></msub></msub></mrow><annotation encoding="application/x-tex">\xi_{T_1} &lt; \xi_{T_2} &lt; \cdots &lt; \xi_{T_n}</annotation></semantics></math>
 For binary factors
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ξ</mi><annotation encoding="application/x-tex">\xi</annotation></semantics></math>
@@ -136,27 +138,49 @@ from time factors
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><msub><mi>T</mi><mi>i</mi></msub></msub><annotation encoding="application/x-tex">\xi_{T_i}</annotation></semantics></math>
 for
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>T</mi><mi>i</mi></msub><mo>≤</mo><msub><mi>T</mi><mi>m</mi></msub></mrow><annotation encoding="application/x-tex">T_i\leq T_m</annotation></semantics></math>:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>z</mi><mo>↦</mo><mi>z</mi><mo>+</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>m</mi></munderover><msub><mi>β</mi><msub><mi>T</mi><mi>i</mi></msub></msub><mo>+</mo><mtext mathvariant="normal">interaction terms</mtext></mrow><annotation encoding="application/x-tex">z \mapsto z + \sum_{i=1}^{m} \beta_{T_i} + \text{interaction terms}</annotation></semantics></math>
-Wispack implements this cumulative effect by defining the effect of
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>z</mi><mo>↦</mo><mi>z</mi><mo>+</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>m</mi></munderover><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>β</mi><msub><mi>T</mi><mi>i</mi></msub></msub><mo>+</mo><mrow><mtext mathvariant="normal">interaction terms for </mtext><mspace width="0.333em"></mspace></mrow><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">z \mapsto z + \sum_{i=1}^{m} (\beta_{T_i} + \text{interaction terms for }i)</annotation></semantics></math>
+For a rigorous definition, suppose that in addition to the time factor
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><mi>T</mi></msub><annotation encoding="application/x-tex">\xi_T</annotation></semantics></math>,
+there are other fixed-effect factors
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><mi>F</mi></msub><annotation encoding="application/x-tex">\xi_F</annotation></semantics></math>
+each with effect
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>F</mi></msub><annotation encoding="application/x-tex">\beta_F</annotation></semantics></math>.
+The effect of some time
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><msub><mi>T</mi><mi>m</mi></msub></msub><annotation encoding="application/x-tex">\xi_{T_m}</annotation></semantics></math>
+from
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><mi>T</mi></msub><annotation encoding="application/x-tex">\xi_T</annotation></semantics></math>
-to be:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>z</mi><mo>↦</mo><mi>z</mi><mo>+</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msub><mi>β</mi><msub><mi>T</mi><mi>i</mi></msub></msub><msub><mi>ξ</mi><msub><mi>T</mi><mi>i</mi></msub></msub><mo>+</mo><mtext mathvariant="normal">interaction terms</mtext></mrow><annotation encoding="application/x-tex">z \mapsto z + \sum_{i=1}^{n} \beta_{T_i}\xi_{T_i} + \text{interaction terms}</annotation></semantics></math>
-and stipulating, for each sampled data point
+will include not only
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><msub><mi>T</mi><mi>m</mi></msub></msub><annotation encoding="application/x-tex">\beta_{T_m}</annotation></semantics></math>
+and an interaction term
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mrow><msub><mi>T</mi><mi>m</mi></msub><mo>×</mo><msub><mi>ξ</mi><mi>F</mi></msub></mrow></msub><annotation encoding="application/x-tex">\beta_{T_m\times\xi_F}</annotation></semantics></math>
+for all
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><mi>F</mi></msub><annotation encoding="application/x-tex">\xi_F</annotation></semantics></math>,
+but also times
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><msub><mi>T</mi><mi>i</mi></msub></msub><annotation encoding="application/x-tex">\xi_{T_i}</annotation></semantics></math>
+for all
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>i</mi><mo>&lt;</mo><mi>m</mi></mrow><annotation encoding="application/x-tex">i&lt;m</annotation></semantics></math>
+and their respective interaction terms
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mrow><msub><mi>T</mi><mi>i</mi></msub><mo>×</mo><msub><mi>ξ</mi><mi>F</mi></msub></mrow></msub><annotation encoding="application/x-tex">\beta_{T_i\times\xi_F}</annotation></semantics></math>.
+Thus, the effect of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><mi>T</mi></msub><annotation encoding="application/x-tex">\xi_T</annotation></semantics></math>
+can be defined to be:
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>z</mi><mo>↦</mo><mi>z</mi><mo>+</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>β</mi><msub><mi>T</mi><mi>i</mi></msub></msub><msub><mi>ξ</mi><msub><mi>T</mi><mi>i</mi></msub></msub><mo>+</mo><munder><mo>∑</mo><mi>F</mi></munder><msub><mi>β</mi><mrow><msub><mi>T</mi><mi>m</mi></msub><mo>×</mo><msub><mi>ξ</mi><mi>F</mi></msub></mrow></msub><msub><mi>ξ</mi><msub><mi>T</mi><mi>i</mi></msub></msub><msub><mi>ξ</mi><mi>F</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">z \mapsto z + \sum_{i=1}^{n} \left(\beta_{T_i}\xi_{T_i} + \sum_{F}\beta_{T_m\times\xi_F}\xi_{T_i}\xi_F\right)</annotation></semantics></math>
+with the stipulation that, for each sampled data point
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math>,
-that if
+if
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ξ</mi><msub><mi>T</mi><mi>m</mi></msub></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\xi_{T_m}(s)=1</annotation></semantics></math>
 then
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ξ</mi><msub><mi>T</mi><mi>i</mi></msub></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\xi_{T_i}(s)=1</annotation></semantics></math>
 for all
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>i</mi><mo>&lt;</mo><mi>m</mi></mrow><annotation encoding="application/x-tex">i&lt;m</annotation></semantics></math>.</p>
 <h2>
-Demo data
+Example data: postnatal age
 </h2>
 <p>This tutorial will use MERFISH data collected from the auditory
-cortex of mice and preprocessed into laminar coordinates as described in
-<a href="articles/tutorial_corticallaminar_basic.html">the introductory
-tutorial</a> (see also <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">this preprint</a>). As
-with all data appropriate for wispack and in line with well-known
+cortex of mice. The data has been preprocessed into laminar coordinates
+as described in <a href="articles/tutorial_corticallaminar.html">the
+tutorial</a> on modeling the cortical-laminar axis (see also <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">this preprint</a>). As
+with all data appropriate for wispack, and in line with well-known
 modeling functions in R (e.g., lm(), lmer()), the data must be in long
 format. That is, each row must correspond to a single observation, which
 when modeling spatial transcriptomics data will typically be a count of
@@ -178,23 +202,24 @@ transcripts from an RNA species in a single cell.</p>
 <span><span class="co">## 4     0 100  cortex Bcl11b     1       left  12</span></span>
 <span><span class="co">## 5     0  99  cortex Bcl11b     1       left  12</span></span>
 <span><span class="co">## 6     0  99  cortex Bcl11b     1       left  12</span></span></code></pre>
-<p>As in the introductory tutorial, the data used here includes a dummy
-context variable filled with “cortex”, a variable giving the hemisphere
-(left vs right) of each observation, and counts (by cell) for the
-following six layer specific genes:</p>
+<p>The data includes a placeholder <a href="articles/tutorial_multicontext.html">context variable</a> filled
+with “cortex”, a variable giving the hemisphere of each observation:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">$</span><span class="va">hemisphere</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## [1] "left"  "right"</span></span></code></pre>
+<p>A variable giving counts (by cell) for the following six layer
+specific genes:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">$</span><span class="va">gene</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "Bcl11b" "Fezf2"  "Satb2"  "Nxph3"  "Cux2"   "Rorb"</span></span></code></pre>
-<p>However, the data used in the introductory tutorial was collected
-from four mice of only two distinct ages: P12 and P18. This tutorial
-includes data from these original four mice, plus a fifth mouse at age
-P7.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<p>A variable giving the age (in postnatal days) of the mouse from which
+each cell was collected:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">m</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">$</span><span class="va">mouse</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span></span>
 <span>      <span class="st">"Mouse "</span>, <span class="va">m</span>, </span>
-<span>      <span class="st">" is age P"</span>, <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">$</span><span class="va">age</span><span class="op">[</span><span class="va">countdata</span><span class="op">$</span><span class="va">mouse</span><span class="op">==</span><span class="va">m</span><span class="op">]</span><span class="op">)</span>, </span>
+<span>      <span class="st">" is age P"</span>, <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">$</span><span class="va">age</span><span class="op">[</span><span class="va">countdata</span><span class="op">$</span><span class="va">mouse</span> <span class="op">==</span> <span class="va">m</span><span class="op">]</span><span class="op">)</span>, </span>
 <span>      <span class="st">"\n"</span></span>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
@@ -204,38 +229,393 @@ P7.</p>
 <span><span class="co">## Mouse 3 is age P7</span></span>
 <span><span class="co">## Mouse 4 is age P12</span></span>
 <span><span class="co">## Mouse 5 is age P18</span></span></code></pre>
+<p>Note that these three ages represent pre-hearing-onset (P7),
+hearing-onset (P12), and post-hearing-onset (P18). Note also that the
+genes in this data set are known to be localized to specific cortical
+layers.</p>
+<table class="table">
+<thead><tr class="header">
+<th align="left">Abbreviation</th>
+<th align="left">Name</th>
+<th align="left">Layer</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">BCL11B, CTIP2</td>
+<td align="left">B-cell CLL/lymphoma 11b</td>
+<td align="left">5/6</td>
+</tr>
+<tr class="even">
+<td align="left">FEZF2</td>
+<td align="left">FEZ Family Zinc Finger 2</td>
+<td align="left">5</td>
+</tr>
+<tr class="odd">
+<td align="left">SATB2</td>
+<td align="left">SATB Homeobox 2</td>
+<td align="left">2/3</td>
+</tr>
+<tr class="even">
+<td align="left">NXPH3</td>
+<td align="left">Neurexophilin 3</td>
+<td align="left">6</td>
+</tr>
+<tr class="odd">
+<td align="left">CUX2</td>
+<td align="left">Cut like homeobox 2</td>
+<td align="left">2/3/4</td>
+</tr>
+<tr class="even">
+<td align="left">RORB</td>
+<td align="left">Retinoic acid-related orphan receptor beta</td>
+<td align="left">4</td>
+</tr>
+</tbody>
+</table>
+<p>Given that we have hemisphere and age data, we can thus model the
+time-dependent lateralization of layer-specific gene expression of the
+auditory cortex of developing mice.</p>
 <h2>
 Modeling time series in wispack
 </h2>
 <p>The parts of a wisp model must be defined, relative to the column
 names of the data. Wispack expects columns for the count to be modeled
 (<strong>count</strong>), the spatial coordinate (<strong>bin</strong>),
-the context (e.g., brain region, <strong>context</strong>), the species
-being counted (e.g., gene, <strong>species</strong>), and the random
-effect factor (<strong>ran</strong>). As the data includes explicit
-<strong>count</strong> and <strong>bin</strong> columns, these do not
-need to be redefined. As the names are different, wispack does need to
-be told that the RNA species data is included in the
+the context, e.g., brain region or celltype (<strong>context</strong>),
+the species being counted, e.g., gene (<strong>species</strong>), and
+the random effect factor (<strong>ran</strong>).</p>
+<p>As the data includes explicit <strong>count</strong>,
+<strong>bin</strong>, and <strong>context</strong> columns, these
+columns do not need to be redefined. As the names are different, wispack
+does need to be told that the RNA species data is included in the
 <strong>gene</strong> column and the random effect factor is given by
-the <strong>mouse</strong> column. It would be natural to use the
-<strong>celltype_MMC</strong> column as the context, but as this
-tutorial is focused on time series modeling, the context will be set to
-a constant value of “cortex” for all data points. Finally, the time
-series factor will be defined as the <strong>age</strong> column.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+the <strong>mouse</strong> column. Wispack will assume any unrecognized
+and undefined columns are fixed-effect columns, so
+<strong>hemisphere</strong> and <strong>age</strong> do not need to be
+explicitly flagged as fixed-effects. However, wispack must be told if a
+given fixed-effect column is to be treated as a time series factor.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Define variables in the dataframe for the model</span></span>
 <span><span class="va">data.variables</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    species <span class="op">=</span> <span class="st">"gene"</span>,</span>
 <span>    ran <span class="op">=</span> <span class="st">"mouse"</span>,</span>
-<span>    timeseries <span class="op">=</span> <span class="st">"age"</span>,</span>
-<span>    fixedeffects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"hemisphere"</span>, <span class="st">"age"</span><span class="op">)</span></span>
+<span>    timeseries <span class="op">=</span> <span class="st">"age"</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p>Let’s model the time-dependent lateralization of layer-specific gene
-expression of the auditory cortex of developing mice. Hence, hemisphere
-and age will be fixed-effect factors.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Define fixed effects to test</span></span>
-<span><span class="va">fixed.effect.names</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"hemisphere"</span>, <span class="st">"age"</span><span class="op">)</span></span></code></pre></div>
+<p>As we’re modeling layer-specific genes, we can also grab cortical
+layer boundaries which were estimated for this data independent of wisp
+(using manual CCFv3 registration). These will only be used for plotting
+and visualization after fitting the model, not for fitting the model
+itself.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">boundary_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
+<span>    <span class="st">"extdata"</span>, </span>
+<span>    <span class="st">"ACx_layer_boundary_bins.csv"</span>, </span>
+<span>    package <span class="op">=</span> <span class="st">"wispack"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="va">layer.boundary.bins</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">boundary_path</span><span class="op">)</span></span></code></pre></div>
+<p>With data loaded, variables set, and boundaries grabbed, we can fit
+the wisp model. As it’s not necessary for demonstrating time-series
+modeling, we’ll only fit the model (<strong>fit_only = TRUE</strong>)
+without running any <a href="articles/tutorial_stats.html">statistical
+parameter estimation</a>.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
+<span>    count.data <span class="op">=</span> <span class="va">countdata</span>,</span>
+<span>    variables <span class="op">=</span> <span class="va">data.variables</span>,</span>
+<span>    fit_only <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    model.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>LROwindow_factor <span class="op">=</span> <span class="fl">2.0</span><span class="op">)</span>,</span>
+<span>    plot.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>        print.plots <span class="op">=</span> <span class="cn">FALSE</span>, </span>
+<span>        dim.bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span></span>
+<span>      <span class="op">)</span>,</span>
+<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Parsing data and settings for wisp model</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Model settings:</span></span>
+<span><span class="co">##  buffer_factor: 0.05</span></span>
+<span><span class="co">##  ctol: 1e-06</span></span>
+<span><span class="co">##  max_penalty_at_distance_factor: 0.01</span></span>
+<span><span class="co">##  LROcutoff: 2</span></span>
+<span><span class="co">##  LROwindow_factor: 2</span></span>
+<span><span class="co">##  rise_threshold_factor: 0.8</span></span>
+<span><span class="co">##  max_evals: 1000</span></span>
+<span><span class="co">##  rng_seed: 42</span></span>
+<span><span class="co">##  warp_precision: 1e-07</span></span>
+<span><span class="co">##  inf_warp: 450359962.73705</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Plot settings:</span></span>
+<span><span class="co">##  print.plots: FALSE</span></span>
+<span><span class="co">##  dim.bounds: 72, 60.2, 23.6, 0</span></span>
+<span><span class="co">##  pred.type: pred</span></span>
+<span><span class="co">##  count.type: count</span></span>
+<span><span class="co">##  splitting_factor: </span></span>
+<span><span class="co">##  CI_style: TRUE</span></span>
+<span><span class="co">##  label_size: 5.5</span></span>
+<span><span class="co">##  title_size: 20</span></span>
+<span><span class="co">##  axis_size: 12</span></span>
+<span><span class="co">##  legend_size: 10</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Variable dictionary:</span></span>
+<span><span class="co">##  count: count</span></span>
+<span><span class="co">##  bin: bin</span></span>
+<span><span class="co">##  context: context</span></span>
+<span><span class="co">##  species: gene</span></span>
+<span><span class="co">##  ran: mouse</span></span>
+<span><span class="co">##  timeseries: age</span></span>
+<span><span class="co">##  fixedeffects: hemisphere, age</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Parsed data (head only):</span></span>
+<span><span class="co">## ------------------------------</span></span>
+<span><span class="co">##   count bin context species ran hemisphere timeseries</span></span>
+<span><span class="co">## 1     0  96  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## 2     0  95  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## 3     0  98  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## 4     0 100  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## 5     0  99  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## 6     0  99  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## ----</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Initializing Cpp (wspc) model</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Infinity handling:</span></span>
+<span><span class="co">## machine epsilon: (eps_): 2.22045e-16</span></span>
+<span><span class="co">## pseudo-infinity (inf_): 1e+100</span></span>
+<span><span class="co">## warp_precision: 1e-07</span></span>
+<span><span class="co">## implied pseudo-infinity for unbounded warp (inf_warp): 4.5036e+08</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Extracting variables and data information:</span></span>
+<span><span class="co">## Found max bin: 100.000000</span></span>
+<span><span class="co">## Fixed effects:</span></span>
+<span><span class="co">## "hemisphere" "timeseries"</span></span>
+<span><span class="co">## Ref levels:</span></span>
+<span><span class="co">## "left" "7"</span></span>
+<span><span class="co">## Time series detected:</span></span>
+<span><span class="co">## "7" "12" "18"</span></span>
+<span><span class="co">## Created treatment levels:</span></span>
+<span><span class="co">## "ref" "right" "12" "18" "right12" "right18"</span></span>
+<span><span class="co">## Context grouping levels:</span></span>
+<span><span class="co">## "cortex"</span></span>
+<span><span class="co">## Species grouping levels:</span></span>
+<span><span class="co">## "Bcl11b" "Cux2" "Fezf2" "Nxph3" "Rorb" "Satb2"</span></span>
+<span><span class="co">## Random-effect grouping levels:</span></span>
+<span><span class="co">## "none" "1" "2" "3" "4" "5"</span></span>
+<span><span class="co">## Total rows in summed count data table: 21600</span></span>
+<span><span class="co">## Number of rows with unique model components: 216</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Creating summed-count data columns and weight matrix:</span></span>
+<span><span class="co">## Random level 0, 1/6 complete</span></span>
+<span><span class="co">## Random level 1, 2/6 complete</span></span>
+<span><span class="co">## Random level 2, 3/6 complete</span></span>
+<span><span class="co">## Random level 3, 4/6 complete</span></span>
+<span><span class="co">## Random level 4, 5/6 complete</span></span>
+<span><span class="co">## Random level 5, 6/6 complete</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Making extrapolation pool:</span></span>
+<span><span class="co">## row: 720/3600</span></span>
+<span><span class="co">## row: 1440/3600</span></span>
+<span><span class="co">## row: 2160/3600</span></span>
+<span><span class="co">## row: 2880/3600</span></span>
+<span><span class="co">## row: 3600/3600</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Making initial parameter estimates:</span></span>
+<span><span class="co">## Extrapolated 'none' rows</span></span>
+<span><span class="co">## Took log of observed counts</span></span>
+<span><span class="co">## Estimated gamma dispersion of raw counts</span></span>
+<span><span class="co">## Estimated change points</span></span>
+<span><span class="co">## Found average log counts for each context-species combination</span></span>
+<span><span class="co">## Estimated initial parameters for fixed-effect treatments</span></span>
+<span><span class="co">## Built initial beta (ref and fixed-effects) matrices</span></span>
+<span><span class="co">## Initialized random-effect warping factors</span></span>
+<span><span class="co">## Made and mapped parameter vector</span></span>
+<span><span class="co">## Number of parameters: 378</span></span>
+<span><span class="co">## Constructed grouping variable IDs</span></span>
+<span><span class="co">## Size of boundary vector: 1944</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Fitting model to data</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Setting boundary penalty coefficients</span></span>
+<span><span class="co">## Initial neg_loglik: 15284.3</span></span>
+<span><span class="co">## Initial neg_loglik with penalty: 15437.1</span></span>
+<span><span class="co">## Initial min boundary distance: 0.24777</span></span>
+<span><span class="co">## Final neg_loglik: 15015.6</span></span>
+<span><span class="co">## Final neg_loglik with penalty: 15125.3</span></span>
+<span><span class="co">## Final min boundary distance: 0.122921</span></span>
+<span><span class="co">## Number of evaluations: 239</span></span>
+<span><span class="co">## Checking feasibility of provided parameters</span></span>
+<span><span class="co">## ... no tpoints below buffer</span></span>
+<span><span class="co">## ... no NAN rates predicted</span></span>
+<span><span class="co">## ... no negative rates predicted</span></span>
+<span><span class="co">## Provided parameters are feasible</span></span>
+<span><span class="co">## Initial boundary distance (want &gt; 0): 0.122921</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Making rate-count plots... </span></span>
+<span><span class="co">## Making time series plots...</span></span></code></pre>
+<h2>
+The weight matrix
+</h2>
+<p>Before examining the results, let’s look at the weight matrix.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">weight.matrix</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">##         ref right 12 18 right12 right18</span></span>
+<span><span class="co">## ref       1     0  0  0       0       0</span></span>
+<span><span class="co">## right     1     1  0  0       0       0</span></span>
+<span><span class="co">## 12        1     0  1  0       0       0</span></span>
+<span><span class="co">## 18        1     0  1  1       0       0</span></span>
+<span><span class="co">## right12   1     1  1  0       1       0</span></span>
+<span><span class="co">## right18   1     1  1  1       1       1</span></span></code></pre>
+<p>In this matrix, both rows and columns are labeled with the treatment
+levels generated by the fixed-effect factors. The first,
+<strong>ref</strong>, denotes no treatment, i.e., both factors are in
+their reference level. For <strong>hemisphere</strong>, this is
+<strong>left</strong>, while for <strong>age</strong>, this is
+<strong>P7</strong>. The other labels give the treatment level, if any,
+for each factor, with the rest being in the reference level. For
+example, <strong>right12</strong> refers to the right hemisphere at age
+P12, which is a treatment condition in which both factors are in a
+treatment level. In contrast, <strong>right</strong> refers to the right
+hemisphere at age P7, which is a treatment condition in which only the
+<strong>hemisphere</strong> factor is in a treatment level.</p>
+<p>This matrix is a <em>weight</em> matrix because the row and column
+labels are also labels for weights
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>w</mi><annotation encoding="application/x-tex">w</annotation></semantics></math>.
+Before <a href="articles/tutorial_warping.html">warping</a>, the
+predicted count
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
+of a sample is given by:
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi><mo>=</mo><msub><mi>β</mi><mtext mathvariant="normal">ref</mtext></msub><msub><mi>w</mi><mtext mathvariant="normal">ref</mtext></msub><mo>+</mo><msub><mi>β</mi><mtext mathvariant="normal">right</mtext></msub><msub><mi>w</mi><mtext mathvariant="normal">right</mtext></msub><mo>+</mo><msub><mi>β</mi><mn>12</mn></msub><msub><mi>w</mi><mn>12</mn></msub><mo>+</mo><msub><mi>β</mi><mn>18</mn></msub><msub><mi>w</mi><mn>18</mn></msub><mo>+</mo><msub><mi>β</mi><mrow><mtext mathvariant="normal">right</mtext><mn>12</mn></mrow></msub><msub><mi>w</mi><mrow><mtext mathvariant="normal">right</mtext><mn>12</mn></mrow></msub><mo>+</mo><msub><mi>β</mi><mrow><mtext mathvariant="normal">right</mtext><mn>18</mn></mrow></msub><msub><mi>w</mi><mrow><mtext mathvariant="normal">right</mtext><mn>18</mn></mrow></msub></mrow><annotation encoding="application/x-tex">y = \beta_{\text{ref}}w_{\text{ref}} + \beta_{\text{right}}w_{\text{right}} + \beta_{12}w_{12} + \beta_{18}w_{18} + \beta_{\text{right}12}w_{\text{right}12} + \beta_{\text{right}18}w_{\text{right}18}</annotation></semantics></math>
+where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>
+are the effect parameters and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>w</mi><annotation encoding="application/x-tex">w</annotation></semantics></math>
+are the weights. The rows of the weight matrix give the values of the
+weights
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>w</mi><annotation encoding="application/x-tex">w</annotation></semantics></math>
+corresponding to the column labels under the treatment conditions given
+by the row labels. For example, the <strong>right12</strong> row
+specifies that
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mtext mathvariant="normal">ref</mtext></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">w_{\text{ref}}=1</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mtext mathvariant="normal">right</mtext></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">w_{\text{right}}=1</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mn>12</mn></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">w_{12}=1</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mn>18</mn></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">w_{18}=0</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mrow><mtext mathvariant="normal">right</mtext><mn>12</mn></mrow></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">w_{\text{right}12}=1</annotation></semantics></math>,
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mrow><mtext mathvariant="normal">right</mtext><mn>18</mn></mrow></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">w_{\text{right}18}=0</annotation></semantics></math>
+when in the treatment condition of the right hemisphere at age P12. That
+is, when estimating a count
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
+for a sample in the right hemisphere at age P12, the effects
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>
+for the reference level, right hemisphere, age P12, and the interaction
+between right hemisphere and age P12 will all be included in the
+estimate, while the effects for age P18 and the interaction between
+right hemisphere and age P18 will not be included. What makes the time
+series additive is the way a treatment level like <strong>18</strong> or
+<strong>right18</strong> include not only effects related to the age
+<strong>18</strong>, but also effects related to all earlier ages, e.g.,
+<strong>12</strong>.</p>
+<h2>
+Visualizing time series
+</h2>
+<p>The <a href="articles/tutorial_wispplots.html">rate-count wisp
+plot</a> is made automatically with all calls of wisp() by an internal
+call to plot.ratecount(). This style of plot conveys the spatial
+distribution of a RNA species explicitly, by plotting space on the
+x-axis. It can only convey changes over a time series indirectly, via
+coloring of the levels of the <strong>timeseries</strong> factor. For
+example, consider the wisp plot for RORB.</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">ratecount</span><span class="op">$</span><span class="va">plot_pred_context_cortex_fixEff_Rorb</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_timeseries_files/figure-html/plot_wisp-1.png" width="700"></p>
+<p>By default, when the <strong>timeseries</strong> factor is present,
+rate-count plots use an HCL color space, plotting time series as
+graduated luminance and the other factors as categorical levels of hue
+and chroma. In this case, left-hemisphere treatment levels are in green
+and right-hemisphere levels are in blue, with earlier time points dull
+and later time points brighter. If you look closely, you should be able
+to see that RORB expression in the superficial layers
+(<strong>bin</strong> &gt; 50) of both hemispheres dips in P12 relative
+to P7, then rises again in P18.</p>
+<p>While this trend can be discerned from the spatial wisp plot, wispack
+offers another kind of plot for plotting time-series data which makes
+the trend obvious at a glance while also clarifying it. These
+time-series plots are made automatically by the wisp() function when a
+timeseries is provided or detected, through an internal call to the
+plot.timeseries() function.</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">timeseries</span><span class="op">$</span><span class="va">plot_pred_context_cortex_timeseries_Rorb</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_timeseries_files/figure-html/plot_timeseries-1.png" width="700"></p>
+<p>Wisp time-series plots keep the y-axis a representation of rate, but
+switch the x-axis to a representation of the time-series points.
+However, the spatial aspect of the data is not completely lost. Instead
+of plotting the predicted rate on the y-axis, which would include not
+only the rate parameter but also the effects of transition-point
+location and transition-point slope, the time-series plot instead plots
+just the rate parameter itself. This parameter is a vector, each element
+of which is the rate for a block of space defined by transition points.
+These blocks are stacked on top of each other in the time-series plot,
+with blocks corresponding to the lowest spatial bins at the bottom.</p>
+<p>In the RORB time-series plot above, the dip in expression at P12 in
+the superficial layers can be seen more clearly. Specifically, we see
+that the dip is localized to block 3, which can be seen in the
+rate-count plot to correspond approximately with cortical layer 4. RORB
+is known to localize in layer 4, where it plays a role in guiding
+thalamocortical innervation during development. So, the dip in
+expression at P12 may reflect a transient downregulation of RORB as
+thalamocortical axons arrive in layer 4 around hearing onset.</p>
+<h2>
+All results
+</h2>
+<p>The time series plots from this demo dataset suggest other
+interesting patterns. For example, in BCL11B we can see that while
+there’s a steep drop from P7 to P12 in the middle two blocks, this drop
+is not only lateralized, but also swapped across blocks, i.e., it is
+much steeper in the right hemisphere in block 3 and much steeper in the
+left hemisphere in block 2.</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">ratecount</span><span class="op">$</span><span class="va">plot_pred_context_cortex_fixEff_Bcl11b</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_timeseries_files/figure-html/plot_bcl11b-1.png" width="700"></p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">timeseries</span><span class="op">$</span><span class="va">plot_pred_context_cortex_timeseries_Bcl11b</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_timeseries_files/figure-html/plot_bcl11b-2.png" width="700"></p>
+<p>FEZF2 shows similar swapped lateralization, albeit to a lesser degree
+and in deep layers instead of superficial layers.</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">ratecount</span><span class="op">$</span><span class="va">plot_pred_context_cortex_fixEff_Fezf2</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_timeseries_files/figure-html/plot_fezf2-1.png" width="700"></p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">timeseries</span><span class="op">$</span><span class="va">plot_pred_context_cortex_timeseries_Fezf2</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_timeseries_files/figure-html/plot_fezf2-2.png" width="700"></p>
+<p>NXPH3 is interesting in that it shows a temporally dynamic and
+lateralized profile in deep layers (block 1), but almost no activity in
+superficial layers (block 2).</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">ratecount</span><span class="op">$</span><span class="va">plot_pred_context_cortex_fixEff_Nxph3</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_timeseries_files/figure-html/plot_nxph3-1.png" width="700"></p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">timeseries</span><span class="op">$</span><span class="va">plot_pred_context_cortex_timeseries_Nxph3</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_timeseries_files/figure-html/plot_nxph3-2.png" width="700"></p>
+<p>CUX2 and SATB2 look to have no or little lateralization, but clear
+temporal dynamics across all layers.</p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">ratecount</span><span class="op">$</span><span class="va">plot_pred_context_cortex_fixEff_Satb2</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_timeseries_files/figure-html/plot_satb2_cux2-1.png" width="700"></p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">timeseries</span><span class="op">$</span><span class="va">plot_pred_context_cortex_timeseries_Satb2</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_timeseries_files/figure-html/plot_satb2_cux2-2.png" width="700"></p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">ratecount</span><span class="op">$</span><span class="va">plot_pred_context_cortex_fixEff_Cux2</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_timeseries_files/figure-html/plot_satb2_cux2-3.png" width="700"></p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">timeseries</span><span class="op">$</span><span class="va">plot_pred_context_cortex_timeseries_Cux2</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_timeseries_files/figure-html/plot_satb2_cux2-4.png" width="700"></p>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>

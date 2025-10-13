@@ -26,6 +26,7 @@ articles:
   navbar: Installation
   contents:
   - install
+  - release_notes
 
 - title: Tutorials
   navbar: Tutorials

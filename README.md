@@ -1,19 +1,19 @@
 
-# wispack: An R package for warped sigmoidal Poisson-process mixed-effects modeling
+# Wispack: An R package for warped sigmoidal Poisson-process mixed-effects modeling
 
 <div class="figure">
   <img src="man/figures/wisp_art.png" alt="Artistic rendering of wisp model" width="90%">
   <p class="caption">Artistic rendering of a wisp model. See [this tutorial](articles/tutorial_wispplots.html) for an explanation.</p>
 </div>
 
-Wispack (pronounced "wisp package" or "wisp pack") is an R package for testing for between-group effects on spatial variation in spatial transcriptomics data, i.e., testing for functional spatial effects (FSE). 
+Wispack (pronounced "wisp package" or "wisp pack") is an R package for testing for between-group effects on spatial variation in spatial transcriptomics data. As such variation is often functional, these can be thought of as *functional spatial effects* (FSE). 
 
 <div class="figure">
   <img src="man/figures/stack_0_1475_L1_truecolor.png" alt="True-color MERFISH image" width="50%">
   <p class="caption">True-color image of fluorescing probes bound to mRNA molecules in cortical cells, the raw data of spatial transcriptomics.</p>
 </div>
 
-Unlike SVG testing (spatially variable gene) which only involves testing for spatial variation of gene expression within a group, and unlike differential expression (DE) analysis which tests for between-group effects without regard to spatial distribution, testing for FSEs involves testing whether a factor such as age or rearing conditions has a nonzero effect on spatial variation between groups differing on that factor.
+Unlike testing for spatially variable genes (SVGs), which only involves testing for spatial variation of gene expression within a group, and unlike differential expression (DE) analysis which tests for between-group effects without regard to spatial distribution, testing for FSEs involves testing whether a factor such as age or rearing conditions has a nonzero effect on spatial variation between groups differing on that factor.
 
 <div class="figure">
   <img src="man/figures/fig_FSE.png" alt="DE vs SVG vs FSE" width="90%">
@@ -27,7 +27,7 @@ Wispack performs FSE testing by first using change-point detection to find spati
   <p class="caption">Demo plots of the functions involved in wisp. (A) The logistic function, used to model a single change point in gene expression. (B) The wisp poly-sigmoid function, built from three logistic components, representing three change points. (C) The warping function used to represent random effects, e.g., variation due to differences between individual animals or due to measurement noise. (D) The wisp poly-sigmoid from (B) with warping function applied.</p>
 </div>
 
-Wispack provides a simple user-facing function, wisp(), which takes a data frame in the familiar format expected by standard R functions for linear models (e.g., lm() and lmer()) and runs the complete test for FSEs. Preprocessing of the data is generally required before passing it to wisp(), after which wisp() executes a pipeline involving parameter estimates, prediction, model fitting, and hypothesis testing. 
+Wispack provides a user-facing function, wisp(), which takes a data frame in the familiar format expected by standard R functions for linear models (e.g., lm() and lmer()) and runs the complete test for FSEs. Preprocessing of the data is generally required before passing it to wisp(), after which wisp() executes a pipeline involving parameter estimates, prediction, model fitting, and hypothesis testing. 
 
 <div class="figure">
   <img src="man/figures/fig_modelpipeline_simple.png" alt="Diagram of top-level of wisp modeling pipeline" width="90%">
@@ -41,7 +41,7 @@ As shown by the figure below, the steps of this pipeline are nonlinear and recur
   <p class="caption">Full modeling pipeline for wisp. Boxes represent variables in the model, or operations performed on variables. Arrows represent input-output relationships between these variables and operations.</p>
 </div>
  
-Unlike standard linear modeling packages in R which require a model formula, wisp() merely needs the data. For example, the quick-start demo (which uses data on RORB expression across the laminar axis of the primary somatosensory cortex) runs the following code: 
+Unlike standard linear modeling packages in R which require a model formula, wisp() merely needs the data. For example, the quick-start demo (which uses data from mice on RORB expression across the laminar axis of the primary somatosensory cortex) runs the following code: 
 
 ```R
 # Set random seed for reproducibility
@@ -76,6 +76,7 @@ data.variables <- list(
     context = "cortex", 
     species = "gene",
     ran = "mouse",
+    timeseries = "age",
     fixedeffects = c("hemisphere", "age")
   )
   

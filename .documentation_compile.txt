@@ -1,5 +1,0 @@
-## Build documentation
-
-In R, run: 
-devtools::document()  
-pkgdown::build_site()
