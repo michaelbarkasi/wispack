@@ -131,6 +131,7 @@ data.variables <- list(
     context = "context", 
     species = "gene",
     ran = "mouse",
+    timeseries = "age",
     fixedeffects = c("hemisphere", "age")
   )
 ```

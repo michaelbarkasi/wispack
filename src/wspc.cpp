@@ -34,6 +34,7 @@ wspc::wspc(
     rng_seed = (unsigned int)settings["rng_seed"];
     warp_precision = (sdouble)settings["warp_precision"];
     inf_warp = (sdouble)settings["inf_warp"];
+    round_none = (bool)settings["round_none"];
     model_settings = Rcpp::clone(settings);
     
     // Report warp_inf 
@@ -346,7 +347,7 @@ wspc::wspc(
     // Extrapolate "none" rows
     vprint_header("Making initial parameter estimates", verbose);
     if (ran_lvls.size() > 1) {
-      count = extrapolate_none(count, ran, extrapolation_pool, true);
+      count = extrapolate_none(count, ran, extrapolation_pool, true, round_none);
       vprint("Extrapolated 'none' rows", verbose);
     }
     
@@ -727,6 +728,27 @@ sVec wspc::predict_rates(
     }
     
     return predicted_rates;
+    
+  }
+
+// Predict log of rates, R wrapper 
+NumericVector wspc::predict_rates_R(
+    const NumericVector& parameters_R,
+    const bool& all_rows 
+  ) const {
+    
+    // Convert parameters to sVec
+    sVec parameters = to_sVec(parameters_R);
+    
+    // Compute predicted rates
+    sVec predicted_rates = predict_rates(
+      parameters,
+      all_rows
+    );
+    
+    // Convert to NumericVector and return
+    NumericVector predicted_rates_R = to_NumVec(predicted_rates);
+    return predicted_rates_R;
     
   }
 
@@ -1259,7 +1281,7 @@ dVec wspc::bs_fit(
     }
     
     // Extrapolate none's and take their logs
-    count = extrapolate_none(count, ran, extrapolation_pool, true);
+    count = extrapolate_none(count, ran, extrapolation_pool, true, round_none);
     iVec r_rows = Rcpp::as<iVec>(count_row_nums[eq_left_broadcast(ran,"none")]);
     for (int r : r_rows) {
       count_log(r) = slog(count(r) + 1.0);
@@ -1773,7 +1795,7 @@ NumericMatrix wspc::resample(
       }
       
       // Extrapolate none's 
-      count_new = extrapolate_none(count_new, ran, extrapolation_pool, true);
+      count_new = extrapolate_none(count_new, ran, extrapolation_pool, true, round_none);
       
       for (int r : NA_idx) {
         count_new(r) = stan::math::NOT_A_NUMBER;
@@ -2168,6 +2190,7 @@ RCPP_MODULE(wspc) {
     .method("neg_loglik_debug", &wspc::neg_loglik_debug)
     .method("bounded_nll_debug", &wspc::bounded_nll_debug)
     .method("grad_bounded_nll_debug", &wspc::grad_bounded_nll_debug)
+    .method("predict_rates_R", &wspc::predict_rates_R)
     .method("fit", &wspc::fit)
     .method("bs_fit", &wspc::bs_fit)
     .method("bs_batch", &wspc::bs_batch)

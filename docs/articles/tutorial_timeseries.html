@@ -42,6 +42,7 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
     <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_liverradial.html">Rhythmic and zonated gene expression along the liver-lobule radial axis</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling celltypes</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
@@ -77,7 +78,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2025-10-22</h4>
+            <h4 data-toc-skip class="date">2025-11-05</h4>
       
 
       <div class="d-none name"><code>tutorial_timeseries.Rmd</code></div>
@@ -347,6 +348,7 @@ parameter estimation</a>.</p>
 <span><span class="co">##  max_evals: 1000</span></span>
 <span><span class="co">##  rng_seed: 42</span></span>
 <span><span class="co">##  warp_precision: 1e-07</span></span>
+<span><span class="co">##  round_none: TRUE</span></span>
 <span><span class="co">##  inf_warp: 450359962.73705</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Plot settings:</span></span>
@@ -360,6 +362,12 @@ parameter estimation</a>.</p>
 <span><span class="co">##  title_size: 20</span></span>
 <span><span class="co">##  axis_size: 12</span></span>
 <span><span class="co">##  legend_size: 10</span></span>
+<span><span class="co">##  count_size: 1.5</span></span>
+<span><span class="co">##  count_jitter: 0.5</span></span>
+<span><span class="co">##  count.alpha.ran: 0.25</span></span>
+<span><span class="co">##  count.alpha.none: 0.25</span></span>
+<span><span class="co">##  pred.alpha.ran: 0.9</span></span>
+<span><span class="co">##  pred.alpha.none: 1</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Variable dictionary:</span></span>
 <span><span class="co">##  count: count</span></span>
@@ -568,7 +576,7 @@ that the dip is localized to block 3, which can be seen in the
 rate-count plot to correspond approximately with cortical layer 4. RORB
 is known to localize in layer 4, where it plays a role in guiding
 thalamocortical innervation during development. So, the dip in
-expression at P12 may reflect a transient downregulation of RORB as
+expression at P12 may reflect a transient down-regulation of RORB as
 thalamocortical axons arrive in layer 4 around hearing onset.</p>
 <h2>
 All results

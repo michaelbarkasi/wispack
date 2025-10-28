@@ -454,7 +454,8 @@ sVec extrapolate_none(
     const sVec& count,
     const CharacterVector& ran, 
     const std::vector<IntegerVector>& extrapolation_pool,
-    const bool& log_transform
+    const bool& log_transform,
+    const bool& round_count
   ) {
     
     sVec count_out = count;
@@ -488,9 +489,10 @@ sVec extrapolate_none(
         if (log_transform) {
           roundedMean = running_sum / (sdouble)extrapolation_sz;
           roundedMean = sexp(roundedMean) - 1.0; // Convert back from log space
-          roundedMean = stan::math::round(roundedMean);
+          if (round_count) {roundedMean = stan::math::round(roundedMean);}
         } else {
-          roundedMean = stan::math::round(running_sum / (sdouble)extrapolation_sz);
+          roundedMean = running_sum / (sdouble)extrapolation_sz;
+          if (round_count) {roundedMean = stan::math::round(roundedMean);}
         }
         count_out[r] = roundedMean;
         

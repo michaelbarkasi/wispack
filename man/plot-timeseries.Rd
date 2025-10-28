@@ -13,6 +13,8 @@ plot.timeseries(wisp.results, splitting_factor = NULL, pred.type = "pred")
 
 \item{pred.type}{Character string, the name of the predicted rate column in the count data (e.g., "pred.log" or "pred").}
 
+\item{count.type}{Character string, the name of the observed count column in the count data (e.g., "count.log" or "count").}
+
 \item{print.all}{Logical, if TRUE, prints all plots; if FALSE, only returns plots in list without printing any.}
 
 \item{verbose}{Logical, if TRUE, prints updates about the plotting process.}

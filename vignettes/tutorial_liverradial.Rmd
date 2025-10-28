@@ -1,0 +1,9 @@
+---
+title: "Rhythmic and zonated gene expression along the liver-lobule radial axis"
+author: "Michael Barkasi"
+date: "`r Sys.Date()`"
+---
+
+<h2>Introduction</h2>
+
+Mammalian liver tissue is organized into concentric rings of cells called *lobules*. These lobules are filled with capillaries which carry blood to an interior central vein. The rings, or *zones*, of the lobules are functionally distinct. As [Droin et al. (2021)](https://doi.org/10.1038/s42255-020-00323-1) explain, this functional zonation "is accompanied by gradients of gene expression along the portal-central axis, with some genes expressed more strongly near the central vein, and vice versa for portally expressed genes" (p. 43). In addition, "liver physiology is also highly temporally dynamic", with rhythmic cycles driven by "the complex interplay among the endogenous circadian liver oscillator, rhytmic systemic signals and feeding-fasting cycles" (*ibid*). 

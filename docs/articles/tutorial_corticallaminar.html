@@ -42,6 +42,7 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
     <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_liverradial.html">Rhythmic and zonated gene expression along the liver-lobule radial axis</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling celltypes</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
@@ -77,7 +78,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2025-10-22</h4>
+            <h4 data-toc-skip class="date">2025-11-05</h4>
       
 
       <div class="d-none name"><code>tutorial_corticallaminar.Rmd</code></div>
@@ -190,7 +191,7 @@ fit the model.</p>
 <span>      package <span class="op">=</span> <span class="st">"wispack"</span></span>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## Warning in read.table(file = file, header = header, sep = sep, quote = quote, : incomplete final line found by readTableHeader on '/private/var/folders/vx/lvd79g_14c9f4t8hwnyb_v740000gn/T/Rtmp66whC4/temp_libpathf326f4d3055/wispack/extdata/S1_layer_boundary_bins.csv'</span></span></code></pre>
+<pre><code><span><span class="co">## Warning in read.table(file = file, header = header, sep = sep, quote = quote, : incomplete final line found by readTableHeader on '/private/var/folders/vx/lvd79g_14c9f4t8hwnyb_v740000gn/T/RtmpZmIsMC/temp_libpath143165ac3ec9b/wispack/extdata/S1_layer_boundary_bins.csv'</span></span></code></pre>
 <p>Each row in the data frame represents a cell from the left or right
 S1 region of one of the four mice. Each cell is represented in multiple
 rows, one row per gene. Hence, the number of cells can be found by
@@ -287,6 +288,7 @@ follows:</p>
 <span>    context <span class="op">=</span> <span class="st">"context"</span>, </span>
 <span>    species <span class="op">=</span> <span class="st">"gene"</span>,</span>
 <span>    ran <span class="op">=</span> <span class="st">"mouse"</span>,</span>
+<span>    timeseries <span class="op">=</span> <span class="st">"age"</span>,</span>
 <span>    fixedeffects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"hemisphere"</span>, <span class="st">"age"</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <h2>
@@ -373,6 +375,7 @@ by the CCFv3 registration.</p>
 <span><span class="co">##  max_evals: 1000</span></span>
 <span><span class="co">##  rng_seed: 42</span></span>
 <span><span class="co">##  warp_precision: 1e-07</span></span>
+<span><span class="co">##  round_none: TRUE</span></span>
 <span><span class="co">##  inf_warp: 450359962.73705</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Plot settings:</span></span>
@@ -386,6 +389,12 @@ by the CCFv3 registration.</p>
 <span><span class="co">##  title_size: 20</span></span>
 <span><span class="co">##  axis_size: 12</span></span>
 <span><span class="co">##  legend_size: 10</span></span>
+<span><span class="co">##  count_size: 1.5</span></span>
+<span><span class="co">##  count_jitter: 0.5</span></span>
+<span><span class="co">##  count.alpha.ran: 0.25</span></span>
+<span><span class="co">##  count.alpha.none: 0.25</span></span>
+<span><span class="co">##  pred.alpha.ran: 0.9</span></span>
+<span><span class="co">##  pred.alpha.none: 1</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## MCMC settings:</span></span>
 <span><span class="co">##  MCMC.burnin: 100</span></span>
@@ -495,9 +504,9 @@ by the CCFv3 registration.</p>
 <span><span class="co">## Acceptance rate (aim for 0.2-0.3): 0.267412</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## MCMC simulation complete... </span></span>
-<span><span class="co">## MCMC run time (total), minutes: 2.501</span></span>
-<span><span class="co">## MCMC run time (per retained step), seconds: 0.136</span></span>
-<span><span class="co">## MCMC run time (per step), seconds: 0.068</span></span>
+<span><span class="co">## MCMC run time (total), minutes: 2.691</span></span>
+<span><span class="co">## MCMC run time (per retained step), seconds: 0.147</span></span>
+<span><span class="co">## MCMC run time (per step), seconds: 0.073</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Setting full-data fit as parameters... </span></span>
 <span><span class="co">## Checking feasibility of provided parameters</span></span>
@@ -530,6 +539,12 @@ by the CCFv3 registration.</p>
 <span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 0.0419817967 0.0951381962 0.000000000  0.00000000 0.0002958580          ***</span></span>
 <span><span class="co">## ----</span></span>
 <span><span class="co">## </span></span>
+<span><span class="co">## Computing 95% CI for predicated values by bin</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Grabbing sample results... </span></span>
+<span><span class="co">## Computing predicted values for each sampled parameter set... </span></span>
+<span><span class="co">## Computing 95% CIs... </span></span>
 <span><span class="co">## Analyzing residuals</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
@@ -551,6 +566,11 @@ by the CCFv3 registration.</p>
 <span><span class="co">## Making MCMC walks plots... </span></span>
 <span><span class="co">## Making effect parameter distribution plots... </span></span>
 <span><span class="co">## Making rate-count plots... </span></span>
+<span><span class="co">## Making parameter plots... </span></span>
+<span><span class="co">## Making parameter plots... </span></span>
+<span><span class="co">## Making parameter plots... </span></span>
+<span><span class="co">## Making parameter plots... </span></span>
+<span><span class="co">## Making parameter plots... </span></span>
 <span><span class="co">## Making parameter plots...</span></span></code></pre>
 <h2>
 Extracting the results

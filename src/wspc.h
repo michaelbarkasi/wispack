@@ -127,6 +127,7 @@ class wspc {
     std::vector<IntegerVector> extrapolation_pool;       // list of summed-count indexes giving summed count rows from which to extrapolate
     IntegerVector count_not_na_idx;                      // indexes of non-NA rows in summed count data
     LogicalVector count_not_na_mask;        // mask of non-NA rows in summed count data
+    bool round_none;                        // whether to round extrapolated "none" counts to nearest integer
     
     // Variables related to model parameters
     CharacterVector mc_list = {             // list of model components
@@ -215,6 +216,12 @@ class wspc {
     // Predict log of rates
     sVec predict_rates(
         const sVec& parameters,
+        const bool& all_rows 
+    ) const;
+    
+    // Predict log of rates, R wrapper 
+    NumericVector predict_rates_R(
+        const NumericVector& parameters_R,
         const bool& all_rows 
     ) const;
     
@@ -637,7 +644,8 @@ sVec extrapolate_none(
   const sVec& count,
   const CharacterVector& ran, 
   const std::vector<IntegerVector>& extrapolation_pool,
-  const bool& log_transform
+  const bool& log_transform,
+  const bool& round_count
   );
 
 // Model fitting *******************************************************************************************************

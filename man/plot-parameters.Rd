@@ -17,6 +17,8 @@ plot.parameters(wisp.results, species.lvl = NULL, violin = TRUE, print.plots = F
 
 \item{species.classes}{List, a list of character vectors specifying which species levels to include together in plots. If NULL, all species levels are included in a single plot.}
 
+\item{mc_type}{Character string, type of model component to plot ("rate", "tpoint", "tslope"). If NULL, all model components are plotted.}
+
 \item{verbose}{Logical, if TRUE, prints updates about the plotting process.}
 }
 \value{

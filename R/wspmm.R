@@ -25,9 +25,9 @@ NULL
 #' @param converged.resamples.only Logical, if TRUE, only resamples with a converged fit are used for statistical analysis; if FALSE, all resamples are used. Applies only to bootstraps. 
 #' @param max.fork Integer, maximum number of parallel processes to use for bootstrapping.
 #' @param verbose Logical, if TRUE, prints information during the fitting process.
-#' @param model.settings List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, and \code{warp_precision}. Default values are provided.
+#' @param model.settings List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, \code{warp_precision}, and \code{round_none}. Default values are provided.
 #' @param MCMC.settings List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.
-#' @param plot.settings List, settings for plots to make, including \code{print.plots}, \code{dim.bounds}, \code{pred.type}, \code{count.type}, \code{splitting_factor}, \code{CI_style}, \code{label_size}, \code{title_size}, \code{axis_size}, and \code{legend_size}. Default values are provided.
+#' @param plot.settings List, settings for plots to make, including \code{print.plots}, \code{dim.bounds}, \code{pred.type}, \code{count.type}, \code{splitting_factor}, \code{CI_style}, \code{label_size}, \code{title_size}, \code{axis_size}, \code{legend_size}, \code{count_size}, \code{count_jitter}, \code{count.alpha.ran}, \code{count.alpha.none}, \code{pred.alpha.ran}, and \code{pred.alpha.none}. Default values are provided.
 #' @return List giving the results of the fitted model, including: \code{model.component.list}, \code{count.data.summed}, \code{fitted.parameters}, \code{gamma.disperson}, \code{param.names}, \code{fix}, \code{treatment}, \code{grouping.variables}, \code{param.idx0}, \code{settings}, \code{sample.params}, \code{sample.params.bs}, \code{sample.params.MCMC}, \code{diagnostics.bs}, \code{diagnostics.MCMC}, \code{stats}, and \code{plots}
 #' @export
 wisp <- function(
@@ -181,7 +181,8 @@ wisp <- function(
       rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
       max_evals = 1000,                           # maximum number of evaluations for optimization
       rng_seed = 42,                              # seed for random number generator
-      warp_precision = 1e-7                       # decimal precision to retain when selecting really big number as pseudo infinity for unbound warping
+      warp_precision = 1e-7,                      # decimal precision to retain when selecting really big number as pseudo infinity for unbound warping
+      round_none = TRUE                           # round extrapoloted counts for "none" (no random effect) to nearest integer? 
     )
     # ... check that provided model.settings is a list with valid names
     model.settings.names <- check_list(model.settings, model.settings.internal)
@@ -189,7 +190,9 @@ wisp <- function(
     for (s in names(model.settings)) {
       ms <- model.settings[[s]]
       if (!(ms > 0)) {
-        stop("All model.settings values must be positive numbers")
+        if (s != "round_none") {
+          stop("All model.settings values must be positive numbers, except for 'round_none'")
+        }
       } else if (s == "buffer_factor" && !(ms < 1)) {
         stop("model.settings$buffer_factor must be a number between 0 and 1")
       } 
@@ -223,7 +226,13 @@ wisp <- function(
       label_size = 5.5,
       title_size = 20,
       axis_size = 12, 
-      legend_size = 10
+      legend_size = 10,
+      count_size = 1.5,
+      count_jitter = 0.5,
+      count.alpha.ran = 0.25,
+      count.alpha.none = 0.25,
+      pred.alpha.ran = 0.9,
+      pred.alpha.none = 1.0
     )
     # ... check that provided plot.settings is a list with valid names 
     plot.settings.names <- check_list(plot.settings, plot.settings.internal)
@@ -293,6 +302,8 @@ wisp <- function(
       verbose
     )
     
+    # Fit model to data ####
+    
     if (fit_only) {
       
       if (verbose) {
@@ -320,6 +331,10 @@ wisp <- function(
         print.all = plot.settings.internal$print.plots,
         CI_style = plot.settings.internal$CI_style,
         dim.boundaries = plot.settings.internal$dim.bounds,
+        count.alpha.none = plot.settings.internal$count.alpha.none,
+        count.alpha.ran = plot.settings.internal$count.alpha.ran,
+        pred.alpha.none = plot.settings.internal$pred.alpha.none,
+        pred.alpha.ran = plot.settings.internal$pred.alpha.ran,
         verbose = verbose
       )
       
@@ -329,6 +344,7 @@ wisp <- function(
           wisp.results = results,
           splitting_factor = plot.settings.internal$splitting_factor,
           pred.type = plot.settings.internal$pred.type,
+          count.type = plot.settings.internal$count.type,
           print.all = plot.settings.internal$print.plots,
           verbose = verbose
         )
@@ -491,6 +507,36 @@ wisp <- function(
         verbose = verbose
       )
       
+      # Compute 95% CI for predicated values by bin 
+      if (verbose) {
+        snk.report("Computing 95% CI for predicated values by bin", initial_breaks = 1)
+        snk.horizontal_rule(reps = snk.simple_break_reps)
+      }
+      if (converged.resamples.only) {
+        sampled_params <- prune_samples_by_convergence(wisp.results = results, verbose = verbose)
+      } else {
+        if (verbose) snk.report...("Grabbing sample results")
+        sampled_params <- results$sample.params
+      }
+      if (verbose) snk.report...("Computing predicted values for each sampled parameter set")
+      pred_values <- matrix(NA, nrow = nrow(results$count.data.summed), ncol = nrow(sampled_params))
+      # ... ^^ columns contain predicted values for a given sampled parameter set, rows are bins interacting with covariates.
+      for (sp in c(1:nrow(sampled_params))) {
+        pred_values[,sp] <- cpp_model$predict_rates_R(
+          as.vector(sampled_params[sp,]),
+          TRUE
+        )
+      }
+      if (verbose) snk.report...("Computing 95% CIs")
+      # ... note: It doesn't make sense to "adjust" these CIs for multiple comparisons using Holm-Bonferroni, as there's
+      #      no conversion from the number of parameters (which provide a basis for such adjustments) to the number of
+      #      bins (which would be needed). A Bonferroni correction would make sense, but might not be desired by all users. 
+      CI_alpha = 0.05
+      CI_pred_values <- apply(pred_values, 1, quantile, probs = c(CI_alpha/2, 1 - CI_alpha/2))
+      CI_pred_values <- t(CI_pred_values)
+      results$count.data.summed$pred.low <- CI_pred_values[,1]
+      results$count.data.summed$pred.high <- CI_pred_values[,2]
+      
       # Analyze residuals 
       residuals <- analyze.residuals(
         wisp.results = results,
@@ -542,6 +588,10 @@ wisp <- function(
         print.all = plot.settings.internal$print.plots,
         CI_style = plot.settings.internal$CI_style,
         dim.boundaries = plot.settings.internal$dim.bounds,
+        count.alpha.none = plot.settings.internal$count.alpha.none,
+        count.alpha.ran = plot.settings.internal$count.alpha.ran,
+        pred.alpha.none = plot.settings.internal$pred.alpha.none,
+        pred.alpha.ran = plot.settings.internal$pred.alpha.ran,
         verbose = verbose
       )
       
@@ -559,11 +609,20 @@ wisp <- function(
       }
       
       # Make parameter plots 
-      plots.parameters <- plot.parameters(
-        wisp.results = results,
-        verbose = verbose
+      plots.parameters <- do.call(
+        c, 
+        lapply(
+          results$grouping.variables$species.lvls, 
+          function(sps) {
+            plot.parameters(
+              wisp.results = results,
+              species.lvl = sps,
+              verbose = verbose
+            )
+          }
+        )
       )
-      
+     
       # Gather plots
       plots <- list(
         residuals = plots.residuals,
@@ -582,7 +641,7 @@ wisp <- function(
           wisp.results = results,
           these.contexts = NULL,
           these.speciess = NULL,
-          verbose = TRUE
+          verbose = verbose
         )
       }
       
@@ -612,6 +671,25 @@ pvalues.samples <- function(
     return(
       1 - Fn(abs.mu.obs) + Fn(-abs.mu.obs)
     )
+  }
+
+prune_samples_by_convergence <- function(
+    wisp.results,
+    threshold = 0.9,
+    verbose = TRUE
+  ) {
+    n_conv <- sum(wisp.results$diagnostics.bs$success.code == 3)
+    n_total <- nrow(wisp.results$diagnostics.bs)
+    if (n_conv / n_total < 0.9) {
+      warning_message <- paste0("Warning: Only ", n_conv, " out of ", n_total, " resamples converged to fit. Results may be unreliable. Using all resamples.")
+      if (verbose) snk.report...(warning_message)
+      warning(warning_message)
+      sample_results <- wisp.results$sample.params
+    } else {
+      if (verbose) snk.report...("Grabbing sample results, only resamples with converged fit")
+      sample_results <- wisp.results$sample.params[wisp.results$diagnostics.bs$success.code == 3,]
+    }
+    return(sample_results)
   }
 
 #' Estimate p-values and confidence intervals from resampled parameters
@@ -647,19 +725,8 @@ sample.stats <- function(
     }
     
     # Grab simulation results
-    n_conv <- sum(wisp.results$diagnostics.bs$success.code == 3)
-    n_total <- nrow(wisp.results$diagnostics.bs)
     if (conv.resamples.only) {
-      if (n_conv / n_total < 0.9) {
-        warning_message <- paste0("Warning: Only ", n_conv, " out of ", n_total, " resamples converged to fit. Results may be unreliable. Using all resamples.")
-        if (verbose) snk.report...(
-          warning_message
-        )
-        warning(warning_message)
-        conv.resamples.only <- FALSE
-      }
-      if (verbose) snk.report...("Grabbing sample results, only resamples with converged fit")
-      sample_results <- wisp.results$sample.params[wisp.results$diagnostics.bs$success.code == 3,]
+      sample_results <- prune_samples_by_convergence(wisp.results, verbose = verbose)
     } else {
       if (verbose) snk.report...("Grabbing sample results")
       sample_results <- wisp.results$sample.params
@@ -842,7 +909,7 @@ analyze.residuals <- function(
       
       # Create the ggplot
       resid_plot <- ggplot(df, aes(x = theoretical, y = sample, color = group)) +
-        geom_point(size = 1.5) +  
+        geom_point(size = 1.5, na.rm = TRUE) +  
         geom_abline(intercept = mean_resid, slope = sd_resid, color = "black", linewidth = 0.8, linetype = "dashed") +  
         labs(
           y = "Ordered Log-residuals",
@@ -880,10 +947,10 @@ analyze.residuals <- function(
     for (trt_lvl in wisp.results$treatment$names) {
       mask_list[[paste0("treatment_", trt_lvl)]] <- wisp.results$count.data.summed$treatment == trt_lvl
     }
-    for (gvp_lvl in wisp.results$grouping.variables$context.lvls) {
-      for (gv_lvl in wisp.results$grouping.variables$species.lvls) {
-        mask_list[[paste0(gvp_lvl,"_",gv_lvl)]] <- wisp.results$count.data.summed$species == gv_lvl & 
-          wisp.results$count.data.summed$context == gvp_lvl
+    for (cxt_lvl in wisp.results$grouping.variables$context.lvls) {
+      for (sps_lvl in wisp.results$grouping.variables$species.lvls) {
+        mask_list[[paste0(cxt_lvl, "_", sps_lvl)]] <- wisp.results$count.data.summed$species == sps_lvl & 
+          wisp.results$count.data.summed$context == cxt_lvl
       }
     }
     
@@ -1018,6 +1085,14 @@ plot.ratecount <- function(
     if (sum(colnames(df) == pred.type) == 0) stop("pred.type not found in count.data.summed")
     if (sum(colnames(df) == count.type) == 0) stop("count.type not found in count.data.summed")
     
+    # Convert CI, if needed
+    if (all(c("pred.low", "pred.high") %in% colnames(df))) {
+      if (pred.type != "pred.log") {
+        df[,"pred.low"] <- exp(df[,"pred.low"]) - 1
+        df[,"pred.high"] <- exp(df[,"pred.high"]) - 1
+      }
+    }
+    
     # aes (aesthetics) settings 
     make_context_ref <- FALSE
     if (is.na(count.alpha.ran)) count.alpha.ran <- 0.25
@@ -1032,7 +1107,8 @@ plot.ratecount <- function(
     if (sum(df[,"ran"] == "none") == 0) {
       make_context_ref <- FALSE
     }
-    count_size <- 1.5
+    count_size <- wisp.results$plot.settings$count_size
+    count_jitter <- wisp.results$plot.settings$count_jitter
     ran_size <- 0.75
     ran_linetype <- "longdash"
     col_fixEff_ref <- "black"
@@ -1080,19 +1156,21 @@ plot.ratecount <- function(
       if (length(non_ts) > 1) {
         non_ts <- non_ts[1]
       }
-      fix_lvls_ordered <- wisp.results$fix$lvls[c(non_ts, wisp.results$fix$names[wisp.results$fix$names != non_ts])]
-      for (trt in c(1:n_trt)) {
-        this_trt <- c()
-        for (lvl in seq_along(fix_lvls_ordered)) {
-          this_trt_mask <- fix_lvls_ordered[[lvl]] %in% treatment_components[[trt]]
-          this_trt <- c(this_trt, fix_lvls_ordered[[lvl]][this_trt_mask])
+      if (length(non_ts) > 0) {
+        fix_lvls_ordered <- wisp.results$fix$lvls[c(non_ts, wisp.results$fix$names[wisp.results$fix$names != non_ts])]
+        for (trt in c(1:n_trt)) {
+          this_trt <- c()
+          for (lvl in seq_along(fix_lvls_ordered)) {
+            this_trt_mask <- fix_lvls_ordered[[lvl]] %in% treatment_components[[trt]]
+            this_trt <- c(this_trt, fix_lvls_ordered[[lvl]][this_trt_mask])
+          }
+          treatment_components[[trt]] <- this_trt
         }
-        treatment_components[[trt]] <- this_trt
       }
     }
     treatment_colors <- "black"
     # ... if > 2 fixed effects, use an unstructured color range
-    if (n_fe > 2) {
+    if (n_fe > 2 || n_fe == 1) {
       n_hues <- length(treatment_levels)
       n_colors <- n_hues
       colors_hues <- seq(0,360,length.out = n_hues + 2)[2:(n_hues+1)]
@@ -1170,7 +1248,7 @@ plot.ratecount <- function(
         geom_jitter(
           data = df[ref_idx_cxt & df[,"ran"] == "none", ], 
           aes(x = bin, y = .data[[count.type]], color = species), 
-          width = 0.5, height = 0, alpha = count.alpha.none, size = count_size, na.rm = TRUE
+          width = count_jitter, height = 0, alpha = count.alpha.none, size = count_size, na.rm = TRUE
         ) +  
         geom_line(
           data = df[ref_idx_cxt & df[,"ran"] == "none", ],  
@@ -1188,7 +1266,7 @@ plot.ratecount <- function(
           geom_jitter(
             data = df[ ref_idx_cxt & df[,"ran"] == rl, ], 
             aes(x = bin, y = .data[[count.type]], color = species), 
-            width = 0.5, height = 0, alpha = count.alpha.ran, size = count_size, na.rm = TRUE
+            width = count_jitter, height = 0, alpha = count.alpha.ran, size = count_size, na.rm = TRUE
           ) + 
           geom_line(
             data = df[ ref_idx_cxt & df[,"ran"] == rl, ],                
@@ -1277,7 +1355,7 @@ plot.ratecount <- function(
             geom_jitter(
               data = df[gvf_idx_cxt_noRanEff & df[,"treatment"] == fe_name, ], 
               aes(x = bin, y = .data[[count.type]], color = treatment), 
-              width = 0.5, height = 0, alpha = count.alpha.none, size = count_size, na.rm = TRUE
+              width = count_jitter, height = 0, alpha = count.alpha.none, size = count_size, na.rm = TRUE
             ) +  
             labs(y = y_lab, x = "Bin") +
             theme_minimal() 
@@ -1288,7 +1366,7 @@ plot.ratecount <- function(
               geom_jitter(
                 data = df[gvf_idx_cxt & df[,"ran"] == rl & df[,"treatment"] == fe_name, ], 
                 aes(x = bin, y = .data[[count.type]], color = treatment), 
-                width = 0.5, height = 0, alpha = count.alpha.ran, size = count_size, na.rm = TRUE
+                width = count_jitter, height = 0, alpha = count.alpha.ran, size = count_size, na.rm = TRUE
               ) + 
               geom_line(
                 data = df[ gvf_idx_cxt & df[,"ran"] == rl & df[,"treatment"] == fe_name, ],                
@@ -1297,10 +1375,24 @@ plot.ratecount <- function(
               )  
           }
           
+        } else {
+          
+          # Add 95% CI shading, if available
+          if (all(c("pred.low", "pred.high") %in% colnames(df))) {
+            plot <- plot + 
+              geom_ribbon(
+                data = df[gvf_idx_cxt_noRanEff & df[,"treatment"] == fe_name, ], 
+                aes(x = bin, ymin = .data[["pred.low"]], ymax = .data[["pred.high"]], fill = treatment), 
+                alpha = 0.2, na.rm = TRUE
+              ) 
+            
+          }
+          
         }
         
       }
       
+      # Handle coloring
       if (length(treatment_levels) < 2) {
         plot <- plot + theme(legend.position = "none")
         plot <- plot + scale_color_manual(
@@ -1313,8 +1405,24 @@ plot.ratecount <- function(
           values = treatment_colors
         )
       }
+      if (all(c("pred.low", "pred.high") %in% colnames(df)) && CI_style) {
+        if (length(treatment_levels) < 2) {
+          plot <- plot + scale_fill_manual(
+            values = treatment_colors
+          )
+        } else {
+          plot <- plot + scale_fill_manual(
+            name = "factors",
+            labels = sapply(treatment_components, function(x) paste(x, collapse = ", ")),
+            values = treatment_colors
+          )
+        }
+      }
+      
+      # Handle y-lim
       if (length(y.lim) == 2) plot <- plot + ylim(y.lim)
       
+      # Plot any ad hoc dimension boundaries (and their names) 
       if (length(dim.boundaries) > 0) {
         plot <- plot + geom_vline(
           xintercept = dim.boundaries, 
@@ -1423,6 +1531,7 @@ plot.ratecount <- function(
 #' @param wisp.results List, output of the wisp function.
 #' @param splitting_factor Character string, the name of the fixed effect by which to split the timeseries. If NULL, the first non-timeseries fixed effect is used. If "none", will not split.
 #' @param pred.type Character string, the name of the predicted rate column in the count data (e.g., "pred.log" or "pred").
+#' @param count.type Character string, the name of the observed count column in the count data (e.g., "count.log" or "count").
 #' @param print.all Logical, if TRUE, prints all plots; if FALSE, only returns plots in list without printing any. 
 #' @param verbose Logical, if TRUE, prints updates about the plotting process.
 #' @return List of ggplot objects for timeseries plots.
@@ -1430,8 +1539,9 @@ plot.ratecount <- function(
 plot.timeseries <- function(
     wisp.results, 
     splitting_factor = NULL,
-    pred.type = "pred",
-    print.all = FALSE,
+    pred.type = "pred.log",
+    count.type = "count.log",
+    print.all = TRUE,
     verbose = TRUE
   ) {
     
@@ -1464,81 +1574,187 @@ plot.timeseries <- function(
         splitting_lvl <- wisp.results[["fix"]][["lvls"]][[splitting_factor]]
         splitting_factor <- wisp.results[["fix"]][["treat.lvl"]][[splitting_factor]]
       }
+    } else if (is.null(splitting_factor) || isTRUE(splitting_factor == "none")) {
+      splitting_factor <- "none"
+      splitting_name <- splitting_factor
+      splitting_lvl <- c("all", "all")
+      splitting_factor <- c("all")
     }
-    
-    # Get timeseries levels 
-    ts <- wisp.results[["fix"]][["lvls"]][["timeseries"]]
     
     # Get treatment components and make mask for those with splitting factor
     trt_comps <- wisp.results[["treatment"]][["components"]]
     split_mask <- rep(TRUE, length(trt_comps))
-    if (!is.null(splitting_factor)) {
+    if (!is.null(splitting_factor) && splitting_name != "none") {
       for (t in seq_along(trt_comps)) {
         if (!any(trt_comps[[t]] == splitting_factor)) {
           split_mask[t] <- FALSE
         }
       }
     }
+    trt_names <- wisp.results[["treatment"]][["names"]]
+    split_names <- trt_names[split_mask]
+    
+    # Get timeseries levels 
+    ts <- wisp.results[["fix"]][["lvls"]][["timeseries"]]
+    # For each timeseries level, get treatments which include it
+    ts_treatments <- list()
+    for (tsi in seq_along(ts)) {
+      tsl <- ts[tsi]
+      trt_mask <- rep(TRUE, length(trt_comps))
+      for (t in seq_along(trt_comps)) {
+        if (!any(trt_comps[[t]] == tsl)) {
+          trt_mask[t] <- FALSE
+        }
+        if (tsi == 1 && !any(ts %in% trt_comps[[t]])) {
+          trt_mask[t] <- TRUE
+        }
+      }
+      ts_treatments[[tsl]] <- trt_names[trt_mask]
+    }
     
     # Get weight matrix to reconstruct rates
     wm <- wisp.results$weight.matrix # row i gives weights needed to compute treatment i
     n_trt <- nrow(wm)
     
-    # Get rate effects indices
-    beta_idx <- wisp.results[["param.idx0"]][["beta"]][["Rt"]]
+    # Get tpoint and rate effects indices
+    beta_tpoint_idx <- wisp.results[["param.idx0"]][["beta"]][["tpoint"]]
+    beta_rate_idx <- wisp.results[["param.idx0"]][["beta"]][["Rt"]]
     
-    # Reconstruct treatment condition rates
+    df_count <- wisp.results$count.data.summed 
+    df_count_split_mask <- df_count$treatment %in% split_names
+    df_count_ran <- unique(df_count$ran)
+    max_bin <- max(df_count$bin, na.rm = TRUE)
+    
+    # Reconstruct treatment condition rates and tpoints
     df <- data.frame()
     # ... for each context 
-    for (cxt in seq_along(beta_idx)) {
+    for (cxt in seq_along(beta_rate_idx)) {
       
       # Get indices for this context
-      beta_idx_cxt <- beta_idx[[cxt]]
+      beta_tpoint_idx_cxt <- beta_tpoint_idx[[cxt]]
+      beta_rate_idx_cxt <- beta_rate_idx[[cxt]]
+      
+      context_mask <- df_count$context == names(beta_rate_idx)[cxt]
       
       # ... for each species
-      for (sps in seq_along(beta_idx_cxt)) {
+      for (sps in seq_along(beta_rate_idx_cxt)) {
         
-        # Make effect matrix for this species
-        idx <- beta_idx_cxt[[sps]] + 1
-        ev <- wisp.results$fitted.parameters[idx]
-        em <- matrix(ev, nrow = n_trt) # columns as blocks, rows as treatments
+        # Make effect matrix for this species, rates
+        rate_idx <- beta_rate_idx_cxt[[sps]] + 1
+        rate_ev <- wisp.results$fitted.parameters[rate_idx]
+        rate_em <- matrix(rate_ev, nrow = n_trt) # columns as blocks, rows as treatments
+        
+        # Make effect matrix for this species, tpoints
+        tpoint_idx <- beta_tpoint_idx_cxt[[sps]] + 1
+        tpoint_ev <- wisp.results$fitted.parameters[tpoint_idx]
+        tpoint_em <- matrix(tpoint_ev, nrow = n_trt) # columns as blocks, rows as treatments
+        
+        species_context_mask <- context_mask & df_count$species == names(beta_rate_idx_cxt)[sps]
         
         # Find rates
-        rates <- wm %*% em # row i of wm (= trt level) dot column j of em (= block level) gives rate for trt i in block j
+        rates <- wm %*% rate_em # row i of wm (= trt level) dot column j of em (= block level) gives rate for trt i in block j
         colnames(rates) <- paste0("Block", seq_len(ncol(rates)))
         rownames(rates) <- rownames(wm)
         
+        # Find tpoints
+        tpoints <- wm %*% tpoint_em # row i of wm (= trt level) dot column j of em (= block level) gives rate for trt i in block j
+        colnames(tpoints) <- paste0("T", seq_len(ncol(tpoints)))
+        rownames(tpoints) <- rownames(wm)
+        
         split_lvl_ref_rates <- rates[!split_mask, ]
         split_lvl_trt_rates <- rates[split_mask, ]
+        split_lvl_ref_tpoints <- tpoints[!split_mask, ]
+        split_lvl_trt_tpoints <- tpoints[split_mask, ]
+        split_mask_ref <- species_context_mask & !df_count_split_mask
+        split_mask_trt <- species_context_mask & df_count_split_mask
         
-        for (b in c(1:ncol(rates))) {
-          df <- rbind(
-            df,
-            data.frame(
-              timeseries = ts,
-              rate = split_lvl_ref_rates[seq(1, length(ts)), b],
-              block = b,
-              splitting_factor = splitting_lvl[1],
-              context = names(beta_idx)[cxt],
-              species = names(beta_idx_cxt)[sps]
-            )
-          )
-          df <- rbind(
-            df,
-            data.frame(
-              timeseries = ts,
-              rate = split_lvl_trt_rates[seq(1, length(ts)), b],
-              block = b,
-              splitting_factor = splitting_lvl[2],
-              context = names(beta_idx)[cxt],
-              species = names(beta_idx_cxt)[sps]
-            )
-          )
+        n_b <- ncol(rates)
+        for (tsi in seq_along(ts)) {
+          tsl <- ts[tsi]
+          ts_trt_mask <- df_count$treatment %in% ts_treatments[[tsi]]
+          for (b in c(1:n_b)) {
+            if (any(!split_mask)) {
+              if (n_b > 1) {
+                these_rates <- split_lvl_ref_rates[tsi, b]
+              } else {
+                these_rates <- split_lvl_ref_rates[tsi]
+              }
+              if (b == 1) {
+                if (length(dim(split_lvl_ref_tpoints)) > 0) {tp <- split_lvl_ref_tpoints[tsi, b]} 
+                else {tp <- split_lvl_ref_tpoints[tsi]}
+                these_bins <- seq(1, floor(tp))
+              } else if (b == n_b) {
+                if (n_b == 2) {these_bins <- seq(ceiling(split_lvl_trt_tpoints[tsi]), max_bin)}
+                else {these_bins <- seq(ceiling(split_lvl_trt_tpoints[tsi, b-1]), max_bin)}
+              } else {
+                these_bins <- seq(ceiling(split_lvl_ref_tpoints[tsi, b-1]), floor(split_lvl_ref_tpoints[tsi, b]))
+              } 
+              bin_mask_ref <- df_count$bin %in% these_bins & split_mask_ref & ts_trt_mask
+              for (rl in df_count_ran) {
+                bin_mask_ref_ran <- bin_mask_ref & df_count$ran == rl
+                if (any(bin_mask_ref_ran)) {
+                  df <- rbind(
+                    df,
+                    data.frame(
+                      timeseries = tsl,
+                      rate = these_rates,
+                      count = mean(df_count[bin_mask_ref_ran, count.type], na.rm = TRUE),
+                      block = b,
+                      ran = rl,
+                      splitting_factor = splitting_lvl[1],
+                      context = names(beta_rate_idx)[cxt],
+                      species = names(beta_rate_idx_cxt)[sps]
+                    )
+                  )
+                }
+              }
+              
+            }
+            if (any(split_mask)) {
+              if (n_b > 1) {
+                these_rates <- split_lvl_trt_rates[tsi, b]
+              } else {
+                these_rates <- split_lvl_trt_rates[tsi]
+              }
+              if (b == 1) {
+                if (length(dim(split_lvl_trt_tpoints)) > 0) {tp <- split_lvl_trt_tpoints[tsi, b]} 
+                else {tp <- split_lvl_trt_tpoints[tsi]}
+                these_bins <- seq(1, floor(tp))
+              } else if (b == n_b) {
+                if (n_b == 2) {these_bins <- seq(ceiling(split_lvl_trt_tpoints[tsi]), max_bin)}
+                else {these_bins <- seq(ceiling(split_lvl_trt_tpoints[tsi, b-1]), max_bin)}
+              } else {
+                these_bins <- seq(ceiling(split_lvl_trt_tpoints[tsi, b-1]), floor(split_lvl_trt_tpoints[tsi, b]))
+              } 
+              bin_mask_trt <- df_count$bin %in% these_bins & split_mask_trt & ts_trt_mask
+              for (rl in df_count_ran) {
+                bin_mask_trt_ran <- bin_mask_trt & df_count$ran == rl
+                if (any(bin_mask_trt_ran)) {
+                  df <- rbind(
+                    df,
+                    data.frame(
+                      timeseries = tsl,
+                      rate = these_rates,
+                      count = mean(df_count[bin_mask_trt_ran, count.type], na.rm = TRUE),
+                      block = b,
+                      ran = rl,
+                      splitting_factor = splitting_lvl[2],
+                      context = names(beta_rate_idx)[cxt],
+                      species = names(beta_rate_idx_cxt)[sps]
+                    )
+                  )
+                }
+              }
+              
+            }
+          }
         }
         
       }
       
     }
+    
+    df <- na.omit(df)
     
     if (pred.type == "pred") df$rate <- exp(df$rate) - 1
     df$timeseries <- as.numeric(df$timeseries)
@@ -1554,15 +1770,97 @@ plot.timeseries <- function(
     for (cxt in unique(df$context)) {
       dfc <- df[df$context == cxt,]
       for (sps in unique(dfc$species)) {
+        
+        # Make plot title
         if (length(unique(df$context)) > 1) {
           sps_title <- paste0("Predicted rates by time for ", sps, " within ", cxt)
         } else {
           sps_title <- paste0("Predicted rates by time for ", sps)
         }
-        plt <- ggplot(dfc[dfc$species == sps,], aes(x = timeseries, y = rate, color = splitting_factor, group = interaction(splitting_factor, block))) +
+        
+        # Make colors
+        
+        # ... with splitting factor
+        if (splitting_name != "none") {
+          
+          blks <- sort(unique(dfc[dfc$species == sps, "block"]), decreasing = TRUE)
+          InterX <- expand.grid(blks, splitting_lvl, stringsAsFactors = FALSE)
+          color_name <- paste0("block by ", splitting_name)
+          color_lvl <- paste0(InterX[[1]], ", ", InterX[[2]])
+          
+          n_hues <- length(splitting_lvl)                                   # Must be 2
+          n_lum <- length(blks)
+          n_chroma <- n_lum 
+          n_colors <- n_hues * n_lum
+          colors_hues <- seq(120,240,length.out = n_hues)[1:n_hues]         # scale of 0:360
+          colors_lum <- seq(20,80,length.out = n_lum)[1:n_lum]              # scale of 0:100
+          colors_chroma <- seq(20,80,length.out = n_chroma)[1:n_chroma]     # scale of 0:100
+          splt1_colors <- colorspace::sequential_hcl(
+            n = n_lum,
+            h = colors_hues[1],
+            c = c(colors_chroma[1], colors_chroma[n_chroma]),
+            l = c(colors_lum[n_lum], colors_lum[n_lum]),
+            fixup = TRUE,
+            alpha = 1,
+            palette = NULL,
+            rev = FALSE,
+            register = ""
+          )
+          splt2_colors <- colorspace::sequential_hcl(
+            n = n_lum,
+            h = colors_hues[n_hues],
+            c = c(colors_chroma[1], colors_chroma[n_chroma]),
+            l = c(colors_lum[n_lum], colors_lum[1]),
+            fixup = TRUE,
+            alpha = 1,
+            palette = NULL,
+            rev = FALSE,
+            register = ""
+          )
+          color_values <- c(splt1_colors, splt2_colors)
+          names(color_values) <- color_lvl
+          
+        } else {
+          
+          # ... no splitting factor
+          color_name <- "spatial region"
+          blks <- sort(unique(dfc[dfc$species == sps, "block"]))
+          color_lvl <- blks
+          n_hues <- length(color_lvl)
+          n_colors <- n_hues
+          colors_hues <- seq(0,360,length.out = n_hues + 2)[2:(n_hues+1)]
+          color_values <- colorspace::qualitative_hcl(
+            n = n_colors,
+            h = c(colors_hues[1], colors_hues[n_colors]),
+            c = 80,
+            l = 60,
+            fixup = TRUE,
+            alpha = 1,
+            palette = NULL,
+            rev = FALSE,
+            register = ""
+          )
+          names(color_values) <- color_lvl
+          
+        }
+        
+        # Make plot
+        if (splitting_name != "none") {
+          plt <- ggplot(
+            dfc[dfc$species == sps,], 
+            aes(x = timeseries, y = rate, color = interaction(block, splitting_factor, sep = ", "))
+          )
+        } else {
+          plt <- ggplot(
+            dfc[dfc$species == sps,], 
+            aes(x = timeseries, y = rate, color = block)
+          )
+        }
+        plt <- plt  + 
           geom_line(linewidth = 1) +
+          geom_point(aes(y = count)) +
           scale_x_continuous(breaks = unique(dfc$timeseries)) +
-          facet_grid(block ~., space = "free_y") + #  scales = "free_y",
+          #facet_grid(block ~., space = "free_y") + #  scales = "free_y",
           theme_minimal() +
           theme(
             plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
@@ -1573,13 +1871,13 @@ plot.timeseries <- function(
             panel.background = ggplot2::element_rect(fill = "white", colour = NA),
             plot.background  = ggplot2::element_rect(fill = "white", colour = NA)
           ) +
-          labs(y = y_lab, x = "Time point", color = splitting_name) +
+          labs(y = y_lab, x = "Time point", color = color_name) +
           ggtitle(sps_title) + 
           scale_color_manual(
-            labels = splitting_lvl,
-            values = c("green3", "dodgerblue")
-          ) + 
-          geom_hline(yintercept = 0, color = "gray", linewidth = 1, linetype = "dashed")
+            labels = color_lvl,
+            values = color_values
+          ) 
+        
         out[[paste0("plot_",pred.type,"_context_",cxt,"_timeseries_",sps)]] <- plt
         if (print.all) print(plt)
       }
@@ -1601,6 +1899,7 @@ plot.timeseries <- function(
 #' @param violin Logical, if TRUE, plots violin plots for each parameter; if FALSE, uses bar plots. 
 #' @param print.plots Logical, if TRUE, prints the plots to the console; if FALSE, only returns a list of plots without printing.
 #' @param species.classes List, a list of character vectors specifying which species levels to include together in plots. If NULL, all species levels are included in a single plot.
+#' @param mc_type Character string, type of model component to plot ("rate", "tpoint", "tslope"). If NULL, all model components are plotted.
 #' @param verbose Logical, if TRUE, prints updates about the plotting process.
 #' @return List of ggplot objects for parameter plots.
 #' @export
@@ -1610,6 +1909,7 @@ plot.parameters <- function(
     violin = TRUE,
     print.plots = FALSE,
     species.classes = NULL,
+    mc_type = NULL,
     verbose = TRUE
   ) {
     
@@ -1651,12 +1951,12 @@ plot.parameters <- function(
     
     # Format parameter names for nice printing
     param_names_saved <- param_names
-    for (gvp_lvl in as.character(wisp.results$grouping.variables$context.lvls)) {
-      param_names <- gsub(paste0("baseline_",gvp_lvl,"_"), "", param_names)
-      param_names <- gsub(paste0("_",gvp_lvl), "", param_names)
+    for (cxt_lvl in as.character(wisp.results$grouping.variables$context.lvls)) {
+      param_names <- gsub(paste0("baseline_", cxt_lvl, "_"), "", param_names)
+      param_names <- gsub(paste0("_", cxt_lvl), "", param_names)
     }
-    for (gv_lvl in as.character(wisp.results$grouping.variables$species.lvls)) {
-      param_names <- gsub(paste0("_",gv_lvl,"_"), "_", param_names)
+    for (sps_lvl in as.character(wisp.results$grouping.variables$species.lvls)) {
+      param_names <- gsub(paste0("_", sps_lvl, "_"), "_", param_names)
     }
     param_names <- gsub(paste0("wfactor_point_"), "level_", param_names)
     param_names <- gsub(paste0("wfactor_rate_"), "level_", param_names)
@@ -1689,29 +1989,29 @@ plot.parameters <- function(
       }
     }
     if (length(species.classes) == 0 || length(species.lvl) != 0) {
-      # If classes not provided, plot all speciesren together
+      # If classes not provided, plot all species together
       # If a single species is provided for plotting, disregard any classes provided
       species.classes <- list(all = as.character(wisp.results$grouping.variables$species.lvls))
       }
     species_class_names <- names(species.classes)
     
-    for (gvp_lvl in as.character(wisp.results$grouping.variables$context.lvls)) {
+    parameter_comparison_plots <- list()
+    
+    for (cxt_lvl in as.character(wisp.results$grouping.variables$context.lvls)) {
       
-      for (cc in 1:length(species.classes)) {
+      for (cc in seq_along(species.classes)) {
         
         baseline_df <- data.frame() 
         ranEff_df <- data.frame() 
         
-        parameter_comparison_plots <- list()
-        
         # Make baseline and ranEff data frames ####
         
-        for (gv_lvl in species.classes[[cc]]) {
+        for (sps_lvl in species.classes[[cc]]) {
           
-          if (length(species.lvl) != 0 && gv_lvl != species.lvl) next
+          if (length(species.lvl) != 0 && sps_lvl != species.lvl) next
           
           # Make data frame for baseline plot
-          baseline_mask <- grepl(gvp_lvl, param_names_saved) & grepl(gv_lvl, param_names_saved) & grepl("baseline", param_names_saved) 
+          baseline_mask <- grepl(cxt_lvl, param_names_saved) & grepl(sps_lvl, param_names_saved) & grepl("baseline", param_names_saved) 
           
           # Baseline tpoint parameters
           if (violin) {
@@ -1728,7 +2028,7 @@ plot.parameters <- function(
             value = baseline_fitted_tpoint, 
             parameter = params,
             type = rep("tpoint", length(baseline_fitted_tpoint)),
-            species = rep(gv_lvl, length(baseline_fitted_tpoint))
+            species = rep(sps_lvl, length(baseline_fitted_tpoint))
           )
           if (print_stats) {
             if (violin) {
@@ -1758,7 +2058,7 @@ plot.parameters <- function(
             value = baseline_fitted_rate, 
             parameter = params,
             type = rep("rate", length(baseline_fitted_rate)),
-            species = rep(gv_lvl, length(baseline_fitted_rate))
+            species = rep(sps_lvl, length(baseline_fitted_rate))
           )
           if (print_stats) {
             if (violin) {
@@ -1788,7 +2088,7 @@ plot.parameters <- function(
             value = baseline_fitted_slope, 
             parameter = params,
             type = rep("tslope", length(baseline_fitted_slope)),
-            species = rep(gv_lvl, length(baseline_fitted_slope))
+            species = rep(sps_lvl, length(baseline_fitted_slope))
           )
           if (print_stats) {
             if (violin) {
@@ -1804,7 +2104,7 @@ plot.parameters <- function(
           baseline_df <- rbind(baseline_df, baseline_fitted_slope_df) 
           
           # Make data frame for ranEff plot
-          ranEff_mask <- grepl(gv_lvl, param_names_saved) & grepl("wfactor", param_names_saved) 
+          ranEff_mask <- grepl(sps_lvl, param_names_saved) & grepl("wfactor", param_names_saved) 
           
           # Random effects on tpoints
           if (violin) {
@@ -1823,7 +2123,7 @@ plot.parameters <- function(
               value = ranEff_fitted_point, 
               parameter = params, 
               type = rep("point", length(ranEff_fitted_point)),
-              species = rep(gv_lvl, length(ranEff_fitted_point))
+              species = rep(sps_lvl, length(ranEff_fitted_point))
             )
             if (print_stats) {
               if (violin) {
@@ -1854,7 +2154,7 @@ plot.parameters <- function(
             value = ranEff_fitted_rate, 
             parameter = params, 
             type = rep("rate", length(ranEff_fitted_rate)),
-            species = rep(gv_lvl, length(ranEff_fitted_rate))
+            species = rep(sps_lvl, length(ranEff_fitted_rate))
           )
           if (print_stats) {
             if (violin) {
@@ -1884,7 +2184,7 @@ plot.parameters <- function(
             value = ranEff_fitted_slope, 
             parameter = params, 
             type = rep("slope", length(ranEff_fitted_slope)),
-            species = rep(gv_lvl, length(ranEff_fitted_slope))
+            species = rep(sps_lvl, length(ranEff_fitted_slope))
           )
           if (print_stats) {
             if (violin) {
@@ -1911,9 +2211,16 @@ plot.parameters <- function(
         
         # Make baseline plots ####
         
-        title_bl <- paste0("Baseline parameters, fitted (", gvp_lvl, ")")
-        plot_name <- paste0("plot_baseline_", gvp_lvl, "_", species_class_names[cc])
-        if (length(species.lvl) != 0) plot_name <- paste0("plot_baseline_", gvp_lvl, "_", species.lvl)
+        title_bl <- paste0("Baseline parameters, fitted (", cxt_lvl, ")")
+        plot_name <- paste0("plot_baseline_", cxt_lvl, "_", species_class_names[cc])
+        if (length(species.lvl) != 0) {
+          title_bl <- paste0("Baseline parameters, fitted (", cxt_lvl, ", ", species.lvl, ")")
+          plot_name <- paste0("plot_baseline_", cxt_lvl, "_", species.lvl)
+        }
+        
+        if (!is.null(mc_type)) {
+          baseline_df <- baseline_df[baseline_df$type == mc_type, ]
+        }
         
         parameter_comparison_plots[[plot_name]] <- ggplot(baseline_df, aes(x = parameter, y = value, fill = type)) 
         if (violin) {
@@ -1956,9 +2263,16 @@ plot.parameters <- function(
         
         # Make ranEff plots ####
         
-        title_ran <- paste0("RanEff parameters, fitted (", gvp_lvl, ")")
-        plot_name <- paste0("plot_ranEff_", gvp_lvl, "_", species_class_names[cc])
-        if (length(species.lvl) != 0) plot_name <- paste0("plot_ranEff_", gvp_lvl, "_", species.lvl)
+        title_ran <- paste0("RanEff parameters, fitted (", cxt_lvl, ")")
+        plot_name <- paste0("plot_ranEff_", cxt_lvl, "_", species_class_names[cc])
+        if (length(species.lvl) != 0) {
+          title_ran <- paste0("RanEff parameters, fitted (", cxt_lvl, ", ", species.lvl, ")")
+          plot_name <- paste0("plot_ranEff_", cxt_lvl, "_", species.lvl)
+        }
+        
+        if (!is.null(mc_type)) {
+          ranEff_df <- ranEff_df[ranEff_df$type == mc_type, ]
+        }
         
         parameter_comparison_plots[[plot_name]] <- ggplot(ranEff_df, aes(x = parameter, y = value, fill = type)) 
         if (violin) {
@@ -2011,14 +2325,14 @@ plot.parameters <- function(
           
           # Make treatment data frames ####
           treatment_dfL[[treatment]] <- data.frame()
-          for (gv_lvl in species.classes[[cc]]) {
+          for (sps_lvl in species.classes[[cc]]) {
             
             # If only printing one species level, skip the rest
-            if (length(species.lvl) != 0 && gv_lvl != species.lvl) next
+            if (length(species.lvl) != 0 && sps_lvl != species.lvl) next
             
             # Grab index masks
-            treatment_mask <- grepl(gvp_lvl, param_names_saved) & 
-              grepl(gv_lvl, param_names_saved) & 
+            treatment_mask <- grepl(cxt_lvl, param_names_saved) & 
+              grepl(sps_lvl, param_names_saved) & 
               grepl("beta", param_names_saved) & 
               !grepl("beta_shape", param_names_saved) &
               grepl(gsub("\\*", "\\\\*", paste0("_",treatment,"_")), param_names_saved)
@@ -2038,7 +2352,7 @@ plot.parameters <- function(
               value = treatment_fitted, 
               parameter = params, 
               type = rep("rate", length(treatment_fitted)),
-              species = rep(gv_lvl, length(treatment_fitted))
+              species = rep(sps_lvl, length(treatment_fitted))
             )
             if (print_stats) {
               if (violin) {
@@ -2068,7 +2382,7 @@ plot.parameters <- function(
               value = treatment_fitted, 
               parameter = params, 
               type = rep("tslope", length(treatment_fitted)),
-              species = rep(gv_lvl, length(treatment_fitted))
+              species = rep(sps_lvl, length(treatment_fitted))
             )
             if (print_stats) {
               if (violin) {
@@ -2098,7 +2412,7 @@ plot.parameters <- function(
               value = treatment_fitted, 
               parameter = params, 
               type = rep("tpoint", length(treatment_fitted)),
-              species = rep(gv_lvl, length(treatment_fitted))
+              species = rep(sps_lvl, length(treatment_fitted))
             )
             if (print_stats) {
               if (violin) {
@@ -2116,9 +2430,16 @@ plot.parameters <- function(
           }
           
           # Make treatment plots ####
-          title_fe <- paste0("treatment parameters, fitted (", gvp_lvl, ", ", treatment, ")")
-          plot_name <- paste0("plot_treatment_",treatment,"_",gvp_lvl, "_", species_class_names[cc])
-          if (length(species.lvl) != 0) plot_name <- paste0("plot_treatment_",treatment,"_", gvp_lvl, "_", species.lvl)
+          title_fe <- paste0("Treatment parameters (", cxt_lvl, ", ", treatment, ")")
+          plot_name <- paste0("plot_treatment_", treatment, "_", cxt_lvl, "_", species_class_names[cc])
+          if (length(species.lvl) != 0) {
+            title_fe <- paste0("Treatment parameters (", cxt_lvl, ", ", species.lvl, ", ", treatment, ")")
+            plot_name <- paste0("plot_treatment_", treatment, "_" , cxt_lvl, "_", species.lvl)
+          }
+          
+          if (!is.null(mc_type)) {
+            treatment_dfL[[treatment]] <- treatment_dfL[[treatment]][treatment_dfL[[treatment]]$type == mc_type, ]
+          }
           
           treatment_dfL[[treatment]]$species <- as.factor(treatment_dfL[[treatment]]$species)
           treatment_dfL[[treatment]]$parameter <- as.factor(treatment_dfL[[treatment]]$parameter)
@@ -2168,19 +2489,19 @@ plot.parameters <- function(
           
         }
         
-        # Print and return raw plots ####
-        
-        if (print.plots) {
-          for (i in seq_along(parameter_comparison_plots)) {
-            print(parameter_comparison_plots[[i]])
-          }
-        }
-        
-        return(parameter_comparison_plots)
-        
       }
       
     }
+    
+    # Print and return raw plots ####
+    
+    if (print.plots) {
+      for (i in seq_along(parameter_comparison_plots)) {
+        print(parameter_comparison_plots[[i]])
+      }
+    }
+    
+    return(parameter_comparison_plots)
     
   }
 
@@ -2371,27 +2692,27 @@ plot.species.summary <- function(
     }
     
     # Specify context and species levels to summarize
-    gvp_lvls <- as.character(wisp.results$grouping.variables$context.lvls)
-    if (length(these.contexts) != 0) gvp_lvls <- gvp_lvls[gvp_lvls %in% these.contexts]
-    gv_lvls <- as.character(wisp.results$grouping.variables$species.lvls)
-    if (length(these.speciess) != 0) gv_lvls <- gv_lvls[gv_lvls %in% these.speciess]
+    cxt_lvls <- as.character(wisp.results$grouping.variables$context.lvls)
+    if (length(these.contexts) != 0) cxt_lvls <- cxt_lvls[cxt_lvls %in% these.contexts]
+    sps_lvls <- as.character(wisp.results$grouping.variables$species.lvls)
+    if (length(these.speciess) != 0) sps_lvls <- sps_lvls[sps_lvls %in% these.speciess]
     
-    for (gvp_lvl in gvp_lvls) {
+    for (cxt_lvl in cxt_lvls) {
       
-      if (verbose) snk.report(paste0("Printing species summary plots for ", gvp_lvl, ": "))
+      if (verbose) snk.report(paste0("Printing species summary plots for ", cxt_lvl, ": "))
       first_print <- TRUE
       
-      for (gv_lvl in gv_lvls) {
+      for (sps_lvl in sps_lvls) {
         
         if (verbose && first_print) {
-          cat(gv_lvl)
+          cat(sps_lvl)
           first_print <- FALSE
         } else if (verbose) {
-          cat(",", gv_lvl)
+          cat(",", sps_lvl)
         }
         wisp.results$plots$parameters <- plot.parameters(
           wisp.results = wisp.results,
-          species.lvl = gv_lvl, 
+          species.lvl = sps_lvl, 
           print.plots = FALSE, 
           verbose = FALSE 
         )
@@ -2402,14 +2723,14 @@ plot.species.summary <- function(
         p3 <- wisp.results$plots$residuals
         
         # Find plots for this context
-        p_mask1 <- grepl(gvp_lvl, names(p1))
-        p_mask2 <- grepl(gvp_lvl, names(p2))
-        p_mask3 <- grepl(gvp_lvl, names(p3))
+        p_mask1 <- grepl(cxt_lvl, names(p1))
+        p_mask2 <- grepl(cxt_lvl, names(p2))
+        p_mask3 <- grepl(cxt_lvl, names(p3))
         
         # Find plots for this species
-        c_mask1 <- grepl(gv_lvl, names(p1))
-        c_mask2 <- grepl(gv_lvl, names(p2)) 
-        c_mask3 <- grepl(gv_lvl, names(p3))
+        c_mask1 <- grepl(sps_lvl, names(p1))
+        c_mask2 <- grepl(sps_lvl, names(p2)) 
+        c_mask3 <- grepl(sps_lvl, names(p3))
         
         # Find residual hist and qq plots 
         histqq <- grepl("hist|qq", names(p3))
@@ -2475,64 +2796,92 @@ plot.MCMC.walks <- function(
     high_val <- 20 < colMeans(sampled_params)
     
     # Down-sample 
-    these_rows <- as.integer(seq(1, nrow(sampled_params), length.out = 1000))
-    sampled_params_high <- sampled_params[these_rows,high_val]
-    sampled_params_low <- sampled_params[these_rows,!high_val]
-    if (length(low_samples) > 1) these_cols <- low_samples
-    else these_cols <- sample(1:ncol(sampled_params_low), low_samples, replace = FALSE)
-    sampled_params_low <- sampled_params_low[,these_cols]
-    sampled_params_low <- sampled_params_low[,order(colMeans(abs(sampled_params_low)), decreasing = TRUE)]
-    
-    # Make long-format data frame
-    walks_low <- data.frame(
-      value = c(sampled_params_low),
-      param = as.factor(rep(1:ncol(sampled_params_low), each = nrow(sampled_params_low))),
-      step = rep(these_rows, ncol(sampled_params_low))
-    )
-    walks_high <- data.frame(
-      value = c(sampled_params_high),
-      param = as.factor(rep(1:ncol(sampled_params_high), each = nrow(sampled_params_high))),
-      step = rep(these_rows, ncol(sampled_params_high))
-    )
+    if (nrow(sampled_params) <= 1000) {
+      these_rows <- 1:nrow(sampled_params)
+    } else {
+      these_rows <- as.integer(seq(1, nrow(sampled_params), length.out = 1000))
+    }
     
     # Make colors 
     getPalette <- colorRampPalette(RColorBrewer::brewer.pal(9, "Set1"))  # Set1 has max 9 colors
-    colors_low <- getPalette(ncol(sampled_params_low))
-    colors_high <- getPalette(ncol(sampled_params_high))
     
-    # Make plot
-    plot.walks.parameters_low <- ggplot(
-      data = walks_low, 
-      aes(x = step, y = value, group = param, color = param)
-    ) + 
-      geom_line() + 
-      ggtitle("Parameter Walks from MCMC Estimation, Low-Values") +
-      scale_color_manual(values = colors_low) +
-      theme_minimal() + 
-      theme(
-        plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
-        axis.title = element_text(size = wisp.results$plot.settings$axis_size),
-        axis.text = element_text(size = wisp.results$plot.settings$axis_size),
-        legend.title = element_text(size = wisp.results$plot.settings$legend_size),
-        legend.text = element_text(size = wisp.results$plot.settings$legend_size),
-        legend.position = "none"
+    if (any(high_val)) {
+      
+      # Subset data
+      sampled_params_high <- sampled_params[these_rows,high_val]
+      
+      # Make long-format data frame
+      walks_high <- data.frame(
+        value = c(sampled_params_high),
+        param = as.factor(rep(1:ncol(sampled_params_high), each = nrow(sampled_params_high))),
+        step = rep(these_rows, ncol(sampled_params_high))
       )
-    plot.walks.parameters_high <- ggplot(
-      data = walks_high, 
-      aes(x = step, y = value, group = param, color = param)
-    ) + 
-      geom_line() + 
-      ggtitle("Parameter Walks from MCMC Estimation, High-Values") +
-      scale_color_manual(values = colors_high) +
-      theme_minimal() + 
-      theme(
-        plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
-        axis.title = element_text(size = wisp.results$plot.settings$axis_size),
-        axis.text = element_text(size = wisp.results$plot.settings$axis_size),
-        legend.title = element_text(size = wisp.results$plot.settings$legend_size),
-        legend.text = element_text(size = wisp.results$plot.settings$legend_size),
-        legend.position = "none"
+      
+      # Get colors 
+      colors_high <- getPalette(ncol(sampled_params_high))
+      
+      # Make plot 
+      plot.walks.parameters_high <- ggplot(
+          data = walks_high, 
+          aes(x = step, y = value, group = param, color = param)
+        ) + 
+        geom_line() + 
+        ggtitle("Parameter Walks from MCMC Estimation, High-Values") +
+        scale_color_manual(values = colors_high) +
+        theme_minimal() + 
+        theme(
+          plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+          axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+          axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+          legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+          legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+          legend.position = "none"
+        )
+      
+    } else {
+      plot.walks.parameters_high <- NULL
+    }
+    
+    if (any(!high_val)) {
+      
+      # Subset data
+      sampled_params_low <- sampled_params[these_rows,!high_val]
+      if (length(low_samples) > 1) these_cols <- low_samples
+      else these_cols <- sample(1:ncol(sampled_params_low), low_samples, replace = FALSE)
+      sampled_params_low <- sampled_params_low[,these_cols]
+      sampled_params_low <- sampled_params_low[,order(colMeans(abs(sampled_params_low)), decreasing = TRUE)]
+      
+      # Make long-format data frame
+      walks_low <- data.frame(
+        value = c(sampled_params_low),
+        param = as.factor(rep(1:ncol(sampled_params_low), each = nrow(sampled_params_low))),
+        step = rep(these_rows, ncol(sampled_params_low))
       )
+      
+      # Get colors 
+      colors_low <- getPalette(ncol(sampled_params_low))
+      
+      # Make plot
+      plot.walks.parameters_low <- ggplot(
+          data = walks_low, 
+          aes(x = step, y = value, group = param, color = param)
+        ) + 
+        geom_line() + 
+        ggtitle("Parameter Walks from MCMC Estimation, Low-Values") +
+        scale_color_manual(values = colors_low) +
+        theme_minimal() + 
+        theme(
+          plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+          axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+          axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+          legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+          legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+          legend.position = "none"
+        )
+      
+    } else {
+      plot.walks.parameters_low <- NULL
+    }
     
     # Grab trace of negloglik and normalize relative to L-BFGS value
     nll <- unlist(wisp.results[["diagnostics.MCMC"]][["neg.loglik"]])
@@ -2571,12 +2920,24 @@ plot.MCMC.walks <- function(
         legend.text = element_text(size = wisp.results$plot.settings$legend_size)
       )
     
-    if (print.plots) {
+    if (print.plots && !is.null(plot.walks.parameters_low) && !is.null(plot.walks.parameters_high)) {
       grid.arrange(
         plot.walks.parameters_low, 
         plot.walks.parameters_high, 
         plot.walks.nll,
         ncol = 1)
+    } else if (print.plots && !is.null(plot.walks.parameters_low)) {
+      grid.arrange(
+        plot.walks.parameters_low, 
+        plot.walks.nll,
+        ncol = 1)
+    } else if (print.plots && !is.null(plot.walks.parameters_high)) {
+      grid.arrange(
+        plot.walks.parameters_high, 
+        plot.walks.nll,
+        ncol = 1)
+    } else if (print.plots) {
+      print(plot.walks.nll)
     }
     
     return(
