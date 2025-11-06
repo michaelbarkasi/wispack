@@ -144,3 +144,20 @@ https://ggplot2.tidyverse.org/
 
 The MIT license  
 https://github.com/tidyverse/ggplot2
+
+<h1> Liver lobule data </h1>
+
+From Jakob El Kholtei, Colas Droin, and Felix Naef
+
+https://github.com/naef-lab/Circadian-zonation
+
+From: https://doi.org/10.1038/s42255-020-00323-1
+
+License unknown
+
+<h1> Liver lobule graphic </h1>
+
+Human Reference Atlas. (12/18/2024). Liver Lobule. NIAID NIH BIOART Source. bioart.niaid.nih.gov/bioart/565
+
+CC BY 4.0
+https://creativecommons.org/licenses/by/4.0/

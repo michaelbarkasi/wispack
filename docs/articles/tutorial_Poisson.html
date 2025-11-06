@@ -42,7 +42,7 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
     <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_liverradial.html">Rhythmic and zonated gene expression along the liver-lobule radial axis</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_liverradial.html">Radial zonation in liver lobules</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling celltypes</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
@@ -78,7 +78,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2025-11-05</h4>
+            <h4 data-toc-skip class="date">2025-11-21</h4>
       
 
       <div class="d-none name"><code>tutorial_Poisson.Rmd</code></div>
@@ -134,7 +134,7 @@ The space will be divided into 100 bins:</p>
 <span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">n_bins</span><span class="op">)</span></span></code></pre></div>
 <p>We will randomly distribute 10,000 process instances across the
 space, for an average of 100 instances per bin. The variable holding
-these positions will be called <strong>bin</strong>:</p>
+these positions will be called “bin”:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span> <span class="co"># for reproducibility</span></span>
 <span><span class="va">n_instances</span> <span class="op">&lt;-</span> <span class="fl">10000</span></span>
@@ -146,11 +146,11 @@ and suppose there is a constant variance
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>σ</mi><mi>γ</mi><mn>2</mn></msubsup><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">\sigma_\gamma^2 = 2</annotation></semantics></math>
 across the entire space. Suppose these rates
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-are 1, 5, 2, and 7. We can represent this as a vector
-<strong>lambda</strong> of length 100, with each block’s rate repeated
-twenty-five times. The process counts can be simulated for each instance
-by pulling individual process rates from a gamma distribution and then
-drawing counts from a Poisson distribution with those rates:</p>
+are 1, 5, 2, and 7. We can represent this as a vector lambda of length
+100, with each block’s rate repeated twenty-five times. The process
+counts can be simulated for each instance by pulling individual process
+rates from a gamma distribution and then drawing counts from a Poisson
+distribution with those rates:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lambda</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">5</span>, <span class="fl">2</span>, <span class="fl">7</span><span class="op">)</span>, each <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">/</span><span class="fl">4</span><span class="op">)</span></span>
 <span><span class="va">var_gamma</span> <span class="op">&lt;-</span> <span class="fl">2</span></span>
@@ -160,14 +160,13 @@ drawing counts from a Poisson distribution with those rates:</p>
 <span>    rate <span class="op">=</span> <span class="va">lambda</span><span class="op">[</span><span class="va">bin</span><span class="op">]</span><span class="op">/</span><span class="va">var_gamma</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="va">count</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="va">n_instances</span>, <span class="va">process_lambda</span><span class="op">)</span></span></code></pre></div>
-<p>The variable <strong>count</strong> is a vector of length 10,000
-holding the observed count for each process instance. These simulated
-process counts can be combined into a dataframe
-<strong>countdata</strong>:</p>
+<p>The variable count is a vector of length 10,000 holding the observed
+count for each process instance. These simulated process counts can be
+combined into a dataframe called “countdata”:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">countdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">bin</span>, <span class="va">count</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##   bin count</span></span>
+<pre class="scroll-output"><code><span><span class="co">##   bin count</span></span>
 <span><span class="co">## 1  31     3</span></span>
 <span><span class="co">## 2  79     8</span></span>
 <span><span class="co">## 3  51     0</span></span>
@@ -211,9 +210,8 @@ each bin can be summed while maintaining a Poisson distribution.</p>
 Modeling with sigmoids
 </h2>
 <p>Wisps are mathematical models for describing gamma-distributed
-Poisson processes. The parameters used to create
-<strong>countdata</strong> can be recovered using a wisp. A wisp model
-is fit in two steps.</p>
+Poisson processes. The parameters used to create countdata can be
+recovered using a wisp. A wisp model is fit in two steps.</p>
 <p>The first is to find transition points
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>
 in count rate by looking for outliers in the ratio between the
@@ -240,14 +238,11 @@ and slope parameters
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>s</mi><mo>=</mo><mo stretchy="false" form="prefix">⟨</mo><msub><mi>s</mi><mn>1</mn></msub><mo>,</mo><mi>…</mi><mo>,</mo><msub><mi>s</mi><mi>n</mi></msub><mo stretchy="false" form="postfix">⟩</mo></mrow><annotation encoding="application/x-tex">s=\langle s_1,\ldots,s_{n}\rangle</annotation></semantics></math>.</p>
 <div class="figure">
 <img src="fig_logisticpolysig.png" alt="Demo plots of functions involved in wisp" width="90%"><p class="caption">
-</p>
-<ol style="list-style-type: upper-alpha"><li>The logistic function, used to model a single change point in gene
-expression. (B) The wisp poly-sigmoid function, built from three
+(Top) The logistic function, used to model a single change point in gene
+expression. (Bottom) The wisp poly-sigmoid function, built from three
 logistic components, representing three change points.
-
-</li></ol>
+</p>
 </div>
-
 <p>The second is to use gradient-based optimization or MCMC to find the
 parameters
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>r</mi><annotation encoding="application/x-tex">r</annotation></semantics></math>,
@@ -256,20 +251,18 @@ and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>
 which maximize the likelihood of the log transform
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>f</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>y</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mo>log</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>y</mi><mo>+</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">f(y)=\log(y+1)</annotation></semantics></math>
-of <strong>countdata$count</strong>.</p>
-<p>For this demonstration, the data in <strong>countdata</strong> has
-been explicitly constructed with the statistical structure captured by
-wisp using known parameters
+of countdata$count.</p>
+<p>For this demonstration, the data in countdata has been explicitly
+constructed with the statistical structure captured by wisp using known
+parameters
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>r</mi><annotation encoding="application/x-tex">r</annotation></semantics></math>
 and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>.
-Thus, fitting a wisp model to <strong>countdata</strong> should recover
-those parameters. (Note: The verbose progress reports from wisp show how
-the function adds columns to <strong>countdata</strong> for
-<strong>context</strong>, <strong>species</strong>,
-<strong>ran</strong>, <strong>timeseries</strong>, and
-<strong>fixedeffects</strong>; while not used here, these columns are
-used in more complex modeling scenarios.)</p>
+Thus, fitting a wisp model to countdata should recover those parameters.
+(Note: The verbose progress reports from wisp show how the function adds
+columns to countdata for context, species, ran, timeseries, and
+fixedeffects; while not used here, these columns are used in more
+complex modeling scenarios.)</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
@@ -277,7 +270,7 @@ used in more complex modeling scenarios.)</p>
 <span>    fit_only <span class="op">=</span> <span class="cn">TRUE</span>, </span>
 <span>    plot.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>CI_style <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## </span></span>
+<pre class="scroll-output"><code><span><span class="co">## </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Parsing data and settings for wisp model</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
@@ -394,10 +387,10 @@ used in more complex modeling scenarios.)</p>
 <span><span class="co">## Making rate-count plots...</span></span></code></pre>
 <p><img src="tutorial_Poisson_files/figure-html/model-1.png" width="700"></p>
 <p>The above plot makes visually clear that the wisp is a good fit for
-the data. The wisp() function has identified the three rate-transition
-points dividing the data into four equal-sized blocks and, within each
-block, has identified a rate parameter which visually seems to land in
-the middle of the data.</p>
+the data. The <a href="../reference/wisp.html">wisp()</a> function has
+identified the three rate-transition points dividing the data into four
+equal-sized blocks and, within each block, has identified a rate
+parameter which visually seems to land in the middle of the data.</p>
 <p>The recovered parameters can also be extracted as numerical
 values:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
@@ -412,19 +405,18 @@ values:</p>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<pre><code><span><span class="co">## </span></span>
+<pre class="scroll-output"><code><span><span class="co">## </span></span>
 <span><span class="co">## Recovered Rt parameters: 4.675, 6.306, 5.388, 6.587</span></span>
 <span><span class="co">## Recovered tslope parameters: 86.644, 32.061, 83.237</span></span>
 <span><span class="co">## Recovered tpoint parameters: 25.961, 50.259, 75.876</span></span></code></pre>
-<p>It is immediately clear from the three <strong>tpoint</strong>
-parameters (i.e.,
+<p>It is immediately clear from the three tpoint parameters (i.e.,
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>)
 that wisp has recovered the transition points at bins 25, 50, and 75.
-However, at first glance, the rates (<strong>Rt</strong>) look off. This
-is because wisp has predicted the log transform of the sum of the rates.
-To recover the original rates of 1, 5, 2, and 7, we need to exponentiate
-the recovered rates, subtract 1, and divide by the mean number of tokens
-per bin within the block.</p>
+However, at first glance, the rates (Rt) look off. This is because wisp
+has predicted the log transform of the sum of the rates. To recover the
+original rates of 1, 5, 2, and 7, we need to exponentiate the recovered
+rates, subtract 1, and divide by the mean number of tokens per bin
+within the block.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tokens_per_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="va">n_bins</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">b</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">n_bins</span><span class="op">)</span> <span class="va">tokens_per_bin</span><span class="op">[</span><span class="va">b</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">$</span><span class="va">bin</span> <span class="op">==</span> <span class="va">b</span><span class="op">)</span></span>
@@ -441,16 +433,14 @@ per bin within the block.</p>
 <span>      <span class="op">)</span></span>
 <span>    <span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<pre><code><span><span class="co">## </span></span>
+<pre class="scroll-output"><code><span><span class="co">## </span></span>
 <span><span class="co">## Block 1 recovered rate: 1.058</span></span>
 <span><span class="co">## Block 2 recovered rate: 5.415</span></span>
 <span><span class="co">## Block 3 recovered rate: 2.16</span></span>
 <span><span class="co">## Block 4 recovered rate: 7.405</span></span></code></pre>
 <p>Thus, wisp indeed works well for modeling gamma-distributed Poisson
 processes!</p>
-</main>
-</div>
-  <aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>
 
@@ -465,5 +455,11 @@ processes!</p>
 </div>
 
     </footer>
-</body>
+</div>
+
+
+
+
+
+  </body>
 </html>

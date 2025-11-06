@@ -42,7 +42,7 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
     <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_liverradial.html">Rhythmic and zonated gene expression along the liver-lobule radial axis</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_liverradial.html">Radial zonation in liver lobules</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling celltypes</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
@@ -78,7 +78,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2025-11-05</h4>
+            <h4 data-toc-skip class="date">2025-11-21</h4>
       
 
       <div class="d-none name"><code>tutorial_timeseries.Rmd</code></div>
@@ -179,8 +179,8 @@ Example data: postnatal age
 </h2>
 <p>This tutorial will use MERFISH data collected from the auditory
 cortex of mice. The data has been preprocessed into laminar coordinates
-as described in <a href="articles/tutorial_corticallaminar.html">the
-tutorial</a> on modeling the cortical-laminar axis (see also <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">this preprint</a>). As
+as described in <a href="tutorial_corticallaminar.html">the tutorial</a>
+on modeling the cortical-laminar axis (see also <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">this preprint</a>). As
 with all data appropriate for wispack, and in line with well-known
 modeling functions in R (e.g., lm(), lmer()), the data must be in long
 format. That is, each row must correspond to a single observation, which
@@ -196,23 +196,23 @@ transcripts from an RNA species in a single cell.</p>
 <span>  <span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##   count bin context   gene mouse hemisphere age</span></span>
+<pre class="scroll-output"><code><span><span class="co">##   count bin context   gene mouse hemisphere age</span></span>
 <span><span class="co">## 1     0  96  cortex Bcl11b     1       left  12</span></span>
 <span><span class="co">## 2     0  95  cortex Bcl11b     1       left  12</span></span>
 <span><span class="co">## 3     0  98  cortex Bcl11b     1       left  12</span></span>
 <span><span class="co">## 4     0 100  cortex Bcl11b     1       left  12</span></span>
 <span><span class="co">## 5     0  99  cortex Bcl11b     1       left  12</span></span>
 <span><span class="co">## 6     0  99  cortex Bcl11b     1       left  12</span></span></code></pre>
-<p>The data includes a placeholder <a href="articles/tutorial_multicontext.html">context variable</a> filled
-with “cortex”, a variable giving the hemisphere of each observation:</p>
+<p>The data includes a placeholder <a href="tutorial_multicontext.html">context variable</a> filled with
+“cortex”, a variable giving the hemisphere of each observation:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">$</span><span class="va">hemisphere</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## [1] "left"  "right"</span></span></code></pre>
+<pre class="scroll-output"><code><span><span class="co">## [1] "left"  "right"</span></span></code></pre>
 <p>A variable giving counts (by cell) for the following six layer
 specific genes:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">$</span><span class="va">gene</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## [1] "Bcl11b" "Fezf2"  "Satb2"  "Nxph3"  "Cux2"   "Rorb"</span></span></code></pre>
+<pre class="scroll-output"><code><span><span class="co">## [1] "Bcl11b" "Fezf2"  "Satb2"  "Nxph3"  "Cux2"   "Rorb"</span></span></code></pre>
 <p>A variable giving the age (in postnatal days) of the mouse from which
 each cell was collected:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
@@ -225,7 +225,7 @@ each cell was collected:</p>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<pre><code><span><span class="co">## Mouse 1 is age P12</span></span>
+<pre class="scroll-output"><code><span><span class="co">## Mouse 1 is age P12</span></span>
 <span><span class="co">## Mouse 2 is age P18</span></span>
 <span><span class="co">## Mouse 3 is age P7</span></span>
 <span><span class="co">## Mouse 4 is age P12</span></span>
@@ -317,8 +317,8 @@ itself.</p>
 <p>With data loaded, variables set, and boundaries grabbed, we can fit
 the wisp model. As it’s not necessary for demonstrating time-series
 modeling, we’ll only fit the model (<strong>fit_only = TRUE</strong>)
-without running any <a href="articles/tutorial_stats.html">statistical
-parameter estimation</a>.</p>
+without running any <a href="tutorial_stats.html">statistical parameter
+estimation</a>.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
@@ -333,7 +333,7 @@ parameter estimation</a>.</p>
 <span>      <span class="op">)</span>,</span>
 <span>    verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## </span></span>
+<pre class="scroll-output"><code><span><span class="co">## </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Parsing data and settings for wisp model</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
@@ -472,7 +472,7 @@ The weight matrix
 <p>Before examining the results, let’s look at the weight matrix.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">weight.matrix</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##         ref right 12 18 right12 right18</span></span>
+<pre class="scroll-output"><code><span><span class="co">##         ref right 12 18 right12 right18</span></span>
 <span><span class="co">## ref       1     0  0  0       0       0</span></span>
 <span><span class="co">## right     1     1  0  0       0       0</span></span>
 <span><span class="co">## 12        1     0  1  0       0       0</span></span>
@@ -494,8 +494,7 @@ hemisphere at age P7, which is a treatment condition in which only the
 <p>This matrix is a <em>weight</em> matrix because the row and column
 labels are also labels for weights
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>w</mi><annotation encoding="application/x-tex">w</annotation></semantics></math>.
-Before <a href="articles/tutorial_warping.html">warping</a>, the
-predicted count
+Before <a href="tutorial_warping.html">warping</a>, the predicted count
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
 of a sample is given by:
 <math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi><mo>=</mo><msub><mi>β</mi><mtext mathvariant="normal">ref</mtext></msub><msub><mi>w</mi><mtext mathvariant="normal">ref</mtext></msub><mo>+</mo><msub><mi>β</mi><mtext mathvariant="normal">right</mtext></msub><msub><mi>w</mi><mtext mathvariant="normal">right</mtext></msub><mo>+</mo><msub><mi>β</mi><mn>12</mn></msub><msub><mi>w</mi><mn>12</mn></msub><mo>+</mo><msub><mi>β</mi><mn>18</mn></msub><msub><mi>w</mi><mn>18</mn></msub><mo>+</mo><msub><mi>β</mi><mrow><mtext mathvariant="normal">right</mtext><mn>12</mn></mrow></msub><msub><mi>w</mi><mrow><mtext mathvariant="normal">right</mtext><mn>12</mn></mrow></msub><mo>+</mo><msub><mi>β</mi><mrow><mtext mathvariant="normal">right</mtext><mn>18</mn></mrow></msub><msub><mi>w</mi><mrow><mtext mathvariant="normal">right</mtext><mn>18</mn></mrow></msub></mrow><annotation encoding="application/x-tex">y = \beta_{\text{ref}}w_{\text{ref}} + \beta_{\text{right}}w_{\text{right}} + \beta_{12}w_{12} + \beta_{18}w_{18} + \beta_{\text{right}12}w_{\text{right}12} + \beta_{\text{right}18}w_{\text{right}18}</annotation></semantics></math>
@@ -532,13 +531,13 @@ series additive is the way a treatment level like <strong>18</strong> or
 <h2>
 Visualizing time series
 </h2>
-<p>The <a href="articles/tutorial_wispplots.html">rate-count wisp
-plot</a> is made automatically with all calls of wisp() by an internal
-call to plot.ratecount(). This style of plot conveys the spatial
-distribution of a RNA species explicitly, by plotting space on the
-x-axis. It can only convey changes over a time series indirectly, via
-coloring of the levels of the <strong>timeseries</strong> factor. For
-example, consider the wisp plot for RORB.</p>
+<p>The <a href="tutorial_wispplots.html">rate-count wisp plot</a> is
+made automatically with all calls of wisp() by an internal call to
+plot.ratecount(). This style of plot conveys the spatial distribution of
+a RNA species explicitly, by plotting space on the x-axis. It can only
+convey changes over a time series indirectly, via coloring of the levels
+of the <strong>timeseries</strong> factor. For example, consider the
+wisp plot for RORB.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">ratecount</span><span class="op">$</span><span class="va">plot_pred_context_cortex_fixEff_Rorb</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_timeseries_files/figure-html/plot_wisp-1.png" width="700"></p>

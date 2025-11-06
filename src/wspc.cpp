@@ -339,7 +339,7 @@ wspc::wspc(
     // Extract idx from count_not_na_mask
     count_not_na_idx = Rwhich(count_not_na_mask);
     
-    // Make extrapolation pool and extrapolate "none" rows
+    // Make extrapolation pool
     if (n_ran > 1) {vprint_header("Making extrapolation pool", verbose);}
     extrapolation_pool.resize(count.size());
     extrapolation_pool = make_extrapolation_pool(bin, count, context, species, ran, treatment, verbose); 
@@ -1553,6 +1553,7 @@ Rcpp::NumericMatrix wspc::MCMC(
     int neighbor_filter,      // Keep only ever neighbor_filter step
     double step_size,         // Step size for random walk
     double prior_sd,          // standard deviation to use in prior
+    bool start_from_fit,      // Start from parameters found with gradient descent? 
     bool verbose
   ) {
     
@@ -1562,8 +1563,8 @@ Rcpp::NumericMatrix wspc::MCMC(
     // Fit full model 
     vprint("Performing initial fit of full data", verbose);
     fit(
-      false,  // don't set fitted parameters
-      false   // don't print anything
+      start_from_fit,   // set fitted parameters?
+      false             // don't print anything
     );
     double pnll = optim_results["penalized_neg_loglik"]; 
     if (verbose) {vprint("Penalized neg_loglik: ", pnll);}
@@ -1738,7 +1739,7 @@ Rcpp::NumericMatrix wspc::MCMC(
       
       // Check for infinite loop
       acceptance_rate = (static_cast<double>(step)/static_cast<double>(ctr))*static_cast<double>(neighbor_filter);
-      if (inf_loop_ctr > 200) {
+      if (inf_loop_ctr > 10000) {
         if (acceptance_rate < 0.01) {
           // ... go back to last viable step
           step = last_viable_step;

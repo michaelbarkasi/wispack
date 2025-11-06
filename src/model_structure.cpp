@@ -463,7 +463,6 @@ sVec extrapolate_none(
     
     for (int r : r_idx) {
       
-      
       IntegerVector extrapolation_pool_r = extrapolation_pool[r];
       int extrapolation_sz = extrapolation_pool_r.size();
       if (extrapolation_sz == 0 || extrapolation_pool_r[0] < 1) {
@@ -484,17 +483,20 @@ sVec extrapolate_none(
           }
         }
         
-        // Divide by size of pool and round
-        sdouble roundedMean;
+        // Divide by size of pool
+        sdouble count_out_r;
         if (log_transform) {
-          roundedMean = running_sum / (sdouble)extrapolation_sz;
-          roundedMean = sexp(roundedMean) - 1.0; // Convert back from log space
-          if (round_count) {roundedMean = stan::math::round(roundedMean);}
+          count_out_r = running_sum / (sdouble)extrapolation_sz;
+          count_out_r = sexp(count_out_r) - 1.0; // Convert back from log space
         } else {
-          roundedMean = running_sum / (sdouble)extrapolation_sz;
-          if (round_count) {roundedMean = stan::math::round(roundedMean);}
+          count_out_r = running_sum / (sdouble)extrapolation_sz;
         }
-        count_out[r] = roundedMean;
+        
+        // Round, if specified
+        if (round_count) {count_out_r = stan::math::round(count_out_r);}
+        
+        // Set
+        count_out[r] = count_out_r;
         
       }
       

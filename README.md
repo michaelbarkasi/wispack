@@ -1,15 +1,10 @@
 
 # Wispack: An R package for warped sigmoidal Poisson-process mixed-effects modeling
 
-<div class="figure">
-  <img src="man/figures/wisp_art.png" alt="Artistic rendering of wisp model" width="90%">
-  <p class="caption">Artistic rendering of a wisp model. See [this tutorial](articles/tutorial_wispplots.html) for an explanation.</p>
-</div>
-
 Wispack (pronounced "wisp package" or "wisp pack") is an R package for testing for between-group effects on spatial variation in spatial transcriptomics data. As such variation is often functional, these can be thought of as *functional spatial effects* (FSE). 
 
 <div class="figure">
-  <img src="man/figures/stack_0_1475_L1_truecolor.png" alt="True-color MERFISH image" width="50%">
+  <img src="man/figures/stack_0_1475_L1_truecolor.png" alt="True-color MERFISH image" width="90%">
   <p class="caption">True-color image of fluorescing probes bound to mRNA molecules in cortical cells, the raw data of spatial transcriptomics.</p>
 </div>
 
@@ -27,7 +22,7 @@ Wispack performs FSE testing by first using change-point detection to find spati
   <p class="caption">Demo plots of the functions involved in wisp. (A) The logistic function, used to model a single change point in gene expression. (B) The wisp poly-sigmoid function, built from three logistic components, representing three change points. (C) The warping function used to represent random effects, e.g., variation due to differences between individual animals or due to measurement noise. (D) The wisp poly-sigmoid from (B) with warping function applied.</p>
 </div>
 
-Wispack provides a user-facing function, wisp(), which takes a data frame in the familiar format expected by standard R functions for linear models (e.g., lm() and lmer()) and runs the complete test for FSEs. Preprocessing of the data is generally required before passing it to wisp(), after which wisp() executes a pipeline involving parameter estimates, prediction, model fitting, and hypothesis testing. 
+Wispack provides a user-facing function, wisp(), which takes a data frame in the familiar format expected by standard R functions for linear models (e.g., [lme4::lmer()](https://cran.r-project.org/web/packages/lme4/index.html) or [stats::lm()](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html)) and runs the complete test for FSEs. Preprocessing of the data is generally required before passing it to wisp(), after which wisp() executes a pipeline involving parameter estimates, prediction, model fitting, and hypothesis testing. 
 
 <div class="figure">
   <img src="man/figures/fig_modelpipeline_simple.png" alt="Diagram of top-level of wisp modeling pipeline" width="90%">
@@ -95,6 +90,11 @@ demo("full_options", package = "wispack")
 ```
 
 Please see the tutorials for more detailed walkthroughs of the package and its options.
+
+<div class="figure">
+  <img src="man/figures/wisp_art.png" alt="Artistic rendering of wisp model" width="90%">
+  <p class="caption">Artistic rendering of a wisp model. See [this tutorial](articles/tutorial_wispplots.html) for an explanation.</p>
+</div>
 
 Copyright (C) 2025, Michael Barkasi
 barkasi@wustl.edu

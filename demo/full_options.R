@@ -90,7 +90,7 @@ MCMC.settings <- list(
     MCMC.steps = 1e3,
     MCMC.step.size = 0.5,
     MCMC.prior = 1.0, 
-    MCMC.neighbor.filter = 2
+    MCMC.neighbor.filter = 1
   )
 
 # Settings for plotting

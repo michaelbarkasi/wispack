@@ -6,11 +6,11 @@ date: "`r Sys.Date()`"
 ## Planned changes for future releases
 
 1. Check why **wisp()** does not clear memory on exit when **fit_only** is TRUE.
-2. Autodetect fixed-effect type? E.g., fixed-effect columns of R type "character" or "factor" are treated as two-level categorical factors, and numeric columns are treated as discrete additive effects (e.g., like a time series). 
-3. Ensure **plot.timeseries** works when there is no **splitting_factor**.
+2. Autodetect fixed-effect type? E.g., fixed-effect columns of R type "character" or "factor" are treated as two-level categorical factors, and numeric columns are treated as discrete additive effects (e.g., like a time series). Will need to update the RORB tutorial and any other tutorials which discuss time-series modeling. 
+3. Ensure any columns flagged as a time series are also treated as fixed-effects. 
 4. Add vignette on mixed-effects modeling and random effects (vs normalization). 
 5. Finish vignettes on modeling celltypes, statistical analyses, and the wisp plot. 
-6. Add a check during the fit to see if any transition points can be replaced with a gental slope.
+6. Add a check during the fit to see if any transition points can be replaced with a slope.
 7. Add variable check to the loading of plot.settings in wisp().
 
 ## Version 1.1

@@ -44,3 +44,8 @@ img {
 math[display="block"] {
   margin: 1em 0;
 }
+.scroll-output {
+  max-height: 400px;
+  overflow-y: auto;
+  display: block;
+}

@@ -2,4 +2,9 @@
 title: "Modeling celltypes"
 ---
 
+```{r setup, include=FALSE}
+options(width = 10000)
+knitr::opts_chunk$set(class.output = "scroll-output")
+```
+
 Under construction! Will show how to model different celltypes (as determined by the Allen Institute's [MapMyCells](https://portal.brain-map.org/atlases-and-data/bkp/mapmycells) tool) with the context variable. 

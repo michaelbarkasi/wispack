@@ -308,6 +308,7 @@ class wspc {
         int neighbor_filter,                // Keep only ever neighbor_filter step
         double step_size,                   // Step size for random walk
         double prior_sd,                    // Standard deviation of prior distribution
+        bool start_from_fit,                // Start from parameters found with gradient descent?
         bool verbose
     );
     

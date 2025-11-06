@@ -42,7 +42,7 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
     <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_liverradial.html">Rhythmic and zonated gene expression along the liver-lobule radial axis</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_liverradial.html">Radial zonation in liver lobules</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling celltypes</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
@@ -76,7 +76,7 @@
 
       <h1>Release Notes</h1>
             
-            <h4 data-toc-skip class="date">2025-11-05</h4>
+            <h4 data-toc-skip class="date">2025-11-21</h4>
       
 
       <div class="d-none name"><code>release_notes.Rmd</code></div>
@@ -93,15 +93,16 @@
 <li>Autodetect fixed-effect type? E.g., fixed-effect columns of R type
 “character” or “factor” are treated as two-level categorical factors,
 and numeric columns are treated as discrete additive effects (e.g., like
-a time series).</li>
-<li>Ensure <strong>plot.timeseries</strong> works when there is no
-<strong>splitting_factor</strong>.</li>
+a time series). Will need to update the RORB tutorial and any other
+tutorials which discuss time-series modeling.</li>
+<li>Ensure any columns flagged as a time series are also treated as
+fixed-effects.</li>
 <li>Add vignette on mixed-effects modeling and random effects (vs
 normalization).</li>
 <li>Finish vignettes on modeling celltypes, statistical analyses, and
 the wisp plot.</li>
 <li>Add a check during the fit to see if any transition points can be
-replaced with a gental slope.</li>
+replaced with a slope.</li>
 <li>Add variable check to the loading of plot.settings in wisp().</li>
 </ol>
 </div>

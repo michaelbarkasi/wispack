@@ -44,7 +44,7 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
     <li><a class="dropdown-item" href="articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
-    <li><a class="dropdown-item" href="articles/tutorial_liverradial.html">Rhythmic and zonated gene expression along the liver-lobule radial axis</a></li>
+    <li><a class="dropdown-item" href="articles/tutorial_liverradial.html">Radial zonation in liver lobules</a></li>
     <li><a class="dropdown-item" href="articles/tutorial_multicontext.html">Modeling celltypes</a></li>
     <li><a class="dropdown-item" href="articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
     <li><a class="dropdown-item" href="articles/tutorial_stats.html">Customizing statistical analyses</a></li>
@@ -73,14 +73,9 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="wispack-an-r-package-for-warped-sigmoidal-poisson-process-mixed-effects-modeling">Wispack: An R package for warped sigmoidal Poisson-process mixed-effects modeling<a class="anchor" aria-label="anchor" href="#wispack-an-r-package-for-warped-sigmoidal-poisson-process-mixed-effects-modeling"></a>
 </h1></div>
-<div class="figure">
-<img src="reference/figures/wisp_art.png" alt="Artistic rendering of wisp model" width="90%"><p class="caption">
-Artistic rendering of a wisp model. See <a href="articles/tutorial_wispplots.html">this tutorial</a> for an explanation.
-</p>
-</div>
 <p>Wispack (pronounced “wisp package” or “wisp pack”) is an R package for testing for between-group effects on spatial variation in spatial transcriptomics data. As such variation is often functional, these can be thought of as <em>functional spatial effects</em> (FSE).</p>
 <div class="figure">
-<img src="reference/figures/stack_0_1475_L1_truecolor.png" alt="True-color MERFISH image" width="50%"><p class="caption">
+<img src="reference/figures/stack_0_1475_L1_truecolor.png" alt="True-color MERFISH image" width="90%"><p class="caption">
 True-color image of fluorescing probes bound to mRNA molecules in cortical cells, the raw data of spatial transcriptomics.
 </p>
 </div>
@@ -96,7 +91,7 @@ Comparison between testing for differentially expressed genes, spatially variabl
 Demo plots of the functions involved in wisp. (A) The logistic function, used to model a single change point in gene expression. (B) The wisp poly-sigmoid function, built from three logistic components, representing three change points. (C) The warping function used to represent random effects, e.g., variation due to differences between individual animals or due to measurement noise. (D) The wisp poly-sigmoid from (B) with warping function applied.
 </p>
 </div>
-<p>Wispack provides a user-facing function, wisp(), which takes a data frame in the familiar format expected by standard R functions for linear models (e.g., lm() and lmer()) and runs the complete test for FSEs. Preprocessing of the data is generally required before passing it to wisp(), after which wisp() executes a pipeline involving parameter estimates, prediction, model fitting, and hypothesis testing.</p>
+<p>Wispack provides a user-facing function, wisp(), which takes a data frame in the familiar format expected by standard R functions for linear models (e.g., <a href="https://cran.r-project.org/web/packages/lme4/index.html" class="external-link">lme4::lmer()</a> or <a href="https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html" class="external-link">stats::lm()</a>) and runs the complete test for FSEs. Preprocessing of the data is generally required before passing it to wisp(), after which wisp() executes a pipeline involving parameter estimates, prediction, model fitting, and hypothesis testing.</p>
 <div class="figure">
 <img src="reference/figures/fig_modelpipeline_simple.png" alt="Diagram of top-level of wisp modeling pipeline" width="90%"><p class="caption">
 Top-level overview of wisp modeling pipeline.
@@ -153,6 +148,11 @@ Full modeling pipeline for wisp. Boxes represent variables in the model, or oper
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/demo.html" class="external-link">demo</a></span><span class="op">(</span><span class="st">"quick_start"</span>, package <span class="op">=</span> <span class="st">"wispack"</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/demo.html" class="external-link">demo</a></span><span class="op">(</span><span class="st">"full_options"</span>, package <span class="op">=</span> <span class="st">"wispack"</span><span class="op">)</span></span></code></pre></div>
 <p>Please see the tutorials for more detailed walkthroughs of the package and its options.</p>
+<div class="figure">
+<img src="reference/figures/wisp_art.png" alt="Artistic rendering of wisp model" width="90%"><p class="caption">
+Artistic rendering of a wisp model. See <a href="articles/tutorial_wispplots.html">this tutorial</a> for an explanation.
+</p>
+</div>
 <p>Copyright (C) 2025, Michael Barkasi <a href="mailto:barkasi@wustl.edu" class="email">barkasi@wustl.edu</a></p>
 </div>
   </main><aside class="col-md-3"><div class="license">

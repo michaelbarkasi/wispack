@@ -247,7 +247,7 @@ wisp <- function(
       MCMC.steps = 1e3,
       MCMC.step.size = 0.5,
       MCMC.prior = 1.0, 
-      MCMC.neighbor.filter = 2
+      MCMC.neighbor.filter = 1
     )
     if (!fit_only) {
       
@@ -258,7 +258,7 @@ wisp <- function(
         ms <- MCMC.settings[[s]]
         if (!(ms >= 0)) {
           stop("All MCMC.settings values must be >= 0")
-        } else if (s == "MCMC.steps" && ms < 100) {
+        } else if (s == "MCMC.steps" && ms < 100 && ms > 0) {
           warning(paste0("MCMC.settings$", s, " should be at least 100"))
         } else if (s == "MCMC.step.size" && ms >= 2.0) {
           warning(paste0("Consider setting MCMC.settings$", s, " below 2.0"))
@@ -388,6 +388,7 @@ wisp <- function(
           MCMC.settings.internal$MCMC.neighbor.filter,
           MCMC.settings.internal$MCMC.step.size,
           MCMC.settings.internal$MCMC.prior,
+          MCMC.settings.internal$MCMC.burnin == 0,
           verbose 
         )
         run_time_MCMC <- Sys.time() - start_time_MCMC
@@ -601,6 +602,7 @@ wisp <- function(
           wisp.results = results,
           splitting_factor = plot.settings.internal$splitting_factor,
           pred.type = plot.settings.internal$pred.type,
+          count.type = plot.settings.internal$count.type,
           print.all = plot.settings.internal$print.plots,
           verbose = verbose
         )
