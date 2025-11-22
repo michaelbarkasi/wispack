@@ -43,7 +43,7 @@
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
     <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_liverradial.html">Radial zonation in liver lobules</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling celltypes</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling cell types</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Time-series data</a></li>
@@ -78,7 +78,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2025-11-21</h4>
+            <h4 data-toc-skip class="date">2025-11-25</h4>
       
 
       <div class="d-none name"><code>tutorial_corticallaminar.Rmd</code></div>
@@ -565,9 +565,9 @@ laminar boundaries estimated by the CCFv3 registration.</p>
 <span><span class="co">## Acceptance rate (aim for 0.2-0.3): 0.283432</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## MCMC simulation complete... </span></span>
-<span><span class="co">## MCMC run time (total), minutes: 1.199</span></span>
-<span><span class="co">## MCMC run time (per retained step), seconds: 0.065</span></span>
-<span><span class="co">## MCMC run time (per step), seconds: 0.065</span></span>
+<span><span class="co">## MCMC run time (total), minutes: 1.205</span></span>
+<span><span class="co">## MCMC run time (per retained step), seconds: 0.066</span></span>
+<span><span class="co">## MCMC run time (per step), seconds: 0.066</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Setting full-data fit as parameters... </span></span>
 <span><span class="co">## Checking feasibility of provided parameters</span></span>
@@ -762,17 +762,18 @@ generates time-series plots for each gene.</p>
 <p><img src="tutorial_corticallaminar_files/figure-html/plot_RORB_timeseries-1.png" width="700"></p>
 <p>The time-series plot puts the time points on the x-axis, with rate
 (as before) on the y-axis. However, the rate value is not the expected
-value at a given bin, but rather the rate paramter itself. As each block
-has a different rate parameter, the time-series plot shows the rate for
-each block. As there were four blocks, we see four lines. However, if
-the data also includes a single additional covariate (fixed effect)
-besides the time series, that variable is used as a “splitting factor”
-to generate separate plots for each level of that variable. Here, the
-splitting factor is hemisphere, and so we see separate lines for left
-(green) and right (blue) hemispheres. Notice how the rate counts are
-relatively low and bunched at the bottom for all but one block. This
-exception is block 3, the block overlapping L4. Here we see the swap
-clearly: right (blue) higher at P12, left (green) higher at P18.</p>
+value at a given bin, but rather the rate parameter itself. As each
+block has a different rate parameter, the time-series plot shows the
+rate for each block. As there were four blocks, we see four lines.
+However, if the data also includes a single additional covariate (fixed
+effect) besides the time series, that variable is used as a “splitting
+factor” to generate separate plots for each level of that variable.
+Here, the splitting factor is hemisphere, and so we see separate lines
+for left (orange) and right (blue) hemispheres. Notice how the rate
+counts are relatively low and bunched at the bottom for all but one
+block. This exception is block 3, the block overlapping L4. Here we see
+the swap clearly: right (blue) higher at P12, left (orange) higher at
+P18.</p>
 <p>Along with the lines representing block rate, the dots at each age
 represent the mean observed count per bin within that block. Notice that
 sometimes these dots will be lower than the line, as is the case here at

@@ -4,7 +4,7 @@ author: "Michael Barkasi"
 date: "`r Sys.Date()`"
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include = FALSE}
 options(width = 10000)
 knitr::opts_chunk$set(class.output = "scroll-output")
 ```
@@ -253,6 +253,6 @@ This swap is easy to see on a time-series plot. When a time series is provided (
 print(model$plots$timeseries$plot_pred_context_cortex_timeseries_Rorb)
 ```
 
-The time-series plot puts the time points on the x-axis, with rate (as before) on the y-axis. However, the rate value is not the expected value at a given bin, but rather the rate paramter itself. As each block has a different rate parameter, the time-series plot shows the rate for each block. As there were four blocks, we see four lines. However, if the data also includes a single additional covariate (fixed effect) besides the time series, that variable is used as a "splitting factor" to generate separate plots for each level of that variable. Here, the splitting factor is hemisphere, and so we see separate lines for left (green) and right (blue) hemispheres. Notice how the rate counts are relatively low and bunched at the bottom for all but one block. This exception is block 3, the block overlapping L4. Here we see the swap clearly: right (blue) higher at P12, left (green) higher at P18.
+The time-series plot puts the time points on the x-axis, with rate (as before) on the y-axis. However, the rate value is not the expected value at a given bin, but rather the rate parameter itself. As each block has a different rate parameter, the time-series plot shows the rate for each block. As there were four blocks, we see four lines. However, if the data also includes a single additional covariate (fixed effect) besides the time series, that variable is used as a "splitting factor" to generate separate plots for each level of that variable. Here, the splitting factor is hemisphere, and so we see separate lines for left (orange) and right (blue) hemispheres. Notice how the rate counts are relatively low and bunched at the bottom for all but one block. This exception is block 3, the block overlapping L4. Here we see the swap clearly: right (blue) higher at P12, left (orange) higher at P18.
 
 Along with the lines representing block rate, the dots at each age represent the mean observed count per bin within that block. Notice that sometimes these dots will be lower than the line, as is the case here at P18 in block 3. This is because the predicted rate is not just the rate parameter for the block, but is also a function of the slopes and transition points. The rate parameter is only a good approximation of the expected rate far from transition points and assuming relatively steep slopes. When slopes are shallow and most bins in a block are near a transition point, we can expect the mean observed (and predicted) rate per bin within a block to be appreciably lower than the block rate parameter. This is not a poor fit of the model, but a limit of the visualization. 

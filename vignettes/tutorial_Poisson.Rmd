@@ -4,7 +4,7 @@ author: "Michael Barkasi"
 date: "`r Sys.Date()`"
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include = FALSE}
 options(width = 10000)
 knitr::opts_chunk$set(class.output = "scroll-output")
 ```

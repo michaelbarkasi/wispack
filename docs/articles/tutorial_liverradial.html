@@ -43,7 +43,7 @@
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
     <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_liverradial.html">Radial zonation in liver lobules</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling celltypes</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling cell types</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Time-series data</a></li>
@@ -78,7 +78,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2025-11-21</h4>
+            <h4 data-toc-skip class="date">2025-11-25</h4>
       
 
       <div class="d-none name"><code>tutorial_liverradial.Rmd</code></div>
@@ -411,8 +411,7 @@ this package. We will load it directly.</p>
 <span>  context <span class="op">=</span> <span class="st">"liver"</span>, </span>
 <span>  species <span class="op">=</span> <span class="st">"gene"</span>,</span>
 <span>  ran <span class="op">=</span> <span class="st">"mouse"</span>,</span>
-<span>  timeseries <span class="op">=</span> <span class="st">"ZT"</span>,</span>
-<span>  fixedeffects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ZT"</span><span class="op">)</span></span>
+<span>  timeseries <span class="op">=</span> <span class="st">"ZT"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>There are only eight coordinates in the spatial dimension (bins 1 to
 8). Ideally we would have more, but we can compensate by adjusting the
@@ -606,22 +605,22 @@ the number of MCMC steps to zero and the number of bootstraps to
 <span><span class="co">## Initial boundary distance (want &gt; 0): 0.206765</span></span>
 <span><span class="co">## Performing initial fit of full data</span></span>
 <span><span class="co">## Penalized neg_loglik: 1045.81</span></span>
-<span><span class="co">## Batch: 1/100, 0.145809 sec/bs</span></span>
-<span><span class="co">## Batch: 10/100, 0.130081 sec/bs</span></span>
-<span><span class="co">## Batch: 20/100, 0.128405 sec/bs</span></span>
-<span><span class="co">## Batch: 30/100, 0.122168 sec/bs</span></span>
-<span><span class="co">## Batch: 40/100, 0.134052 sec/bs</span></span>
-<span><span class="co">## Batch: 50/100, 0.112739 sec/bs</span></span>
-<span><span class="co">## Batch: 60/100, 0.13932 sec/bs</span></span>
-<span><span class="co">## Batch: 70/100, 0.122933 sec/bs</span></span>
-<span><span class="co">## Batch: 80/100, 0.122124 sec/bs</span></span>
-<span><span class="co">## Batch: 90/100, 0.122749 sec/bs</span></span>
+<span><span class="co">## Batch: 1/100, 0.143402 sec/bs</span></span>
+<span><span class="co">## Batch: 10/100, 0.129521 sec/bs</span></span>
+<span><span class="co">## Batch: 20/100, 0.125902 sec/bs</span></span>
+<span><span class="co">## Batch: 30/100, 0.122471 sec/bs</span></span>
+<span><span class="co">## Batch: 40/100, 0.13636 sec/bs</span></span>
+<span><span class="co">## Batch: 50/100, 0.113819 sec/bs</span></span>
+<span><span class="co">## Batch: 60/100, 0.138425 sec/bs</span></span>
+<span><span class="co">## Batch: 70/100, 0.123679 sec/bs</span></span>
+<span><span class="co">## Batch: 80/100, 0.120758 sec/bs</span></span>
+<span><span class="co">## Batch: 90/100, 0.120797 sec/bs</span></span>
 <span><span class="co">## All complete!</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Bootstrap simulation complete... </span></span>
-<span><span class="co">## Bootstrap run time (total), minutes: 2.19</span></span>
+<span><span class="co">## Bootstrap run time (total), minutes: 2.183</span></span>
 <span><span class="co">## Bootstrap run time (per sample), seconds: 0.131</span></span>
-<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 1.314</span></span>
+<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 1.31</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Setting full-data fit as parameters... </span></span>
 <span><span class="co">## Checking feasibility of provided parameters</span></span>

@@ -4,7 +4,7 @@ author: "Michael Barkasi"
 date: "`r Sys.Date()`"
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include = FALSE}
 options(width = 10000)
 knitr::opts_chunk$set(class.output = "scroll-output")
 ```
@@ -30,7 +30,7 @@ with the stipulation that, for each sampled data point $s$, if $\xi_{T_m}(s)=1$ 
 
 <h2>Example data: postnatal age</h2>
 
-This tutorial will use MERFISH data collected from the auditory cortex of mice. The data has been preprocessed into laminar coordinates as described in [the tutorial](tutorial_corticallaminar.html) on modeling the cortical-laminar axis (see also [this preprint](https://doi.org/10.1101/2025.06.11.659209)). As with all data appropriate for wispack, and in line with well-known modeling functions in R (e.g., lm(), lmer()), the data must be in long format. That is, each row must correspond to a single observation, which when modeling spatial transcriptomics data will typically be a count of transcripts from an RNA species in a single cell. 
+This tutorial will use MERFISH data collected from the auditory cortex of mice. The data has been preprocessed into laminar coordinates as described in [the tutorial](tutorial_corticallaminar.html) on modeling the cortical-laminar axis (see also [this preprint](https://doi.org/10.1101/2025.06.11.659209)). As with all data appropriate for wispack, and in line with well-known modeling functions in R (e.g., [lme4::lmer()](https://cran.r-project.org/web/packages/lme4/index.html), [stats::lm()](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html)), the data must be in long format. That is, each row must correspond to a single observation, which when modeling spatial transcriptomics data will typically be a count of transcripts from an RNA species in a single cell. 
 
 ```{r load_data}
 countdata <- read.csv(
@@ -143,52 +143,22 @@ where $\beta$ are the effect parameters and $w$ are the weights. The rows of the
 
 <h2>Visualizing time series</h2>
 
-The [rate-count wisp plot](tutorial_wispplots.html) is made automatically with all calls of wisp() by an internal call to plot.ratecount(). This style of plot conveys the spatial distribution of a RNA species explicitly, by plotting space on the x-axis. It can only convey changes over a time series indirectly, via coloring of the levels of the **timeseries** factor. For example, consider the wisp plot for RORB.
+The [rate-count wisp plot](tutorial_wispplots.html) is made automatically with all calls of wisp() by an internal call to plot.ratecount(). This style of plot conveys the spatial distribution of a RNA species explicitly, by plotting space on the x-axis. It can only convey changes over a time series indirectly, via coloring of the levels of the **timeseries** factor. For example, consider the wisp plot for NXPH3, which shows a temporally dynamic and lateralized profile in deep layers (block 1), but almost no activity in superficial layers (block 2). 
 
 ```{r plot_wisp}
-print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Rorb)
+print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Nxph3)
 ```
 
-By default, when the **timeseries** factor is present, rate-count plots use an HCL color space, plotting time series as graduated luminance and the other factors as categorical levels of hue and chroma. In this case, left-hemisphere treatment levels are in green and right-hemisphere levels are in blue, with earlier time points dull and later time points brighter. If you look closely, you should be able to see that RORB expression in the superficial layers (**bin** > 50) of both hemispheres dips in P12 relative to P7, then rises again in P18. 
+By default, when the **timeseries** factor is present, rate-count plots use an HCL color space, plotting time series as graduated luminance and the other factors as categorical levels of hue and chroma. In this case, left-hemisphere treatment levels are in green and right-hemisphere levels are in blue, with earlier time points dull and later time points brighter. This makes the lateralization easy to see: the dull green line for the left hemisphere at P7 is much higher than any of the blue lines for the right hemisphere. However, the temporal dynamics are harder to see and only shown implicitly. If you look closely, you should be able to see that (for the deep layers) for both left (green) and right (blue), the dullest line (P7) is the highest, the medium-brightness line (P12) is the lowest, and the brightest line (P18) is in between. This suggests that NXPH3 expression in deep layers dips at P12 relative to P7, then rises again in P18.
 
-While this trend can be discerned from the spatial wisp plot, wispack offers another kind of plot for plotting time-series data which makes the trend obvious at a glance while also clarifying it. These time-series plots are made automatically by the wisp() function when a timeseries is provided or detected, through an internal call to the plot.timeseries() function. 
+While this trend can be discerned from the spatial wisp plot, wispack offers another kind of plot for plotting time-series data which makes the trend obvious at a glance while also clarifying it. These time-series plots are made automatically by the wisp() function when a time series is provided or detected, through an internal call to the plot.timeseries() function. 
 
 ```{r plot_timeseries}
-print(model$plots$timeseries$plot_pred_context_cortex_timeseries_Rorb)
-```
-
-Wisp time-series plots keep the y-axis a representation of rate, but switch the x-axis to a representation of the time-series points. However, the spatial aspect of the data is not completely lost. Instead of plotting the predicted rate on the y-axis, which would include not only the rate parameter but also the effects of transition-point location and transition-point slope, the time-series plot instead plots just the rate parameter itself. This parameter is a vector, each element of which is the rate for a block of space defined by transition points. These blocks are stacked on top of each other in the time-series plot, with blocks corresponding to the lowest spatial bins at the bottom. 
-
-In the RORB time-series plot above, the dip in expression at P12 in the superficial layers can be seen more clearly. Specifically, we see that the dip is localized to block 3, which can be seen in the rate-count plot to correspond approximately with cortical layer 4. RORB is known to localize in layer 4, where it plays a role in guiding thalamocortical innervation during development. So, the dip in expression at P12 may reflect a transient down-regulation of RORB as thalamocortical axons arrive in layer 4 around hearing onset.
-
-<h2>All results</h2>
-
-The time series plots from this demo dataset suggest other interesting patterns. For example, in BCL11B we can see that while there's a steep drop from P7 to P12 in the middle two blocks, this drop is not only lateralized, but also swapped across blocks, i.e., it is much steeper in the right hemisphere in block 3 and much steeper in the left hemisphere in block 2. 
-
-```{r plot_bcl11b}
-print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Bcl11b)
-print(model$plots$timeseries$plot_pred_context_cortex_timeseries_Bcl11b)
-```
-
-FEZF2 shows similar swapped lateralization, albeit to a lesser degree and in deep layers instead of superficial layers. 
-
-```{r plot_fezf2}
-print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Fezf2)
-print(model$plots$timeseries$plot_pred_context_cortex_timeseries_Fezf2)
-```
-
-NXPH3 is interesting in that it shows a temporally dynamic and lateralized profile in deep layers (block 1), but almost no activity in superficial layers (block 2). 
-
-```{r plot_nxph3}
-print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Nxph3)
 print(model$plots$timeseries$plot_pred_context_cortex_timeseries_Nxph3)
 ```
 
-CUX2 and SATB2 look to have no or little lateralization, but clear temporal dynamics across all layers. 
+Wisp time-series plots keep the y-axis a representation of rate, but switch the x-axis to a representation of the time-series points. However, the spatial aspect of the data is not completely lost. Instead of plotting the predicted rate on the y-axis, which would include not only the rate parameter but also the effects of transition-point location and transition-point slope, the time-series plot instead plots just the rate parameter itself. This parameter is a vector, each element of which is the rate for a block of space defined by transition points. In the NXPH3 time-series plot above, the dip in expression at P12 in the deep layers (block 1) can be seen more clearly. 
 
-```{r plot_satb2_cux2}
-print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Satb2)
-print(model$plots$timeseries$plot_pred_context_cortex_timeseries_Satb2)
-print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Cux2)
-print(model$plots$timeseries$plot_pred_context_cortex_timeseries_Cux2)
-```
+Notice that the colors in the time-series plots (blue and orange) are different from those in the rate-count plots (blue and green). This is to avoid suggesting that there's a direct correspondence between plot coloring. The coloring structures data within a plot type, but not across plot types.
+
+We could plot and discuss the rest of the layer-specific genes in this data set, but the plots (as produced by these function calls) are messy. This is because this analysis of the data does not account for how gene expression depends on cell type. To properly analyze this data, we need to include cell type in the model as well. This is explained in the [cell type tutorial](tutorial_multicontext.html), which also includes all plots. 

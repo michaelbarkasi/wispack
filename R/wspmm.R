@@ -1257,10 +1257,10 @@ plot.ratecount <- function(
           aes(x = bin, y = .data[[pred.type]], color = species),
           linewidth = 2, alpha = pred.alpha.none, na.rm = TRUE
         ) +  
-        labs(y = y_lab, x = "Bin", color = "fixed GV") +
+        labs(y = y_lab, x = "Bin", color = "species") +
         scale_colour_manual(values = species_colors ) +  
         theme_minimal() +
-        ggtitle(paste0("Ref-Class Dynamics and RE, ", cxt))
+        ggtitle(paste0("Reference level, ", cxt))
       
       # Add lines for random effects from df
       for (rl in seq_along(unique(df[,"ran"]))) {
@@ -1499,15 +1499,15 @@ plot.ratecount <- function(
         sps_plot <- plot_context_fixEff(df,cxt,sps)
         if (length(wisp.results$grouping.variables$context.lvls) > 1) {
           if (length(speciess.to.print) > 1) {
-            sps_title <- paste0("Counts and predicted rates for ", sps, " within ", cxt)
+            sps_title <- paste0("Predicted rates for ", sps, " within ", cxt)
           } else {
-            sps_title <- paste0("Counts and predicted rates for ", cxt)
+            sps_title <- paste0("Predicted rates for ", cxt)
           }
         } else {
           if (length(speciess.to.print) > 1) {
-            sps_title <- paste0("Counts and predicted rates for ", sps)
+            sps_title <- paste0("Predicted rates for ", sps)
           } else {
-            sps_title <- paste0("Counts and predicted rates")
+            sps_title <- paste0("Predicted rates")
           }
         }
         sps_plot <- sps_plot + ggtitle(sps_title) 
@@ -1775,9 +1775,9 @@ plot.timeseries <- function(
         
         # Make plot title
         if (length(unique(df$context)) > 1) {
-          sps_title <- paste0("Predicted rates by time for ", sps, " within ", cxt)
+          sps_title <- paste0("Predicted rates for ", sps, " within ", cxt)
         } else {
-          sps_title <- paste0("Predicted rates by time for ", sps)
+          sps_title <- paste0("Predicted rates for ", sps)
         }
         
         # Make colors
@@ -1785,7 +1785,7 @@ plot.timeseries <- function(
         # ... with splitting factor
         if (splitting_name != "none") {
           
-          blks <- sort(unique(dfc[dfc$species == sps, "block"]), decreasing = TRUE)
+          blks <- sort(unique(dfc[dfc$species == sps, "block"]))
           InterX <- expand.grid(blks, splitting_lvl, stringsAsFactors = FALSE)
           color_name <- paste0("block by ", splitting_name)
           color_lvl <- paste0(InterX[[1]], ", ", InterX[[2]])
@@ -1794,7 +1794,7 @@ plot.timeseries <- function(
           n_lum <- length(blks)
           n_chroma <- n_lum 
           n_colors <- n_hues * n_lum
-          colors_hues <- seq(120,240,length.out = n_hues)[1:n_hues]         # scale of 0:360
+          colors_hues <- seq(30,240,length.out = n_hues)[1:n_hues]         # scale of 0:360
           colors_lum <- seq(20,80,length.out = n_lum)[1:n_lum]              # scale of 0:100
           colors_chroma <- seq(20,80,length.out = n_chroma)[1:n_chroma]     # scale of 0:100
           splt1_colors <- colorspace::sequential_hcl(

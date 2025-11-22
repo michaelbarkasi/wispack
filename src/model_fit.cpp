@@ -991,7 +991,7 @@ List estimate_initial_parameters(
     int n_species = species_lvls.size();
     int n_context = context_lvls.size();
     
-    // Estimate degree of each context-species combination at baseline using LRO change-point detection 
+    // Create lists to store parameters
     // ... store ref values in list
     List ref_values(n_context);
     ref_values.names() = context_lvls;
@@ -1155,8 +1155,8 @@ List estimate_initial_parameters(
 
 // Function to initialize random effect warping factors 
 List make_initial_random_effects(
-  const CharacterVector& wfactors_names,  // names of warping factors to initialize
-  const int& n_ran,                       // number of random effects
+  const CharacterVector& wfactors_names,    // names of warping factors to initialize
+  const int& n_ran,                         // number of random effects
   const int& n_species                      // number of species levels
   ) {
     
