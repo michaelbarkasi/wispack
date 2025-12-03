@@ -15,7 +15,7 @@ cortical_coordinate_transform(
 )
 }
 \arguments{
-\item{count_data}{A list containing the count data and slice plots for each mouse, as produced by the \code{make_count_data_h5} or \code{make_count_data_csv} functions}
+\item{count_data}{A list containing the count data and slice plots for each mouse, as produced by the \code{make_count_data} or \code{make_count_data_csv} functions}
 
 \item{total_bins}{Number of bins into which to divide the spatial axes, e.g., 100}
 

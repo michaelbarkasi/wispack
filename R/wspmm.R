@@ -1207,7 +1207,7 @@ plot.ratecount <- function(
       colors_chroma <- seq(0,100,length.out = n_chroma + 2)[2:(n_chroma+1)]
       fe1_colors <- colorspace::sequential_hcl(
         n = n_lum,
-        h = colors_hues[1],
+        h = seq(colors_hues[1] - 10, colors_hues[1] + 10, length.out = n_lum),
         c = c(colors_chroma[1], colors_chroma[n_chroma]),
         l = c(colors_lum[n_lum], colors_lum[n_lum]),
         fixup = TRUE,
@@ -1218,7 +1218,7 @@ plot.ratecount <- function(
       )
       fe2_colors <- colorspace::sequential_hcl(
         n = n_lum,
-        h = colors_hues[n_hues],
+        h = seq(colors_hues[n_hues] - 10, colors_hues[n_hues] + 10, length.out = n_lum),
         c = c(colors_chroma[1], colors_chroma[n_chroma]),
         l = c(colors_lum[n_lum], colors_lum[1]),
         fixup = TRUE,
@@ -1794,12 +1794,12 @@ plot.timeseries <- function(
           n_lum <- length(blks)
           n_chroma <- n_lum 
           n_colors <- n_hues * n_lum
-          colors_hues <- seq(30,240,length.out = n_hues)[1:n_hues]         # scale of 0:360
+          colors_hues <- seq(30,280,length.out = n_hues)[1:n_hues]         # scale of 0:360
           colors_lum <- seq(20,80,length.out = n_lum)[1:n_lum]              # scale of 0:100
           colors_chroma <- seq(20,80,length.out = n_chroma)[1:n_chroma]     # scale of 0:100
           splt1_colors <- colorspace::sequential_hcl(
             n = n_lum,
-            h = colors_hues[1],
+            h = seq(colors_hues[1] - 10, colors_hues[1] + 10, length.out = n_lum),
             c = c(colors_chroma[1], colors_chroma[n_chroma]),
             l = c(colors_lum[n_lum], colors_lum[n_lum]),
             fixup = TRUE,
@@ -1810,7 +1810,7 @@ plot.timeseries <- function(
           )
           splt2_colors <- colorspace::sequential_hcl(
             n = n_lum,
-            h = colors_hues[n_hues],
+            h = seq(colors_hues[n_hues] - 10, colors_hues[n_hues] + 10, length.out = n_lum),
             c = c(colors_chroma[1], colors_chroma[n_chroma]),
             l = c(colors_lum[n_lum], colors_lum[1]),
             fixup = TRUE,
@@ -3022,6 +3022,7 @@ plot.decomposition <- function(
         wisp.results = wisp.results,
         pred.type = ptype,
         count.type = ctype,
+        CI_style = FALSE,
         dim.boundaries = dim.boundaries,
         y.lim = y.lim,
         count.alpha.none = input$count.alpha.none[r],

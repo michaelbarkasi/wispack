@@ -17,7 +17,7 @@ double safe_rnorm(
     return distribution(generator);
   }
 
-// Better normal distribution function, with PCG and Box-Muller
+// Better normal-distribution random-number generator, with PCG and Box-Muller
 double pcg_rnorm(
     double mean, 
     double sd,
