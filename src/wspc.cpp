@@ -988,11 +988,13 @@ bool wspc::test_tpoints(
             if (buffer_dist < 0.0) {
               if (verbose) {
                 vprint(
-                  "Found tpoint below buffer, dist: " + std::to_string(buffer_dist.val()) +
-                    ", deg: " + std::to_string(d) +
-                    ", row: " + std::to_string(r) +
-                    ", tpoint_ext(d + 1): " + std::to_string(tpoint_ext(d + 1).val()) +
-                    ", tpoint_ext(d): " + std::to_string(tpoint_ext(d).val()),
+                  "Found tpoint below buffer, dist: " + std::to_string(buffer_dist.val()),
+                    true);
+                vprint(
+                  "   deg: " + std::to_string(d) + ", row: " + std::to_string(r),
+                    true);
+                vprint(
+                  "   tpoint_ext(d + 1): " + std::to_string(tpoint_ext(d + 1).val()) + ", tpoint_ext(d): " + std::to_string(tpoint_ext(d).val()),
                     true);
               }
               return false;

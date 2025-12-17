@@ -637,10 +637,15 @@ IntegerMatrix LROcp_array(
           } else {
             int cp_gap = found_cp_array(k, i) - found_cp_array(k - 1, i);
             if (cp_gap <= 0 || found_cp_array(k, i) >= n_samples - cp_buffer - 1.0) {
-              // Change point collision! Mark row for removal
-              collision_rows.push_back(k);
-              // Advance counter k
-              k++;
+              // Change point collision! 
+              if (k == found_cp_array.nrow() - 1 && (n_samples - cp_buffer - 1.0 - found_cp_array(k - 1, i) > cp_buffer)) {
+                found_cp_array(k, i) = n_samples - cp_buffer - 1;
+              } else {
+                // Mark row for removal
+                collision_rows.push_back(k);
+                // Advance counter k
+                k++;
+              }
             } else if (cp_gap <= cp_buffer) {
               // Change points too close together, so move this one forward
               found_cp_array(k, i) = found_cp_array(k - 1, i) + cp_buffer + 1.0;

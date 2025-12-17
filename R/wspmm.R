@@ -1207,9 +1207,9 @@ plot.ratecount <- function(
       colors_chroma <- seq(0,100,length.out = n_chroma + 2)[2:(n_chroma+1)]
       fe1_colors <- colorspace::sequential_hcl(
         n = n_lum,
-        h = seq(colors_hues[1] - 10, colors_hues[1] + 10, length.out = n_lum),
-        c = c(colors_chroma[1], colors_chroma[n_chroma]),
-        l = c(colors_lum[n_lum], colors_lum[n_lum]),
+        h = seq(colors_hues[1] - 15, colors_hues[1] + 15, length.out = n_lum),
+        c = colors_chroma,
+        l = colors_lum[n_lum],
         fixup = TRUE,
         alpha = 1,
         palette = NULL,
@@ -1218,9 +1218,9 @@ plot.ratecount <- function(
       )
       fe2_colors <- colorspace::sequential_hcl(
         n = n_lum,
-        h = seq(colors_hues[n_hues] - 10, colors_hues[n_hues] + 10, length.out = n_lum),
-        c = c(colors_chroma[1], colors_chroma[n_chroma]),
-        l = c(colors_lum[n_lum], colors_lum[1]),
+        h = seq(colors_hues[n_hues] - 15, colors_hues[n_hues] + 15, length.out = n_lum),
+        c = colors_chroma,
+        l = colors_lum[n_lum],
         fixup = TRUE,
         alpha = 1,
         palette = NULL,
@@ -1799,9 +1799,9 @@ plot.timeseries <- function(
           colors_chroma <- seq(20,80,length.out = n_chroma)[1:n_chroma]     # scale of 0:100
           splt1_colors <- colorspace::sequential_hcl(
             n = n_lum,
-            h = seq(colors_hues[1] - 10, colors_hues[1] + 10, length.out = n_lum),
-            c = c(colors_chroma[1], colors_chroma[n_chroma]),
-            l = c(colors_lum[n_lum], colors_lum[n_lum]),
+            h = seq(colors_hues[1] - 15, colors_hues[1] + 15, length.out = n_lum),
+            c = colors_chroma,
+            l = colors_lum[n_lum],
             fixup = TRUE,
             alpha = 1,
             palette = NULL,
@@ -1810,9 +1810,9 @@ plot.timeseries <- function(
           )
           splt2_colors <- colorspace::sequential_hcl(
             n = n_lum,
-            h = seq(colors_hues[n_hues] - 10, colors_hues[n_hues] + 10, length.out = n_lum),
-            c = c(colors_chroma[1], colors_chroma[n_chroma]),
-            l = c(colors_lum[n_lum], colors_lum[1]),
+            h = seq(colors_hues[n_hues] - 15, colors_hues[n_hues] + 15, length.out = n_lum),
+            c = colors_chroma,
+            l = colors_lum[n_lum],
             fixup = TRUE,
             alpha = 1,
             palette = NULL,
@@ -3352,8 +3352,8 @@ project_cp <- function(
       a_idx <- aX[[c]]
       
       for (cpi in 1:length(found_cp)) {
-        cp <- found_cp[cpi]                # index of change point on the centroid
-        cp_a_idx <- which(a_idx[,2] == cp) # second column is the centroid alignment indices
+        cp <- found_cp[cpi]                               # index of change point on the centroid
+        cp_a_idx <- which(a_idx[,2] == cp)                # second column is the centroid alignment indices
         X_likp[cpi, c] <- round(mean(a_idx[cp_a_idx, 1])) # project back, take mean, and round to integer
       }
       
