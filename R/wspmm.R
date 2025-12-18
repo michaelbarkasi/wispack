@@ -1202,12 +1202,12 @@ plot.ratecount <- function(
       }
       n_chroma <- n_lum 
       n_colors <- n_hues * n_lum
-      colors_hues <- seq(0,360,length.out = n_hues + 2)[2:(n_hues+1)]
-      colors_lum <- seq(0,100,length.out = n_lum + 2)[2:(n_lum+1)]
-      colors_chroma <- seq(0,100,length.out = n_chroma + 2)[2:(n_chroma+1)]
+      colors_hues <- seq(0,360,length.out = n_hues + 2)[2:(n_hues+1)]        # scale of 0:360
+      colors_lum <- seq(0,100,length.out = n_lum + 2)[2:(n_lum+1)]           # scale of 0:100
+      colors_chroma <- seq(0,100,length.out = n_chroma + 2)[2:(n_chroma+1)]  # scale of 0:100
       fe1_colors <- colorspace::sequential_hcl(
         n = n_lum,
-        h = seq(colors_hues[1] - 15, colors_hues[1] + 15, length.out = n_lum),
+        h = colors_hues[1],
         c = colors_chroma,
         l = colors_lum[n_lum],
         fixup = TRUE,
@@ -1218,7 +1218,7 @@ plot.ratecount <- function(
       )
       fe2_colors <- colorspace::sequential_hcl(
         n = n_lum,
-        h = seq(colors_hues[n_hues] - 15, colors_hues[n_hues] + 15, length.out = n_lum),
+        h = colors_hues[n_hues],
         c = colors_chroma,
         l = colors_lum[n_lum],
         fixup = TRUE,
@@ -1794,12 +1794,12 @@ plot.timeseries <- function(
           n_lum <- length(blks)
           n_chroma <- n_lum 
           n_colors <- n_hues * n_lum
-          colors_hues <- seq(30,280,length.out = n_hues)[1:n_hues]         # scale of 0:360
-          colors_lum <- seq(20,80,length.out = n_lum)[1:n_lum]              # scale of 0:100
-          colors_chroma <- seq(20,80,length.out = n_chroma)[1:n_chroma]     # scale of 0:100
+          colors_hues <- seq(0,360,length.out = n_hues + 2)[2:(n_hues+1)]        # scale of 0:360
+          colors_lum <- seq(0,100,length.out = n_lum + 2)[2:(n_lum+1)]           # scale of 0:100
+          colors_chroma <- seq(0,100,length.out = n_chroma + 2)[2:(n_chroma+1)]  # scale of 0:100
           splt1_colors <- colorspace::sequential_hcl(
             n = n_lum,
-            h = seq(colors_hues[1] - 15, colors_hues[1] + 15, length.out = n_lum),
+            h = colors_hues[1],
             c = colors_chroma,
             l = colors_lum[n_lum],
             fixup = TRUE,
@@ -1810,7 +1810,7 @@ plot.timeseries <- function(
           )
           splt2_colors <- colorspace::sequential_hcl(
             n = n_lum,
-            h = seq(colors_hues[n_hues] - 15, colors_hues[n_hues] + 15, length.out = n_lum),
+            h = colors_hues[n_hues],
             c = colors_chroma,
             l = colors_lum[n_lum],
             fixup = TRUE,
@@ -1859,7 +1859,7 @@ plot.timeseries <- function(
           )
         }
         plt <- plt  + 
-          geom_line(linewidth = 1) +
+          geom_line(linewidth = 1.5) +
           geom_point(aes(y = count)) +
           scale_x_continuous(breaks = unique(dfc$timeseries)) +
           #facet_grid(block ~., space = "free_y") + #  scales = "free_y",
