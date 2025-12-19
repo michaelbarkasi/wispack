@@ -316,6 +316,7 @@ wisp <- function(
       
       # Grab model results 
       results <- cpp_model$results()
+      results[["Cpp_model"]] <- cpp_model
       
       # Add variable names 
       results[["variables"]] <- variables
@@ -476,6 +477,7 @@ wisp <- function(
       
       # Grab model results and add samples
       results <- cpp_model$results()
+      results[["Cpp_model"]] <- cpp_model
       results[["sample.params"]] <- sample.params
       results[["sample.params.bs"]] <- sample.params.bs
       results[["sample.params.MCMC"]] <- sample.params.MCMC
