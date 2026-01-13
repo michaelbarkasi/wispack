@@ -649,6 +649,7 @@ wisp <- function(
         )
       }
       
+      cpp_model$clear_stan_mem()
       return(results)
       
     }

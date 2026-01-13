@@ -197,7 +197,7 @@ model <- wisp(
         print.plots = FALSE, 
         dim.bounds = colMeans(layer.boundary.bins)
       ),
-    verbose = TRUE,
+    verbose = TRUE
   )
 ```
 
