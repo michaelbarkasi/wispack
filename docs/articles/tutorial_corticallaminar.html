@@ -41,6 +41,7 @@
     <li><a class="dropdown-item" href="../articles/release_notes.html">Release Notes</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_benchmarks.html">Benchmarks and comparisons</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_liverradial.html">Radial zonation in liver lobules</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling cell types</a></li>
@@ -78,7 +79,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2025-11-25</h4>
+            <h4 data-toc-skip class="date">2026-01-24</h4>
       
 
       <div class="d-none name"><code>tutorial_corticallaminar.Rmd</code></div>
@@ -260,7 +261,7 @@ with mouse as a random-effect grouping factor. A linear model from the
 well-known R package lme4 with the appropriate effects structure could
 be gotten with the following call:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu">lme4</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu">lme4</span><span class="fu">::</span><span class="fu">lmer</span><span class="op">(</span></span>
 <span>    <span class="va">count</span> <span class="op">~</span> <span class="va">age</span> <span class="op">*</span> <span class="va">hemisphere</span> <span class="op">+</span> <span class="op">(</span><span class="va">age</span> <span class="op">*</span> <span class="va">hemisphere</span><span class="op">|</span><span class="va">mouse</span><span class="op">)</span>, </span>
 <span>    data <span class="op">=</span> <span class="va">countdata</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
@@ -418,7 +419,7 @@ laminar boundaries estimated by the CCFv3 registration.</p>
 <span>        print.plots <span class="op">=</span> <span class="cn">FALSE</span>, </span>
 <span>        dim.bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span></span>
 <span>      <span class="op">)</span>,</span>
-<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## </span></span>
 <span><span class="co">## </span></span>
@@ -437,6 +438,7 @@ laminar boundaries estimated by the CCFv3 registration.</p>
 <span><span class="co">##  warp_precision: 1e-07</span></span>
 <span><span class="co">##  round_none: TRUE</span></span>
 <span><span class="co">##  inf_warp: 450359962.73705</span></span>
+<span><span class="co">##  allow_infeasible_params: TRUE</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Plot settings:</span></span>
 <span><span class="co">##  print.plots: FALSE</span></span>
@@ -565,9 +567,9 @@ laminar boundaries estimated by the CCFv3 registration.</p>
 <span><span class="co">## Acceptance rate (aim for 0.2-0.3): 0.283432</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## MCMC simulation complete... </span></span>
-<span><span class="co">## MCMC run time (total), minutes: 1.205</span></span>
-<span><span class="co">## MCMC run time (per retained step), seconds: 0.066</span></span>
-<span><span class="co">## MCMC run time (per step), seconds: 0.066</span></span>
+<span><span class="co">## MCMC run time (total), minutes: 0.836</span></span>
+<span><span class="co">## MCMC run time (per retained step), seconds: 0.046</span></span>
+<span><span class="co">## MCMC run time (per step), seconds: 0.046</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Setting full-data fit as parameters... </span></span>
 <span><span class="co">## Checking feasibility of provided parameters</span></span>
@@ -657,6 +659,7 @@ with the following named components:</p>
 <span><span class="co">## param.idx0: list</span></span>
 <span><span class="co">## token.pool: list</span></span>
 <span><span class="co">## settings: list</span></span>
+<span><span class="co">## Cpp_model: Rcpp_wspc</span></span>
 <span><span class="co">## sample.params: matrix, array</span></span>
 <span><span class="co">## sample.params.MCMC: matrix, array</span></span>
 <span><span class="co">## diagnostics.MCMC: data.frame</span></span>
@@ -733,7 +736,7 @@ automatically generates these plots and stores them in plots$ratecount.
 Here, for example, is the plot for RORB:</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">ratecount</span><span class="op">$</span><span class="va">plot_pred_context_cortex_fixEff_Rorb</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_corticallaminar_files/figure-html/plot_RORB_ratecount-1.png" width="700"></p>
+<p><img src="tutorial_corticallaminar_files/figure-html/plot_RORB_ratecount-1.png" class="r-plt" alt="" width="700"></p>
 <p>The shading shows 95% confidence intervals for the rate estimates.
 Note that while the p-values and confidence intervals for the model
 <em>parameters</em> are corrected for multiple-comparisons (by default,
@@ -759,7 +762,7 @@ provided (via the variables argument), the wisp() function automatically
 generates time-series plots for each gene.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">timeseries</span><span class="op">$</span><span class="va">plot_pred_context_cortex_timeseries_Rorb</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_corticallaminar_files/figure-html/plot_RORB_timeseries-1.png" width="700"></p>
+<p><img src="tutorial_corticallaminar_files/figure-html/plot_RORB_timeseries-1.png" class="r-plt" alt="" width="700"></p>
 <p>The time-series plot puts the time points on the x-axis, with rate
 (as before) on the y-axis. However, the rate value is not the expected
 value at a given bin, but rather the rate parameter itself. As each
@@ -797,7 +800,7 @@ visualization.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>

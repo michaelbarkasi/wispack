@@ -1,0 +1,248 @@
+# Wispack: An R package for warped sigmoidal Poisson-process mixed-effects modeling
+
+Wispack (pronounced “wisp package” or “wisp pack”) is an R package for
+testing for between-group effects on spatial variation in spatial
+transcriptomics data. As such variation is often functional, these can
+be thought of as *functional spatial effects* (FSE).
+
+![True-color MERFISH
+image](reference/figures/stack_0_1475_L1_truecolor.png)
+
+True-color image of fluorescing probes bound to mRNA molecules in
+cortical cells, the raw data of spatial transcriptomics.
+
+Unlike testing for spatially variable genes (SVGs), which only involves
+testing for spatial variation of gene expression within a group, and
+unlike differential expression (DE) analysis which tests for
+between-group effects without regard to spatial distribution, testing
+for FSEs involves testing whether a factor such as age or rearing
+conditions has a nonzero effect on spatial variation between groups
+differing on that factor.
+
+![DE vs SVG vs FSE](reference/figures/fig_FSE.png)
+
+Comparison between testing for differentially expressed genes, spatially
+variable genes, and genes with function spatial effects. For
+visualization purposes, mouse brain slices represent the tissue sample
+and laterality (left vs right hemisphere) represents a fixed effect
+(i.e., covariate).
+
+Wispack performs FSE testing by first using change-point detection to
+find spatial variation in samples, then fitting a nonlinear mixed-effect
+model to the detected change points. The core of the nonlinear model is
+a parameterization of the found change-points as inflections in logistic
+functions representing gradients of gene expression change. Multiple
+change-points are handled by summing the component logistic functions
+into a “poly-sigmoid” function. Fixed effects (such as age or rearing
+conditions) are then modeled as effects on the underlying logistic
+parameters. Random (within group) effects are modeled as further
+nonlinear warping of the poly-sigmoid. Significance testing is performed
+on the effects through either bootstrapping or MCMC resampling. A
+complete mathematical description of wisp models can be found in this
+[preprint](https://doi.org/10.1101/2025.06.11.659209).
+
+![Demo plots of functions involved in
+wisp](reference/figures/fig_WSPfunctions.png)
+
+Demo plots of the functions involved in wisp. (A) The logistic function,
+used to model a single change point in gene expression. (B) The wisp
+poly-sigmoid function, built from three logistic components,
+representing three change points. (C) The warping function used to
+represent random effects, e.g., variation due to differences between
+individual animals or due to measurement noise. (D) The wisp
+poly-sigmoid from (B) with warping function applied.
+
+Wispack provides a user-facing function, wisp(), which takes a data
+frame in the familiar format expected by standard R functions for linear
+models (e.g.,
+[lme4::lmer()](https://cran.r-project.org/web/packages/lme4/index.html)
+or
+[stats::lm()](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html))
+and runs the complete test for FSEs. Preprocessing of the data is
+generally required before passing it to wisp(), after which wisp()
+executes a pipeline involving parameter estimates, prediction, model
+fitting, and hypothesis testing.
+
+![Diagram of top-level of wisp modeling
+pipeline](reference/figures/fig_modelpipeline_simple.png)
+
+Top-level overview of wisp modeling pipeline.
+
+As shown by the figure below, the steps of this pipeline are nonlinear
+and recurrent.
+
+![Diagram of full modeling
+pipeline](reference/figures/fig_modelpipeline.png)
+
+Full modeling pipeline for wisp. Boxes represent variables in the model,
+or operations performed on variables. Arrows represent input-output
+relationships between these variables and operations.
+
+Unlike standard linear modeling packages in R which require a model
+formula, wisp() merely needs the data. For example, the quick-start demo
+(which uses data from mice on RORB expression across the laminar axis of
+the primary somatosensory cortex) runs the following code:
+
+``` r
+# Set random seed for reproducibility
+ran.seed <- 123
+set.seed(ran.seed)
+
+# Load wispack
+library(wispack)
+
+# Load demo data
+countdata <- read.csv(system.file(
+      "extdata", 
+      "S1_laminar_countdata_demo_default_col_names.csv", 
+      package = "wispack"
+    )
+  )
+
+# Fit model
+laminar.model <- wisp(countdata)
+
+# View model 
+View(laminar.model)
+```
+
+No model formula is required, as all wisp models have the same
+mathematical form. However, the variables involved in that form can, of
+course, have different names. These names will come from the column
+names of the data and can be set manually by the user, as so:
+
+``` r
+# Define variables in the dataframe for the model
+data.variables <- list(
+    count = "count",
+    bin = "bin", 
+    context = "cortex", 
+    species = "gene",
+    ran = "mouse",
+    timeseries = "age",
+    fixedeffects = c("hemisphere", "age")
+  )
+  
+# Fit model
+laminar.model <- wisp(
+    count.data = countdata,
+    variables = data.variables
+  )
+```
+
+Both the quick-start demo and another demo showing all model options can
+be run using the demo() command:
+
+``` r
+demo("quick_start", package = "wispack")  
+demo("full_options", package = "wispack")
+```
+
+Please see the tutorials for more detailed walkthroughs of the package
+and its options.
+
+![Artistic rendering of wisp model](reference/figures/wisp_art.png)
+
+Artistic rendering of a wisp model. See [this
+tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_wispplots.md)
+for an explanation.
+
+Copyright (C) 2025, Michael Barkasi <barkasi@wustl.edu>
+
+# Package index
+
+## Main
+
+- [`wisp()`](https://michaelbarkasi.github.io/wispack/reference/wisp.md)
+  : Fit wisp to count data
+
+## Model functions
+
+- [`wisp.sigmoid()`](https://michaelbarkasi.github.io/wispack/reference/wisp.sigmoid.md)
+  : Wisp sigmoid function, implemented in R
+- [`wisp.warp()`](https://michaelbarkasi.github.io/wispack/reference/wisp.warp.md)
+  : Wisp warping function, implemented in R
+
+## Analysis functions
+
+- [`analyze.residuals()`](https://michaelbarkasi.github.io/wispack/reference/analyze.residuals.md)
+  : Analyze residuals from wisp fit
+- [`pvalues.samples()`](https://michaelbarkasi.github.io/wispack/reference/pvalues.samples.md)
+  : Compute p-values using ecdf from parameter resamples
+- [`sample.stats()`](https://michaelbarkasi.github.io/wispack/reference/sample.stats.md)
+  : Estimate p-values and confidence intervals from resampled parameters
+
+## Plotting functions
+
+- [`plot.MCMC.bs.comparison()`](https://michaelbarkasi.github.io/wispack/reference/plot-MCMC-bs-comparison.md)
+  : Visually compare normality and autocorrelation of bootstrap and MCMC
+  parameter estimates
+- [`plot.MCMC.walks()`](https://michaelbarkasi.github.io/wispack/reference/plot-MCMC-walks.md)
+  : Plot sampling of random walks and negative log likelihood from MCMC
+  simulations
+- [`plot.decomposition()`](https://michaelbarkasi.github.io/wispack/reference/plot-decomposition.md)
+  : Plot individual components of wisp fit for a single species level
+- [`plot.effect.dist()`](https://michaelbarkasi.github.io/wispack/reference/plot-effect-dist.md)
+  : Plot parameter distributions from WISP results as histograms
+- [`plot.parameters()`](https://michaelbarkasi.github.io/wispack/reference/plot-parameters.md)
+  : Plot of wisp parameters
+- [`plot.ratecount()`](https://michaelbarkasi.github.io/wispack/reference/plot-ratecount.md)
+  : Plot fitted model and data
+- [`plot.species.summary()`](https://michaelbarkasi.github.io/wispack/reference/plot-species-summary.md)
+  : Print rate-count, residual, and parameter plots for one species
+  level together.
+- [`plot.timeseries()`](https://michaelbarkasi.github.io/wispack/reference/plot-timeseries.md)
+  : Plot timeseries effects from wisp results
+- [`demo.sigmoid.plots()`](https://michaelbarkasi.github.io/wispack/reference/demo.sigmoid.plots.md)
+  : Make plot demonstrating how the wisp function is determined by the
+  Rt, slope, and tpoint parameters
+- [`demo.warp.plots()`](https://michaelbarkasi.github.io/wispack/reference/demo.warp.plots.md)
+  : Make plot demonstrating how the wisp function is warped by the
+  warping factors
+
+## MERFISH preprocessing functions
+
+- [`make_count_data()`](https://michaelbarkasi.github.io/wispack/reference/make_count_data.md)
+  : Load and parse data, HDF5
+- [`make_count_data_csv()`](https://michaelbarkasi.github.io/wispack/reference/make_count_data_csv.md)
+  : Load and parse data, csv
+- [`cortical_coordinate_transform()`](https://michaelbarkasi.github.io/wispack/reference/cortical_coordinate_transform.md)
+  : Function to transform coordinates for each mouse and extract layer
+  boundary estimates
+- [`create.count.data.WSPmm()`](https://michaelbarkasi.github.io/wispack/reference/create.count.data.WSPmm.md)
+  : Function to convert to WSPmm format
+
+# Articles
+
+### Installation
+
+- [Installation
+  instructions](https://michaelbarkasi.github.io/wispack/articles/install.md):
+- [Release
+  Notes](https://michaelbarkasi.github.io/wispack/articles/release_notes.md):
+
+### Tutorials
+
+- [Benchmarks and
+  comparisons](https://michaelbarkasi.github.io/wispack/articles/tutorial_benchmarks.md):
+- [RORB along the cortical laminar
+  axis](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.md):
+- [Radial zonation in liver
+  lobules](https://michaelbarkasi.github.io/wispack/articles/tutorial_liverradial.md):
+- [Modeling cell
+  types](https://michaelbarkasi.github.io/wispack/articles/tutorial_multicontext.md):
+- [Poisson processes and
+  sigmoids](https://michaelbarkasi.github.io/wispack/articles/tutorial_Poisson.md):
+- [Customizing statistical
+  analyses](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md):
+- [Time-series
+  data](https://michaelbarkasi.github.io/wispack/articles/tutorial_timeseries.md):
+- [Random effects and
+  warping](https://michaelbarkasi.github.io/wispack/articles/tutorial_warping.md):
+- [The wisp rate-count
+  plot](https://michaelbarkasi.github.io/wispack/articles/tutorial_wispplots.md):
+
+### Legal
+
+- [Dependency
+  licenses](https://michaelbarkasi.github.io/wispack/articles/license.md):

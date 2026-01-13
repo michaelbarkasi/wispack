@@ -12,6 +12,8 @@ plot.MCMC.bs.comparison(wisp.results, print.plots = TRUE, verbose = TRUE)
 \item{print.plots}{Logical, if TRUE, prints the plots to the current graphics device.}
 
 \item{verbose}{Logical, if TRUE, prints information during plotting.}
+
+\item{ran.seed}{Integer, random seed for reproducibility. Defaults to 1234. If NULL, no seed set.}
 }
 \value{
 List of ggplot objects containing plots of representative parameter distributions, Shapiro-Wilk normality test results, and autocorrelation plots for bootstrap and MCMC parameter estimates.

@@ -28,6 +28,8 @@ NULL
 #' @param model.settings List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, \code{warp_precision}, and \code{round_none}. Default values are provided.
 #' @param MCMC.settings List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.
 #' @param plot.settings List, settings for plots to make, including \code{print.plots}, \code{dim.bounds}, \code{pred.type}, \code{count.type}, \code{splitting_factor}, \code{CI_style}, \code{label_size}, \code{title_size}, \code{axis_size}, \code{legend_size}, \code{count_size}, \code{count_jitter}, \code{count.alpha.ran}, \code{count.alpha.none}, \code{pred.alpha.ran}, and \code{pred.alpha.none}. Default values are provided.
+#' @param ran.seed Integer, random seed for reproducibility. If NULL, no seed is set. Default is 1234.
+#' @param allow_infeasible_params Logical, if TRUE, allows negative rate estimates or other boundary violations during fitting (with warning); if FALSE, boundary violations throw a stop. 
 #' @return List giving the results of the fitted model, including: \code{model.component.list}, \code{count.data.summed}, \code{fitted.parameters}, \code{gamma.disperson}, \code{param.names}, \code{fix}, \code{treatment}, \code{grouping.variables}, \code{param.idx0}, \code{settings}, \code{sample.params}, \code{sample.params.bs}, \code{sample.params.MCMC}, \code{diagnostics.bs}, \code{diagnostics.MCMC}, \code{stats}, and \code{plots}
 #' @export
 wisp <- function(
@@ -41,12 +43,13 @@ wisp <- function(
     verbose = TRUE,
     model.settings = list(),
     MCMC.settings = list(),
-    plot.settings = list()
+    plot.settings = list(),
+    ran.seed = 1234,
+    allow_infeasible_params = TRUE
   ) {
    
     # Make reproducible
-    ran.seed <- 1234
-    set.seed(ran.seed)
+    if (!is.null(ran.seed)) set.seed(ran.seed)
     
     # Data checks and parsing ####
     
@@ -214,6 +217,9 @@ wisp <- function(
     
     # Add inf_warp 
     model.settings.internal$inf_warp <- model.settings.internal$warp_precision / .Machine$double.eps
+    
+    # Add allow_infeasible_params
+    model.settings.internal$allow_infeasible_params <- allow_infeasible_params
     
     # Parse plot settings 
     plot.settings.internal <- list(
@@ -933,7 +939,9 @@ analyze.residuals <- function(
           axis.title = element_text(size = wisp.results$plot.settings$axis_size),
           axis.text = element_text(size = wisp.results$plot.settings$axis_size),
           legend.title = element_text(size = wisp.results$plot.settings$legend_size),
-          legend.text = element_text(size = wisp.results$plot.settings$legend_size)
+          legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+          panel.background = element_rect(fill = "white", colour = NA),
+          plot.background  = element_rect(fill = "white", colour = NA)
         )
       
       return(resid_plot)
@@ -977,7 +985,9 @@ analyze.residuals <- function(
           axis.title = element_text(size = wisp.results$plot.settings$axis_size),
           axis.text = element_text(size = wisp.results$plot.settings$axis_size),
           legend.title = element_text(size = wisp.results$plot.settings$legend_size),
-          legend.text = element_text(size = wisp.results$plot.settings$legend_size)
+          legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+          panel.background = element_rect(fill = "white", colour = NA),
+          plot.background  = element_rect(fill = "white", colour = NA)
         )
       
       # qq-plot
@@ -1263,6 +1273,10 @@ plot.ratecount <- function(
         labs(y = y_lab, x = "Bin", color = "species") +
         scale_colour_manual(values = species_colors ) +  
         theme_minimal() +
+        theme(
+          panel.background = element_rect(fill = "white", colour = NA),
+          plot.background  = element_rect(fill = "white", colour = NA)
+        ) +
         ggtitle(paste0("Reference level, ", cxt))
       
       # Add lines for random effects from df
@@ -1316,8 +1330,8 @@ plot.ratecount <- function(
           axis.text = element_text(size = wisp.results$plot.settings$axis_size),
           legend.title = element_text(size = wisp.results$plot.settings$legend_size),
           legend.text = element_text(size = wisp.results$plot.settings$legend_size),
-          panel.background = ggplot2::element_rect(fill = "white", colour = NA),
-          plot.background  = ggplot2::element_rect(fill = "white", colour = NA)
+          panel.background = element_rect(fill = "white", colour = NA),
+          plot.background  = element_rect(fill = "white", colour = NA)
         )
       
       return(plot)
@@ -1351,7 +1365,11 @@ plot.ratecount <- function(
             linetype = "solid", linewidth = 1.5, alpha = pred.alpha.none, na.rm = TRUE
           ) +  
           labs(y = y_lab, x = "Bin") +
-          theme_minimal() 
+          theme_minimal() + 
+          theme(
+            panel.background = element_rect(fill = "white", colour = NA),
+            plot.background  = element_rect(fill = "white", colour = NA)
+          )
         
         if (!CI_style) {
           
@@ -1363,7 +1381,11 @@ plot.ratecount <- function(
               width = count_jitter, height = 0, alpha = count.alpha.none, size = count_size, na.rm = TRUE
             ) +  
             labs(y = y_lab, x = "Bin") +
-            theme_minimal() 
+            theme_minimal() +
+            theme(
+              panel.background = element_rect(fill = "white", colour = NA),
+              plot.background  = element_rect(fill = "white", colour = NA)
+            )
           
           # plot effect with random effects 
           for (rl in rans.to.print) { 
@@ -1377,7 +1399,11 @@ plot.ratecount <- function(
                 data = df[ gvf_idx_cxt & df[,"ran"] == rl & df[,"treatment"] == fe_name, ],                
                 aes(x = bin, y = .data[[pred.type]], color = treatment), 
                 linetype = ran_linetype, linewidth = ran_size, alpha = pred.alpha.ran, na.rm = TRUE
-              )  
+              ) +
+              theme(
+                panel.background = element_rect(fill = "white", colour = NA),
+                plot.background  = element_rect(fill = "white", colour = NA)
+              )
           }
           
         } else {
@@ -1464,8 +1490,8 @@ plot.ratecount <- function(
           axis.text = element_text(size = wisp.results$plot.settings$axis_size),
           legend.title = element_text(size = wisp.results$plot.settings$legend_size),
           legend.text = element_text(size = wisp.results$plot.settings$legend_size),
-          panel.background = ggplot2::element_rect(fill = "white", colour = NA),
-          plot.background  = ggplot2::element_rect(fill = "white", colour = NA)
+          panel.background = element_rect(fill = "white", colour = NA),
+          plot.background  = element_rect(fill = "white", colour = NA)
         )
       
       return(plot)
@@ -1854,12 +1880,12 @@ plot.timeseries <- function(
           plt <- ggplot(
             dfc[dfc$species == sps,], 
             aes(x = timeseries, y = rate, color = interaction(block, splitting_factor, sep = ", "))
-          )
+          ) 
         } else {
           plt <- ggplot(
             dfc[dfc$species == sps,], 
             aes(x = timeseries, y = rate, color = block)
-          )
+          ) 
         }
         plt <- plt  + 
           geom_line(linewidth = 1.5) +
@@ -1873,8 +1899,8 @@ plot.timeseries <- function(
             axis.text = element_text(size = wisp.results$plot.settings$axis_size),
             legend.title = element_text(size = wisp.results$plot.settings$legend_size),
             legend.text = element_text(size = wisp.results$plot.settings$legend_size),
-            panel.background = ggplot2::element_rect(fill = "white", colour = NA),
-            plot.background  = ggplot2::element_rect(fill = "white", colour = NA)
+            panel.background = element_rect(fill = "white", colour = NA),
+            plot.background  = element_rect(fill = "white", colour = NA)
           ) +
           labs(y = y_lab, x = "Time point", color = color_name) +
           ggtitle(sps_title) + 
@@ -2248,7 +2274,9 @@ plot.parameters <- function(
             legend.title = element_text(size = wisp.results$plot.settings$legend_size),
             legend.text = element_text(size = wisp.results$plot.settings$legend_size),
             axis.text.x = element_text(angle = 90, hjust = 1),
-            legend.position = legpos
+            legend.position = legpos,
+            panel.background = element_rect(fill = "white", colour = NA),
+            plot.background  = element_rect(fill = "white", colour = NA)
             )
         
         if (print_stats) {
@@ -2300,7 +2328,9 @@ plot.parameters <- function(
             legend.title = element_text(size = wisp.results$plot.settings$legend_size),
             legend.text = element_text(size = wisp.results$plot.settings$legend_size),
             axis.text.x = element_text(angle = 90, hjust = 1),
-            legend.position = legpos
+            legend.position = legpos,
+            panel.background = element_rect(fill = "white", colour = NA),
+            plot.background  = element_rect(fill = "white", colour = NA)
           ) +
           scale_fill_manual(values = c("point" = "#c356ea", "rate" = "#ffc100", "slope" = "#00a99d")) 
         
@@ -2471,7 +2501,9 @@ plot.parameters <- function(
               legend.title = element_text(size = wisp.results$plot.settings$legend_size),
               legend.text = element_text(size = wisp.results$plot.settings$legend_size),
               axis.text.x = element_text(angle = 90, hjust = 1),
-              legend.position = legpos
+              legend.position = legpos,
+              panel.background = element_rect(fill = "white", colour = NA),
+              plot.background  = element_rect(fill = "white", colour = NA)
             )
           
           if (print_stats) {
@@ -2550,6 +2582,8 @@ plot.effect.dist <- function(
         axis.text = element_text(size = wisp.results$plot.settings$axis_size),
         legend.title = element_text(size = wisp.results$plot.settings$legend_size),
         legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+        panel.background = element_rect(fill = "white", colour = NA),
+        plot.background  = element_rect(fill = "white", colour = NA)
       )
     
     # ... for rate
@@ -2567,6 +2601,8 @@ plot.effect.dist <- function(
         axis.text = element_text(size = wisp.results$plot.settings$axis_size),
         legend.title = element_text(size = wisp.results$plot.settings$legend_size),
         legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+        panel.background = element_rect(fill = "white", colour = NA),
+        plot.background  = element_rect(fill = "white", colour = NA)
       )
     
     # ... for slope 
@@ -2584,6 +2620,8 @@ plot.effect.dist <- function(
         axis.text = element_text(size = wisp.results$plot.settings$axis_size),
         legend.title = element_text(size = wisp.results$plot.settings$legend_size),
         legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+        panel.background = element_rect(fill = "white", colour = NA),
+        plot.background  = element_rect(fill = "white", colour = NA)
       )
     
     if (print.plots) print(plot_wfactor_point_effects_dist)
@@ -2609,6 +2647,8 @@ plot.effect.dist <- function(
         axis.text = element_text(size = wisp.results$plot.settings$axis_size),
         legend.title = element_text(size = wisp.results$plot.settings$legend_size),
         legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+        panel.background = element_rect(fill = "white", colour = NA),
+        plot.background  = element_rect(fill = "white", colour = NA)
       )
     
     if (print.plots) print(plot_rate_effects_effects_dist)
@@ -2632,6 +2672,8 @@ plot.effect.dist <- function(
           axis.text = element_text(size = wisp.results$plot.settings$axis_size),
           legend.title = element_text(size = wisp.results$plot.settings$legend_size),
           legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+          panel.background = element_rect(fill = "white", colour = NA),
+          plot.background  = element_rect(fill = "white", colour = NA)
         )
       
       if (print.plots) print(plot_slope_effects_effects_dist)
@@ -2656,6 +2698,8 @@ plot.effect.dist <- function(
           axis.text = element_text(size = wisp.results$plot.settings$axis_size),
           legend.title = element_text(size = wisp.results$plot.settings$legend_size),
           legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+          panel.background = element_rect(fill = "white", colour = NA),
+          plot.background  = element_rect(fill = "white", colour = NA)
         )
       
       if (print.plots) print(plot_tpoint_effects_effects_dist)
@@ -2840,7 +2884,9 @@ plot.MCMC.walks <- function(
           axis.text = element_text(size = wisp.results$plot.settings$axis_size),
           legend.title = element_text(size = wisp.results$plot.settings$legend_size),
           legend.text = element_text(size = wisp.results$plot.settings$legend_size),
-          legend.position = "none"
+          legend.position = "none",
+          panel.background = element_rect(fill = "white", colour = NA),
+          plot.background  = element_rect(fill = "white", colour = NA)
         )
       
     } else {
@@ -2881,7 +2927,9 @@ plot.MCMC.walks <- function(
           axis.text = element_text(size = wisp.results$plot.settings$axis_size),
           legend.title = element_text(size = wisp.results$plot.settings$legend_size),
           legend.text = element_text(size = wisp.results$plot.settings$legend_size),
-          legend.position = "none"
+          legend.position = "none",
+          panel.background = element_rect(fill = "white", colour = NA),
+          plot.background  = element_rect(fill = "white", colour = NA)
         )
       
     } else {
@@ -2922,7 +2970,9 @@ plot.MCMC.walks <- function(
         axis.title = element_text(size = wisp.results$plot.settings$axis_size),
         axis.text = element_text(size = wisp.results$plot.settings$axis_size),
         legend.title = element_text(size = wisp.results$plot.settings$legend_size),
-        legend.text = element_text(size = wisp.results$plot.settings$legend_size)
+        legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+        panel.background = element_rect(fill = "white", colour = NA),
+        plot.background  = element_rect(fill = "white", colour = NA)
       )
     
     if (print.plots && !is.null(plot.walks.parameters_low) && !is.null(plot.walks.parameters_high)) {
@@ -3052,12 +3102,14 @@ plot.decomposition <- function(
 #' @param wisp.results List, output of the wisp function.
 #' @param print.plots Logical, if TRUE, prints the plots to the current graphics device.
 #' @param verbose Logical, if TRUE, prints information during plotting.
+#' @param ran.seed Integer, random seed for reproducibility. Defaults to 1234. If NULL, no seed set. 
 #' @return List of ggplot objects containing plots of representative parameter distributions, Shapiro-Wilk normality test results, and autocorrelation plots for bootstrap and MCMC parameter estimates.
 #' @export
 plot.MCMC.bs.comparison <- function(
     wisp.results,
     print.plots = TRUE,
-    verbose = TRUE
+    verbose = TRUE,
+    ran.seed = 1234
   ) {
     
     # For each parameter in the model, both bootstrapping (bs) and the MCMC simulation will 
@@ -3071,7 +3123,7 @@ plot.MCMC.bs.comparison <- function(
     # looking at their density plots to see if one systematically produces more normal distributions than the other.
     
     # Ensure reproducibility (sampling via Shaprio test not very stable)
-    set.seed(1234)
+    if (!is.null(ran.seed)) set.seed(ran.seed)
     
     # Grab data
     param_mcmc <- wisp.results[["sample.params.MCMC"]]
@@ -3143,7 +3195,9 @@ plot.MCMC.bs.comparison <- function(
         axis.title = element_text(size = wisp.results$plot.settings$axis_size),
         axis.text = element_text(size = wisp.results$plot.settings$axis_size),
         legend.title = element_text(size = wisp.results$plot.settings$legend_size),
-        legend.text = element_text(size = wisp.results$plot.settings$legend_size)
+        legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+        panel.background = element_rect(fill = "white", colour = NA),
+        plot.background  = element_rect(fill = "white", colour = NA)
       )
     
     # For each method, order parameters by "normality" (p-value of shaprio test)
@@ -3214,7 +3268,9 @@ plot.MCMC.bs.comparison <- function(
         axis.title = element_text(size = wisp.results$plot.settings$axis_size),
         axis.text = element_text(size = wisp.results$plot.settings$axis_size),
         legend.title = element_text(size = wisp.results$plot.settings$legend_size),
-        legend.text = element_text(size = wisp.results$plot.settings$legend_size)
+        legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+        panel.background = element_rect(fill = "white", colour = NA),
+        plot.background  = element_rect(fill = "white", colour = NA)
       )
     
     # Grab sample results
@@ -3270,7 +3326,9 @@ plot.MCMC.bs.comparison <- function(
         axis.title = element_text(size = wisp.results$plot.settings$axis_size),
         axis.text = element_text(size = wisp.results$plot.settings$axis_size),
         legend.title = element_text(size = wisp.results$plot.settings$legend_size),
-        legend.text = element_text(size = wisp.results$plot.settings$legend_size)
+        legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+        panel.background = element_rect(fill = "white", colour = NA),
+        plot.background  = element_rect(fill = "white", colour = NA)
       )
     
     if (print.plots) {
@@ -3532,7 +3590,9 @@ demo.warp.plots <- function(
         axis.title = element_text(size = axis_size),
         axis.text = element_text(size = axis_size),
         legend.title = element_text(size = legend_size),
-        legend.text = element_text(size = legend_size)
+        legend.text = element_text(size = legend_size),
+        panel.background = element_rect(fill = "white", colour = NA),
+        plot.background  = element_rect(fill = "white", colour = NA)
       )
     
     # Construct poly-sigmoid curve, no warping
@@ -3679,7 +3739,9 @@ demo.warp.plots <- function(
         axis.title = element_text(size = axis_size),
         axis.text = element_text(size = axis_size),
         legend.title = element_text(size = legend_size),
-        legend.text = element_text(size = legend_size)
+        legend.text = element_text(size = legend_size),
+        panel.background = element_rect(fill = "white", colour = NA),
+        plot.background  = element_rect(fill = "white", colour = NA)
       ) 
     
     grid.arrange(demo_plot_warpfunction, demo_plot_warpedsigmoid, ncol = 1)
@@ -3780,7 +3842,9 @@ demo.sigmoid.plots <- function(
         axis.title = element_text(size = axis_size),
         axis.text = element_text(size = axis_size),
         legend.title = element_text(size = legend_size),
-        legend.text = element_text(size = legend_size)
+        legend.text = element_text(size = legend_size),
+        panel.background = element_rect(fill = "white", colour = NA),
+        plot.background  = element_rect(fill = "white", colour = NA)
       )
     # saved at 1145 x 647
     
@@ -3878,7 +3942,9 @@ demo.sigmoid.plots <- function(
         axis.title = element_text(size = axis_size),
         axis.text = element_text(size = axis_size),
         legend.title = element_text(size = legend_size),
-        legend.text = element_text(size = legend_size)
+        legend.text = element_text(size = legend_size),
+        panel.background = element_rect(fill = "white", colour = NA),
+        plot.background  = element_rect(fill = "white", colour = NA)
       )
     
     grid.arrange(demo_plot_logistic, demo_plot_sigmoid, ncol = 1)

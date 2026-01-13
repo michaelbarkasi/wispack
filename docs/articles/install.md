@@ -1,0 +1,41 @@
+# Installation instructions
+
+1.  Clone and `cd` into this git repo
+2.  Make `build_install.sh` executable by running
+    `chmod +x build_install.sh` in bash terminal  
+3.  In terminal, run `./build_install.sh` to build and install the
+    package  
+4.  To ensure a clean start, run:
+
+``` bash
+rm -f src/*.o src/*.so
+rm -rf wispack.Rcheck
+rm -f wispack_*.tar.gz
+./build_install.sh
+```
+
+## Linux
+
+On Linux (Ubuntu/Debian), additional system dependencies are required
+*before* the building process: - `libxml2` for roxygen2 - `r-base-dev`,
+`libnlopt-dev` (or `libnlopt-cxx-dev`) for Rcpp, RcppEigen, and
+StanHeaders
+
+For PDF documentation generation, `pdflatex` should also be installed
+
+``` bash
+sudo apt install \
+    libxml2 \
+    r-base-dev \
+    libnlopt-dev \
+    libnlopt-cxx-dev \
+    texlive-latex-base \
+    texlive-fonts-recommended \
+    texlive-fonts-extra \
+    texlive-latex-extra
+```
+
+## Build documentation
+
+In R, run:  
+pkgdown::build_site()

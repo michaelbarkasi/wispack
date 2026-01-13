@@ -179,6 +179,7 @@ class wspc {
     sMat gamma_dispersion;                      // dispersion terms for "kernel" of gamma-Poisson model
     IntegerVector gd_species_idx;               // indexes of species levels in gamma_dispersion
     IntegerVector gd_context_idx;               // indexes of context levels in gamma_dispersion
+    bool allow_infeasible_params = true;        // allow negative rates during optimization? Will throw warnings if so, will stop if not allowed. 
     
     // Boundary penalty variables
     int boundary_vec_size = 0;                           // number of boundary components

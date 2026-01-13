@@ -41,6 +41,7 @@
     <li><a class="dropdown-item" href="../articles/release_notes.html">Release Notes</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_benchmarks.html">Benchmarks and comparisons</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_liverradial.html">Radial zonation in liver lobules</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling cell types</a></li>
@@ -78,7 +79,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2025-11-25</h4>
+            <h4 data-toc-skip class="date">2026-01-24</h4>
       
 
       <div class="d-none name"><code>tutorial_liverradial.Rmd</code></div>
@@ -485,6 +486,7 @@ the number of MCMC steps to zero and the number of bootstraps to
 <span><span class="co">##  warp_precision: 1e-07</span></span>
 <span><span class="co">##  round_none: TRUE</span></span>
 <span><span class="co">##  inf_warp: 450359962.73705</span></span>
+<span><span class="co">##  allow_infeasible_params: TRUE</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Plot settings:</span></span>
 <span><span class="co">##  print.plots: FALSE</span></span>
@@ -589,9 +591,9 @@ the number of MCMC steps to zero and the number of bootstraps to
 <span><span class="co">## Built initial beta (ref and fixed-effects) matrices</span></span>
 <span><span class="co">## Initialized random-effect warping factors</span></span>
 <span><span class="co">## Made and mapped parameter vector</span></span>
-<span><span class="co">## Number of parameters: 276</span></span>
+<span><span class="co">## Number of parameters: 324</span></span>
 <span><span class="co">## Constructed grouping variable IDs</span></span>
-<span><span class="co">## Size of boundary vector: 1320</span></span>
+<span><span class="co">## Size of boundary vector: 1848</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Estimating model parameters</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
@@ -604,23 +606,23 @@ the number of MCMC steps to zero and the number of bootstraps to
 <span><span class="co">## Provided parameters are feasible</span></span>
 <span><span class="co">## Initial boundary distance (want &gt; 0): 0.206765</span></span>
 <span><span class="co">## Performing initial fit of full data</span></span>
-<span><span class="co">## Penalized neg_loglik: 1045.81</span></span>
-<span><span class="co">## Batch: 1/100, 0.143402 sec/bs</span></span>
-<span><span class="co">## Batch: 10/100, 0.129521 sec/bs</span></span>
-<span><span class="co">## Batch: 20/100, 0.125902 sec/bs</span></span>
-<span><span class="co">## Batch: 30/100, 0.122471 sec/bs</span></span>
-<span><span class="co">## Batch: 40/100, 0.13636 sec/bs</span></span>
-<span><span class="co">## Batch: 50/100, 0.113819 sec/bs</span></span>
-<span><span class="co">## Batch: 60/100, 0.138425 sec/bs</span></span>
-<span><span class="co">## Batch: 70/100, 0.123679 sec/bs</span></span>
-<span><span class="co">## Batch: 80/100, 0.120758 sec/bs</span></span>
-<span><span class="co">## Batch: 90/100, 0.120797 sec/bs</span></span>
+<span><span class="co">## Penalized neg_loglik: 1044.51</span></span>
+<span><span class="co">## Batch: 1/100, 0.166759 sec/bs</span></span>
+<span><span class="co">## Batch: 10/100, 0.169434 sec/bs</span></span>
+<span><span class="co">## Batch: 20/100, 0.168422 sec/bs</span></span>
+<span><span class="co">## Batch: 30/100, 0.163012 sec/bs</span></span>
+<span><span class="co">## Batch: 40/100, 0.162064 sec/bs</span></span>
+<span><span class="co">## Batch: 50/100, 0.164786 sec/bs</span></span>
+<span><span class="co">## Batch: 60/100, 0.168987 sec/bs</span></span>
+<span><span class="co">## Batch: 70/100, 0.164011 sec/bs</span></span>
+<span><span class="co">## Batch: 80/100, 0.175758 sec/bs</span></span>
+<span><span class="co">## Batch: 90/100, 0.148541 sec/bs</span></span>
 <span><span class="co">## All complete!</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Bootstrap simulation complete... </span></span>
-<span><span class="co">## Bootstrap run time (total), minutes: 2.183</span></span>
-<span><span class="co">## Bootstrap run time (per sample), seconds: 0.131</span></span>
-<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 1.31</span></span>
+<span><span class="co">## Bootstrap run time (total), minutes: 2.837</span></span>
+<span><span class="co">## Bootstrap run time (per sample), seconds: 0.17</span></span>
+<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 1.702</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Setting full-data fit as parameters... </span></span>
 <span><span class="co">## Checking feasibility of provided parameters</span></span>
@@ -628,7 +630,7 @@ the number of MCMC steps to zero and the number of bootstraps to
 <span><span class="co">## ... no NAN rates predicted</span></span>
 <span><span class="co">## ... no negative rates predicted</span></span>
 <span><span class="co">## Provided parameters are feasible</span></span>
-<span><span class="co">## Initial boundary distance (want &gt; 0): 0.457441</span></span>
+<span><span class="co">## Initial boundary distance (want &gt; 0): 0.378776</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Running stats on simulation results</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
@@ -638,19 +640,19 @@ the number of MCMC steps to zero and the number of bootstraps to
 <span><span class="co">## Computing 95% confidence intervals... </span></span>
 <span><span class="co">## Estimating p-values from resampled parameters... </span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## Recommended resample size for alpha = 0.05, 72 tests</span></span>
-<span><span class="co">## with bootstrapping/MCMC: 1440</span></span>
+<span><span class="co">## Recommended resample size for alpha = 0.05, 108 tests</span></span>
+<span><span class="co">## with bootstrapping/MCMC: 2160</span></span>
 <span><span class="co">## Actual resample size: 1001</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Stat summary (head only):</span></span>
 <span><span class="co">## ------------------------------</span></span>
-<span><span class="co">##                           parameter    estimate     CI.low   CI.high     p.value p.value.adj    alpha.adj significance</span></span>
-<span><span class="co">## 1  baseline_liver_Rt_arntl_Tns/Blk1  2.54043780  2.1298242 2.8465279          NA          NA           NA             </span></span>
-<span><span class="co">## 2  beta_Rt_liver_arntl_6_X_Tns/Blk1 -1.44247420 -2.6227544 2.2261099 0.002997003  0.14985015 0.0010000000           ns</span></span>
-<span><span class="co">## 3 beta_Rt_liver_arntl_12_X_Tns/Blk1 -0.07340084 -1.5059913 0.7327342 0.836163836  4.18081918 0.0100000000           ns</span></span>
-<span><span class="co">## 4 beta_Rt_liver_arntl_18_X_Tns/Blk1  0.17411723 -0.5666145 1.8010101 0.673326673  7.40659341 0.0045454545           ns</span></span>
-<span><span class="co">## 5  baseline_liver_Rt_arntl_Tns/Blk2  1.97583106  1.6231055 2.2844718          NA          NA           NA             </span></span>
-<span><span class="co">## 6  beta_Rt_liver_arntl_6_X_Tns/Blk2 -0.96524641 -1.4885485 0.3872861 0.000999001  0.05294705 0.0009433962           ns</span></span>
+<span><span class="co">##                           parameter    estimate    CI.low   CI.high     p.value p.value.adj    alpha.adj significance</span></span>
+<span><span class="co">## 1  baseline_liver_Rt_arntl_Tns/Blk1  2.52351157  2.147938 2.8419666          NA          NA           NA             </span></span>
+<span><span class="co">## 2  beta_Rt_liver_arntl_6_X_Tns/Blk1 -1.42987696 -2.578113 3.1579983 0.004995005  0.33466533 0.0007462687           ns</span></span>
+<span><span class="co">## 3 beta_Rt_liver_arntl_12_X_Tns/Blk1 -0.03715176 -1.591022 0.8591341 0.911088911  3.64435564 0.0125000000           ns</span></span>
+<span><span class="co">## 4 beta_Rt_liver_arntl_18_X_Tns/Blk1  0.13107595 -0.664336 1.8067587 0.742257742  6.68031968 0.0055555556           ns</span></span>
+<span><span class="co">## 5  baseline_liver_Rt_arntl_Tns/Blk2  1.96922136  1.593244 2.2705854          NA          NA           NA             </span></span>
+<span><span class="co">## 6  beta_Rt_liver_arntl_6_X_Tns/Blk2 -0.95957998 -1.478458 0.6556153 0.000999001  0.07592408 0.0006578947           ns</span></span>
 <span><span class="co">## ----</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Computing 95% CI for predicated values by bin</span></span>
@@ -669,12 +671,12 @@ the number of MCMC steps to zero and the number of bootstraps to
 <span><span class="co">## Log-residual summary by grouping variables (head only):</span></span>
 <span><span class="co">## ------------------------------</span></span>
 <span><span class="co">##          group      mean        sd  variance</span></span>
-<span><span class="co">## 1          all 0.3772485 0.4433972 0.1966011</span></span>
-<span><span class="co">## 2 ran_lvl_none 0.3476286 0.3608015 0.1301778</span></span>
-<span><span class="co">## 3    ran_lvl_1 0.4311390 0.4865881 0.2367679</span></span>
-<span><span class="co">## 4   ran_lvl_10 0.4275163 0.5637811 0.3178492</span></span>
-<span><span class="co">## 5    ran_lvl_2 0.3413863 0.4267495 0.1821151</span></span>
-<span><span class="co">## 6    ran_lvl_3 0.3830449 0.5106937 0.2608081</span></span>
+<span><span class="co">## 1          all 0.3761585 0.4347535 0.1890106</span></span>
+<span><span class="co">## 2 ran_lvl_none 0.3469852 0.3374680 0.1138847</span></span>
+<span><span class="co">## 3    ran_lvl_1 0.4181383 0.4768411 0.2273775</span></span>
+<span><span class="co">## 4   ran_lvl_10 0.4131620 0.5134598 0.2636409</span></span>
+<span><span class="co">## 5    ran_lvl_2 0.3451371 0.4303134 0.1851696</span></span>
+<span><span class="co">## 6    ran_lvl_3 0.4122882 0.5838509 0.3408819</span></span>
 <span><span class="co">## ----</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Making effect parameter distribution plots... </span></span>
@@ -711,7 +713,7 @@ to see in the rate-count plot:</p>
 <span><span class="va">plt_ass1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_ass1"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_glul</span>, <span class="va">plt_ass1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_liverradial_files/figure-html/print_plots_zonation_space-1.png" width="700"></p>
+<p><img src="tutorial_liverradial_files/figure-html/print_plots_zonation_space-1.png" class="r-plt" alt="" width="700"></p>
 <p>While the rate-count plots make clear the spatial gradients of GLUL
 and ASS1, temporal information can only be read off implicitly. For
 ASS1, we seem to see a slight decrease in gene expression over the day,
@@ -725,7 +727,7 @@ at the time-series plots.</p>
 <span><span class="va">plt_ass1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_ass1"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_glul</span>, <span class="va">plt_ass1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_liverradial_files/figure-html/print_plots_zonation_time-1.png" width="700"></p>
+<p><img src="tutorial_liverradial_files/figure-html/print_plots_zonation_time-1.png" class="r-plt" alt="" width="700"></p>
 <p>The time-series plot for ASS1 shows some variation over time, but the
 magnitude of that variation is small compared to the difference in
 expression level <a href="tutorial_timeseries.html">between the
@@ -746,7 +748,7 @@ and blue) that are elevated.</p>
 <span><span class="va">plt_dbp</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_dbp"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_arntl</span>, <span class="va">plt_dbp</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_liverradial_files/figure-html/print_plots_rhythm_space-1.png" width="700"></p>
+<p><img src="tutorial_liverradial_files/figure-html/print_plots_rhythm_space-1.png" class="r-plt" alt="" width="700"></p>
 <p>These temporal dynamics are made more clear in the time-series plots,
 which clearly show the mid-ZT dip in ARNTL and the mid-ZT bump in
 DBP.</p>
@@ -755,7 +757,7 @@ DBP.</p>
 <span><span class="va">plt_dbp</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_dbp"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_arntl</span>, <span class="va">plt_dbp</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_liverradial_files/figure-html/print_plots_rhythm_time-1.png" width="700"></p>
+<p><img src="tutorial_liverradial_files/figure-html/print_plots_rhythm_time-1.png" class="r-plt" alt="" width="700"></p>
 <h3>
 Zonated and rhythmic genes
 </h3>
@@ -768,7 +770,7 @@ hand, is expressed more in the portal region, just like ASS1.</p>
 <span><span class="va">plt_pck1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_pck1"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_elovl3</span>, <span class="va">plt_pck1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_liverradial_files/figure-html/print_plots_both_space-1.png" width="700"></p>
+<p><img src="tutorial_liverradial_files/figure-html/print_plots_both_space-1.png" class="r-plt" alt="" width="700"></p>
 <p>However, unlike GLUL and PCK1, ELOVL3 and PCK1 have notable temporal
 rhythm. ELOVL3 is similar to ARNTL, with a mid-ZT dip. PCK1 is similar
 to DBP, with a mid-ZT bump.</p>
@@ -777,7 +779,7 @@ to DBP, with a mid-ZT bump.</p>
 <span><span class="va">plt_pck1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_pck1"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_elovl3</span>, <span class="va">plt_pck1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_liverradial_files/figure-html/print_plots_both_time-1.png" width="700"></p>
+<p><img src="tutorial_liverradial_files/figure-html/print_plots_both_time-1.png" class="r-plt" alt="" width="700"></p>
 <h2>
 Advantages of wisp
 </h2>
@@ -803,7 +805,7 @@ random effect is linear.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>

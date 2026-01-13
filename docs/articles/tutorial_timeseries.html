@@ -41,6 +41,7 @@
     <li><a class="dropdown-item" href="../articles/release_notes.html">Release Notes</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_benchmarks.html">Benchmarks and comparisons</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_liverradial.html">Radial zonation in liver lobules</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling cell types</a></li>
@@ -78,7 +79,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2025-11-25</h4>
+            <h4 data-toc-skip class="date">2026-01-24</h4>
       
 
       <div class="d-none name"><code>tutorial_timeseries.Rmd</code></div>
@@ -352,6 +353,7 @@ estimation</a>.</p>
 <span><span class="co">##  warp_precision: 1e-07</span></span>
 <span><span class="co">##  round_none: TRUE</span></span>
 <span><span class="co">##  inf_warp: 450359962.73705</span></span>
+<span><span class="co">##  allow_infeasible_params: TRUE</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Plot settings:</span></span>
 <span><span class="co">##  print.plots: FALSE</span></span>
@@ -444,27 +446,27 @@ estimation</a>.</p>
 <span><span class="co">## Built initial beta (ref and fixed-effects) matrices</span></span>
 <span><span class="co">## Initialized random-effect warping factors</span></span>
 <span><span class="co">## Made and mapped parameter vector</span></span>
-<span><span class="co">## Number of parameters: 378</span></span>
+<span><span class="co">## Number of parameters: 414</span></span>
 <span><span class="co">## Constructed grouping variable IDs</span></span>
-<span><span class="co">## Size of boundary vector: 1944</span></span>
+<span><span class="co">## Size of boundary vector: 2160</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Fitting model to data</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Setting boundary penalty coefficients</span></span>
-<span><span class="co">## Initial neg_loglik: 15284.3</span></span>
-<span><span class="co">## Initial neg_loglik with penalty: 15437.1</span></span>
+<span><span class="co">## Initial neg_loglik: 15281.4</span></span>
+<span><span class="co">## Initial neg_loglik with penalty: 15434.2</span></span>
 <span><span class="co">## Initial min boundary distance: 0.24777</span></span>
-<span><span class="co">## Final neg_loglik: 15015.6</span></span>
-<span><span class="co">## Final neg_loglik with penalty: 15125.3</span></span>
-<span><span class="co">## Final min boundary distance: 0.122921</span></span>
-<span><span class="co">## Number of evaluations: 239</span></span>
+<span><span class="co">## Final neg_loglik: 15013</span></span>
+<span><span class="co">## Final neg_loglik with penalty: 15120.1</span></span>
+<span><span class="co">## Final min boundary distance: 0.123085</span></span>
+<span><span class="co">## Number of evaluations: 189</span></span>
 <span><span class="co">## Checking feasibility of provided parameters</span></span>
 <span><span class="co">## ... no tpoints below buffer</span></span>
 <span><span class="co">## ... no NAN rates predicted</span></span>
 <span><span class="co">## ... no negative rates predicted</span></span>
 <span><span class="co">## Provided parameters are feasible</span></span>
-<span><span class="co">## Initial boundary distance (want &gt; 0): 0.122921</span></span>
+<span><span class="co">## Initial boundary distance (want &gt; 0): 0.123085</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Making rate-count plots... </span></span>
 <span><span class="co">## Making time series plots...</span></span></code></pre>
@@ -544,7 +546,7 @@ profile in deep layers (block 1), but almost no activity in superficial
 layers (block 2).</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">ratecount</span><span class="op">$</span><span class="va">plot_pred_context_cortex_fixEff_Nxph3</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_timeseries_files/figure-html/plot_wisp-1.png" width="700"></p>
+<p><img src="tutorial_timeseries_files/figure-html/plot_wisp-1.png" class="r-plt" alt="" width="700"></p>
 <p>By default, when the <strong>timeseries</strong> factor is present,
 rate-count plots use an HCL color space, plotting time series as
 graduated luminance and the other factors as categorical levels of hue
@@ -567,7 +569,7 @@ time series is provided or detected, through an internal call to the
 plot.timeseries() function.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">timeseries</span><span class="op">$</span><span class="va">plot_pred_context_cortex_timeseries_Nxph3</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_timeseries_files/figure-html/plot_timeseries-1.png" width="700"></p>
+<p><img src="tutorial_timeseries_files/figure-html/plot_timeseries-1.png" class="r-plt" alt="" width="700"></p>
 <p>Wisp time-series plots keep the y-axis a representation of rate, but
 switch the x-axis to a representation of the time-series points.
 However, the spatial aspect of the data is not completely lost. Instead
@@ -601,7 +603,7 @@ also includes all plots.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>
