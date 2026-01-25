@@ -1715,10 +1715,10 @@ Rcpp::NumericMatrix wspc::MCMC(
           // Tracker
           if (any_true(eq_left_broadcast(tracker, step))) {
             int this_step_batch = Rwhich(eq_left_broadcast(tracker, step))[0];
-            Rcpp::Rcout << "step: " << (this_step_batch + 1) * (n_steps/tracker.size()) << "/" << n_steps << std::endl;
+            vprint("step: " + std::to_string((this_step_batch + 1) * (n_steps/tracker.size())) + "/" + std::to_string(n_steps), verbose);
             tracker(this_step_batch) -= 1; // ensure report is only printed once
           } else if (step == 0 && !printed_step1) {
-            Rcpp::Rcout << "step: " << 1 << "/" << n_steps << std::endl;
+            vprint("step: 1/" + std::to_string(n_steps), verbose);
             printed_step1 = true; // ensure report is only printed once
           }
           // Save new parameters and results
