@@ -199,8 +199,6 @@ attractor_simulation <- function(
     
     # Smooth expression distribution, apply attractors, apply effects
     all_plots <- list()
-    length(list) <- n_genes
-    names(list) <- genes
     for (g in c(1:n_genes)) {
       
       # Print seed data and smoothed gene
@@ -306,4 +304,4 @@ attractor_simulation <- function(
     
   }
 
-## Where am I? Ready to build wispack and re-run wspmm_methods now that sims have min_effect_size. 
+
