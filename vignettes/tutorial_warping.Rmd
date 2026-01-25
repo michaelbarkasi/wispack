@@ -4,7 +4,7 @@ title: "Random effects and warping"
 
 ```{r setup, include = FALSE}
 options(width = 10000)
-knitr::opts_chunk$set(class.output = "scroll-output")
+knitr::opts_chunk$set(class.output = "scroll-output", cache = TRUE)
 ```
 
 Under construction. Will discuss mixed-effects modeling in general, along with how wisp implements these as a warping function. 

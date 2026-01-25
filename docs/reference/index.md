@@ -16,6 +16,9 @@
 
 - [`analyze.residuals()`](https://michaelbarkasi.github.io/wispack/reference/analyze.residuals.md)
   : Analyze residuals from wisp fit
+- [`analyze_attractor_sim_benchmarks()`](https://michaelbarkasi.github.io/wispack/reference/analyze_attractor_sim_benchmarks.md)
+  : Function to analyze benchmark results from attractor-based
+  simulations
 - [`pvalues.samples()`](https://michaelbarkasi.github.io/wispack/reference/pvalues.samples.md)
   : Compute p-values using ecdf from parameter resamples
 - [`sample.stats()`](https://michaelbarkasi.github.io/wispack/reference/sample.stats.md)
@@ -48,6 +51,23 @@
 - [`demo.warp.plots()`](https://michaelbarkasi.github.io/wispack/reference/demo.warp.plots.md)
   : Make plot demonstrating how the wisp function is warped by the
   warping factors
+
+## Benchmarking functions
+
+- [`attractor_simulation_ground_truth()`](https://michaelbarkasi.github.io/wispack/reference/attractor_simulation_ground_truth.md)
+  :
+
+  Function to extract ground-truth from attractor-based simulation made
+  with the function `attractor_simulation`
+
+- [`attractor_simulation()`](https://michaelbarkasi.github.io/wispack/reference/attractor_simulation.md)
+  : Function to simulate data using attractor-based spatial variability
+
+- [`model_attractor_simulation_wisp()`](https://michaelbarkasi.github.io/wispack/reference/model_attractor_simulation_wisp.md)
+  : Function to model simulation with wisp
+
+- [`run_attractor_sim_benchmarks()`](https://michaelbarkasi.github.io/wispack/reference/run_attractor_sim_benchmarks.md)
+  : Function to run benchmarks on attractor-based simulations
 
 ## MERFISH preprocessing functions
 

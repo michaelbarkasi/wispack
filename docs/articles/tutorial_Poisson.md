@@ -170,6 +170,11 @@ columns are used in more complex modeling scenarios.)
 
 ``` r
 library(wispack, quietly = TRUE)
+```
+
+    ## Warning: package 'ggplot2' was built under R version 4.5.2
+
+``` r
 model <- wisp(
     countdata, 
     fit_only = TRUE, 

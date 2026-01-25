@@ -14,15 +14,15 @@ attractor_simulation(
 )
 }
 \arguments{
-\item{seed_data}{A data frame containing the seed dataset with columns: \code{gene}, \code{coord_x}, \code{coord_y}, and \code{count}.}
+\item{seed_data}{A data frame containing the seed dataset with at least the columns: \code{gene}, \code{coord_x}, \code{coord_y}, and \code{count}.}
 
 \item{n_bins}{An integer specifying the number of spatial bins to divide the data coordinates into. Default is 100.}
 
 \item{n_replicates}{An integer specifying the number of replicates to generate for each treatment condition. Default is 4.}
 
-\item{replicate_spatial_scalar}{A numeric value controlling the amount of spatial variation introduced in each replicate. Default is 0.05.}
+\item{replicate_spatial_scalar}{A numeric value controlling the amount of spatial variation introduced in each replicate for each simulation. Default is 0.05.}
 
-\item{min_effect_size}{A numeric value specifying the minimum effect size for functional spatial effects (FSEs). Default is 0.05. Max positive effect size is always 4, i.e., a 4x change in rate. There is no max to the min effect size, i.e., an effect can drop the rate to zero.}
+\item{min_effect_size}{A numeric value specifying the minimum effect size for functional spatial effects (FSEs) in each simulation. Default is 0.05. Max positive effect size is always 4, i.e., a 4x change in rate. There is no max to the min effect size, i.e., an effect can drop the rate to zero.}
 
 \item{print_plots}{A logical value indicating whether to return plots of the simulation process for each gene. Default is FALSE.}
 }

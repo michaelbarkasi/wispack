@@ -341,6 +341,11 @@ laminar boundaries estimated by the CCFv3 registration.
 set.seed(123)
 # Load wispack
 library(wispack, quietly = TRUE)
+```
+
+    ## Warning: package 'ggplot2' was built under R version 4.5.2
+
+``` r
 # Fit model
 model <- wisp(
     count.data = countdata,
@@ -500,9 +505,9 @@ model <- wisp(
 ## Acceptance rate (aim for 0.2-0.3): 0.283432
 ## 
 ## MCMC simulation complete... 
-## MCMC run time (total), minutes: 0.836
-## MCMC run time (per retained step), seconds: 0.046
-## MCMC run time (per step), seconds: 0.046
+## MCMC run time (total), minutes: 1.156
+## MCMC run time (per retained step), seconds: 0.063
+## MCMC run time (per step), seconds: 0.063
 ## 
 ## Setting full-data fit as parameters... 
 ## Checking feasibility of provided parameters
@@ -527,12 +532,12 @@ model <- wisp(
 ## Stat summary (head only):
 ## ------------------------------
 ##                                  parameter      estimate       CI.low      CI.high     p.value p.value.adj    alpha.adj significance
-## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3874762662 3.2421099305 3.6060658268          NA          NA           NA             
-## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0002723492 0.0004694455 0.0009556921 0.001998002  0.02997003 0.0033333333            *
+## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3874762662 3.2423579199 3.6060658268          NA          NA           NA             
+## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0002723492 0.0002701605 0.0009564635 0.000999001  0.04495504 0.0011111111            *
 ## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6059294086 0.4971755126 0.6552261694 0.000000000  0.00000000 0.0002923977          ***
 ## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0476934492 0.0324878078 0.0563049808 0.000000000  0.00000000 0.0002941176          ***
-## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786 1.9124303425 2.6135187197          NA          NA           NA             
-## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 0.0486139120 0.0951689705 0.000000000  0.00000000 0.0002958580          ***
+## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786 1.9117544868 2.6135187197          NA          NA           NA             
+## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 0.0504651545 0.0951689705 0.000000000  0.00000000 0.0002958580          ***
 ## ----
 ## 
 ## Computing 95% CI for predicated values by bin
@@ -632,12 +637,12 @@ print(head(model$stats$parameter))
 
 ``` scroll-output
 ##                                  parameter      estimate       CI.low      CI.high     p.value p.value.adj    alpha.adj significance
-## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3874762662 3.2421099305 3.6060658268          NA          NA           NA             
-## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0002723492 0.0004694455 0.0009556921 0.001998002  0.02997003 0.0033333333            *
+## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3874762662 3.2423579199 3.6060658268          NA          NA           NA             
+## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0002723492 0.0002701605 0.0009564635 0.000999001  0.04495504 0.0011111111            *
 ## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6059294086 0.4971755126 0.6552261694 0.000000000  0.00000000 0.0002923977          ***
 ## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0476934492 0.0324878078 0.0563049808 0.000000000  0.00000000 0.0002941176          ***
-## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786 1.9124303425 2.6135187197          NA          NA           NA             
-## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 0.0486139120 0.0951689705 0.000000000  0.00000000 0.0002958580          ***
+## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786 1.9117544868 2.6135187197          NA          NA           NA             
+## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 0.0504651545 0.0951689705 0.000000000  0.00000000 0.0002958580          ***
 ```
 
 All fixed-effects of hemisphere (i.e., laterality) on the expression
@@ -655,15 +660,15 @@ print(model$stats$parameter[mask, ])
 ```
 
 ``` scroll-output
-##                                 parameter   estimate      CI.low     CI.high     p.value p.value.adj    alpha.adj significance
-## 66   beta_Rt_cortex_Rorb_right_X_Tns/Blk1  0.3675538  0.25496382 0.405098281 0.000000000  0.00000000 0.0003472222          ***
-## 68 beta_Rt_cortex_Rorb_right18_X_Tns/Blk1 -0.1202368 -0.02630181 0.057879292 0.000999001  0.03196803 0.0015625000            *
-## 70   beta_Rt_cortex_Rorb_right_X_Tns/Blk2  0.3366749  0.18728207 0.342245184 0.000000000  0.00000000 0.0003521127          ***
-## 72 beta_Rt_cortex_Rorb_right18_X_Tns/Blk2 -0.2536468 -0.04909294 0.002955835 0.000999001  0.03096903 0.0016129032            *
-## 74   beta_Rt_cortex_Rorb_right_X_Tns/Blk3  0.2557962  0.20142146 0.367680590 0.000000000  0.00000000 0.0003571429          ***
-## 76 beta_Rt_cortex_Rorb_right18_X_Tns/Blk3 -0.4326966 -0.07211611 0.050495795 0.000999001  0.02997003 0.0016666667            *
-## 78   beta_Rt_cortex_Rorb_right_X_Tns/Blk4  0.1952882  0.14954611 0.327293014 0.000000000  0.00000000 0.0003623188          ***
-## 80 beta_Rt_cortex_Rorb_right18_X_Tns/Blk4 -0.5650512 -0.07793810 0.041504090 0.000999001  0.02897103 0.0017241379            *
+##                                 parameter   estimate        CI.low     CI.high     p.value p.value.adj    alpha.adj significance
+## 66   beta_Rt_cortex_Rorb_right_X_Tns/Blk1  0.3675538  0.2549638213 0.405098281 0.000000000  0.00000000 0.0003472222          ***
+## 68 beta_Rt_cortex_Rorb_right18_X_Tns/Blk1 -0.1202368  0.0226205964 0.057872150 0.000999001  0.02897103 0.0017241379            *
+## 70   beta_Rt_cortex_Rorb_right_X_Tns/Blk2  0.3366749  0.1872820676 0.342245184 0.000000000  0.00000000 0.0003521127          ***
+## 72 beta_Rt_cortex_Rorb_right18_X_Tns/Blk2 -0.2536468 -0.0264334049 0.002955359 0.000999001  0.02797203 0.0017857143            *
+## 74   beta_Rt_cortex_Rorb_right_X_Tns/Blk3  0.2557962  0.2014214573 0.367680590 0.000000000  0.00000000 0.0003571429          ***
+## 76 beta_Rt_cortex_Rorb_right18_X_Tns/Blk3 -0.4326966 -0.0001465364 0.050469691 0.000999001  0.02697303 0.0018518519            *
+## 78   beta_Rt_cortex_Rorb_right_X_Tns/Blk4  0.1952882  0.1495461129 0.327293014 0.000000000  0.00000000 0.0003623188          ***
+## 80 beta_Rt_cortex_Rorb_right18_X_Tns/Blk4 -0.5650512  0.0045191349 0.041503420 0.000999001  0.02597403 0.0019230769            *
 ```
 
 Notice that all of the parameter names end in “Tns/Blk1”, “Tns/Blk2”,

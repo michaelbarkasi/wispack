@@ -18,6 +18,9 @@
 <url><loc>https://michaelbarkasi.github.io/wispack/authors.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/index.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/analyze.residuals.html</loc></url>
+<url><loc>https://michaelbarkasi.github.io/wispack/reference/analyze_attractor_sim_benchmarks.html</loc></url>
+<url><loc>https://michaelbarkasi.github.io/wispack/reference/attractor_simulation.html</loc></url>
+<url><loc>https://michaelbarkasi.github.io/wispack/reference/attractor_simulation_ground_truth.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/cortical_coordinate_transform.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/create.count.data.WSPmm.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/demo.sigmoid.plots.html</loc></url>
@@ -25,6 +28,7 @@
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/index.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/make_count_data.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/make_count_data_csv.html</loc></url>
+<url><loc>https://michaelbarkasi.github.io/wispack/reference/model_attractor_simulation_wisp.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot-MCMC-bs-comparison.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot-MCMC-walks.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot-decomposition.html</loc></url>
@@ -42,6 +46,7 @@
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot.ratecount.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot.species.summary.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/pvalues.samples.html</loc></url>
+<url><loc>https://michaelbarkasi.github.io/wispack/reference/run_attractor_sim_benchmarks.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/sample.stats.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/wisp.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/wisp.sigmoid.html</loc></url>

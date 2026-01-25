@@ -62,6 +62,14 @@ reference:
   - starts_with("plot")
   - starts_with("demo.")
 
+- title: Benchmarking functions 
+  navbar: Benchmarking functions 
+  contents:
+  - attractor_simulation_ground_truth
+  - attractor_simulation
+  - model_attractor_simulation_wisp
+  - run_attractor_sim_benchmarks
+
 - title: MERFISH preprocessing functions 
   navbar: MERFISH preprocessing functions 
   contents:

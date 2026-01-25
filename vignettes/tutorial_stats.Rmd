@@ -4,7 +4,7 @@ title: "Customizing statistical analyses"
 
 ```{r setup, include = FALSE}
 options(width = 10000)
-knitr::opts_chunk$set(class.output = "scroll-output")
+knitr::opts_chunk$set(class.output = "scroll-output", cache = TRUE)
 ```
 
 Under construction. Will discuss bootstrapping vs MCMC, the settings, etc. Also include parameter plots.

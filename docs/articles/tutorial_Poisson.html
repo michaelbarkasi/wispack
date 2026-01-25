@@ -79,7 +79,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-01-24</h4>
+            <h4 data-toc-skip class="date">2026-01-30</h4>
       
 
       <div class="d-none name"><code>tutorial_Poisson.Rmd</code></div>
@@ -265,8 +265,10 @@ columns to countdata for context, species, ran, timeseries, and
 fixedeffects; while not used here, these columns are used in more
 complex modeling scenarios.)</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## Warning: package 'ggplot2' was built under R version 4.5.2</span></span></code></pre>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
 <span>    <span class="va">countdata</span>, </span>
 <span>    fit_only <span class="op">=</span> <span class="cn">TRUE</span>, </span>
 <span>    plot.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>CI_style <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -395,7 +397,7 @@ equal-sized blocks and, within each block, has identified a rate
 parameter which visually seems to land in the middle of the data.</p>
 <p>The recovered parameters can also be extracted as numerical
 values:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">param_names</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">fitted.parameters</span><span class="op">)</span></span>
 <span><span class="va">est_param</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">fitted.parameters</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">param_type</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Rt"</span>, <span class="st">"tslope"</span>, <span class="st">"tpoint"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
@@ -419,7 +421,7 @@ has predicted the log transform of the sum of the rates. To recover the
 original rates of 1, 5, 2, and 7, we need to exponentiate the recovered
 rates, subtract 1, and divide by the mean number of tokens per bin
 within the block.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tokens_per_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="va">n_bins</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">b</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">n_bins</span><span class="op">)</span> <span class="va">tokens_per_bin</span><span class="op">[</span><span class="va">b</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">$</span><span class="va">bin</span> <span class="op">==</span> <span class="va">b</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">block</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span> <span class="op">{</span></span>

@@ -79,7 +79,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-01-24</h4>
+            <h4 data-toc-skip class="date">2026-01-30</h4>
       
 
       <div class="d-none name"><code>tutorial_liverradial.Rmd</code></div>
@@ -453,9 +453,10 @@ the number of MCMC steps to zero and the number of bootstraps to
 1000.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load wispack</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Set random seed for reproducibility</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## Warning: package 'ggplot2' was built under R version 4.5.2</span></span></code></pre>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Set random seed for reproducibility</span></span>
 <span><span class="va">ran.seed</span> <span class="op">&lt;-</span> <span class="fl">123</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="va">ran.seed</span><span class="op">)</span></span>
 <span></span>
@@ -607,22 +608,22 @@ the number of MCMC steps to zero and the number of bootstraps to
 <span><span class="co">## Initial boundary distance (want &gt; 0): 0.206765</span></span>
 <span><span class="co">## Performing initial fit of full data</span></span>
 <span><span class="co">## Penalized neg_loglik: 1044.51</span></span>
-<span><span class="co">## Batch: 1/100, 0.166759 sec/bs</span></span>
-<span><span class="co">## Batch: 10/100, 0.169434 sec/bs</span></span>
-<span><span class="co">## Batch: 20/100, 0.168422 sec/bs</span></span>
-<span><span class="co">## Batch: 30/100, 0.163012 sec/bs</span></span>
-<span><span class="co">## Batch: 40/100, 0.162064 sec/bs</span></span>
-<span><span class="co">## Batch: 50/100, 0.164786 sec/bs</span></span>
-<span><span class="co">## Batch: 60/100, 0.168987 sec/bs</span></span>
-<span><span class="co">## Batch: 70/100, 0.164011 sec/bs</span></span>
-<span><span class="co">## Batch: 80/100, 0.175758 sec/bs</span></span>
-<span><span class="co">## Batch: 90/100, 0.148541 sec/bs</span></span>
+<span><span class="co">## Batch: 1/100, 0.202975 sec/bs</span></span>
+<span><span class="co">## Batch: 10/100, 0.173713 sec/bs</span></span>
+<span><span class="co">## Batch: 20/100, 0.169893 sec/bs</span></span>
+<span><span class="co">## Batch: 30/100, 0.167558 sec/bs</span></span>
+<span><span class="co">## Batch: 40/100, 0.176396 sec/bs</span></span>
+<span><span class="co">## Batch: 50/100, 0.188931 sec/bs</span></span>
+<span><span class="co">## Batch: 60/100, 0.181254 sec/bs</span></span>
+<span><span class="co">## Batch: 70/100, 0.184583 sec/bs</span></span>
+<span><span class="co">## Batch: 80/100, 0.218605 sec/bs</span></span>
+<span><span class="co">## Batch: 90/100, 0.171946 sec/bs</span></span>
 <span><span class="co">## All complete!</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Bootstrap simulation complete... </span></span>
-<span><span class="co">## Bootstrap run time (total), minutes: 2.837</span></span>
-<span><span class="co">## Bootstrap run time (per sample), seconds: 0.17</span></span>
-<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 1.702</span></span>
+<span><span class="co">## Bootstrap run time (total), minutes: 3.135</span></span>
+<span><span class="co">## Bootstrap run time (per sample), seconds: 0.188</span></span>
+<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 1.881</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Setting full-data fit as parameters... </span></span>
 <span><span class="co">## Checking feasibility of provided parameters</span></span>
@@ -708,7 +709,7 @@ Zonated genes
 zonated, with GLUL being higher in the central region and ASS1 being
 higher in the portal region. Their respective spatial gradients are easy
 to see in the rate-count plot:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plt_glul</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_glul"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">plt_ass1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_ass1"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_glul</span>, <span class="va">plt_ass1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
@@ -722,7 +723,7 @@ except perhaps for some minor interaction between zone and time that has
 the central region decreasing in expression as the portal region
 increases. These temporal patterns can be seen more clearly by looking
 at the time-series plots.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plt_glul</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_glul"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">plt_ass1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_ass1"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_glul</span>, <span class="va">plt_ass1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
@@ -743,7 +744,7 @@ relatively high expression, although the central region of ARNTL shows a
 bit of a spatial gradient. For the portal region of ARNTL, ZT0 and ZT18
 are elevated (yellow and purple), while for DBP it’s ZT6 and ZT12 (green
 and blue) that are elevated.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plt_arntl</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_arntl"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">plt_dbp</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_dbp"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_arntl</span>, <span class="va">plt_dbp</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
@@ -752,7 +753,7 @@ and blue) that are elevated.</p>
 <p>These temporal dynamics are made more clear in the time-series plots,
 which clearly show the mid-ZT dip in ARNTL and the mid-ZT bump in
 DBP.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plt_arntl</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_arntl"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">plt_dbp</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_dbp"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_arntl</span>, <span class="va">plt_dbp</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
@@ -765,7 +766,7 @@ Zonated and rhythmic genes
 zonation and temporal rhythm. Spatially, ELOVL3 has the same profile as
 GLUL. Both are expressed more in the central region. PCK1, on the other
 hand, is expressed more in the portal region, just like ASS1.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plt_elovl3</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_elovl3"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">plt_pck1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_pck1"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_elovl3</span>, <span class="va">plt_pck1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
@@ -774,7 +775,7 @@ hand, is expressed more in the portal region, just like ASS1.</p>
 <p>However, unlike GLUL and PCK1, ELOVL3 and PCK1 have notable temporal
 rhythm. ELOVL3 is similar to ARNTL, with a mid-ZT dip. PCK1 is similar
 to DBP, with a mid-ZT bump.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plt_elovl3</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_elovl3"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">plt_pck1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_pck1"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_elovl3</span>, <span class="va">plt_pck1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>

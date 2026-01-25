@@ -14,3 +14,4 @@ wispack.Rcheck/*
 .github/.DS_Store
 src/.DS_Store
 *.tar.gz
+vignettes/*_cache/*

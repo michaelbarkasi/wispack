@@ -4,7 +4,7 @@ title: "The wisp rate-count plot"
 
 ```{r setup, include = FALSE}
 options(width = 10000)
-knitr::opts_chunk$set(class.output = "scroll-output")
+knitr::opts_chunk$set(class.output = "scroll-output", cache = TRUE)
 ```
 
 Under construction. Will make and explain wisp plots. 

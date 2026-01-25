@@ -203,7 +203,11 @@ estimation](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md)
 
 ``` r
 library(wispack, quietly = TRUE)
+```
 
+    ## Warning: package 'ggplot2' was built under R version 4.5.2
+
+``` r
 model <- wisp(
     count.data = countdata,
     variables = data.variables,

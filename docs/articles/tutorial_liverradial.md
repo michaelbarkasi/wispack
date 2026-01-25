@@ -337,7 +337,11 @@ the number of MCMC steps to zero and the number of bootstraps to 1000.
 ``` r
 # Load wispack
 library(wispack, quietly = TRUE)
+```
 
+    ## Warning: package 'ggplot2' was built under R version 4.5.2
+
+``` r
 # Set random seed for reproducibility
 ran.seed <- 123
 set.seed(ran.seed)
@@ -493,22 +497,22 @@ radial.model <- wisp(
 ## Initial boundary distance (want > 0): 0.206765
 ## Performing initial fit of full data
 ## Penalized neg_loglik: 1044.51
-## Batch: 1/100, 0.166759 sec/bs
-## Batch: 10/100, 0.169434 sec/bs
-## Batch: 20/100, 0.168422 sec/bs
-## Batch: 30/100, 0.163012 sec/bs
-## Batch: 40/100, 0.162064 sec/bs
-## Batch: 50/100, 0.164786 sec/bs
-## Batch: 60/100, 0.168987 sec/bs
-## Batch: 70/100, 0.164011 sec/bs
-## Batch: 80/100, 0.175758 sec/bs
-## Batch: 90/100, 0.148541 sec/bs
+## Batch: 1/100, 0.202975 sec/bs
+## Batch: 10/100, 0.173713 sec/bs
+## Batch: 20/100, 0.169893 sec/bs
+## Batch: 30/100, 0.167558 sec/bs
+## Batch: 40/100, 0.176396 sec/bs
+## Batch: 50/100, 0.188931 sec/bs
+## Batch: 60/100, 0.181254 sec/bs
+## Batch: 70/100, 0.184583 sec/bs
+## Batch: 80/100, 0.218605 sec/bs
+## Batch: 90/100, 0.171946 sec/bs
 ## All complete!
 ## 
 ## Bootstrap simulation complete... 
-## Bootstrap run time (total), minutes: 2.837
-## Bootstrap run time (per sample), seconds: 0.17
-## Bootstrap run time (per sample, per thread), seconds: 1.702
+## Bootstrap run time (total), minutes: 3.135
+## Bootstrap run time (per sample), seconds: 0.188
+## Bootstrap run time (per sample, per thread), seconds: 1.881
 ## 
 ## Setting full-data fit as parameters... 
 ## Checking feasibility of provided parameters
