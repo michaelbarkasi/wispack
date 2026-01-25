@@ -395,7 +395,7 @@ wisp <- function(
           MCMC.settings.internal$MCMC.neighbor.filter,
           MCMC.settings.internal$MCMC.step.size,
           MCMC.settings.internal$MCMC.prior,
-          MCMC.settings.internal$MCMC.burnin == 0,
+          MCMC.settings.internal$MCMC.burnin == 0, # If no burnin, start from parameters found with gradient descent
           verbose 
         )
         run_time_MCMC <- Sys.time() - start_time_MCMC
@@ -408,7 +408,7 @@ wisp <- function(
         
         # Clear out burn-in, if any
         if (MCMC.settings.internal$MCMC.burnin > 0) {
-          MCMC_walk <- MCMC_walk[-c(2:(2+MCMC.settings.internal$MCMC.burnin-1)),]
+          MCMC_walk <- MCMC_walk[-c(1:MCMC.settings.internal$MCMC.burnin),]
         }
         
         # Save MCMC estimates and diagnostics
