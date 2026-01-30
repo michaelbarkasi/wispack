@@ -1,5 +1,7 @@
 ---
 title: "Customizing statistical analyses"
+author: "Michael Barkasi"
+date: "`r Sys.Date()`"
 ---
 
 ```{r setup, include = FALSE}

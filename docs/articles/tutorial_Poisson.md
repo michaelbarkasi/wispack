@@ -6,31 +6,26 @@ Suppose you want to model some process which generates tokens of a
 certain type over space. For example, the cells in your body generate
 RNA molecules through gene transcription and rabbits in a forest
 generate offspring through reproduction. If every instance of the
-process (e.g., every cell, or every rabbit) in the same place $`x`$
-produces tokens at the same rate $`\lambda`$, then the number $`y`$ of
-tokens generated in a given region will follow a Poisson distribution
-``` math
-y\sim \text{Pois}(n\lambda)
-```
-with rate parameter equal to $`n\lambda`$, for $`n`$ the number of
-process instances in the region.
+process (e.g., every cell, or every rabbit) in the same place x produces
+tokens at the same rate \lambda, then the number y of tokens generated
+in a given region will follow a Poisson distribution y\sim
+\text{Pois}(n\lambda) with rate parameter equal to n\lambda, for n the
+number of process instances in the region.
 
 Real cases of distributed Poisson processes rarely have instances with
 identical rates. For example, rabbits will reproduce at different rates
 depending on factors like age, and cells will transcribe genes at
 different rates depending on their type and state. This variation is
-often gamma-distributed, such that if $`\lambda`$ is the mean process
-rate at $`x`$, then individual process instances will have rate
-$`\Lambda`$ drawn from a gamma distribution
-``` math
-\Lambda\sim \text{Gam}(\lambda, \sigma_\gamma^2)
-```
-with expected value $`\lambda`$ and variance $`\sigma_\gamma^2`$.
+often gamma-distributed, such that if \lambda is the mean process rate
+at x, then individual process instances will have rate \Lambda drawn
+from a gamma distribution \Lambda\sim \text{Gam}(\lambda,
+\sigma\_\gamma^2) with expected value \lambda and variance
+\sigma\_\gamma^2.
 
 ## Simulating data
 
 Let’s simulate a Poisson process with gamma-distributed variation with
-instances spread over a one-dimensional space $`x`$. The space will be
+instances spread over a one-dimensional space x. The space will be
 divided into 100 bins:
 
 ``` r
@@ -49,13 +44,13 @@ bin <- sample(x, n_instances, replace = TRUE)
 ```
 
 Now suppose that the space is divided into four equal-sized blocks, each
-with a different constant process rate $`\lambda`$, and suppose there is
-a constant variance $`\sigma_\gamma^2 = 2`$ across the entire space.
-Suppose these rates $`\lambda`$ are 1, 5, 2, and 7. We can represent
-this as a vector lambda of length 100, with each block’s rate repeated
-twenty-five times. The process counts can be simulated for each instance
-by pulling individual process rates from a gamma distribution and then
-drawing counts from a Poisson distribution with those rates:
+with a different constant process rate \lambda, and suppose there is a
+constant variance \sigma\_\gamma^2 = 2 across the entire space. Suppose
+these rates \lambda are 1, 5, 2, and 7. We can represent this as a
+vector lambda of length 100, with each block’s rate repeated twenty-five
+times. The process counts can be simulated for each instance by pulling
+individual process rates from a gamma distribution and then drawing
+counts from a Poisson distribution with those rates:
 
 ``` r
 lambda <- rep(c(1, 5, 2, 7), each = length(x)/4)
@@ -133,22 +128,17 @@ Wisps are mathematical models for describing gamma-distributed Poisson
 processes. The parameters used to create countdata can be recovered
 using a wisp. A wisp model is fit in two steps.
 
-The first is to find transition points $`p`$ in count rate by looking
-for outliers in the ratio between the likelihood of the neighborhood
-around $`x`$ having a constant rate and the likelihood of each side of
-the neighborhood around $`x`$ having different rates. If there are $`n`$
-such transition points $`p=\langle p_1,\ldots,p_n\rangle`$, then a
-specific variety of sigmoid, the logistic function:
-``` math
-\psi(x,r,s) = \frac{r}{1 + \exp({sx})}
-```
-can be used to model the rate $`\lambda`$ across space by combining
-$`n`$ such sigmoids into a wisp function:
-``` math
-\Psi(x,r,s,p) = r_1 + \sum_{i=1}^n \psi(x - p_i, r_{i+1} - r_{i}, -s_i)
-```
-with rate parameters $`r=\langle r_1,\ldots,r_{n+1}\rangle`$ and slope
-parameters $`s=\langle s_1,\ldots,s_{n}\rangle`$.
+The first is to find transition points p in count rate by looking for
+outliers in the ratio between the likelihood of the neighborhood around
+x having a constant rate and the likelihood of each side of the
+neighborhood around x having different rates. If there are n such
+transition points p=\langle p_1,\ldots,p_n\rangle, then a specific
+variety of sigmoid, the logistic function: \psi(x,r,s) = \frac{r}{1 +
+\exp({sx})} can be used to model the rate \lambda across space by
+combining n such sigmoids into a wisp function: \Psi(x,r,s,p) = r_1 +
+\sum\_{i=1}^n \psi(x - p_i, r\_{i+1} - r\_{i}, -s_i) with rate
+parameters r=\langle r_1,\ldots,r\_{n+1}\rangle and slope parameters
+s=\langle s_1,\ldots,s\_{n}\rangle.
 
 ![Demo plots of functions involved in wisp](fig_logisticpolysig.png)
 
@@ -157,24 +147,19 @@ expression. (Bottom) The wisp poly-sigmoid function, built from three
 logistic components, representing three change points.
 
 The second is to use gradient-based optimization or MCMC to find the
-parameters $`r`$, $`s`$ and $`p`$ which maximize the likelihood of the
-log transform $`f(y)=\log(y+1)`$ of countdata\$count.
+parameters r, s and p which maximize the likelihood of the log transform
+f(y)=\log(y+1) of countdata\$count.
 
 For this demonstration, the data in countdata has been explicitly
 constructed with the statistical structure captured by wisp using known
-parameters $`r`$ and $`p`$. Thus, fitting a wisp model to countdata
-should recover those parameters. (Note: The verbose progress reports
-from wisp show how the function adds columns to countdata for context,
-species, ran, timeseries, and fixedeffects; while not used here, these
-columns are used in more complex modeling scenarios.)
+parameters r and p. Thus, fitting a wisp model to countdata should
+recover those parameters. (Note: The verbose progress reports from wisp
+show how the function adds columns to countdata for context, species,
+ran, timeseries, and fixedeffects; while not used here, these columns
+are used in more complex modeling scenarios.)
 
 ``` r
 library(wispack, quietly = TRUE)
-```
-
-    ## Warning: package 'ggplot2' was built under R version 4.5.2
-
-``` r
 model <- wisp(
     countdata, 
     fit_only = TRUE, 
@@ -205,8 +190,7 @@ model <- wisp(
 ## Plot settings:
 ##  print.plots: TRUE
 ##  dim.bounds: 
-##  pred.type: pred
-##  count.type: count
+##  log.scale: FALSE
 ##  splitting_factor: 
 ##  CI_style: FALSE
 ##  label_size: 5.5
@@ -333,8 +317,8 @@ for (param_type in c("Rt", "tslope", "tpoint")) {
 ## Recovered tpoint parameters: 25.961, 50.259, 75.876
 ```
 
-It is immediately clear from the three tpoint parameters (i.e., $`p`$)
-that wisp has recovered the transition points at bins 25, 50, and 75.
+It is immediately clear from the three tpoint parameters (i.e., p) that
+wisp has recovered the transition points at bins 25, 50, and 75.
 However, at first glance, the rates (Rt) look off. This is because wisp
 has predicted the log transform of the sum of the rates. To recover the
 original rates of 1, 5, 2, and 7, we need to exponentiate the recovered

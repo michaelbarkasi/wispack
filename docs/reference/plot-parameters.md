@@ -7,7 +7,14 @@ available.
 ## Usage
 
 ``` r
-plot.parameters(wisp.results, species.lvl = NULL, violin = TRUE, print.plots = FALSE, species.classes = NULL, verbose = TRUE)
+plot.parameters(
+ wisp.results, 
+ species = c(), 
+ violin = TRUE, 
+ print.plots = FALSE, 
+ species.classes = NULL, 
+ verbose = TRUE
+)
 ```
 
 ## Arguments
@@ -16,10 +23,10 @@ plot.parameters(wisp.results, species.lvl = NULL, violin = TRUE, print.plots = F
 
   List, output of the wisp function.
 
-- species.lvl:
+- species:
 
-  Character string, the species level to be plotted. If NULL, all
-  species levels are plotted.
+  Character string, the species level to be plotted. If c(), all species
+  levels are plotted.
 
 - violin:
 

@@ -4,14 +4,20 @@
 \alias{plot.decomposition}
 \title{Plot individual components of wisp fit for a single species level}
 \usage{
-plot.decomposition(wisp.results, species, log = FALSE, dim.boundaries = c(), y.lim = NULL)
+plot.decomposition(
+ wisp.results, 
+ species, 
+ log = FALSE, 
+ dim.boundaries = c(), 
+ y.lim = NULL
+)
 }
 \arguments{
 \item{wisp.results}{List, output of the wisp function.}
 
 \item{species}{Character string, the species level to plot. Must be provided, and only one at a time.}
 
-\item{log}{Logical, if TRUE, plots on a log scale. Defaults to FALSE.}
+\item{log.scale}{Logical, if TRUE, plots on a log scale. Defaults to FALSE.}
 
 \item{dim.boundaries}{Numeric vector, independent block boundaries to plot for comparison. If empty, the argument is ignored.}
 

@@ -6,7 +6,12 @@ WISP results.
 ## Usage
 
 ``` r
-plot.MCMC.walks(wisp.results, print.plots = TRUE, verbose = TRUE, low_samples = 10)
+plot.MCMC.walks(
+ wisp.results, 
+ print.plots = FALSE, 
+ verbose = TRUE, 
+ low_samples = 10
+)
 ```
 
 ## Arguments

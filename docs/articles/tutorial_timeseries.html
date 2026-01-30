@@ -6,7 +6,8 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Time-series data • wispack</title>
-<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- katex math --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script><script src="../katex-auto.js"></script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -49,7 +50,7 @@
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Time-series data</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_warping.html">Random effects and warping</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">The wisp rate-count plot</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">Plotting wisp models</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -61,7 +62,14 @@
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/michaelbarkasi/wispack"><span class="fa fab fa-github"></span></a></li>
-<li class="nav-item"><a class="nav-link" href="../#">🌙</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
@@ -79,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-01-30</h4>
+            <h4 data-toc-skip class="date">2026-02-01</h4>
       
 
       <div class="d-none name"><code>tutorial_timeseries.Rmd</code></div>
@@ -93,88 +101,41 @@ Introduction
 <p>Wisps naturally model between-group effects describable as two-valued
 categorical factors, e.g., comparing controls vs a treatment or male vs
 female. Coarse-grain comparisons over time, such as pre-hearing-onset vs
-post-hearing-onset or postnatal day
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mi>X</mi></mrow><annotation encoding="application/x-tex">PX</annotation></semantics></math>
-vs postnatal day
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mi>Y</mi></mrow><annotation encoding="application/x-tex">PY</annotation></semantics></math>,
-can be shoehorned into this framework. However, it’s often desirable to
-model longer time series
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>T</mi><annotation encoding="application/x-tex">T</annotation></semantics></math>.</p>
+post-hearing-onset or postnatal day <span class="math inline">PX</span>
+vs postnatal day <span class="math inline">PY</span>, can be shoehorned
+into this framework. However, it’s often desirable to model longer time
+series <span class="math inline">T</span>.</p>
 <h2>
 Time series as factor series
 </h2>
 <p>While wisps are limited to binary covariate fixed-effect factors
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ξ</mi><annotation encoding="application/x-tex">\xi</annotation></semantics></math>,
-i.e.,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ξ</mi><mo>∈</mo><mo stretchy="false" form="prefix">{</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">}</mo></mrow><annotation encoding="application/x-tex">\xi\in\{0,1\}</annotation></semantics></math>,
-the number of factor levels can be increased to accommodate more time
-points by modeling time factors
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><mi>T</mi></msub><annotation encoding="application/x-tex">\xi_T</annotation></semantics></math>
-as an ordered series of factors
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><msub><mi>T</mi><mi>m</mi></msub></msub><annotation encoding="application/x-tex">\xi_{T_m}</annotation></semantics></math>
-with additive effects
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><msub><mi>T</mi><mi>m</mi></msub></msub><annotation encoding="application/x-tex">\beta_{T_m}</annotation></semantics></math>.
-Given a series of time points:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>T</mi><mn>1</mn></msub><mo>&lt;</mo><msub><mi>T</mi><mn>2</mn></msub><mo>&lt;</mo><mi>⋯</mi><mo>&lt;</mo><msub><mi>T</mi><mi>n</mi></msub></mrow><annotation encoding="application/x-tex">T_1 &lt; T_2 &lt; \cdots &lt; T_n</annotation></semantics></math>
-a corresponding time-factor series
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><mi>T</mi></msub><annotation encoding="application/x-tex">\xi_T</annotation></semantics></math>
-is defined with
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-ordered binary factors:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ξ</mi><msub><mi>T</mi><mn>1</mn></msub></msub><mo>&lt;</mo><msub><mi>ξ</mi><msub><mi>T</mi><mn>2</mn></msub></msub><mo>&lt;</mo><mi>⋯</mi><mo>&lt;</mo><msub><mi>ξ</mi><msub><mi>T</mi><mi>n</mi></msub></msub></mrow><annotation encoding="application/x-tex">\xi_{T_1} &lt; \xi_{T_2} &lt; \cdots &lt; \xi_{T_n}</annotation></semantics></math>
-For binary factors
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ξ</mi><annotation encoding="application/x-tex">\xi</annotation></semantics></math>
-with corresponding effect term
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>,
-the effect on a model parameter
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>z</mi><annotation encoding="application/x-tex">z</annotation></semantics></math>
-is:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>z</mi><mo>↦</mo><mi>z</mi><mo>+</mo><mi>β</mi><mo>+</mo><mtext mathvariant="normal">interaction terms</mtext></mrow><annotation encoding="application/x-tex">z \mapsto z + \beta + \text{interaction terms}</annotation></semantics></math>
-To achieve the cumulative effect of time, the effect of a time factor
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><msub><mi>T</mi><mi>m</mi></msub></msub><annotation encoding="application/x-tex">\xi_{T_m}</annotation></semantics></math>,
-for
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mo>≤</mo><mi>n</mi></mrow><annotation encoding="application/x-tex">m\leq n</annotation></semantics></math>,
-is given by summing the series of effects
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><msub><mi>T</mi><mi>i</mi></msub></msub><annotation encoding="application/x-tex">\beta_{T_i}</annotation></semantics></math>
-from time factors
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><msub><mi>T</mi><mi>i</mi></msub></msub><annotation encoding="application/x-tex">\xi_{T_i}</annotation></semantics></math>
-for
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>T</mi><mi>i</mi></msub><mo>≤</mo><msub><mi>T</mi><mi>m</mi></msub></mrow><annotation encoding="application/x-tex">T_i\leq T_m</annotation></semantics></math>:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>z</mi><mo>↦</mo><mi>z</mi><mo>+</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>m</mi></munderover><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>β</mi><msub><mi>T</mi><mi>i</mi></msub></msub><mo>+</mo><mrow><mtext mathvariant="normal">interaction terms for </mtext><mspace width="0.333em"></mspace></mrow><mi>i</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">z \mapsto z + \sum_{i=1}^{m} (\beta_{T_i} + \text{interaction terms for }i)</annotation></semantics></math>
-For a rigorous definition, suppose that in addition to the time factor
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><mi>T</mi></msub><annotation encoding="application/x-tex">\xi_T</annotation></semantics></math>,
-there are other fixed-effect factors
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><mi>F</mi></msub><annotation encoding="application/x-tex">\xi_F</annotation></semantics></math>
-each with effect
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>F</mi></msub><annotation encoding="application/x-tex">\beta_F</annotation></semantics></math>.
-The effect of some time
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><msub><mi>T</mi><mi>m</mi></msub></msub><annotation encoding="application/x-tex">\xi_{T_m}</annotation></semantics></math>
-from
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><mi>T</mi></msub><annotation encoding="application/x-tex">\xi_T</annotation></semantics></math>
-will include not only
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><msub><mi>T</mi><mi>m</mi></msub></msub><annotation encoding="application/x-tex">\beta_{T_m}</annotation></semantics></math>
-and an interaction term
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mrow><msub><mi>T</mi><mi>m</mi></msub><mo>×</mo><msub><mi>ξ</mi><mi>F</mi></msub></mrow></msub><annotation encoding="application/x-tex">\beta_{T_m\times\xi_F}</annotation></semantics></math>
-for all
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><mi>F</mi></msub><annotation encoding="application/x-tex">\xi_F</annotation></semantics></math>,
-but also times
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><msub><mi>T</mi><mi>i</mi></msub></msub><annotation encoding="application/x-tex">\xi_{T_i}</annotation></semantics></math>
-for all
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>i</mi><mo>&lt;</mo><mi>m</mi></mrow><annotation encoding="application/x-tex">i&lt;m</annotation></semantics></math>
-and their respective interaction terms
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mrow><msub><mi>T</mi><mi>i</mi></msub><mo>×</mo><msub><mi>ξ</mi><mi>F</mi></msub></mrow></msub><annotation encoding="application/x-tex">\beta_{T_i\times\xi_F}</annotation></semantics></math>.
-Thus, the effect of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>ξ</mi><mi>T</mi></msub><annotation encoding="application/x-tex">\xi_T</annotation></semantics></math>
-can be defined to be:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>z</mi><mo>↦</mo><mi>z</mi><mo>+</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>β</mi><msub><mi>T</mi><mi>i</mi></msub></msub><msub><mi>ξ</mi><msub><mi>T</mi><mi>i</mi></msub></msub><mo>+</mo><munder><mo>∑</mo><mi>F</mi></munder><msub><mi>β</mi><mrow><msub><mi>T</mi><mi>m</mi></msub><mo>×</mo><msub><mi>ξ</mi><mi>F</mi></msub></mrow></msub><msub><mi>ξ</mi><msub><mi>T</mi><mi>i</mi></msub></msub><msub><mi>ξ</mi><mi>F</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">z \mapsto z + \sum_{i=1}^{n} \left(\beta_{T_i}\xi_{T_i} + \sum_{F}\beta_{T_m\times\xi_F}\xi_{T_i}\xi_F\right)</annotation></semantics></math>
-with the stipulation that, for each sampled data point
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math>,
-if
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ξ</mi><msub><mi>T</mi><mi>m</mi></msub></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\xi_{T_m}(s)=1</annotation></semantics></math>
-then
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ξ</mi><msub><mi>T</mi><mi>i</mi></msub></msub><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\xi_{T_i}(s)=1</annotation></semantics></math>
-for all
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>i</mi><mo>&lt;</mo><mi>m</mi></mrow><annotation encoding="application/x-tex">i&lt;m</annotation></semantics></math>.</p>
+<span class="math inline">\xi</span>, i.e., <span class="math inline">\xi\in\{0,1\}</span>, the number of factor levels
+can be increased to accommodate more time points by modeling time
+factors <span class="math inline">\xi_T</span> as an ordered series of
+factors <span class="math inline">\xi_{T_m}</span> with additive effects
+<span class="math inline">\beta_{T_m}</span>. Given a series of time
+points: <span class="math display">T_1 &lt; T_2 &lt; \cdots &lt;
+T_n</span> a corresponding time-factor series <span class="math inline">\xi_T</span> is defined with <span class="math inline">n</span> ordered binary factors: <span class="math display">\xi_{T_1} &lt; \xi_{T_2} &lt; \cdots &lt;
+\xi_{T_n}</span> For binary factors <span class="math inline">\xi</span>
+with corresponding effect term <span class="math inline">\beta</span>,
+the effect on a model parameter <span class="math inline">z</span> is:
+<span class="math display">z \mapsto z + \beta + \text{interaction
+terms}</span> To achieve the cumulative effect of time, the effect of a
+time factor <span class="math inline">\xi_{T_m}</span>, for <span class="math inline">m\leq n</span>, is given by summing the series of
+effects <span class="math inline">\beta_{T_i}</span> from time factors
+<span class="math inline">\xi_{T_i}</span> for <span class="math inline">T_i\leq T_m</span>: <span class="math display">z
+\mapsto z + \sum_{i=1}^{m} (\beta_{T_i} + \text{interaction terms for
+}i)</span> For a rigorous definition, suppose that in addition to the
+time factor <span class="math inline">\xi_T</span>, there are other
+fixed-effect factors <span class="math inline">\xi_F</span> each with
+effect <span class="math inline">\beta_F</span>. The effect of some time
+<span class="math inline">\xi_{T_m}</span> from <span class="math inline">\xi_T</span> will include not only <span class="math inline">\beta_{T_m}</span> and an interaction term <span class="math inline">\beta_{T_m\times\xi_F}</span> for all <span class="math inline">\xi_F</span>, but also times <span class="math inline">\xi_{T_i}</span> for all <span class="math inline">i&lt;m</span> and their respective interaction terms
+<span class="math inline">\beta_{T_i\times\xi_F}</span>. Thus, the
+effect of <span class="math inline">\xi_T</span> can be defined to be:
+<span class="math display">z \mapsto z + \sum_{i=1}^{n}
+\left(\beta_{T_i}\xi_{T_i} +
+\sum_{F}\beta_{T_m\times\xi_F}\xi_{T_i}\xi_F\right)</span> with the
+stipulation that, for each sampled data point <span class="math inline">s</span>, if <span class="math inline">\xi_{T_m}(s)=1</span> then <span class="math inline">\xi_{T_i}(s)=1</span> for all <span class="math inline">i&lt;m</span>.</p>
 <h2>
 Example data: postnatal age
 </h2>
@@ -323,10 +284,9 @@ modeling, we’ll only fit the model (<strong>fit_only = TRUE</strong>)
 without running any <a href="tutorial_stats.html">statistical parameter
 estimation</a>.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## Warning: package 'ggplot2' was built under R version 4.5.2</span></span></code></pre>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
 <span>    count.data <span class="op">=</span> <span class="va">countdata</span>,</span>
 <span>    variables <span class="op">=</span> <span class="va">data.variables</span>,</span>
 <span>    fit_only <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -359,8 +319,7 @@ estimation</a>.</p>
 <span><span class="co">## Plot settings:</span></span>
 <span><span class="co">##  print.plots: FALSE</span></span>
 <span><span class="co">##  dim.bounds: 72, 60.2, 23.6, 0</span></span>
-<span><span class="co">##  pred.type: pred</span></span>
-<span><span class="co">##  count.type: count</span></span>
+<span><span class="co">##  log.scale: FALSE</span></span>
 <span><span class="co">##  splitting_factor: </span></span>
 <span><span class="co">##  CI_style: TRUE</span></span>
 <span><span class="co">##  label_size: 5.5</span></span>
@@ -475,7 +434,7 @@ estimation</a>.</p>
 The weight matrix
 </h2>
 <p>Before examining the results, let’s look at the weight matrix.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">weight.matrix</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">##         ref right 12 18 right12 right18</span></span>
 <span><span class="co">## ref       1     0  0  0       0       0</span></span>
@@ -497,42 +456,26 @@ treatment level. In contrast, <strong>right</strong> refers to the right
 hemisphere at age P7, which is a treatment condition in which only the
 <strong>hemisphere</strong> factor is in a treatment level.</p>
 <p>This matrix is a <em>weight</em> matrix because the row and column
-labels are also labels for weights
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>w</mi><annotation encoding="application/x-tex">w</annotation></semantics></math>.
+labels are also labels for weights <span class="math inline">w</span>.
 Before <a href="tutorial_warping.html">warping</a>, the predicted count
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
-of a sample is given by:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi><mo>=</mo><msub><mi>β</mi><mtext mathvariant="normal">ref</mtext></msub><msub><mi>w</mi><mtext mathvariant="normal">ref</mtext></msub><mo>+</mo><msub><mi>β</mi><mtext mathvariant="normal">right</mtext></msub><msub><mi>w</mi><mtext mathvariant="normal">right</mtext></msub><mo>+</mo><msub><mi>β</mi><mn>12</mn></msub><msub><mi>w</mi><mn>12</mn></msub><mo>+</mo><msub><mi>β</mi><mn>18</mn></msub><msub><mi>w</mi><mn>18</mn></msub><mo>+</mo><msub><mi>β</mi><mrow><mtext mathvariant="normal">right</mtext><mn>12</mn></mrow></msub><msub><mi>w</mi><mrow><mtext mathvariant="normal">right</mtext><mn>12</mn></mrow></msub><mo>+</mo><msub><mi>β</mi><mrow><mtext mathvariant="normal">right</mtext><mn>18</mn></mrow></msub><msub><mi>w</mi><mrow><mtext mathvariant="normal">right</mtext><mn>18</mn></mrow></msub></mrow><annotation encoding="application/x-tex">y = \beta_{\text{ref}}w_{\text{ref}} + \beta_{\text{right}}w_{\text{right}} + \beta_{12}w_{12} + \beta_{18}w_{18} + \beta_{\text{right}12}w_{\text{right}12} + \beta_{\text{right}18}w_{\text{right}18}</annotation></semantics></math>
-where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>
-are the effect parameters and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>w</mi><annotation encoding="application/x-tex">w</annotation></semantics></math>
-are the weights. The rows of the weight matrix give the values of the
-weights
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>w</mi><annotation encoding="application/x-tex">w</annotation></semantics></math>
+<span class="math inline">y</span> of a sample is given by: <span class="math display">y = \beta_{\text{ref}}w_{\text{ref}} +
+\beta_{\text{right}}w_{\text{right}} + \beta_{12}w_{12} +
+\beta_{18}w_{18} + \beta_{\text{right}12}w_{\text{right}12} +
+\beta_{\text{right}18}w_{\text{right}18}</span> where <span class="math inline">\beta</span> are the effect parameters and <span class="math inline">w</span> are the weights. The rows of the weight
+matrix give the values of the weights <span class="math inline">w</span>
 corresponding to the column labels under the treatment conditions given
 by the row labels. For example, the <strong>right12</strong> row
-specifies that
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mtext mathvariant="normal">ref</mtext></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">w_{\text{ref}}=1</annotation></semantics></math>,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mtext mathvariant="normal">right</mtext></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">w_{\text{right}}=1</annotation></semantics></math>,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mn>12</mn></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">w_{12}=1</annotation></semantics></math>,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mn>18</mn></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">w_{18}=0</annotation></semantics></math>,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mrow><mtext mathvariant="normal">right</mtext><mn>12</mn></mrow></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">w_{\text{right}12}=1</annotation></semantics></math>,
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mrow><mtext mathvariant="normal">right</mtext><mn>18</mn></mrow></msub><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">w_{\text{right}18}=0</annotation></semantics></math>
-when in the treatment condition of the right hemisphere at age P12. That
-is, when estimating a count
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
-for a sample in the right hemisphere at age P12, the effects
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>
-for the reference level, right hemisphere, age P12, and the interaction
-between right hemisphere and age P12 will all be included in the
-estimate, while the effects for age P18 and the interaction between
-right hemisphere and age P18 will not be included. What makes the time
-series additive is the way a treatment level like <strong>18</strong> or
-<strong>right18</strong> include not only effects related to the age
-<strong>18</strong>, but also effects related to all earlier ages, e.g.,
-<strong>12</strong>.</p>
+specifies that <span class="math inline">w_{\text{ref}}=1</span>, <span class="math inline">w_{\text{right}}=1</span>, <span class="math inline">w_{12}=1</span>, <span class="math inline">w_{18}=0</span>, <span class="math inline">w_{\text{right}12}=1</span>, and <span class="math inline">w_{\text{right}18}=0</span> when in the treatment
+condition of the right hemisphere at age P12. That is, when estimating a
+count <span class="math inline">y</span> for a sample in the right
+hemisphere at age P12, the effects <span class="math inline">\beta</span> for the reference level, right
+hemisphere, age P12, and the interaction between right hemisphere and
+age P12 will all be included in the estimate, while the effects for age
+P18 and the interaction between right hemisphere and age P18 will not be
+included. What makes the time series additive is the way a treatment
+level like <strong>18</strong> or <strong>right18</strong> include not
+only effects related to the age <strong>18</strong>, but also effects
+related to all earlier ages, e.g., <strong>12</strong>.</p>
 <h2>
 Visualizing time series
 </h2>
@@ -545,7 +488,7 @@ of the <strong>timeseries</strong> factor. For example, consider the
 wisp plot for NXPH3, which shows a temporally dynamic and lateralized
 profile in deep layers (block 1), but almost no activity in superficial
 layers (block 2).</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">ratecount</span><span class="op">$</span><span class="va">plot_pred_context_cortex_fixEff_Nxph3</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_timeseries_files/figure-html/plot_wisp-1.png" class="r-plt" alt="" width="700"></p>
 <p>By default, when the <strong>timeseries</strong> factor is present,
@@ -568,7 +511,7 @@ the trend obvious at a glance while also clarifying it. These
 time-series plots are made automatically by the wisp() function when a
 time series is provided or detected, through an internal call to the
 plot.timeseries() function.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">timeseries</span><span class="op">$</span><span class="va">plot_pred_context_cortex_timeseries_Nxph3</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_timeseries_files/figure-html/plot_timeseries-1.png" class="r-plt" alt="" width="700"></p>
 <p>Wisp time-series plots keep the y-axis a representation of rate, but
@@ -581,11 +524,6 @@ just the rate parameter itself. This parameter is a vector, each element
 of which is the rate for a block of space defined by transition points.
 In the NXPH3 time-series plot above, the dip in expression at P12 in the
 deep layers (block 1) can be seen more clearly.</p>
-<p>Notice that the colors in the time-series plots (blue and orange) are
-different from those in the rate-count plots (blue and green). This is
-to avoid suggesting that there’s a direct correspondence between plot
-coloring. The coloring structures data within a plot type, but not
-across plot types.</p>
 <p>We could plot and discuss the rest of the layer-specific genes in
 this data set, but the plots (as produced by these function calls) are
 messy. This is because this analysis of the data does not account for

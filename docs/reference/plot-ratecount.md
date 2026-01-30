@@ -7,7 +7,20 @@ include independent block boundaries for comparison if provided.
 ## Usage
 
 ``` r
-plot.ratecount(wisp.results, pred.type = "pred", count.type = "count", dim.boundaries = c(), print.all = FALSE, y.lim = NA, count.alpha.none = NA, count.alpha.ran = NA, pred.alpha.none = NA, pred.alpha.ran = NA, rans.to.print = c(), speciess.to.print = c(), verbose = TRUE)
+plot.ratecount(
+ wisp.results, 
+ log.scale = FALSE,
+ dim.boundaries = c(), 
+ print.plots = FALSE, 
+ y.lim = NA, 
+ count.alpha.none = NA, 
+ count.alpha.ran = NA, 
+ pred.alpha.none = NA, 
+ pred.alpha.ran = NA, 
+ rans.to.print = c(), 
+ species = c(), 
+ verbose = TRUE
+)
 ```
 
 ## Arguments
@@ -16,15 +29,10 @@ plot.ratecount(wisp.results, pred.type = "pred", count.type = "count", dim.bound
 
   List, output of the wisp function.
 
-- pred.type:
+- log.scale:
 
-  Character string, the name of the predicted rate column in the count
-  data (e.g., "pred.log" or "pred").
-
-- count.type:
-
-  Character string, the name of the observed count column in the count
-  data (e.g., "count.log" or "count").
+  Logical, if TRUE, plots rates and counts on a log scale; if FALSE,
+  plots raw rates and counts.
 
 - CI_style:
 
@@ -37,10 +45,10 @@ plot.ratecount(wisp.results, pred.type = "pred", count.type = "count", dim.bound
   Numeric vector, independent block boundaries to plot for comparison.
   If empty, the argument is ignored.
 
-- print.all:
+- print.plots:
 
-  Logical, if TRUE, prints all plots; if FALSE, only returns plots in
-  list without printing any.
+  Logical, if TRUE, prints plots; if FALSE, only returns plots in list
+  without printing any.
 
 - y.lim:
 
@@ -72,10 +80,10 @@ plot.ratecount(wisp.results, pred.type = "pred", count.type = "count", dim.bound
   Character vector, list of random levels to include on each species
   plot. If c(), all random levels are included.
 
-- speciess.to.print:
+- species:
 
-  Character vector, list of species levels to place on their own plot.
-  If c(), all species levels are plotted individually.
+  Character vector, list of species levels to plot. If c(), all species
+  levels are plotted.
 
 - verbose:
 

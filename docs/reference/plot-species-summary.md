@@ -6,7 +6,12 @@ species level on one plot.
 ## Usage
 
 ``` r
-plot.species.summary(wisp.results, these.contexts = NULL, these.speciess = NULL, verbose = TRUE)
+plot.species.summary(
+ wisp.results, 
+ contexts = c(), 
+ species = c(), 
+ verbose = TRUE
+)
 ```
 
 ## Arguments
@@ -15,12 +20,12 @@ plot.species.summary(wisp.results, these.contexts = NULL, these.speciess = NULL,
 
   List, output of the wisp function.
 
-- these.contexts:
+- contexts:
 
   Character vector, optional, specifies which context levels to
   summarize. Defaults to all.
 
-- these.speciess:
+- species:
 
   Character vector, optional, specifies which species levels to
   summarize. Defaults to all.

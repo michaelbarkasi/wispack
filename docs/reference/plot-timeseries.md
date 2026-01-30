@@ -6,7 +6,14 @@ splitting factor (e.g., hemisphere).
 ## Usage
 
 ``` r
-plot.timeseries(wisp.results, splitting_factor = NULL, pred.type = "pred")
+plot.timeseries(
+ wisp.results, 
+ splitting_factor = NULL, 
+ log.scale = FALSE,
+ print.plots = FALSE,
+ species = c(),
+ verbose = TRUE
+)
 ```
 
 ## Arguments
@@ -21,20 +28,20 @@ plot.timeseries(wisp.results, splitting_factor = NULL, pred.type = "pred")
   timeseries. If NULL, the first non-timeseries fixed effect is used. If
   "none", will not split.
 
-- pred.type:
+- log.scale:
 
-  Character string, the name of the predicted rate column in the count
-  data (e.g., "pred.log" or "pred").
+  Logical, if TRUE, plots rates and counts on a log scale; if FALSE,
+  plots raw rates and counts.
 
-- count.type:
+- print.plots:
 
-  Character string, the name of the observed count column in the count
-  data (e.g., "count.log" or "count").
+  Logical, if TRUE, prints plots; if FALSE, only returns plots in list
+  without printing any.
 
-- print.all:
+- species:
 
-  Logical, if TRUE, prints all plots; if FALSE, only returns plots in
-  list without printing any.
+  Character vector, list of species levels to plot. If c(), all species
+  levels are plotted.
 
 - verbose:
 

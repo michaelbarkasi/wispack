@@ -97,8 +97,7 @@ MCMC.settings <- list(
 plot.settings <- list(
   print.plots = TRUE,
   dim.bounds = colMeans(layer.boundary.bins), 
-  pred.type = "pred",
-  count.type = "count",
+  log.scale = FALSE,
   splitting_factor = NULL,
   CI_style = TRUE,
   label_size = 5.5,

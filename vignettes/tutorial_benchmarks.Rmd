@@ -791,6 +791,7 @@ plot_count_density <- function(
 plot_count_density(ella_sim$expr, test_sim$data)
 
 ```
+
 Before writing the ELLA modeling function, let's write helper functions for running ELLA on simulation data and extracting SVG results. Note that three settings for the ELLA class have been changed from the default. Minimum learning rate and maximum iterations have been set to speed up the fits. More importantly, the L1 regression penalty factor has been changed from a default of zero to 0.2. Initial testing showed poor performance (high false discovery and false positive rates) without the L1 penalty. 
 
 ```{r ella_helper_functions}
@@ -989,6 +990,8 @@ results <- run_attractor_sim_benchmarks(
 )
 ```
 
+<h3>Results</h3>
+
 The results of this run are provided with wispack: 
 
 ```{r load_benchmark_results}
@@ -1014,6 +1017,8 @@ print(round(benchmark_metrics, 3))
 ```
 
 As can be seen, both ELLA and wisp control for false positives very well, with FDRs well below the intended 0.05 threshold. This control is evidently bought at the price of power, however. On the other hand, DESeq2 shows higher power, but at the cost of a very high FDR. This is perhaps due to design, as DESeq2 is intended to be used for data exploration on large gene panels, while ELLA and wisp are aimed at hypothesis testing. 
+
+<h3>Visualizing correlations</h3>
 
 We can also visualize the correlation between estimated and true effect sizes for wisp and DESeq2. Here are the results for FSE size estimation:
 

@@ -27,7 +27,7 @@ NULL
 #' @param verbose Logical, if TRUE, prints information during the fitting process.
 #' @param model.settings List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, \code{warp_precision}, and \code{round_none}. Default values are provided.
 #' @param MCMC.settings List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.
-#' @param plot.settings List, settings for plots to make, including \code{print.plots}, \code{dim.bounds}, \code{pred.type}, \code{count.type}, \code{splitting_factor}, \code{CI_style}, \code{label_size}, \code{title_size}, \code{axis_size}, \code{legend_size}, \code{count_size}, \code{count_jitter}, \code{count.alpha.ran}, \code{count.alpha.none}, \code{pred.alpha.ran}, and \code{pred.alpha.none}. Default values are provided.
+#' @param plot.settings List, settings for plots to make, including \code{print.plots}, \code{dim.bounds}, \code{log.scale}, \code{splitting_factor}, \code{CI_style}, \code{label_size}, \code{title_size}, \code{axis_size}, \code{legend_size}, \code{count_size}, \code{count_jitter}, \code{count.alpha.ran}, \code{count.alpha.none}, \code{pred.alpha.ran}, and \code{pred.alpha.none}. Default values are provided.
 #' @param ran.seed Integer, random seed for reproducibility. If NULL, no seed is set. Default is 1234.
 #' @param allow_infeasible_params Logical, if TRUE, allows negative rate estimates or other boundary violations during fitting (with warning); if FALSE, boundary violations throw a stop. 
 #' @return List giving the results of the fitted model, including: \code{model.component.list}, \code{count.data.summed}, \code{fitted.parameters}, \code{gamma.disperson}, \code{param.names}, \code{fix}, \code{treatment}, \code{grouping.variables}, \code{param.idx0}, \code{settings}, \code{sample.params}, \code{sample.params.bs}, \code{sample.params.MCMC}, \code{diagnostics.bs}, \code{diagnostics.MCMC}, \code{stats}, and \code{plots}
@@ -225,8 +225,7 @@ wisp <- function(
     plot.settings.internal <- list(
       print.plots = TRUE,
       dim.bounds = c(), 
-      pred.type = "pred",
-      count.type = "count",
+      log.scale = FALSE,
       splitting_factor = NULL,
       CI_style = TRUE,
       label_size = 5.5,
@@ -333,9 +332,8 @@ wisp <- function(
       # Make rate plots 
       plots.ratecount <- plot.ratecount(
         wisp.results = results,
-        pred.type = plot.settings.internal$pred.type,
-        count.type = plot.settings.internal$count.type,
-        print.all = plot.settings.internal$print.plots,
+        log.scale = plot.settings.internal$log.scale,
+        print.plots = plot.settings.internal$print.plots,
         CI_style = plot.settings.internal$CI_style,
         dim.boundaries = plot.settings.internal$dim.bounds,
         count.alpha.none = plot.settings.internal$count.alpha.none,
@@ -350,9 +348,8 @@ wisp <- function(
         plots.timeseries <- plot.timeseries(
           wisp.results = results,
           splitting_factor = plot.settings.internal$splitting_factor,
-          pred.type = plot.settings.internal$pred.type,
-          count.type = plot.settings.internal$count.type,
-          print.all = plot.settings.internal$print.plots,
+          log.scale = plot.settings.internal$log.scale,
+          print.plots = plot.settings.internal$print.plots,
           verbose = verbose
         )
       } else {
@@ -592,9 +589,8 @@ wisp <- function(
       # Make rate plots 
       plots.ratecount <- plot.ratecount(
         wisp.results = results,
-        pred.type = plot.settings.internal$pred.type,
-        count.type = plot.settings.internal$count.type,
-        print.all = plot.settings.internal$print.plots,
+        log.scale = plot.settings.internal$log.scale,
+        print.plots = plot.settings.internal$print.plots,
         CI_style = plot.settings.internal$CI_style,
         dim.boundaries = plot.settings.internal$dim.bounds,
         count.alpha.none = plot.settings.internal$count.alpha.none,
@@ -609,9 +605,8 @@ wisp <- function(
         plots.timeseries <- plot.timeseries(
           wisp.results = results,
           splitting_factor = plot.settings.internal$splitting_factor,
-          pred.type = plot.settings.internal$pred.type,
-          count.type = plot.settings.internal$count.type,
-          print.all = plot.settings.internal$print.plots,
+          log.scale = plot.settings.internal$log.scale,
+          print.plots = plot.settings.internal$print.plots,
           verbose = verbose
         )
       } else {
@@ -626,7 +621,7 @@ wisp <- function(
           function(sps) {
             plot.parameters(
               wisp.results = results,
-              species.lvl = sps,
+              species = sps,
               verbose = verbose
             )
           }
@@ -649,8 +644,8 @@ wisp <- function(
       if (plot.settings.internal$print.plots) {
         plot.species.summary(
           wisp.results = results,
-          these.contexts = NULL,
-          these.speciess = NULL,
+          contexts = c(),
+          species = c(),
           verbose = verbose
         )
       }
@@ -1053,41 +1048,60 @@ analyze.residuals <- function(
 #'
 #' @name plot.ratecount
 #' @rdname plot-ratecount
-#' @usage plot.ratecount(wisp.results, pred.type = "pred", count.type = "count", dim.boundaries = c(), print.all = FALSE, y.lim = NA, count.alpha.none = NA, count.alpha.ran = NA, pred.alpha.none = NA, pred.alpha.ran = NA, rans.to.print = c(), speciess.to.print = c(), verbose = TRUE)
+#' @usage plot.ratecount(
+#'  wisp.results, 
+#'  log.scale = FALSE,
+#'  dim.boundaries = c(), 
+#'  print.plots = FALSE, 
+#'  y.lim = NA, 
+#'  count.alpha.none = NA, 
+#'  count.alpha.ran = NA, 
+#'  pred.alpha.none = NA, 
+#'  pred.alpha.ran = NA, 
+#'  rans.to.print = c(), 
+#'  species = c(), 
+#'  verbose = TRUE
+#' )
 #' @param wisp.results List, output of the wisp function.
-#' @param pred.type Character string, the name of the predicted rate column in the count data (e.g., "pred.log" or "pred").
-#' @param count.type Character string, the name of the observed count column in the count data (e.g., "count.log" or "count").
+#' @param log.scale Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.
 #' @param CI_style Logical, if TRUE, plots predicted lines with confidence interval style shading; if FALSE, plots predicted lines as solid lines with random levels and data points
 #' @param dim.boundaries Numeric vector, independent block boundaries to plot for comparison. If empty, the argument is ignored.
-#' @param print.all Logical, if TRUE, prints all plots; if FALSE, only returns plots in list without printing any. 
+#' @param print.plots Logical, if TRUE, prints plots; if FALSE, only returns plots in list without printing any. 
 #' @param y.lim Numeric vector of length 2, limits for the y-axis of the plots. If NA, defaults to automatic limits.
 #' @param count.alpha.none Numeric, transparency for count points when random level is "none". If left NA, defaults to 0.25.
 #' @param count.alpha.ran Numeric, transparency for count points when random level is not "none". If left NA, defaults to 0.25.
 #' @param pred.alpha.none Numeric, transparency for predicted lines when random level is "none". If left NA, defaults to 1.0.
 #' @param pred.alpha.ran Numeric, transparency for predicted lines when random level is not "none". If left NA, defaults to 0.9.
 #' @param rans.to.print Character vector, list of random levels to include on each species plot. If c(), all random levels are included.
-#' @param speciess.to.print Character vector, list of species levels to place on their own plot. If c(), all species levels are plotted individually.
+#' @param species Character vector, list of species levels to plot. If c(), all species levels are plotted.
 #' @param verbose Logical, if TRUE, prints updates about the plotting process.
 #' @return List of ggplot objects for rate-count plots.
 #' @export
 plot.ratecount <- function(
     wisp.results,
-    pred.type = "pred",
-    count.type = "count",
+    log.scale = FALSE,
     CI_style = TRUE,
     dim.boundaries = c(),
-    print.all = FALSE,
+    print.plots = FALSE,
     y.lim = NA,
     count.alpha.none = NA, # These values have defaults which will be used if left NA
     count.alpha.ran = NA,
     pred.alpha.none = NA,
     pred.alpha.ran = NA,
     rans.to.print = c(),
-    speciess.to.print = c(),
+    species = c(),
     verbose = TRUE
   ) {
     
     if (verbose) snk.report...("Making rate-count plots")
+   
+    # Set y-axis scale 
+    pred.type <- "pred"
+    count.type <- "count"
+    if (log.scale) {
+      pred.type <- "pred.log"
+      count.type <- "count.log"
+    }
     
     # Grab data and run checks 
     df <- wisp.results$count.data.summed 
@@ -1115,9 +1129,9 @@ plot.ratecount <- function(
     if (is.na(pred.alpha.ran)) pred.alpha.ran <- 0.9
     if (is.na(pred.alpha.none)) pred.alpha.none <- 1.0
     if (length(rans.to.print) == 0) rans.to.print <- unique(df[,"ran"])
-    if (length(speciess.to.print) == 0) {
+    if (length(species) == 0) {
       make_context_ref <- TRUE
-      speciess.to.print <- wisp.results$grouping.variables$species.lvls
+      species <- wisp.results$grouping.variables$species.lvls
     } 
     if (sum(df[,"ran"] == "none") == 0) {
       make_context_ref <- FALSE
@@ -1388,22 +1402,24 @@ plot.ratecount <- function(
             )
           
           # plot effect with random effects 
-          for (rl in rans.to.print) { 
-            plot <- plot + 
-              geom_jitter(
-                data = df[gvf_idx_cxt & df[,"ran"] == rl & df[,"treatment"] == fe_name, ], 
-                aes(x = bin, y = .data[[count.type]], color = treatment), 
-                width = count_jitter, height = 0, alpha = count.alpha.ran, size = count_size, na.rm = TRUE
-              ) + 
-              geom_line(
-                data = df[ gvf_idx_cxt & df[,"ran"] == rl & df[,"treatment"] == fe_name, ],                
-                aes(x = bin, y = .data[[pred.type]], color = treatment), 
-                linetype = ran_linetype, linewidth = ran_size, alpha = pred.alpha.ran, na.rm = TRUE
-              ) +
-              theme(
-                panel.background = element_rect(fill = "white", colour = NA),
-                plot.background  = element_rect(fill = "white", colour = NA)
-              )
+          for (rl in rans.to.print) {
+            if (!is.na(rl)) {
+              plot <- plot + 
+                geom_jitter(
+                  data = df[gvf_idx_cxt & df[,"ran"] == rl & df[,"treatment"] == fe_name, ], 
+                  aes(x = bin, y = .data[[count.type]], color = treatment), 
+                  width = count_jitter, height = 0, alpha = count.alpha.ran, size = count_size, na.rm = TRUE
+                ) + 
+                geom_line(
+                  data = df[ gvf_idx_cxt & df[,"ran"] == rl & df[,"treatment"] == fe_name, ],                
+                  aes(x = bin, y = .data[[pred.type]], color = treatment), 
+                  linetype = ran_linetype, linewidth = ran_size, alpha = pred.alpha.ran, na.rm = TRUE
+                ) +
+                theme(
+                  panel.background = element_rect(fill = "white", colour = NA),
+                  plot.background  = element_rect(fill = "white", colour = NA)
+                )
+            }
           }
           
         } else {
@@ -1517,23 +1533,23 @@ plot.ratecount <- function(
       # Make reference class and random-effects plot
       if (make_context_ref) {
         plot_list[[paste0("plot_",pred.type,"_context_",cxt)]] <- plot_context_ref(df,cxt)
-        if (print.all) {
+        if (print.plots) {
           print(plot_list[[paste0("plot_",pred.type,"_context_",cxt)]])
         }
       }
       
       # Make fixed effects plot, for each species level
-      for (sps in speciess.to.print) {
+      for (sps in species) {
         # Make the plot
         sps_plot <- plot_context_fixEff(df,cxt,sps)
         if (length(wisp.results$grouping.variables$context.lvls) > 1) {
-          if (length(speciess.to.print) > 1) {
+          if (length(species) > 1) {
             sps_title <- paste0("Predicted rates for ", sps, " within ", cxt)
           } else {
             sps_title <- paste0("Predicted rates for ", cxt)
           }
         } else {
-          if (length(speciess.to.print) > 1) {
+          if (length(species) > 1) {
             sps_title <- paste0("Predicted rates for ", sps)
           } else {
             sps_title <- paste0("Predicted rates")
@@ -1541,7 +1557,7 @@ plot.ratecount <- function(
         }
         sps_plot <- sps_plot + ggtitle(sps_title) 
         plot_list[[paste0("plot_",pred.type,"_context_",cxt,"_fixEff_",sps)]] <- sps_plot
-        if (print.all && !is.null(sps_plot)) {
+        if (print.plots && !is.null(sps_plot)) {
           print(plot_list[[paste0("plot_",pred.type,"_context_",cxt,"_fixEff_",sps)]])
         }
       }
@@ -1558,25 +1574,40 @@ plot.ratecount <- function(
 #'
 #' @name plot.timeseries
 #' @rdname plot-timeseries
-#' @usage plot.timeseries(wisp.results, splitting_factor = NULL, pred.type = "pred")
+#' @usage plot.timeseries(
+#'  wisp.results, 
+#'  splitting_factor = NULL, 
+#'  log.scale = FALSE,
+#'  print.plots = FALSE,
+#'  species = c(),
+#'  verbose = TRUE
+#' )
 #' @param wisp.results List, output of the wisp function.
 #' @param splitting_factor Character string, the name of the fixed effect by which to split the timeseries. If NULL, the first non-timeseries fixed effect is used. If "none", will not split.
-#' @param pred.type Character string, the name of the predicted rate column in the count data (e.g., "pred.log" or "pred").
-#' @param count.type Character string, the name of the observed count column in the count data (e.g., "count.log" or "count").
-#' @param print.all Logical, if TRUE, prints all plots; if FALSE, only returns plots in list without printing any. 
+#' @param log.scale Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.
+#' @param print.plots Logical, if TRUE, prints plots; if FALSE, only returns plots in list without printing any. 
+#' @param species Character vector, list of species levels to plot. If c(), all species levels are plotted.
 #' @param verbose Logical, if TRUE, prints updates about the plotting process.
 #' @return List of ggplot objects for timeseries plots.
 #' @export
 plot.timeseries <- function(
     wisp.results, 
     splitting_factor = NULL,
-    pred.type = "pred.log",
-    count.type = "count.log",
-    print.all = TRUE,
+    log.scale = FALSE,
+    print.plots = FALSE,
+    species = c(),
     verbose = TRUE
   ) {
     
     if (verbose) snk.report...("Making time series plots")
+    
+    # Set y-axis scale 
+    pred.type <- "pred"
+    count.type <- "count"
+    if (log.scale) {
+      pred.type <- "pred.log"
+      count.type <- "count.log"
+    }
     
     # Run checks
     if (!("timeseries" %in% wisp.results[["fix"]][["names"]])) {
@@ -1587,9 +1618,6 @@ plot.timeseries <- function(
         stop("Splitting factor not found in wisp results")
       }
     } 
-    if (!(pred.type %in% c("pred.log", "pred"))) {
-      stop("pred.type must be 'pred.log' or 'pred'")
-    }
     
     # Find splitting effect 
     splitting_lvl <- NULL
@@ -1797,10 +1825,16 @@ plot.timeseries <- function(
       y_lab <- "Rate (log scale)"
     }
     
+    # Check species 
+    use_all_species <- length(species) == 0
+    
     out <- list()
     for (cxt in unique(df$context)) {
+      
       dfc <- df[df$context == cxt,]
-      for (sps in unique(dfc$species)) {
+      if (use_all_species) species <- unique(dfc$species)
+      
+      for (sps in species) {
         
         # Make plot title
         if (length(unique(df$context)) > 1) {
@@ -1889,9 +1923,7 @@ plot.timeseries <- function(
         }
         plt <- plt  + 
           geom_line(linewidth = 1.5) +
-          geom_point(aes(y = count)) +
-          scale_x_continuous(breaks = unique(dfc$timeseries)) +
-          #facet_grid(block ~., space = "free_y") + #  scales = "free_y",
+          geom_point(aes(y = count), position = position_jitter(width = 0.2)) +
           theme_minimal() +
           theme(
             plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
@@ -1910,7 +1942,7 @@ plot.timeseries <- function(
           ) 
         
         out[[paste0("plot_",pred.type,"_context_",cxt,"_timeseries_",sps)]] <- plt
-        if (print.all) print(plt)
+        if (print.plots) print(plt)
       }
     }
     
@@ -1924,9 +1956,16 @@ plot.timeseries <- function(
 #'
 #' @name plot.parameters
 #' @rdname plot-parameters
-#' @usage plot.parameters(wisp.results, species.lvl = NULL, violin = TRUE, print.plots = FALSE, species.classes = NULL, verbose = TRUE)
+#' @usage plot.parameters(
+#'  wisp.results, 
+#'  species = c(), 
+#'  violin = TRUE, 
+#'  print.plots = FALSE, 
+#'  species.classes = NULL, 
+#'  verbose = TRUE
+#' )
 #' @param wisp.results List, output of the wisp function.
-#' @param species.lvl Character string, the species level to be plotted. If NULL, all species levels are plotted.
+#' @param species Character string, the species level to be plotted. If c(), all species levels are plotted.
 #' @param violin Logical, if TRUE, plots violin plots for each parameter; if FALSE, uses bar plots. 
 #' @param print.plots Logical, if TRUE, prints the plots to the console; if FALSE, only returns a list of plots without printing.
 #' @param species.classes List, a list of character vectors specifying which species levels to include together in plots. If NULL, all species levels are included in a single plot.
@@ -1936,7 +1975,7 @@ plot.timeseries <- function(
 #' @export
 plot.parameters <- function(
     wisp.results,
-    species.lvl = NULL,
+    species = c(),
     violin = TRUE,
     print.plots = FALSE,
     species.classes = NULL,
@@ -2019,7 +2058,7 @@ plot.parameters <- function(
           }
       }
     }
-    if (length(species.classes) == 0 || length(species.lvl) != 0) {
+    if (length(species.classes) == 0 || length(species) != 0) {
       # If classes not provided, plot all species together
       # If a single species is provided for plotting, disregard any classes provided
       species.classes <- list(all = as.character(wisp.results$grouping.variables$species.lvls))
@@ -2039,7 +2078,7 @@ plot.parameters <- function(
         
         for (sps_lvl in species.classes[[cc]]) {
           
-          if (length(species.lvl) != 0 && sps_lvl != species.lvl) next
+          if (length(species) != 0 && sps_lvl != species) next
           
           # Make data frame for baseline plot
           baseline_mask <- grepl(cxt_lvl, param_names_saved) & grepl(sps_lvl, param_names_saved) & grepl("baseline", param_names_saved) 
@@ -2244,9 +2283,9 @@ plot.parameters <- function(
         
         title_bl <- paste0("Baseline parameters, fitted (", cxt_lvl, ")")
         plot_name <- paste0("plot_baseline_", cxt_lvl, "_", species_class_names[cc])
-        if (length(species.lvl) != 0) {
-          title_bl <- paste0("Baseline parameters, fitted (", cxt_lvl, ", ", species.lvl, ")")
-          plot_name <- paste0("plot_baseline_", cxt_lvl, "_", species.lvl)
+        if (length(species) != 0) {
+          title_bl <- paste0("Baseline parameters, fitted (", cxt_lvl, ", ", species, ")")
+          plot_name <- paste0("plot_baseline_", cxt_lvl, "_", species)
         }
         
         if (!is.null(mc_type)) {
@@ -2298,9 +2337,9 @@ plot.parameters <- function(
         
         title_ran <- paste0("RanEff parameters, fitted (", cxt_lvl, ")")
         plot_name <- paste0("plot_ranEff_", cxt_lvl, "_", species_class_names[cc])
-        if (length(species.lvl) != 0) {
-          title_ran <- paste0("RanEff parameters, fitted (", cxt_lvl, ", ", species.lvl, ")")
-          plot_name <- paste0("plot_ranEff_", cxt_lvl, "_", species.lvl)
+        if (length(species) != 0) {
+          title_ran <- paste0("RanEff parameters, fitted (", cxt_lvl, ", ", species, ")")
+          plot_name <- paste0("plot_ranEff_", cxt_lvl, "_", species)
         }
         
         if (!is.null(mc_type)) {
@@ -2363,7 +2402,7 @@ plot.parameters <- function(
           for (sps_lvl in species.classes[[cc]]) {
             
             # If only printing one species level, skip the rest
-            if (length(species.lvl) != 0 && sps_lvl != species.lvl) next
+            if (length(species) != 0 && sps_lvl != species) next
             
             # Grab index masks
             treatment_mask <- grepl(cxt_lvl, param_names_saved) & 
@@ -2467,9 +2506,9 @@ plot.parameters <- function(
           # Make treatment plots ####
           title_fe <- paste0("Treatment parameters (", cxt_lvl, ", ", treatment, ")")
           plot_name <- paste0("plot_treatment_", treatment, "_", cxt_lvl, "_", species_class_names[cc])
-          if (length(species.lvl) != 0) {
-            title_fe <- paste0("Treatment parameters (", cxt_lvl, ", ", species.lvl, ", ", treatment, ")")
-            plot_name <- paste0("plot_treatment_", treatment, "_" , cxt_lvl, "_", species.lvl)
+          if (length(species) != 0) {
+            title_fe <- paste0("Treatment parameters (", cxt_lvl, ", ", species, ", ", treatment, ")")
+            plot_name <- paste0("plot_treatment_", treatment, "_" , cxt_lvl, "_", species)
           }
           
           if (!is.null(mc_type)) {
@@ -2548,7 +2587,11 @@ plot.parameters <- function(
 #'
 #' @name plot.effect.dist
 #' @rdname plot-effect-dist
-#' @usage plot.effect.dist(wisp.results, print.plots = TRUE, verbose = TRUE)
+#' @usage plot.effect.dist(
+#'  wisp.results, 
+#'  print.plots = FALSE, 
+#'  verbose = TRUE
+#' )
 #' @param wisp.results List, output of the wisp function.
 #' @param print.plots Logical, if TRUE, prints the plots to the current device.
 #' @param verbose Logical, if TRUE, prints information during plotting.
@@ -2556,7 +2599,7 @@ plot.parameters <- function(
 #' @export
 plot.effect.dist <- function(
     wisp.results,
-    print.plots = TRUE,
+    print.plots = FALSE,
     verbose = TRUE 
   ) {
     
@@ -2717,17 +2760,22 @@ plot.effect.dist <- function(
 #'
 #' @name plot.species.summary
 #' @rdname plot-species-summary
-#' @usage plot.species.summary(wisp.results, these.contexts = NULL, these.speciess = NULL, verbose = TRUE)
+#' @usage plot.species.summary(
+#'  wisp.results, 
+#'  contexts = c(), 
+#'  species = c(), 
+#'  verbose = TRUE
+#' )
 #' @param wisp.results List, output of the wisp function.
-#' @param these.contexts Character vector, optional, specifies which context levels to summarize. Defaults to all. 
-#' @param these.speciess Character vector, optional, specifies which species levels to summarize. Defaults to all.
+#' @param contexts Character vector, optional, specifies which context levels to summarize. Defaults to all. 
+#' @param species Character vector, optional, specifies which species levels to summarize. Defaults to all.
 #' @param verbose Logical, if TRUE, prints information during plotting.
 #' @return Nothing, plots are printed to the current graphics device.
 #' @export
 plot.species.summary <- function(
     wisp.results,
-    these.contexts = NULL,
-    these.speciess = NULL,
+    contexts = c(),
+    species = c(),
     verbose = TRUE
   ) {
     
@@ -2742,9 +2790,9 @@ plot.species.summary <- function(
     
     # Specify context and species levels to summarize
     cxt_lvls <- as.character(wisp.results$grouping.variables$context.lvls)
-    if (length(these.contexts) != 0) cxt_lvls <- cxt_lvls[cxt_lvls %in% these.contexts]
+    if (length(contexts) != 0) cxt_lvls <- cxt_lvls[cxt_lvls %in% contexts]
     sps_lvls <- as.character(wisp.results$grouping.variables$species.lvls)
-    if (length(these.speciess) != 0) sps_lvls <- sps_lvls[sps_lvls %in% these.speciess]
+    if (length(species) != 0) sps_lvls <- sps_lvls[sps_lvls %in% species]
     
     for (cxt_lvl in cxt_lvls) {
       
@@ -2761,7 +2809,7 @@ plot.species.summary <- function(
         }
         wisp.results$plots$parameters <- plot.parameters(
           wisp.results = wisp.results,
-          species.lvl = sps_lvl, 
+          species = sps_lvl, 
           print.plots = FALSE, 
           verbose = FALSE 
         )
@@ -2821,7 +2869,12 @@ plot.species.summary <- function(
 #'
 #' @name plot.MCMC.walks
 #' @rdname plot-MCMC-walks
-#' @usage plot.MCMC.walks(wisp.results, print.plots = TRUE, verbose = TRUE, low_samples = 10)
+#' @usage plot.MCMC.walks(
+#'  wisp.results, 
+#'  print.plots = FALSE, 
+#'  verbose = TRUE, 
+#'  low_samples = 10
+#' )
 #' @param wisp.results List, output of the wisp function.
 #' @param print.plots Logical, if TRUE, prints the plots to the current device.
 #' @param verbose Logical, if TRUE, prints information during plotting.
@@ -2830,7 +2883,7 @@ plot.species.summary <- function(
 #' @export
 plot.MCMC.walks <- function(
     wisp.results,
-    print.plots = TRUE,
+    print.plots = FALSE,
     verbose = TRUE,
     low_samples = 10
   ) {
@@ -3011,35 +3064,59 @@ plot.MCMC.walks <- function(
 #'
 #' @name plot.decomposition
 #' @rdname plot-decomposition
-#' @usage plot.decomposition(wisp.results, species, log = FALSE, dim.boundaries = c(), y.lim = NULL)
+#' @usage plot.decomposition(
+#'  wisp.results, 
+#'  species, 
+#'  log = FALSE, 
+#'  dim.boundaries = c(), 
+#'  y.lim = NULL
+#' )
 #' @param wisp.results List, output of the wisp function.
 #' @param species Character string, the species level to plot. Must be provided, and only one at a time. 
-#' @param log Logical, if TRUE, plots on a log scale. Defaults to FALSE.
+#' @param log.scale Logical, if TRUE, plots on a log scale. Defaults to FALSE.
 #' @param dim.boundaries Numeric vector, independent block boundaries to plot for comparison. If empty, the argument is ignored.
 #' @param y.lim Numeric vector of length 2, limits for the y-axis of the plots. If NA, defaults to automatic limits.
 #' @return List of ggplot objects containing the decomposed rate-count plots.
 #' @export
 plot.decomposition <- function(
     wisp.results,
-    species, # "Nptxr"
-    log = FALSE, 
-    dim.boundaries = c(), # colMeans(count_data_WSPmm.y$db)
+    species, 
+    log.scale = FALSE, 
+    dim.boundaries = c(), 
     y.lim = NULL
   ) {
     
-    # Comment for future development: Function assumes there is only one context level. Needs to handle case of multiple context levels. 
+    # Check number of context levels
+    if (length(wisp.results$grouping.variables$context.lvls) > 1) {
+      stop("plot.decomposition currently only supports one context level.")
+    }
     
+    # Set y limits
+    if (is.null(y.lim)) {
+      ymax <- max(
+          wisp.results$count.data.summed[wisp.results$count.data.summed$species == species, c("count", "pred")],
+          na.rm = TRUE
+        ) * 1.05
+      if (log.scale) {
+        ymax <- max(
+          wisp.results$count.data.summed[wisp.results$count.data.summed$species == species, c("count.log", "pred.log")],
+          na.rm = TRUE
+        ) * 1.05
+      }
+      y.lim <- c(0, ymax)
+    }
+    
+    # Get random levels 
     ran_lvls <- wisp.results$grouping.variables$ran.lvls
     ran_lvls <- ran_lvls[ran_lvls != "none"]
     
-    ptype <- "pred"
-    ctype <- "count"
-    if (log) {
-      ptype <- paste0(ptype, ".log")
-      ctype <- paste0(ctype, ".log")
-    }
+    # Change font sizes 
+    wisp.results$plot.settings$title_size <- wisp.results$plot.settings$title_size * 0.75
+    wisp.results$plot.settings$axis_size <- wisp.results$plot.settings$axis_size * 0.9
+    wisp.results$plot.settings$legend_size <- wisp.results$plot.settings$legend_size * 0.9
     
-    input_rows <- 5 + length(ran_lvls)
+    # Set alpha levels
+    input_rows <- 6 + length(ran_lvls)
     input <- data.frame(
       count.alpha.none = as.numeric(rep(NA, input_rows)),
       count.alpha.ran = as.numeric(rep(NA, input_rows)),
@@ -3048,33 +3125,52 @@ plot.decomposition <- function(
       rans.to.print = as.character(rep(NA, input_rows)),
       stringsAsFactors = FALSE
     )
-    rownames(input) <- c("all", "points.obs", "points.extrap", "lines", "none", as.character(ran_lvls))
-    
+    rownames(input) <- c(
+      "full rate-count plot", 
+      "observed counts", 
+      "extrapolated counts", 
+      "observed predictions", 
+      "extrapolated predictions", 
+      "extrapolated counts and predictions", 
+      paste0("sample ", as.character(ran_lvls))
+    )
     for (r in 1:input_rows) {
       if (r == 2) {
+        # observed counts
         input[r,1:4] <- as.numeric(c(0,1,0,0))
       } else if (r == 3) {
+        # extrapolated counts
         input[r,1:4] <- as.numeric(c(1,0,0,0))
+        input[r,5] <- "none"
       } else if (r == 4) {
-        input[r,1:4] <- as.numeric(c(0,0,1,1))
+        # observed predictions
+        input[r,1:4] <- as.numeric(c(0,0,0,1))
       } else if (r == 5) {
+        # extrapolated predictions
+        input[r,1:4] <- as.numeric(c(0,0,1,0))
+        input[r,5] <- "none"
+      } else if (r == 6) {
+        # extrapolated counts and predictions
         input[r,1:4] <- as.numeric(c(1,0,1,0))
         input[r,5] <- "none"
       } else if (r > 5) {
+        # random levels
         input[r,1:4] <- as.numeric(c(0,1,0,1))
-        input[r,5] <- ran_lvls[r - 5]
+        input[r,5] <- ran_lvls[r - 6]
       }
     }
+    saved_input <<- input
     
     plots.decomp <- list()
     length(plots.decomp) <- input_rows
     names(plots.decomp) <- rownames(input)
     for (r in 1:input_rows) {
       
+      rans.to.print <- input$rans.to.print[r]
+      if (r == 1 | r == 2 | r == 4) rans.to.print <- ran_lvls
       plots.decomp[[r]] <- plot.ratecount(
         wisp.results = wisp.results,
-        pred.type = ptype,
-        count.type = ctype,
+        log.scale = log.scale,
         CI_style = FALSE,
         dim.boundaries = dim.boundaries,
         y.lim = y.lim,
@@ -3082,9 +3178,11 @@ plot.decomposition <- function(
         count.alpha.ran = input$count.alpha.ran[r],
         pred.alpha.none = input$pred.alpha.none[r],
         pred.alpha.ran = input$pred.alpha.ran[r],
-        rans.to.print = input$rans.to.print[r],
-        speciess.to.print = c(species)
-      )
+        rans.to.print = rans.to.print,
+        species = c(species)
+      )[[1]] + 
+        ggtitle(rownames(input)[r]) + 
+        theme(legend.position = "bottom")
       
     }
     
@@ -3098,7 +3196,11 @@ plot.decomposition <- function(
 #'
 #' @name plot.MCMC.bs.comparison
 #' @rdname plot-MCMC-bs-comparison
-#' @usage plot.MCMC.bs.comparison(wisp.results, print.plots = TRUE, verbose = TRUE)
+#' @usage plot.MCMC.bs.comparison(
+#'  wisp.results, 
+#'  print.plots = FALSE, 
+#'  verbose = TRUE
+#' )
 #' @param wisp.results List, output of the wisp function.
 #' @param print.plots Logical, if TRUE, prints the plots to the current graphics device.
 #' @param verbose Logical, if TRUE, prints information during plotting.
@@ -3107,7 +3209,7 @@ plot.decomposition <- function(
 #' @export
 plot.MCMC.bs.comparison <- function(
     wisp.results,
-    print.plots = TRUE,
+    print.plots = FALSE,
     verbose = TRUE,
     ran.seed = 1234
   ) {

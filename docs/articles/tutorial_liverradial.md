@@ -31,37 +31,24 @@ spatial variation are good candidates for functional spatial effects
 [Droin et al.](https://doi.org/10.1038/s42255-020-00323-1) used a linear
 mixed-effects model with second-degree polynomials to represent spatial
 variation and harmonic terms to represent temporal rhythm. Specifically,
-after normalizing transcript counts $`y`$, they log-transformed those
-counts:
-``` math
-y \mapsto \log_2(y + \Delta) - B
-```
-such that the “offset $`\Delta = 1\times 10^{-4}`$ buffers variability
-in genes with low expression, while the shift
-$`B = -log_2(11\times 10^{-3})`$ changes the scale so that $`y=0`$
+after normalizing transcript counts y, they log-transformed those
+counts: y \mapsto \log_2(y + \Delta) - B such that the “offset \Delta =
+1\times 10^{-4} buffers variability in genes with low expression, while
+the shift B = -log_2(11\times 10^{-3}) changes the scale so that y=0
 corresponds to about 10 mRNA copies per cell” (p. 55). They then modeled
-the transformed counts $`y_{x,t,i}`$ for spatial position $`x`$, time
-$`t`$, and individual mouse $`i`$ as:
-``` math
-y_{x,t,i} = \mu_i + \mu(x) + a(x)\text{cos}(\omega t) + b(x)\text{sin}(\omega t) + \epsilon_{x,t,i}
-```
-with:
-``` math
-\begin{align}
-\mu(x) &= \mu_0 + \mu_1P_1(x) + \mu_2P_2(x) \\
-a(x) &= a_0 + a_1P_1(x) + a_2P_2(x) \\
-b(x) &= b_0 + b_1P_1(x) + b_2P_2(x)
-\end{align}
-```
-for $`P_1(x)`$ and $`P_2(x)`$ the first- and second-degree Legendre
-polynomials. Statistical testing showing significant coefficients
-$`\mu_1`$ or $`\mu_2`$ (terms of pure spatial variation) and $`a_0`$ or
-$`b_0`$ (terms of pure temporal variation) would indicate *additive*
-spatial zonation and temporal rhythm, while significant coefficients
-$`a_1`$, $`a_2`$, $`b_1`$, or $`b_2`$ (terms for position-dependent
-temporal variation) would indicate *interacting* spatial and temporal
-effects. These model coefficients are, of course, log2 fold changes
-(L2FC).
+the transformed counts y\_{x,t,i} for spatial position x, time t, and
+individual mouse i as: y\_{x,t,i} = \mu_i + \mu(x) +
+a(x)\text{cos}(\omega t) + b(x)\text{sin}(\omega t) + \epsilon\_{x,t,i}
+with: \begin{align} \mu(x) &= \mu_0 + \mu_1P_1(x) + \mu_2P_2(x) \\ a(x)
+&= a_0 + a_1P_1(x) + a_2P_2(x) \\ b(x) &= b_0 + b_1P_1(x) + b_2P_2(x)
+\end{align} for P_1(x) and P_2(x) the first- and second-degree Legendre
+polynomials. Statistical testing showing significant coefficients \mu_1
+or \mu_2 (terms of pure spatial variation) and a_0 or b_0 (terms of pure
+temporal variation) would indicate *additive* spatial zonation and
+temporal rhythm, while significant coefficients a_1, a_2, b_1, or b_2
+(terms for position-dependent temporal variation) would indicate
+*interacting* spatial and temporal effects. These model coefficients
+are, of course, log2 fold changes (L2FC).
 
 Whether or not interaction is required for a FSE, or if instead the
 combination of additive zonation and temporal rhythm suffices, is a
@@ -85,15 +72,15 @@ variation, including temporal effects from a time series. While wisp
 models represent time as a [discrete additive
 effect](https://michaelbarkasi.github.io/wispack/articles/tutorial_timeseries.md)
 rather than as a harmonic oscillation (and thus lack a period term
-$`\omega`$ which could be used to test for period length), known or
-expected oscillations can be represented by indexing times to some
-repeating point in the series (“zeitgeber time”). In this case, effects
-of circadian rhythms or feed-fast cycles can be modeled by indexing
-times to the start of each day. (Indeed; even Droin et al. exploited
-this fact by fixing $`\omega=2\pi/24\text{ hr}`$, instead of estimating
-$`\omega`$ from the data.)
+\omega which could be used to test for period length), known or expected
+oscillations can be represented by indexing times to some repeating
+point in the series (“zeitgeber time”). In this case, effects of
+circadian rhythms or feed-fast cycles can be modeled by indexing times
+to the start of each day. (Indeed; even Droin et al. exploited this fact
+by fixing \omega=2\pi/24\text{ hr}, instead of estimating \omega from
+the data.)
 
-## Processing the data
+## Data preprocessing
 
 Droin et al. have made some of their data available in an easily
 accessible form in a [GitHub
@@ -123,20 +110,13 @@ normalized.
 
 Hence, instead of reconstructing the Droin et al. data directly, we will
 use it to simulate raw counts suitable for wisp modeling. For each cell
-with normalized pseudo-count $`y`$ and probabilities $`p_1,\ldots,p_8`$
-of membership in zones 1 to 8, counts will be drawn from the Poisson
-distribution, for $`i=1,\ldots,8`$:
-``` math
-y_i\sim \text{Pois}(y\times 1\text{e}3)
-```
-The multiplication by $`1\text{e}3`$ is to denormalize the pseudo-count
-to a realistic expression rate. Next, draws are made from a binomial
-distribution
-``` math
-b_i\sim \text{Binom}(1, p_i)
-```
-Finally, for each zone $`i`$, a cell is added to the data with count
-$`y_ib_i`$.
+with normalized pseudo-count y and probabilities p_1,\ldots,p_8 of
+membership in zones 1 to 8, counts will be drawn from the Poisson
+distribution, for i=1,\ldots,8: y_i\sim \text{Pois}(y\times 1\text{e}3)
+The multiplication by 1\text{e}3 is to denormalize the pseudo-count to a
+realistic expression rate. Next, draws are made from a binomial
+distribution b_i\sim \text{Binom}(1, p_i) Finally, for each zone i, a
+cell is added to the data with count y_ib_i.
 
 First, we load the MatLab files:
 
@@ -320,8 +300,7 @@ random-effect predictions.
 plot.settings <- list(
   print.plots = FALSE,
   title_size = 14,
-  pred.type = "pred.log",
-  count.type = "count.log", 
+  log.scale = TRUE,
   count_size = 2.5,
   count_jitter = 0.0,
   count.alpha.none = 0.8,
@@ -337,11 +316,7 @@ the number of MCMC steps to zero and the number of bootstraps to 1000.
 ``` r
 # Load wispack
 library(wispack, quietly = TRUE)
-```
 
-    ## Warning: package 'ggplot2' was built under R version 4.5.2
-
-``` r
 # Set random seed for reproducibility
 ran.seed <- 123
 set.seed(ran.seed)
@@ -381,8 +356,7 @@ radial.model <- wisp(
 ## Plot settings:
 ##  print.plots: FALSE
 ##  dim.bounds: 
-##  pred.type: pred.log
-##  count.type: count.log
+##  log.scale: TRUE
 ##  splitting_factor: 
 ##  CI_style: TRUE
 ##  label_size: 5.5
@@ -497,22 +471,22 @@ radial.model <- wisp(
 ## Initial boundary distance (want > 0): 0.206765
 ## Performing initial fit of full data
 ## Penalized neg_loglik: 1044.51
-## Batch: 1/100, 0.202975 sec/bs
-## Batch: 10/100, 0.173713 sec/bs
-## Batch: 20/100, 0.169893 sec/bs
-## Batch: 30/100, 0.167558 sec/bs
-## Batch: 40/100, 0.176396 sec/bs
-## Batch: 50/100, 0.188931 sec/bs
-## Batch: 60/100, 0.181254 sec/bs
-## Batch: 70/100, 0.184583 sec/bs
-## Batch: 80/100, 0.218605 sec/bs
-## Batch: 90/100, 0.171946 sec/bs
+## Batch: 1/100, 0.180387 sec/bs
+## Batch: 10/100, 0.160255 sec/bs
+## Batch: 20/100, 0.156862 sec/bs
+## Batch: 30/100, 0.148762 sec/bs
+## Batch: 40/100, 0.15933 sec/bs
+## Batch: 50/100, 0.164632 sec/bs
+## Batch: 60/100, 0.160494 sec/bs
+## Batch: 70/100, 0.161479 sec/bs
+## Batch: 80/100, 0.181719 sec/bs
+## Batch: 90/100, 0.154615 sec/bs
 ## All complete!
 ## 
 ## Bootstrap simulation complete... 
-## Bootstrap run time (total), minutes: 3.135
-## Bootstrap run time (per sample), seconds: 0.188
-## Bootstrap run time (per sample, per thread), seconds: 1.881
+## Bootstrap run time (total), minutes: 2.772
+## Bootstrap run time (per sample), seconds: 0.166
+## Bootstrap run time (per sample, per thread), seconds: 1.663
 ## 
 ## Setting full-data fit as parameters... 
 ## Checking feasibility of provided parameters
@@ -580,7 +554,7 @@ radial.model <- wisp(
 ## Making parameter plots...
 ```
 
-## Examining results
+## Results
 
 The [wisp()](https://michaelbarkasi.github.io/wispack/reference/wisp.md)
 function produces both a [rate-count
@@ -604,8 +578,8 @@ higher in the portal region. Their respective spatial gradients are easy
 to see in the rate-count plot:
 
 ``` r
-plt_glul <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_glul"]]
-plt_ass1 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_ass1"]]
+plt_glul <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_glul"]] + theme(legend.position = "bottom", legend.title = element_blank())
+plt_ass1 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_ass1"]] + theme(legend.position = "bottom", legend.title = element_blank())
 g <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
 grid.draw(g)
 ```
@@ -622,8 +596,8 @@ These temporal patterns can be seen more clearly by looking at the
 time-series plots.
 
 ``` r
-plt_glul <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_glul"]]
-plt_ass1 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_ass1"]]
+plt_glul <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_glul"]] + theme(legend.position = "bottom", legend.title = element_blank())
+plt_ass1 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_ass1"]] + theme(legend.position = "bottom", legend.title = element_blank())
 g <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
 grid.draw(g)
 ```
@@ -648,8 +622,8 @@ are elevated (yellow and purple), while for DBP it’s ZT6 and ZT12 (green
 and blue) that are elevated.
 
 ``` r
-plt_arntl <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_arntl"]]
-plt_dbp <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_dbp"]]
+plt_arntl <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_arntl"]] + theme(legend.position = "bottom", legend.title = element_blank())
+plt_dbp <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_dbp"]] + theme(legend.position = "bottom", legend.title = element_blank())
 g <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
 grid.draw(g)
 ```
@@ -660,8 +634,8 @@ These temporal dynamics are made more clear in the time-series plots,
 which clearly show the mid-ZT dip in ARNTL and the mid-ZT bump in DBP.
 
 ``` r
-plt_arntl <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_arntl"]]
-plt_dbp <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_dbp"]]
+plt_arntl <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_arntl"]] + theme(legend.position = "bottom", legend.title = element_blank())
+plt_dbp <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_dbp"]] + theme(legend.position = "bottom", legend.title = element_blank())
 g <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
 grid.draw(g)
 ```
@@ -676,8 +650,8 @@ Both are expressed more in the central region. PCK1, on the other hand,
 is expressed more in the portal region, just like ASS1.
 
 ``` r
-plt_elovl3 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_elovl3"]]
-plt_pck1 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_pck1"]]
+plt_elovl3 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_elovl3"]] + theme(legend.position = "bottom", legend.title = element_blank())
+plt_pck1 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_pck1"]] + theme(legend.position = "bottom", legend.title = element_blank())
 g <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
 grid.draw(g)
 ```
@@ -689,8 +663,8 @@ rhythm. ELOVL3 is similar to ARNTL, with a mid-ZT dip. PCK1 is similar
 to DBP, with a mid-ZT bump.
 
 ``` r
-plt_elovl3 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_elovl3"]]
-plt_pck1 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_pck1"]]
+plt_elovl3 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_elovl3"]] + theme(legend.position = "bottom", legend.title = element_blank())
+plt_pck1 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_pck1"]] + theme(legend.position = "bottom", legend.title = element_blank())
 g <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
 grid.draw(g)
 ```

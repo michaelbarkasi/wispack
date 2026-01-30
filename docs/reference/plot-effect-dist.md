@@ -6,7 +6,11 @@ WISP results.
 ## Usage
 
 ``` r
-plot.effect.dist(wisp.results, print.plots = TRUE, verbose = TRUE)
+plot.effect.dist(
+ wisp.results, 
+ print.plots = FALSE, 
+ verbose = TRUE
+)
 ```
 
 ## Arguments

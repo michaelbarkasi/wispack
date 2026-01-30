@@ -6,7 +6,8 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Benchmarks and comparisons • wispack</title>
-<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- katex math --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script><script src="../katex-auto.js"></script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -49,7 +50,7 @@
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Time-series data</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_warping.html">Random effects and warping</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">The wisp rate-count plot</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">Plotting wisp models</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -61,7 +62,14 @@
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/michaelbarkasi/wispack"><span class="fa fab fa-github"></span></a></li>
-<li class="nav-item"><a class="nav-link" href="../#">🌙</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
@@ -79,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-01-30</h4>
+            <h4 data-toc-skip class="date">2026-02-01</h4>
       
 
       <div class="d-none name"><code>tutorial_benchmarks.Rmd</code></div>
@@ -91,31 +99,14 @@ Barkasi</h4>
 Introduction
 </h2>
 <p>Wispack tests for <em>functional spatial effects</em> (FSEs) using
-spatial transcriptomics data. Consider a two-level covariate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ξ</mi><annotation encoding="application/x-tex">\xi</annotation></semantics></math>
-(e.g., control vs treatment, healthy vs diseased, left vs right
-hemisphere) and spatial coordinate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-(e.g., cortical depth, distance from a tumor, distance from a central
-vein in the liver). A gene is <em>differentially expressed</em> (DE)
-with respect to
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ξ</mi><annotation encoding="application/x-tex">\xi</annotation></semantics></math>
-if its expression level depends on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ξ</mi><annotation encoding="application/x-tex">\xi</annotation></semantics></math>.
-A gene is <em>spatially variable</em> (SVG) if its expression level
-depends on spatial coordinate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>.
-A covariate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ξ</mi><annotation encoding="application/x-tex">\xi</annotation></semantics></math>
-has a FSE on a gene if the spatial distribution of that gene with
-respect to
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-depends on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ξ</mi><annotation encoding="application/x-tex">\xi</annotation></semantics></math>.
-(The adjective “functional” is included because it’s assumed that the
-distribution of the gene with respect to
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-has biological significance.)</p>
+spatial transcriptomics data. Consider a two-level covariate <span class="math inline">\xi</span> (e.g., control vs treatment, healthy vs
+diseased, left vs right hemisphere) and spatial coordinate <span class="math inline">x</span> (e.g., cortical depth, distance from a
+tumor, distance from a central vein in the liver). A gene is
+<em>differentially expressed</em> (DE) with respect to <span class="math inline">\xi</span> if its expression level depends on <span class="math inline">\xi</span>. A gene is <em>spatially variable</em>
+(SVG) if its expression level depends on spatial coordinate <span class="math inline">x</span>. A covariate <span class="math inline">\xi</span> has a FSE on a gene if the spatial
+distribution of that gene with respect to <span class="math inline">x</span> depends on <span class="math inline">\xi</span>. (The adjective “functional” is included
+because it’s assumed that the distribution of the gene with respect to
+<span class="math inline">x</span> has biological significance.)</p>
 <div class="figure">
 <img src="fig_FSE.png" alt="DE vs SVG vs FSE" width="90%"><p class="caption">
 Comparison between testing for differentially expressed genes, spatially
@@ -129,23 +120,19 @@ and laterality (left vs right hemisphere) represents a fixed effect
 statistical framework for testing for FSEs and (hence) wispack is the
 only software for FSE testing. Wisp models allow for FSE testing because
 they explicitly model the spatial distribution of gene expression in
-terms of <a href="tutorial_Poisson.html">parameters
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math></a>
-which can themselves depend on some other covariate. A coarse-grain
-work-around for FSE testing would be to include an interaction term
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi><mo>×</mo><mi>ξ</mi></mrow><annotation encoding="application/x-tex">x\times\xi</annotation></semantics></math>
-between a spatial variable
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-and another covariate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ξ</mi><annotation encoding="application/x-tex">\xi</annotation></semantics></math>
-of interest in a linear model, but this approach could only capture an
-additive effect constant across space. That is, such an approach would
-make transcription rate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-(or its log transform) into the function:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo>,</mo><mi>ξ</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><msub><mi>β</mi><mn>0</mn></msub><mo>+</mo><msub><mi>β</mi><mi>x</mi></msub><mi>x</mi><mo>+</mo><msub><mi>β</mi><mi>ξ</mi></msub><mi>ξ</mi><mo>+</mo><msub><mi>β</mi><mrow><mi>x</mi><mo>×</mo><mi>ξ</mi></mrow></msub><mi>x</mi><mo>×</mo><mi>ξ</mi></mrow><annotation encoding="application/x-tex">\lambda(x, \xi) = \beta_0 + \beta_x x + \beta_\xi \xi + \beta_{x\times\xi} x\times\xi</annotation></semantics></math>
-Wisp models, on the other hand, can capture complex effects on density
-gradients, change-point locations, and local expression levels.</p>
+terms of <a href="tutorial_Poisson.html">parameters <span class="math inline">\beta</span></a> which can themselves depend on some
+other covariate. A coarse-grain work-around for FSE testing would be to
+include an interaction term <span class="math inline">x\times\xi</span>
+between a spatial variable <span class="math inline">x</span> and
+another covariate <span class="math inline">\xi</span> of interest in a
+linear model, but this approach could only capture an additive effect
+constant across space. That is, such an approach would make
+transcription rate <span class="math inline">\lambda</span> (or its log
+transform) into the function: <span class="math display">\lambda(x, \xi)
+= \beta_0 + \beta_x x + \beta_\xi \xi + \beta_{x\times\xi}
+x\times\xi</span> Wisp models, on the other hand, can capture complex
+effects on density gradients, change-point locations, and local
+expression levels.</p>
 <p>This tutorial will use simulations to benchmark wispack’s ability to
 detect FSEs. In order to contrast FSE testing with DE and SVG testing,
 we will also analyze the simulations with <a href="http://www.bioconductor.org/packages/release/bioc/html/DESeq2.html" class="external-link">DESeq2</a>
@@ -203,9 +190,7 @@ neurons).</p>
 <p><img src="tutorial_benchmarks_files/figure-html/preview_data-1.png" class="r-plt" alt="" width="100%"></p>
 <p>The point of starting with real data is to ensure that the
 simulations contain genes with realistic transcript counts and
-distributions. We will seed the simulations with data from a
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>2</mn><mo>×</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">2\times 2</annotation></semantics></math>
-mm region of slice 33.</p>
+distributions. We will seed the simulations with data from a <span class="math inline">2\times 2</span> mm region of slice 33.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">seed_patch</span> <span class="op">&lt;-</span> <span class="va">countdata</span><span class="op">[</span></span>
 <span>  <span class="va">countdata</span><span class="op">$</span><span class="va">slice_num</span> <span class="op">==</span> <span class="fl">33</span> <span class="op">&amp;</span></span>
@@ -296,27 +281,19 @@ example, are the plots of Vip before and after smoothing:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">grid.arrange</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">test_sim</span><span class="op">$</span><span class="va">plots</span><span class="op">[[</span><span class="st">"Vip"</span><span class="op">]</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_benchmarks_files/figure-html/plot_Vip-1.png" class="r-plt" alt="" width="100%"></p>
 <p>Next, at least one gene is randomly selected to be a SVG. For each
-SVG, a single spatial coordinate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">⟨</mo><msup><mi>x</mi><mi>′</mi></msup><mo>,</mo><msup><mi>y</mi><mi>′</mi></msup><mo stretchy="false" form="postfix">⟩</mo></mrow><annotation encoding="application/x-tex">\langle x^\prime, y^\prime\rangle</annotation></semantics></math>
-is randomly selected from the data set to serve as an attractor point.
-Spatial points
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">⟨</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo stretchy="false" form="postfix">⟩</mo></mrow><annotation encoding="application/x-tex">\langle x, y\rangle</annotation></semantics></math>
-are pulled towards the attractor point according to the transformation:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi><mo>↦</mo><mi>x</mi><mo>−</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo>−</mo><msup><mi>x</mi><mi>′</mi></msup><mo stretchy="true" form="postfix">)</mo></mrow><mi>η</mi></mrow><annotation encoding="application/x-tex">x\mapsto x - (x - x^\prime)\eta</annotation></semantics></math><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi><mo>↦</mo><mi>y</mi><mo>−</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>y</mi><mo>−</mo><msup><mi>y</mi><mi>′</mi></msup><mo stretchy="true" form="postfix">)</mo></mrow><mi>η</mi></mrow><annotation encoding="application/x-tex">y\mapsto y - (y - y^\prime)\eta</annotation></semantics></math>
-The term
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>η</mi><annotation encoding="application/x-tex">\eta</annotation></semantics></math>
-is a noise variable from a beta distribution:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>η</mi><mo>∼</mo><mtext mathvariant="normal">Beta</mtext><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>,</mo><mfrac><mrow><mn>1</mn><mo>−</mo><mi>D</mi></mrow><mi>D</mi></mfrac><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\eta \sim \text{Beta}(1,\frac{1-D}{D})</annotation></semantics></math>
-And the term
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>D</mi><annotation encoding="application/x-tex">D</annotation></semantics></math>
-is the normalized distance from the attractor point:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mo>=</mo><msqrt><mrow><msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo>−</mo><msup><mi>x</mi><mi>′</mi></msup><mo stretchy="true" form="postfix">)</mo></mrow><mn>2</mn></msup><mo>+</mo><msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>y</mi><mo>−</mo><msup><mi>y</mi><mi>′</mi></msup><mo stretchy="true" form="postfix">)</mo></mrow><mn>2</mn></msup></mrow></msqrt></mrow><annotation encoding="application/x-tex">d = \sqrt{(x - x^\prime)^2 + (y - y^\prime)^2}</annotation></semantics></math><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>D</mi><mo>=</mo><mn>1</mn><mo>−</mo><mfrac><mi>d</mi><mrow><mtext mathvariant="normal">max</mtext><mrow><mo stretchy="true" form="prefix">(</mo><mi>d</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow></mfrac></mrow><annotation encoding="application/x-tex">D = 1 - \frac{d}{\text{max}(d)}</annotation></semantics></math>
-In fact,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>D</mi><annotation encoding="application/x-tex">D</annotation></semantics></math>
-is the expected value of the beta distribution. Thus, points closer to
-the attractor are pulled more strongly towards it. For example, here are
-the plots of Slc17a7 before smoothing, after smoothing, and after
-inducing spatial variability:</p>
+SVG, a single spatial coordinate <span class="math inline">\langle
+x^\prime, y^\prime\rangle</span> is randomly selected from the data set
+to serve as an attractor point. Spatial points <span class="math inline">\langle x, y\rangle</span> are pulled towards the
+attractor point according to the transformation: <span class="math display">x\mapsto x - (x - x^\prime)\eta</span> <span class="math display">y\mapsto y - (y - y^\prime)\eta</span> The term
+<span class="math inline">\eta</span> is a noise variable from a beta
+distribution: <span class="math display">\eta \sim
+\text{Beta}(1,\frac{1-D}{D})</span> And the term <span class="math inline">D</span> is the normalized distance from the
+attractor point: <span class="math display">d = \sqrt{(x - x^\prime)^2 +
+(y - y^\prime)^2}</span> <span class="math display">D = 1 -
+\frac{d}{\text{max}(d)}</span> In fact, <span class="math inline">D</span> is the expected value of the beta
+distribution. Thus, points closer to the attractor are pulled more
+strongly towards it. For example, here are the plots of Slc17a7 before
+smoothing, after smoothing, and after inducing spatial variability:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">grid.arrange</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">test_sim</span><span class="op">$</span><span class="va">plots</span><span class="op">[[</span><span class="st">"Slc17a7"</span><span class="op">]</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_benchmarks_files/figure-html/plot_Slc17a7-1.png" class="r-plt" alt="" width="100%"></p>
@@ -327,24 +304,14 @@ Simulating FSEs
 reference condition and one for the treatment condition. As Slc17a7 was
 not selected to be exhibit a FSE in the treatment condition, the spatial
 distributions are the same. For all SVGs, the treatment condition is
-simulated by inducing a rate change via an effect term
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>b</mi><annotation encoding="application/x-tex">b</annotation></semantics></math>
-between zero and one:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>↦</mo><msub><mi>λ</mi><mtext mathvariant="normal">trt</mtext></msub><mo>=</mo><mn>4</mn><msup><mi>b</mi><mn>2</mn></msup><mi>λ</mi></mrow><annotation encoding="application/x-tex">\lambda\mapsto\lambda_{\text{trt}} = 4b^2\lambda</annotation></semantics></math>
-The actual count
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
-at each point is then pulled from a Poisson distribution with rate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>λ</mi><mtext mathvariant="normal">trt</mtext></msub><annotation encoding="application/x-tex">\lambda_{\text{trt}}</annotation></semantics></math>.
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi><mo>∼</mo><mtext mathvariant="normal">Pois</mtext><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>λ</mi><mtext mathvariant="normal">trt</mtext></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">y \sim \text{Pois}(\lambda_{\text{trt}})</annotation></semantics></math>
-For genes like Slc17a7 not selected to exhibit FSEs,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>b</mi><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">b = 0.5</annotation></semantics></math>.
-For genes like Pvalb and Tac2 selected to exhibit FSEs,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>b</mi><annotation encoding="application/x-tex">b</annotation></semantics></math>
-is randomly chosen to be a value between zero and one but such that the
-absolute value of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>4</mn><msup><mi>b</mi><mn>2</mn></msup><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">4b^2 - 1</annotation></semantics></math>
-is greater than <em>min_effect_size</em> (by default, 0.05). In this
-example:</p>
+simulated by inducing a rate change via an effect term <span class="math inline">b</span> between zero and one: <span class="math display">\lambda\mapsto\lambda_{\text{trt}} =
+4b^2\lambda</span> The actual count <span class="math inline">y</span>
+at each point is then pulled from a Poisson distribution with rate <span class="math inline">\lambda_{\text{trt}}</span>. <span class="math display">y \sim \text{Pois}(\lambda_{\text{trt}})</span> For
+genes like Slc17a7 not selected to exhibit FSEs, <span class="math inline">b = 0.5</span>. For genes like Pvalb and Tac2
+selected to exhibit FSEs, <span class="math inline">b</span> is randomly
+chosen to be a value between zero and one but such that the absolute
+value of <span class="math inline">4b^2 - 1</span> is greater than
+<em>min_effect_size</em> (by default, 0.05). In this example:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">g</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n"</span>, <span class="va">test_sim</span><span class="op">$</span><span class="va">genes</span><span class="op">[</span><span class="va">g</span><span class="op">]</span>, <span class="st">": b = "</span>, <span class="va">test_sim</span><span class="op">$</span><span class="va">effect</span><span class="op">[</span><span class="va">g</span><span class="op">]</span>, sep <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## </span></span>
@@ -353,13 +320,12 @@ example:</p>
 <span><span class="co">## Tac2: b = -0.4785648</span></span>
 <span><span class="co">## Vip: b = 0</span></span></code></pre>
 <p>For convenience, the <em>attractor_simulation</em> function returns
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>b</mi><mo>−</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">b - 0.5</annotation></semantics></math>
-under the <em>effect</em> component of the output list. The advantage
-here is that genes without a FSE in the treatment condition will show an
-effect value of zero, a FSE that down-regulates expression will be
-negative, and a FSE that up-regulates expression will be positive. For
-example, here are the plots for Pvalb, which exhibits a slight
-up-regulating FSE:</p>
+<span class="math inline">b - 0.5</span> under the <em>effect</em>
+component of the output list. The advantage here is that genes without a
+FSE in the treatment condition will show an effect value of zero, a FSE
+that down-regulates expression will be negative, and a FSE that
+up-regulates expression will be positive. For example, here are the
+plots for Pvalb, which exhibits a slight up-regulating FSE:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">grid.arrange</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">test_sim</span><span class="op">$</span><span class="va">plots</span><span class="op">[[</span><span class="st">"Pvalb"</span><span class="op">]</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_benchmarks_files/figure-html/plot_Pvalb-1.png" class="r-plt" alt="" width="100%"></p>
@@ -372,26 +338,18 @@ down-regulating FSE:</p>
 Simulating replicates
 </h3>
 <p>The above procedure generates a single data set, from the seed patch,
-consisting of counts
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
-(possibly
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>&gt;</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">&gt; 1</annotation></semantics></math>)
-for each gene at some number of spatial coordinates, for both the
-<em>ref</em> and <em>trt</em> conditions. This single data set is itself
-used as a seed (with counts
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
-becoming rates
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>)
-to make psuedo-replicates exibhiting some amount of variation, both in
-spatial distribution and in counts. Variation in spatial distribution is
-simulated by a scaled application of a random affine transformation
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math>
-of shears and scalings to the spatial coordinates:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msup><mi>x</mi><mi>′</mi></msup></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msup><mi>y</mi><mi>′</mi></msup></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>d</mi><mi>x</mi></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><msub><mi>d</mi><mi>y</mi></msub></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo>∘</mo><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><mi>x</mi></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><mi>y</mi></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><mn>1</mn><mo>−</mo><msub><mi>d</mi><mi>x</mi></msub></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><mn>1</mn><mo>−</mo><msub><mi>d</mi><mi>y</mi></msub></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow><mo>∘</mo><mi>A</mi><mrow><mo stretchy="true" form="prefix">(</mo><mtable><mtr><mtd columnalign="center" style="text-align: center"><mi>x</mi></mtd></mtr><mtr><mtd columnalign="center" style="text-align: center"><mi>y</mi></mtd></mtr></mtable><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
+consisting of counts <span class="math inline">y</span> (possibly <span class="math inline">&gt; 1</span>) for each gene at some number of
+spatial coordinates, for both the <em>ref</em> and <em>trt</em>
+conditions. This single data set is itself used as a seed (with counts
+<span class="math inline">y</span> becoming rates <span class="math inline">\lambda</span>) to make psuedo-replicates exibhiting
+some amount of variation, both in spatial distribution and in counts.
+Variation in spatial distribution is simulated by a scaled application
+of a random affine transformation <span class="math inline">A</span> of
+shears and scalings to the spatial coordinates: <span class="math display">
 \begin{pmatrix}
 x^\prime \\
 y^\prime
-\end{pmatrix} = 
+\end{pmatrix} =
 \begin{pmatrix}
 d_x \\
 d_y
@@ -409,30 +367,17 @@ A
 x \\
 y
 \end{pmatrix}
-</annotation></semantics></math> In the above equation, the
-“<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∘</mi><annotation encoding="application/x-tex">\circ</annotation></semantics></math>”
-is the Hadamard (element-wise) product. With
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mtext mathvariant="normal">mid</mtext></msub><annotation encoding="application/x-tex">x_{\text{mid}}</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>y</mi><mtext mathvariant="normal">mid</mtext></msub><annotation encoding="application/x-tex">y_{\text{mid}}</annotation></semantics></math>
-being the midpoints of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>,
-respectively, the scaling terms
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>d</mi><mi>x</mi></msub><annotation encoding="application/x-tex">d_x</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>d</mi><mi>y</mi></msub><annotation encoding="application/x-tex">d_y</annotation></semantics></math>
-are defined as:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>d</mi><mi>x</mi></msub><mo>=</mo><msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo>−</mo><msub><mi>x</mi><mtext mathvariant="normal">mid</mtext></msub><mo stretchy="true" form="postfix">)</mo></mrow><mn>2</mn></msup><mi>/</mi><mtext mathvariant="normal">max</mtext><mrow><mo stretchy="true" form="prefix">(</mo><msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo>−</mo><msub><mi>x</mi><mtext mathvariant="normal">mid</mtext></msub><mo stretchy="true" form="postfix">)</mo></mrow><mn>2</mn></msup><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">d_x = (x - x_{\text{mid}})^2/\text{max}((x - x_{\text{mid}})^2)</annotation></semantics></math><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>d</mi><mi>y</mi></msub><mo>=</mo><msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>y</mi><mo>−</mo><msub><mi>y</mi><mtext mathvariant="normal">mid</mtext></msub><mo stretchy="true" form="postfix">)</mo></mrow><mn>2</mn></msup><mi>/</mi><mtext mathvariant="normal">max</mtext><mrow><mo stretchy="true" form="prefix">(</mo><msup><mrow><mo stretchy="true" form="prefix">(</mo><mi>y</mi><mo>−</mo><msub><mi>y</mi><mtext mathvariant="normal">mid</mtext></msub><mo stretchy="true" form="postfix">)</mo></mrow><mn>2</mn></msup><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">d_y = (y - y_{\text{mid}})^2/\text{max}((y - y_{\text{mid}})^2)</annotation></semantics></math>
-Variation in counts for each replicate is simulated by scaling according
-to a randomly chosen replicate scalar
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>c</mi><annotation encoding="application/x-tex">c</annotation></semantics></math>
-between zero and one:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi><mo>∼</mo><mtext mathvariant="normal">Pois</mtext><mrow><mo stretchy="true" form="prefix">(</mo><mn>2</mn><mi>c</mi><mi>λ</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">y \sim \text{Pois}(2c \lambda)</annotation></semantics></math></p>
-<p>For example, in our test simulation, the scale factors
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>c</mi><annotation encoding="application/x-tex">c</annotation></semantics></math>
-are:</p>
+</span> In the above equation, the “<span class="math inline">\circ</span>” is the Hadamard (element-wise)
+product. With <span class="math inline">x_{\text{mid}}</span> and <span class="math inline">y_{\text{mid}}</span> being the midpoints of <span class="math inline">x</span> and <span class="math inline">y</span>,
+respectively, the scaling terms <span class="math inline">d_x</span> and
+<span class="math inline">d_y</span> are defined as: <span class="math display">d_x = (x - x_{\text{mid}})^2/\text{max}((x -
+x_{\text{mid}})^2)</span> <span class="math display">d_y = (y -
+y_{\text{mid}})^2/\text{max}((y - y_{\text{mid}})^2)</span> Variation in
+counts for each replicate is simulated by scaling according to a
+randomly chosen replicate scalar <span class="math inline">c</span>
+between zero and one: <span class="math display">y \sim \text{Pois}(2c
+\lambda)</span></p>
+<p>For example, in our test simulation, the scale factors <span class="math inline">c</span> are:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">r</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nReplicate "</span>, <span class="va">r</span>, <span class="st">": c = "</span>, <span class="va">test_sim</span><span class="op">$</span><span class="va">replicate_rate_scalars</span><span class="op">[</span><span class="va">r</span><span class="op">]</span>, sep <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## </span></span>
@@ -514,48 +459,31 @@ each parameter, the stipulated value used in the simulation is given
 under the <em>true</em> column, while the estimate from wisp is given
 under the <em>est</em> column. Note that for <em>rate_effect</em> and
 <em>random_effect</em>, the parameter is a continuous value. The true,
-stipulated value will always be between
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><mn>0.5</mn></mrow><annotation encoding="application/x-tex">-0.5</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>0.5</mn><annotation encoding="application/x-tex">0.5</annotation></semantics></math>.
-(As explained above, these values are randomly choosen from between zero
-and one, and reported after subtracting 0.5 so that down-regulation is
-negative and up-regulation is positive). For <em>FSE</em>, the parameter
-is binary, with a <em>true</em> value of 1 indicating that the gene
-exhibits a FSE in the treatment condition, and a <em>true</em> value of
-0 indicating no FSE. The estimated value for <em>FSE</em> is a
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>-value.
-The obvious idea is that a
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>-value
-below some threshold (e.g., 0.05) indicates the presence of a FSE, while
-a
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>-value
-above that threshold indicates no FSE.</p>
+stipulated value will always be between <span class="math inline">-0.5</span> and <span class="math inline">0.5</span>. (As explained above, these values are
+randomly choosen from between zero and one, and reported after
+subtracting 0.5 so that down-regulation is negative and up-regulation is
+positive). For <em>FSE</em>, the parameter is binary, with a
+<em>true</em> value of 1 indicating that the gene exhibits a FSE in the
+treatment condition, and a <em>true</em> value of 0 indicating no FSE.
+The estimated value for <em>FSE</em> is a <span class="math inline">p</span>-value. The obvious idea is that a <span class="math inline">p</span>-value below some threshold (e.g., 0.05)
+indicates the presence of a FSE, while a <span class="math inline">p</span>-value above that threshold indicates no
+FSE.</p>
 <p>Two points are worth noting. First, the
 <em>model_attractor_simulation_wisp</em> function does not return any
 results related to SVGs because wisp does not run statistical tests for
 SVGs. Second, wisp does not make a single rate-effect estimate or
-compute a single
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>-value
-for rate-effect estimates. It makes one estimate and computes one
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>-value
-per expression-rate block. The natural solution is thus to take the mean
-of the estimates and the mean of the
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>-values
-across all blocks (for each gene) to get a single rate-effect estimate
-and single rate-effect
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>-value.
-This approach is sensible for the effect estimate, but the
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>-values
+compute a single <span class="math inline">p</span>-value for
+rate-effect estimates. It makes one estimate and computes one <span class="math inline">p</span>-value per expression-rate block. The
+natural solution is thus to take the mean of the estimates and the mean
+of the <span class="math inline">p</span>-values across all blocks (for
+each gene) to get a single rate-effect estimate and single rate-effect
+<span class="math inline">p</span>-value. This approach is sensible for
+the effect estimate, but the <span class="math inline">p</span>-values
 are computed under the assumption that rate effects are independent
-across blocks. To address this, after taking the mean of the
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>-values
-(which may be
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>&gt;</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">&gt; 1</annotation></semantics></math>
-due to multiple-comparison correction), the
-<em>model_attractor_simulation_wisp</em> function divides the result by
-the number of blocks. Actually, <em>model_attractor_simulation_wisp</em>
-calls a helper function
+across blocks. To address this, after taking the mean of the <span class="math inline">p</span>-values (which may be <span class="math inline">&gt; 1</span> due to multiple-comparison
+correction), the <em>model_attractor_simulation_wisp</em> function
+divides the result by the number of blocks. Actually,
+<em>model_attractor_simulation_wisp</em> calls a helper function
 <em>extract_pvalue_attractor_simulation_wisp</em> to do this
 computation. Here is the code for that function:</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
@@ -925,44 +853,25 @@ and <em>y</em>, respectively, as ELLA expects these names. Fourth, we
 rename <em>count</em> to <em>umi</em>, for the same reason.</p>
 <p>The most complex issue is that ELLA is intended to model the radial
 axis out from a cell’s nucleus. It requires, for each cell, an center
-coordinate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">⟨</mo><mtext mathvariant="normal">centerX</mtext><mo>,</mo><mtext mathvariant="normal">centerY</mtext><mo stretchy="false" form="postfix">⟩</mo></mrow><annotation encoding="application/x-tex">\langle \text{centerX}, \text{centerY} \rangle</annotation></semantics></math>
-from which the radial distance of each spatial point is computed. The
-attractor simulations are, of course, purpose-built to exhibit spatial
-variation along the
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
+coordinate <span class="math inline">\langle \text{centerX},
+\text{centerY} \rangle</span> from which the radial distance of each
+spatial point is computed. The attractor simulations are, of course,
+purpose-built to exhibit spatial variation along the <span class="math inline">x</span> and <span class="math inline">y</span>
 axes. This stipulated spatial variance will be lost if we simply pick a
 coordinate and give that coordinate to ELLA as the cell center. To
 preserve the stipulated spatial variance, we need to wrap the square
-patch around a pseudo-origin. While we could convert either the
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-or
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
-axis into the radial axis
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>r</mi><annotation encoding="application/x-tex">r</annotation></semantics></math>,
-we will use
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>,
-leaving
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
-as the angular axis
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>.
-Then the transformation of the original Cartesian coordinates
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">⟨</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo stretchy="false" form="postfix">⟩</mo></mrow><annotation encoding="application/x-tex">\langle x,y\rangle</annotation></semantics></math>
-into new Cartesian coordinates
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">⟨</mo><msup><mi>x</mi><mi>′</mi></msup><mo>,</mo><msup><mi>y</mi><mi>′</mi></msup><mo stretchy="false" form="postfix">⟩</mo></mrow><annotation encoding="application/x-tex">\langle x^\prime,y^\prime\rangle</annotation></semantics></math>
-in which the old
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-coordinate becomes radial distance and the old
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
-coordinate becomes angular displacement is given by:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>x</mi><mi>′</mi></msup><mo>=</mo><mi>x</mi><mo>cos</mo><mrow><mo stretchy="true" form="prefix">(</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>y</mi><mi>/</mi><mtext mathvariant="normal">max</mtext><mrow><mo stretchy="true" form="prefix">(</mo><mi>y</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mn>2</mn><mi>π</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">x^\prime = x \cos((y/\text{max}(y)) 2 \pi)</annotation></semantics></math><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>y</mi><mi>′</mi></msup><mo>=</mo><mi>x</mi><mo>sin</mo><mrow><mo stretchy="true" form="prefix">(</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>y</mi><mi>/</mi><mtext mathvariant="normal">max</mtext><mrow><mo stretchy="true" form="prefix">(</mo><mi>y</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mn>2</mn><mi>π</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">y^\prime = x \sin((y/\text{max}(y)) 2 \pi)</annotation></semantics></math>
-This transformation puts the cell center at
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">⟨</mo><mn>0</mn><mo>,</mo><mn>0</mn><mo stretchy="false" form="postfix">⟩</mo></mrow><annotation encoding="application/x-tex">\langle 0,0\rangle</annotation></semantics></math>
-for all cells. It also requires compensating for radial dilution, which
-we do by multiplying the count at each point by its radial distance and
-normalizing.</p>
+patch around a pseudo-origin. While we could convert either the <span class="math inline">x</span> or <span class="math inline">y</span> axis
+into the radial axis <span class="math inline">r</span>, we will use
+<span class="math inline">x</span>, leaving <span class="math inline">y</span> as the angular axis <span class="math inline">\theta</span>. Then the transformation of the
+original Cartesian coordinates <span class="math inline">\langle
+x,y\rangle</span> into new Cartesian coordinates <span class="math inline">\langle x^\prime,y^\prime\rangle</span> in which the
+old <span class="math inline">x</span> coordinate becomes radial
+distance and the old <span class="math inline">y</span> coordinate
+becomes angular displacement is given by: <span class="math display">x^\prime = x \cos((y/\text{max}(y)) 2 \pi)</span>
+<span class="math display">y^\prime = x \sin((y/\text{max}(y)) 2
+\pi)</span> This transformation puts the cell center at <span class="math inline">\langle 0,0\rangle</span> for all cells. It also
+requires compensating for radial dilution, which we do by multiplying
+the count at each point by its radial distance and normalizing.</p>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">make_ELLA_data</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span></span>
 <span>    <span class="va">sim_data</span>,</span>
@@ -1095,8 +1004,8 @@ transformation:</p>
 <p><img src="tutorial_benchmarks_files/figure-html/ella_transform_scatter_plot-1.png" class="r-plt" alt="" width="100%"></p>
 <p>We can also spot-check that the spatial distribution is preserved
 across the transform by plotting the count density along the original
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-axis and the transformed radial axis:</p>
+<span class="math inline">x</span> axis and the transformed radial
+axis:</p>
 <div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plot_count_density</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span></span>
 <span>    <span class="va">df_rad</span>, </span>
@@ -1185,15 +1094,15 @@ axis and the transformed radial axis:</p>
 <span>    </span>
 <span>  <span class="op">}</span></span>
 <span><span class="fu">plot_count_density</span><span class="op">(</span><span class="va">ella_sim</span><span class="op">$</span><span class="va">expr</span>, <span class="va">test_sim</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_benchmarks_files/figure-html/ella_transform_density_plot-1.png" class="r-plt" alt="" width="100%">
-Before writing the ELLA modeling function, let’s write helper functions
-for running ELLA on simulation data and extracting SVG results. Note
-that three settings for the ELLA class have been changed from the
-default. Minimum learning rate and maximum iterations have been set to
-speed up the fits. More importantly, the L1 regression penalty factor
-has been changed from a default of zero to 0.2. Initial testing showed
-poor performance (high false discovery and false positive rates) without
-the L1 penalty.</p>
+<p><img src="tutorial_benchmarks_files/figure-html/ella_transform_density_plot-1.png" class="r-plt" alt="" width="100%"></p>
+<p>Before writing the ELLA modeling function, let’s write helper
+functions for running ELLA on simulation data and extracting SVG
+results. Note that three settings for the ELLA class have been changed
+from the default. Minimum learning rate and maximum iterations have been
+set to speed up the fits. More importantly, the L1 regression penalty
+factor has been changed from a default of zero to 0.2. Initial testing
+showed poor performance (high false discovery and false positive rates)
+without the L1 penalty.</p>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Run ELLA on simulated data</span></span>
 <span><span class="va">run_ELLA</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span></span>
@@ -1391,6 +1300,9 @@ thousand sample points for computing benchmark metrics.</p>
 <span>    <span class="op">)</span>,</span>
 <span>  modeling_function_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>wisp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>bs_num <span class="op">=</span> <span class="fl">1e3</span>, max_fork <span class="op">=</span> <span class="va">bs_chunksize</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<h3>
+Results
+</h3>
 <p>The results of this run are provided with wispack:</p>
 <div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">benchmark_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
@@ -1431,6 +1343,9 @@ DESeq2 shows higher power, but at the cost of a very high FDR. This is
 perhaps due to design, as DESeq2 is intended to be used for data
 exploration on large gene panels, while ELLA and wisp are aimed at
 hypothesis testing.</p>
+<h3>
+Visualizing correlations
+</h3>
 <p>We can also visualize the correlation between estimated and true
 effect sizes for wisp and DESeq2. Here are the results for FSE size
 estimation:</p>
@@ -1496,12 +1411,10 @@ a GLM to group means, while ELLA and wisp fit models to transcript
 counts at individual spatial points. However, the order of magnitude
 increase from ELLA to wisp is explained by the hypothesis testing.
 Wispack would also need only about 20-30 seconds to fit a single model,
-but estimating
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>-values
-through bootstrap resampling. For this benchmark, a thousand bootstraps
-were done per model, in parallel across a hundred cores, leading to the
+but estimating <span class="math inline">p</span>-values through
+bootstrap resampling. For this benchmark, a thousand bootstraps were
+done per model, in parallel across a hundred cores, leading to the
 ten-fold increase in computation time.</p>
-<p>2, 27, 427</p>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>

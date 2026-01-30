@@ -6,7 +6,8 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Poisson processes and sigmoids • wispack</title>
-<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- katex math --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script><script src="../katex-auto.js"></script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -49,7 +50,7 @@
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Time-series data</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_warping.html">Random effects and warping</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">The wisp rate-count plot</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">Plotting wisp models</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -61,7 +62,14 @@
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/michaelbarkasi/wispack"><span class="fa fab fa-github"></span></a></li>
-<li class="nav-item"><a class="nav-link" href="../#">🌙</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
@@ -79,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-01-30</h4>
+            <h4 data-toc-skip class="date">2026-02-01</h4>
       
 
       <div class="d-none name"><code>tutorial_Poisson.Rmd</code></div>
@@ -94,42 +102,24 @@ Poisson processes
 certain type over space. For example, the cells in your body generate
 RNA molecules through gene transcription and rabbits in a forest
 generate offspring through reproduction. If every instance of the
-process (e.g., every cell, or every rabbit) in the same place
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-produces tokens at the same rate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>,
-then the number
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
-of tokens generated in a given region will follow a Poisson distribution
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi><mo>∼</mo><mtext mathvariant="normal">Pois</mtext><mrow><mo stretchy="true" form="prefix">(</mo><mi>n</mi><mi>λ</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">y\sim \text{Pois}(n\lambda)</annotation></semantics></math>
-with rate parameter equal to
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mi>λ</mi></mrow><annotation encoding="application/x-tex">n\lambda</annotation></semantics></math>,
-for
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-the number of process instances in the region.</p>
+process (e.g., every cell, or every rabbit) in the same place <span class="math inline">x</span> produces tokens at the same rate <span class="math inline">\lambda</span>, then the number <span class="math inline">y</span> of tokens generated in a given region will
+follow a Poisson distribution <span class="math display">y\sim
+\text{Pois}(n\lambda)</span> with rate parameter equal to <span class="math inline">n\lambda</span>, for <span class="math inline">n</span> the number of process instances in the
+region.</p>
 <p>Real cases of distributed Poisson processes rarely have instances
 with identical rates. For example, rabbits will reproduce at different
 rates depending on factors like age, and cells will transcribe genes at
 different rates depending on their type and state. This variation is
-often gamma-distributed, such that if
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-is the mean process rate at
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>,
-then individual process instances will have rate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Λ</mi><annotation encoding="application/x-tex">\Lambda</annotation></semantics></math>
-drawn from a gamma distribution
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Λ</mi><mo>∼</mo><mtext mathvariant="normal">Gam</mtext><mrow><mo stretchy="true" form="prefix">(</mo><mi>λ</mi><mo>,</mo><msubsup><mi>σ</mi><mi>γ</mi><mn>2</mn></msubsup><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\Lambda\sim \text{Gam}(\lambda, \sigma_\gamma^2)</annotation></semantics></math>
-with expected value
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-and variance
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msubsup><mi>σ</mi><mi>γ</mi><mn>2</mn></msubsup><annotation encoding="application/x-tex">\sigma_\gamma^2</annotation></semantics></math>.</p>
+often gamma-distributed, such that if <span class="math inline">\lambda</span> is the mean process rate at <span class="math inline">x</span>, then individual process instances will
+have rate <span class="math inline">\Lambda</span> drawn from a gamma
+distribution <span class="math display">\Lambda\sim \text{Gam}(\lambda,
+\sigma_\gamma^2)</span> with expected value <span class="math inline">\lambda</span> and variance <span class="math inline">\sigma_\gamma^2</span>.</p>
 <h2>
 Simulating data
 </h2>
 <p>Let’s simulate a Poisson process with gamma-distributed variation
-with instances spread over a one-dimensional space
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>.
-The space will be divided into 100 bins:</p>
+with instances spread over a one-dimensional space <span class="math inline">x</span>. The space will be divided into 100
+bins:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n_bins</span> <span class="op">&lt;-</span> <span class="fl">100</span></span>
 <span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">n_bins</span><span class="op">)</span></span></code></pre></div>
@@ -141,17 +131,13 @@ these positions will be called “bin”:</p>
 <span><span class="va">n_instances</span> <span class="op">&lt;-</span> <span class="fl">10000</span></span>
 <span><span class="va">bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">n_instances</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>Now suppose that the space is divided into four equal-sized blocks,
-each with a different constant process rate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>,
-and suppose there is a constant variance
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>σ</mi><mi>γ</mi><mn>2</mn></msubsup><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">\sigma_\gamma^2 = 2</annotation></semantics></math>
-across the entire space. Suppose these rates
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-are 1, 5, 2, and 7. We can represent this as a vector lambda of length
-100, with each block’s rate repeated twenty-five times. The process
-counts can be simulated for each instance by pulling individual process
-rates from a gamma distribution and then drawing counts from a Poisson
-distribution with those rates:</p>
+each with a different constant process rate <span class="math inline">\lambda</span>, and suppose there is a constant
+variance <span class="math inline">\sigma_\gamma^2 = 2</span> across the
+entire space. Suppose these rates <span class="math inline">\lambda</span> are 1, 5, 2, and 7. We can represent
+this as a vector lambda of length 100, with each block’s rate repeated
+twenty-five times. The process counts can be simulated for each instance
+by pulling individual process rates from a gamma distribution and then
+drawing counts from a Poisson distribution with those rates:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lambda</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">5</span>, <span class="fl">2</span>, <span class="fl">7</span><span class="op">)</span>, each <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">/</span><span class="fl">4</span><span class="op">)</span></span>
 <span><span class="va">var_gamma</span> <span class="op">&lt;-</span> <span class="fl">2</span></span>
@@ -213,30 +199,16 @@ Modeling with sigmoids
 <p>Wisps are mathematical models for describing gamma-distributed
 Poisson processes. The parameters used to create countdata can be
 recovered using a wisp. A wisp model is fit in two steps.</p>
-<p>The first is to find transition points
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>
-in count rate by looking for outliers in the ratio between the
-likelihood of the neighborhood around
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-having a constant rate and the likelihood of each side of the
-neighborhood around
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-having different rates. If there are
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-such transition points
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>=</mo><mo stretchy="false" form="prefix">⟨</mo><msub><mi>p</mi><mn>1</mn></msub><mo>,</mo><mi>…</mi><mo>,</mo><msub><mi>p</mi><mi>n</mi></msub><mo stretchy="false" form="postfix">⟩</mo></mrow><annotation encoding="application/x-tex">p=\langle p_1,\ldots,p_n\rangle</annotation></semantics></math>,
-then a specific variety of sigmoid, the logistic function:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ψ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo>,</mo><mi>r</mi><mo>,</mo><mi>s</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mfrac><mi>r</mi><mrow><mn>1</mn><mo>+</mo><mo>exp</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>s</mi><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow></mfrac></mrow><annotation encoding="application/x-tex">\psi(x,r,s) = \frac{r}{1 + \exp({sx})}</annotation></semantics></math>
-can be used to model the rate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-across space by combining
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-such sigmoids into a wisp function:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Ψ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo>,</mo><mi>r</mi><mo>,</mo><mi>s</mi><mo>,</mo><mi>p</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><msub><mi>r</mi><mn>1</mn></msub><mo>+</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><mi>ψ</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>x</mi><mo>−</mo><msub><mi>p</mi><mi>i</mi></msub><mo>,</mo><msub><mi>r</mi><mrow><mi>i</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>−</mo><msub><mi>r</mi><mi>i</mi></msub><mo>,</mo><mi>−</mi><msub><mi>s</mi><mi>i</mi></msub><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\Psi(x,r,s,p) = r_1 + \sum_{i=1}^n \psi(x - p_i, r_{i+1} - r_{i}, -s_i)</annotation></semantics></math>
-with rate parameters
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>r</mi><mo>=</mo><mo stretchy="false" form="prefix">⟨</mo><msub><mi>r</mi><mn>1</mn></msub><mo>,</mo><mi>…</mi><mo>,</mo><msub><mi>r</mi><mrow><mi>n</mi><mo>+</mo><mn>1</mn></mrow></msub><mo stretchy="false" form="postfix">⟩</mo></mrow><annotation encoding="application/x-tex">r=\langle r_1,\ldots,r_{n+1}\rangle</annotation></semantics></math>
-and slope parameters
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>s</mi><mo>=</mo><mo stretchy="false" form="prefix">⟨</mo><msub><mi>s</mi><mn>1</mn></msub><mo>,</mo><mi>…</mi><mo>,</mo><msub><mi>s</mi><mi>n</mi></msub><mo stretchy="false" form="postfix">⟩</mo></mrow><annotation encoding="application/x-tex">s=\langle s_1,\ldots,s_{n}\rangle</annotation></semantics></math>.</p>
+<p>The first is to find transition points <span class="math inline">p</span> in count rate by looking for outliers in
+the ratio between the likelihood of the neighborhood around <span class="math inline">x</span> having a constant rate and the likelihood
+of each side of the neighborhood around <span class="math inline">x</span> having different rates. If there are <span class="math inline">n</span> such transition points <span class="math inline">p=\langle p_1,\ldots,p_n\rangle</span>, then a
+specific variety of sigmoid, the logistic function: <span class="math display">\psi(x,r,s) = \frac{r}{1 + \exp({sx})}</span> can
+be used to model the rate <span class="math inline">\lambda</span>
+across space by combining <span class="math inline">n</span> such
+sigmoids into a wisp function: <span class="math display">\Psi(x,r,s,p)
+= r_1 + \sum_{i=1}^n \psi(x - p_i, r_{i+1} - r_{i}, -s_i)</span> with
+rate parameters <span class="math inline">r=\langle
+r_1,\ldots,r_{n+1}\rangle</span> and slope parameters <span class="math inline">s=\langle s_1,\ldots,s_{n}\rangle</span>.</p>
 <div class="figure">
 <img src="fig_logisticpolysig.png" alt="Demo plots of functions involved in wisp" width="90%"><p class="caption">
 (Top) The logistic function, used to model a single change point in gene
@@ -245,30 +217,18 @@ logistic components, representing three change points.
 </p>
 </div>
 <p>The second is to use gradient-based optimization or MCMC to find the
-parameters
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>r</mi><annotation encoding="application/x-tex">r</annotation></semantics></math>,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>
-which maximize the likelihood of the log transform
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>f</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>y</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>=</mo><mo>log</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>y</mi><mo>+</mo><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">f(y)=\log(y+1)</annotation></semantics></math>
-of countdata$count.</p>
+parameters <span class="math inline">r</span>, <span class="math inline">s</span> and <span class="math inline">p</span>
+which maximize the likelihood of the log transform <span class="math inline">f(y)=\log(y+1)</span> of countdata$count.</p>
 <p>For this demonstration, the data in countdata has been explicitly
 constructed with the statistical structure captured by wisp using known
-parameters
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>r</mi><annotation encoding="application/x-tex">r</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>.
-Thus, fitting a wisp model to countdata should recover those parameters.
-(Note: The verbose progress reports from wisp show how the function adds
-columns to countdata for context, species, ran, timeseries, and
-fixedeffects; while not used here, these columns are used in more
-complex modeling scenarios.)</p>
+parameters <span class="math inline">r</span> and <span class="math inline">p</span>. Thus, fitting a wisp model to countdata
+should recover those parameters. (Note: The verbose progress reports
+from wisp show how the function adds columns to countdata for context,
+species, ran, timeseries, and fixedeffects; while not used here, these
+columns are used in more complex modeling scenarios.)</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## Warning: package 'ggplot2' was built under R version 4.5.2</span></span></code></pre>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
 <span>    <span class="va">countdata</span>, </span>
 <span>    fit_only <span class="op">=</span> <span class="cn">TRUE</span>, </span>
 <span>    plot.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>CI_style <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -295,8 +255,7 @@ complex modeling scenarios.)</p>
 <span><span class="co">## Plot settings:</span></span>
 <span><span class="co">##  print.plots: TRUE</span></span>
 <span><span class="co">##  dim.bounds: </span></span>
-<span><span class="co">##  pred.type: pred</span></span>
-<span><span class="co">##  count.type: count</span></span>
+<span><span class="co">##  log.scale: FALSE</span></span>
 <span><span class="co">##  splitting_factor: </span></span>
 <span><span class="co">##  CI_style: FALSE</span></span>
 <span><span class="co">##  label_size: 5.5</span></span>
@@ -397,7 +356,7 @@ equal-sized blocks and, within each block, has identified a rate
 parameter which visually seems to land in the middle of the data.</p>
 <p>The recovered parameters can also be extracted as numerical
 values:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">param_names</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">fitted.parameters</span><span class="op">)</span></span>
 <span><span class="va">est_param</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">fitted.parameters</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">param_type</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Rt"</span>, <span class="st">"tslope"</span>, <span class="st">"tpoint"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
@@ -413,15 +372,13 @@ values:</p>
 <span><span class="co">## Recovered Rt parameters: 4.675, 6.306, 5.388, 6.587</span></span>
 <span><span class="co">## Recovered tslope parameters: 86.644, 32.061, 83.237</span></span>
 <span><span class="co">## Recovered tpoint parameters: 25.961, 50.259, 75.876</span></span></code></pre>
-<p>It is immediately clear from the three tpoint parameters (i.e.,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>)
-that wisp has recovered the transition points at bins 25, 50, and 75.
-However, at first glance, the rates (Rt) look off. This is because wisp
-has predicted the log transform of the sum of the rates. To recover the
-original rates of 1, 5, 2, and 7, we need to exponentiate the recovered
-rates, subtract 1, and divide by the mean number of tokens per bin
-within the block.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<p>It is immediately clear from the three tpoint parameters (i.e., <span class="math inline">p</span>) that wisp has recovered the transition
+points at bins 25, 50, and 75. However, at first glance, the rates (Rt)
+look off. This is because wisp has predicted the log transform of the
+sum of the rates. To recover the original rates of 1, 5, 2, and 7, we
+need to exponentiate the recovered rates, subtract 1, and divide by the
+mean number of tokens per bin within the block.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tokens_per_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="va">n_bins</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">b</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">n_bins</span><span class="op">)</span> <span class="va">tokens_per_bin</span><span class="op">[</span><span class="va">b</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">$</span><span class="va">bin</span> <span class="op">==</span> <span class="va">b</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">block</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span> <span class="op">{</span></span>

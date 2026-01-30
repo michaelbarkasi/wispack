@@ -3,17 +3,16 @@
 ## Introduction
 
 Wispack tests for *functional spatial effects* (FSEs) using spatial
-transcriptomics data. Consider a two-level covariate $`\xi`$ (e.g.,
-control vs treatment, healthy vs diseased, left vs right hemisphere) and
-spatial coordinate $`x`$ (e.g., cortical depth, distance from a tumor,
-distance from a central vein in the liver). A gene is *differentially
-expressed* (DE) with respect to $`\xi`$ if its expression level depends
-on $`\xi`$. A gene is *spatially variable* (SVG) if its expression level
-depends on spatial coordinate $`x`$. A covariate $`\xi`$ has a FSE on a
-gene if the spatial distribution of that gene with respect to $`x`$
-depends on $`\xi`$. (The adjective “functional” is included because it’s
-assumed that the distribution of the gene with respect to $`x`$ has
-biological significance.)
+transcriptomics data. Consider a two-level covariate \xi (e.g., control
+vs treatment, healthy vs diseased, left vs right hemisphere) and spatial
+coordinate x (e.g., cortical depth, distance from a tumor, distance from
+a central vein in the liver). A gene is *differentially expressed* (DE)
+with respect to \xi if its expression level depends on \xi. A gene is
+*spatially variable* (SVG) if its expression level depends on spatial
+coordinate x. A covariate \xi has a FSE on a gene if the spatial
+distribution of that gene with respect to x depends on \xi. (The
+adjective “functional” is included because it’s assumed that the
+distribution of the gene with respect to x has biological significance.)
 
 ![DE vs SVG vs FSE](fig_FSE.png)
 
@@ -28,19 +27,17 @@ framework for testing for FSEs and (hence) wispack is the only software
 for FSE testing. Wisp models allow for FSE testing because they
 explicitly model the spatial distribution of gene expression in terms of
 [parameters
-$`\beta`$](https://michaelbarkasi.github.io/wispack/articles/tutorial_Poisson.md)
+\beta](https://michaelbarkasi.github.io/wispack/articles/tutorial_Poisson.md)
 which can themselves depend on some other covariate. A coarse-grain
 work-around for FSE testing would be to include an interaction term
-$`x\times\xi`$ between a spatial variable $`x`$ and another covariate
-$`\xi`$ of interest in a linear model, but this approach could only
-capture an additive effect constant across space. That is, such an
-approach would make transcription rate $`\lambda`$ (or its log
-transform) into the function:
-``` math
-\lambda(x, \xi) = \beta_0 + \beta_x x + \beta_\xi \xi + \beta_{x\times\xi} x\times\xi
-```
-Wisp models, on the other hand, can capture complex effects on density
-gradients, change-point locations, and local expression levels.
+x\times\xi between a spatial variable x and another covariate \xi of
+interest in a linear model, but this approach could only capture an
+additive effect constant across space. That is, such an approach would
+make transcription rate \lambda (or its log transform) into the
+function: \lambda(x, \xi) = \beta_0 + \beta_x x + \beta\_\xi \xi +
+\beta\_{x\times\xi} x\times\xi Wisp models, on the other hand, can
+capture complex effects on density gradients, change-point locations,
+and local expression levels.
 
 This tutorial will use simulations to benchmark wispack’s ability to
 detect FSEs. In order to contrast FSE testing with DE and SVG testing,
@@ -116,8 +113,8 @@ ggplot(countdata, aes(x = coord_x, y = coord_y, color = gene)) +
 
 The point of starting with real data is to ensure that the simulations
 contain genes with realistic transcript counts and distributions. We
-will seed the simulations with data from a $`2\times 2`$ mm region of
-slice 33.
+will seed the simulations with data from a 2\times 2 mm region of slice
+33.
 
 ``` r
 seed_patch <- countdata[
@@ -244,31 +241,18 @@ do.call(grid.arrange, c(test_sim$plots[["Vip"]], ncol = 2))
 ![](tutorial_benchmarks_files/figure-html/plot_Vip-1.png)
 
 Next, at least one gene is randomly selected to be a SVG. For each SVG,
-a single spatial coordinate $`\langle x^\prime, y^\prime\rangle`$ is
+a single spatial coordinate \langle x^\prime, y^\prime\rangle is
 randomly selected from the data set to serve as an attractor point.
-Spatial points $`\langle x, y\rangle`$ are pulled towards the attractor
-point according to the transformation:
-``` math
-x\mapsto x - (x - x^\prime)\eta
-```
-``` math
-y\mapsto y - (y - y^\prime)\eta
-```
-The term $`\eta`$ is a noise variable from a beta distribution:
-``` math
-\eta \sim \text{Beta}(1,\frac{1-D}{D})
-```
-And the term $`D`$ is the normalized distance from the attractor point:
-``` math
-d = \sqrt{(x - x^\prime)^2 + (y - y^\prime)^2}
-```
-``` math
-D = 1 - \frac{d}{\text{max}(d)}
-```
-In fact, $`D`$ is the expected value of the beta distribution. Thus,
-points closer to the attractor are pulled more strongly towards it. For
-example, here are the plots of Slc17a7 before smoothing, after
-smoothing, and after inducing spatial variability:
+Spatial points \langle x, y\rangle are pulled towards the attractor
+point according to the transformation: x\mapsto x - (x - x^\prime)\eta
+y\mapsto y - (y - y^\prime)\eta The term \eta is a noise variable from a
+beta distribution: \eta \sim \text{Beta}(1,\frac{1-D}{D}) And the term D
+is the normalized distance from the attractor point: d = \sqrt{(x -
+x^\prime)^2 + (y - y^\prime)^2} D = 1 - \frac{d}{\text{max}(d)} In fact,
+D is the expected value of the beta distribution. Thus, points closer to
+the attractor are pulled more strongly towards it. For example, here are
+the plots of Slc17a7 before smoothing, after smoothing, and after
+inducing spatial variability:
 
 ``` r
 do.call(grid.arrange, c(test_sim$plots[["Slc17a7"]], ncol = 2))
@@ -282,21 +266,14 @@ Notice that two plots are shown with spatial variability: one for the
 reference condition and one for the treatment condition. As Slc17a7 was
 not selected to be exhibit a FSE in the treatment condition, the spatial
 distributions are the same. For all SVGs, the treatment condition is
-simulated by inducing a rate change via an effect term $`b`$ between
-zero and one:
-``` math
-\lambda\mapsto\lambda_{\text{trt}} = 4b^2\lambda
-```
-The actual count $`y`$ at each point is then pulled from a Poisson
-distribution with rate $`\lambda_{\text{trt}}`$.
-``` math
-y \sim \text{Pois}(\lambda_{\text{trt}})
-```
-For genes like Slc17a7 not selected to exhibit FSEs, $`b = 0.5`$. For
-genes like Pvalb and Tac2 selected to exhibit FSEs, $`b`$ is randomly
-chosen to be a value between zero and one but such that the absolute
-value of $`4b^2 - 1`$ is greater than *min_effect_size* (by default,
-0.05). In this example:
+simulated by inducing a rate change via an effect term b between zero
+and one: \lambda\mapsto\lambda\_{\text{trt}} = 4b^2\lambda The actual
+count y at each point is then pulled from a Poisson distribution with
+rate \lambda\_{\text{trt}}. y \sim \text{Pois}(\lambda\_{\text{trt}})
+For genes like Slc17a7 not selected to exhibit FSEs, b = 0.5. For genes
+like Pvalb and Tac2 selected to exhibit FSEs, b is randomly chosen to be
+a value between zero and one but such that the absolute value of 4b^2 -
+1 is greater than *min_effect_size* (by default, 0.05). In this example:
 
 ``` r
 for (g in c(1:4)) cat("\n", test_sim$genes[g], ": b = ", test_sim$effect[g], sep = "")
@@ -310,7 +287,7 @@ for (g in c(1:4)) cat("\n", test_sim$genes[g], ": b = ", test_sim$effect[g], sep
 ## Vip: b = 0
 ```
 
-For convenience, the *attractor_simulation* function returns $`b - 0.5`$
+For convenience, the *attractor_simulation* function returns b - 0.5
 under the *effect* component of the output list. The advantage here is
 that genes without a FSE in the treatment condition will show an effect
 value of zero, a FSE that down-regulates expression will be negative,
@@ -335,55 +312,26 @@ do.call(grid.arrange, c(test_sim$plots[["Tac2"]], ncol = 2))
 ### Simulating replicates
 
 The above procedure generates a single data set, from the seed patch,
-consisting of counts $`y`$ (possibly $`> 1`$) for each gene at some
-number of spatial coordinates, for both the *ref* and *trt* conditions.
-This single data set is itself used as a seed (with counts $`y`$
-becoming rates $`\lambda`$) to make psuedo-replicates exibhiting some
-amount of variation, both in spatial distribution and in counts.
-Variation in spatial distribution is simulated by a scaled application
-of a random affine transformation $`A`$ of shears and scalings to the
-spatial coordinates:
-``` math
+consisting of counts y (possibly \> 1) for each gene at some number of
+spatial coordinates, for both the *ref* and *trt* conditions. This
+single data set is itself used as a seed (with counts y becoming rates
+\lambda) to make psuedo-replicates exibhiting some amount of variation,
+both in spatial distribution and in counts. Variation in spatial
+distribution is simulated by a scaled application of a random affine
+transformation A of shears and scalings to the spatial coordinates:
+\begin{pmatrix} x^\prime \\ y^\prime \end{pmatrix} = \begin{pmatrix} d_x
+\\ d_y \end{pmatrix} \circ \begin{pmatrix} x \\ y \end{pmatrix} +
+\begin{pmatrix} 1 - d_x \\ 1 - d_y \end{pmatrix} \circ A \begin{pmatrix}
+x \\ y \end{pmatrix} In the above equation, the “\circ” is the Hadamard
+(element-wise) product. With x\_{\text{mid}} and y\_{\text{mid}} being
+the midpoints of x and y, respectively, the scaling terms d_x and d_y
+are defined as: d_x = (x - x\_{\text{mid}})^2/\text{max}((x -
+x\_{\text{mid}})^2) d_y = (y - y\_{\text{mid}})^2/\text{max}((y -
+y\_{\text{mid}})^2) Variation in counts for each replicate is simulated
+by scaling according to a randomly chosen replicate scalar c between
+zero and one: y \sim \text{Pois}(2c \lambda)
 
-\begin{pmatrix}
-x^\prime \\
-y^\prime
-\end{pmatrix} = 
-\begin{pmatrix}
-d_x \\
-d_y
-\end{pmatrix} \circ
-\begin{pmatrix}
-x \\
-y
-\end{pmatrix} +
-\begin{pmatrix}
-1 - d_x \\
-1 - d_y
-\end{pmatrix} \circ
-A
-\begin{pmatrix}
-x \\
-y
-\end{pmatrix}
-```
-In the above equation, the “$`\circ`$” is the Hadamard (element-wise)
-product. With $`x_{\text{mid}}`$ and $`y_{\text{mid}}`$ being the
-midpoints of $`x`$ and $`y`$, respectively, the scaling terms $`d_x`$
-and $`d_y`$ are defined as:
-``` math
-d_x = (x - x_{\text{mid}})^2/\text{max}((x - x_{\text{mid}})^2)
-```
-``` math
-d_y = (y - y_{\text{mid}})^2/\text{max}((y - y_{\text{mid}})^2)
-```
-Variation in counts for each replicate is simulated by scaling according
-to a randomly chosen replicate scalar $`c`$ between zero and one:
-``` math
-y \sim \text{Pois}(2c \lambda)
-```
-
-For example, in our test simulation, the scale factors $`c`$ are:
+For example, in our test simulation, the scale factors c are:
 
 ``` r
 for (r in 1:4) cat("\nReplicate ", r, ": c = ", test_sim$replicate_rate_scalars[r], sep = "")
@@ -479,33 +427,33 @@ For each parameter, the stipulated value used in the simulation is given
 under the *true* column, while the estimate from wisp is given under the
 *est* column. Note that for *rate_effect* and *random_effect*, the
 parameter is a continuous value. The true, stipulated value will always
-be between $`-0.5`$ and $`0.5`$. (As explained above, these values are
-randomly choosen from between zero and one, and reported after
-subtracting 0.5 so that down-regulation is negative and up-regulation is
-positive). For *FSE*, the parameter is binary, with a *true* value of 1
-indicating that the gene exhibits a FSE in the treatment condition, and
-a *true* value of 0 indicating no FSE. The estimated value for *FSE* is
-a $`p`$-value. The obvious idea is that a $`p`$-value below some
-threshold (e.g., 0.05) indicates the presence of a FSE, while a
-$`p`$-value above that threshold indicates no FSE.
+be between -0.5 and 0.5. (As explained above, these values are randomly
+choosen from between zero and one, and reported after subtracting 0.5 so
+that down-regulation is negative and up-regulation is positive). For
+*FSE*, the parameter is binary, with a *true* value of 1 indicating that
+the gene exhibits a FSE in the treatment condition, and a *true* value
+of 0 indicating no FSE. The estimated value for *FSE* is a p-value. The
+obvious idea is that a p-value below some threshold (e.g., 0.05)
+indicates the presence of a FSE, while a p-value above that threshold
+indicates no FSE.
 
 Two points are worth noting. First, the
 *model_attractor_simulation_wisp* function does not return any results
 related to SVGs because wisp does not run statistical tests for SVGs.
 Second, wisp does not make a single rate-effect estimate or compute a
-single $`p`$-value for rate-effect estimates. It makes one estimate and
-computes one $`p`$-value per expression-rate block. The natural solution
-is thus to take the mean of the estimates and the mean of the
-$`p`$-values across all blocks (for each gene) to get a single
-rate-effect estimate and single rate-effect $`p`$-value. This approach
-is sensible for the effect estimate, but the $`p`$-values are computed
-under the assumption that rate effects are independent across blocks. To
-address this, after taking the mean of the $`p`$-values (which may be
-$`> 1`$ due to multiple-comparison correction), the
-*model_attractor_simulation_wisp* function divides the result by the
-number of blocks. Actually, *model_attractor_simulation_wisp* calls a
-helper function *extract_pvalue_attractor_simulation_wisp* to do this
-computation. Here is the code for that function:
+single p-value for rate-effect estimates. It makes one estimate and
+computes one p-value per expression-rate block. The natural solution is
+thus to take the mean of the estimates and the mean of the p-values
+across all blocks (for each gene) to get a single rate-effect estimate
+and single rate-effect p-value. This approach is sensible for the effect
+estimate, but the p-values are computed under the assumption that rate
+effects are independent across blocks. To address this, after taking the
+mean of the p-values (which may be \> 1 due to multiple-comparison
+correction), the *model_attractor_simulation_wisp* function divides the
+result by the number of blocks. Actually,
+*model_attractor_simulation_wisp* calls a helper function
+*extract_pvalue_attractor_simulation_wisp* to do this computation. Here
+is the code for that function:
 
 ``` r
 # Function to extract mean p-value across blocks for each gene 
@@ -887,30 +835,23 @@ data to *cell*. Third, we will rename *bin_x* and *bin_y* to *x* and
 
 The most complex issue is that ELLA is intended to model the radial axis
 out from a cell’s nucleus. It requires, for each cell, an center
-coordinate $`\langle \text{centerX}, \text{centerY} \rangle`$ from which
-the radial distance of each spatial point is computed. The attractor
+coordinate \langle \text{centerX}, \text{centerY} \rangle from which the
+radial distance of each spatial point is computed. The attractor
 simulations are, of course, purpose-built to exhibit spatial variation
-along the $`x`$ and $`y`$ axes. This stipulated spatial variance will be
-lost if we simply pick a coordinate and give that coordinate to ELLA as
-the cell center. To preserve the stipulated spatial variance, we need to
-wrap the square patch around a pseudo-origin. While we could convert
-either the $`x`$ or $`y`$ axis into the radial axis $`r`$, we will use
-$`x`$, leaving $`y`$ as the angular axis $`\theta`$. Then the
-transformation of the original Cartesian coordinates
-$`\langle x,y\rangle`$ into new Cartesian coordinates
-$`\langle x^\prime,y^\prime\rangle`$ in which the old $`x`$ coordinate
-becomes radial distance and the old $`y`$ coordinate becomes angular
-displacement is given by:
-``` math
-x^\prime = x \cos((y/\text{max}(y)) 2 \pi)
-```
-``` math
-y^\prime = x \sin((y/\text{max}(y)) 2 \pi)
-```
-This transformation puts the cell center at $`\langle 0,0\rangle`$ for
-all cells. It also requires compensating for radial dilution, which we
-do by multiplying the count at each point by its radial distance and
-normalizing.
+along the x and y axes. This stipulated spatial variance will be lost if
+we simply pick a coordinate and give that coordinate to ELLA as the cell
+center. To preserve the stipulated spatial variance, we need to wrap the
+square patch around a pseudo-origin. While we could convert either the x
+or y axis into the radial axis r, we will use x, leaving y as the
+angular axis \theta. Then the transformation of the original Cartesian
+coordinates \langle x,y\rangle into new Cartesian coordinates \langle
+x^\prime,y^\prime\rangle in which the old x coordinate becomes radial
+distance and the old y coordinate becomes angular displacement is given
+by: x^\prime = x \cos((y/\text{max}(y)) 2 \pi) y^\prime = x
+\sin((y/\text{max}(y)) 2 \pi) This transformation puts the cell center
+at \langle 0,0\rangle for all cells. It also requires compensating for
+radial dilution, which we do by multiplying the count at each point by
+its radial distance and normalizing.
 
 ``` r
 make_ELLA_data <- function(
@@ -1049,8 +990,8 @@ grid.arrange(plt1, plt2, nrow = 1)
 ![](tutorial_benchmarks_files/figure-html/ella_transform_scatter_plot-1.png)
 
 We can also spot-check that the spatial distribution is preserved across
-the transform by plotting the count density along the original $`x`$
-axis and the transformed radial axis:
+the transform by plotting the count density along the original x axis
+and the transformed radial axis:
 
 ``` r
 plot_count_density <- function(
@@ -1143,6 +1084,7 @@ plot_count_density(ella_sim$expr, test_sim$data)
 ```
 
 ![](tutorial_benchmarks_files/figure-html/ella_transform_density_plot-1.png)
+
 Before writing the ELLA modeling function, let’s write helper functions
 for running ELLA on simulation data and extracting SVG results. Note
 that three settings for the ELLA class have been changed from the
@@ -1363,6 +1305,8 @@ results <- run_attractor_sim_benchmarks(
 )
 ```
 
+### Results
+
 The results of this run are provided with wispack:
 
 ``` r
@@ -1414,6 +1358,8 @@ DESeq2 shows higher power, but at the cost of a very high FDR. This is
 perhaps due to design, as DESeq2 is intended to be used for data
 exploration on large gene panels, while ELLA and wisp are aimed at
 hypothesis testing.
+
+### Visualizing correlations
 
 We can also visualize the correlation between estimated and true effect
 sizes for wisp and DESeq2. Here are the results for FSE size estimation:
@@ -1488,8 +1434,6 @@ a GLM to group means, while ELLA and wisp fit models to transcript
 counts at individual spatial points. However, the order of magnitude
 increase from ELLA to wisp is explained by the hypothesis testing.
 Wispack would also need only about 20-30 seconds to fit a single model,
-but estimating $`p`$-values through bootstrap resampling. For this
+but estimating p-values through bootstrap resampling. For this
 benchmark, a thousand bootstraps were done per model, in parallel across
 a hundred cores, leading to the ten-fold increase in computation time.
-
-2, 27, 427

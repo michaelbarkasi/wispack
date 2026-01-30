@@ -87,9 +87,9 @@ wisp(
 - plot.settings:
 
   List, settings for plots to make, including `print.plots`,
-  `dim.bounds`, `pred.type`, `count.type`, `splitting_factor`,
-  `CI_style`, `label_size`, `title_size`, `axis_size`, `legend_size`,
-  `count_size`, `count_jitter`, `count.alpha.ran`, `count.alpha.none`,
+  `dim.bounds`, `log.scale`, `splitting_factor`, `CI_style`,
+  `label_size`, `title_size`, `axis_size`, `legend_size`, `count_size`,
+  `count_jitter`, `count.alpha.ran`, `count.alpha.none`,
   `pred.alpha.ran`, and `pred.alpha.none`. Default values are provided.
 
 - ran.seed:

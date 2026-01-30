@@ -4,12 +4,19 @@
 \alias{plot.parameters}
 \title{Plot of wisp parameters}
 \usage{
-plot.parameters(wisp.results, species.lvl = NULL, violin = TRUE, print.plots = FALSE, species.classes = NULL, verbose = TRUE)
+plot.parameters(
+ wisp.results, 
+ species = c(), 
+ violin = TRUE, 
+ print.plots = FALSE, 
+ species.classes = NULL, 
+ verbose = TRUE
+)
 }
 \arguments{
 \item{wisp.results}{List, output of the wisp function.}
 
-\item{species.lvl}{Character string, the species level to be plotted. If NULL, all species levels are plotted.}
+\item{species}{Character string, the species level to be plotted. If c(), all species levels are plotted.}
 
 \item{violin}{Logical, if TRUE, plots violin plots for each parameter; if FALSE, uses bar plots.}
 

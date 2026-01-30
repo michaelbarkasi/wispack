@@ -38,3 +38,4 @@ sudo apt install \
 
 In R, run:  
 pkgdown::build_site()
+pkgdown::build_article("<article name>")

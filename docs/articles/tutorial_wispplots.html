@@ -5,13 +5,14 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>The wisp rate-count plot • wispack</title>
-<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Plotting wisp models • wispack</title>
+<!-- katex math --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script><script src="../katex-auto.js"></script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
-<meta property="og:title" content="The wisp rate-count plot">
+<meta property="og:title" content="Plotting wisp models">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -49,7 +50,7 @@
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Time-series data</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_warping.html">Random effects and warping</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">The wisp rate-count plot</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">Plotting wisp models</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -61,7 +62,14 @@
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/michaelbarkasi/wispack"><span class="fa fab fa-github"></span></a></li>
-<li class="nav-item"><a class="nav-link" href="../#">🌙</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
@@ -75,8 +83,11 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>The wisp rate-count plot</h1>
+      <h1>Plotting wisp models</h1>
+                        <h4 data-toc-skip class="author">Michael
+Barkasi</h4>
             
+            <h4 data-toc-skip class="date">2026-02-01</h4>
       
 
       <div class="d-none name"><code>tutorial_wispplots.Rmd</code></div>
@@ -84,8 +95,278 @@
 
     
     
-<p>Under construction. Will make and explain wisp plots.</p>
-  </main>
+<h2>
+Introduction
+</h2>
+<p>Wisp models can include thousands of parameters, each with their own
+intuitive physical interpretation. At bottom, wisp models are
+parameterized by a handful of <a href="tutorial_Poisson.html">fixed-effect spatial parameters</a> – block
+rates, transition points, and transition slopes – plus <a href="tutorial_warping.html">random-effect scalars</a> for each of these
+fixed-effect spatial parameters. However, the fixed-effect spatial
+parameters multiply with the number of species, the number of <a href="tutorial_multicontext.html">contexts</a>, and the number of
+treatment conditions. The random-effect scalars multiply by replicate
+count and species. The upshot is that a wisp model will produce a
+dizzying array of parameter estimates and hypothesis test results. To
+help with interpretation, wispack includes a number of intuitive
+plotting options for visualizing wisp model results.</p>
+<h2>
+Rate-count plots
+</h2>
+<p>The backbone of wisp visualization is the rate-count plot, as in
+“predicted rate, observed count”. Rate-count plots come in two forms,
+one giving confidence-intervals (CI) and the other giving a scatter plot
+of observations.</p>
+<h3>
+Confidence intervals
+</h3>
+<p>The CI rate-count plot is a simplified line plot showing predicted
+rate as a function of spatial position, along with a 95% confidence
+interval for the rate at each spatial location. As a demonstration,
+let’s grab the model of the laminar axis of somatosensory cortex from
+the <span class="gene">RORB</span> <a href="tutorial_corticallaminar.html">tutorial</a>:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Set random seed for reproducibility</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
+<span><span class="co"># Load wispack</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co"># Load demo model</span></span>
+<span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
+<span>      <span class="st">"extdata"</span>, </span>
+<span>      <span class="st">"corticallaminar_model.rds"</span>, </span>
+<span>      package <span class="op">=</span> <span class="st">"wispack"</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p>Note that the saved model just loaded was made under exactly the same
+conditions as the original from the <span class="gene">RORB</span> <a href="tutorial_corticallaminar.html">tutorial</a>, except that the <span class="function">wisp</span> function was set, as in the following code
+chunk, to also run a thousand bootstraps in addition to the default MCMC
+walk. We want bootstraps because we will be plotting the model
+parameters below, and bootstraps generate more reliable <a href="tutorial_stats.html">parameter estimates</a> than the MCMC
+walk.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
+<span>    count.data <span class="op">=</span> <span class="va">countdata</span>,</span>
+<span>    variables <span class="op">=</span> <span class="va">data.variables</span>,</span>
+<span>    plot.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>        print.plots <span class="op">=</span> <span class="cn">FALSE</span>, </span>
+<span>        dim.bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span></span>
+<span>      <span class="op">)</span>,</span>
+<span>    bootstraps.num <span class="op">=</span> <span class="fl">1000</span>, </span>
+<span>    max.fork <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p>For now, for the rate-count plots, we can also grab the
+layer-boundary points from the <a href="https://doi.org/10.1016/j.cell.2020.04.007" class="external-link">CCFv3</a> registration
+for comparison:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">layer.boundary.bins</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
+<span>      <span class="st">"extdata"</span>, </span>
+<span>      <span class="st">"S1_layer_boundary_bins.csv"</span>, </span>
+<span>      package <span class="op">=</span> <span class="st">"wispack"</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p>Let’s use the <span class="function">plot.ratecount</span> function
+to reproduce the <span class="gene">RORB</span> plot that was made and
+shown in the previous tutorial:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot-ratecount.html">plot.ratecount</a></span><span class="op">(</span></span>
+<span>  <span class="va">model</span>,</span>
+<span>  dim.boundaries <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"Rorb"</span> </span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_CI-1.png" class="r-plt" alt="" width="700"></p>
+<p>CI rate-count plots are straightforward to interpret: The horizontal
+(<span class="math inline">x</span>) axis shows spatial position along
+the modeled spatial dimension, the vertical (<span class="math inline">y</span>) axis shows predicated rate. The solid line
+represents predicated rate, after random effects have been filtered out.
+The shaded ribbons show the 95% confidence interval around the
+predicated rate. As explained in the <span class="gene">RORB</span> <a href="tutorial_corticallaminar.html">tutorial</a>, this confidence
+interval is computed without any multiple comparison correction (unlike
+<span class="math inline">p</span>-values, which are corrected for
+multiple comparisons). Note that the different ribbon sizes in this plot
+compared to the plot from the <span class="gene">RORB</span> <a href="tutorial_corticallaminar.html">tutorial</a> are due to using
+bootstraps instead of MCMC samples.</p>
+<p>Both kinds of rate-count plots separate treatment conditions. In this
+data, we have two covariates, <span class="code_variable">hemisphere</span> and <span class="code_variable">age</span>, each with two levels (left vs right
+for <span class="code_variable">hemisphere</span>, P12 vs P18 for <span class="code_variable">age</span>). Thus, the plot shows the predications
+for the four possible combinations of covariates (i.e., the reference
+condition of left-12, plus three treatment conditions).</p>
+<p>By default, both kinds of rate-count plots show rate as a raw value.
+However, it’s possible to rescale the vertical axis into log form:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot-ratecount.html">plot.ratecount</a></span><span class="op">(</span></span>
+<span>  <span class="va">model</span>,</span>
+<span>  dim.boundaries <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"Rorb"</span>,</span>
+<span>  log.scale <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_CI_log-1.png" class="r-plt" alt="" width="700"></p>
+<h3>
+Scatter plots
+</h3>
+<p>The second kind of rate-count plot, the scatter rate-count plot, is a
+more complex plot showing predicted rate without random effects as a
+line, model fit to individual replicates as dashed lines, and observed
+counts as scatter points. It’s accessed via the <span class="code_variable">CI_style</span> argument in <span class="function">plot.ratecount</span>:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot-ratecount.html">plot.ratecount</a></span><span class="op">(</span></span>
+<span>  <span class="va">model</span>,</span>
+<span>  dim.boundaries <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span>,</span>
+<span>  CI_style <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"Rorb"</span> </span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_ran-1.png" class="r-plt" alt="" width="700"></p>
+<p>As with CI rate-count plots, the horizontal axis represents spatial
+position along the modeled dimension, and the vertical axis represents
+predicted rate.</p>
+<p>The main advantages of scatter rate-count plots are that they show
+how well the model fits the observed data, and also show the variability
+in individual replicates. Still, they can be visually crowded, so
+wispack provides a function to decompose them into their components.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">plots.decomp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-decomposition.html">plot.decomposition</a></span><span class="op">(</span></span>
+<span>  <span class="va">model</span>,</span>
+<span>  dim.boundaries <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"Rorb"</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p>First, let’s look at separate plots of counts (observed vs
+extrapolated without random effets) and predicted rates (fit of observed
+counts vs predicted rates without random effects):</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">grid.arrange</a></span><span class="op">(</span>grobs <span class="op">=</span> <span class="va">plots.decomp</span><span class="op">[</span><span class="fl">2</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_ran_decomposed_print1-1.png" class="r-plt" alt="" width="100%"></p>
+<p>The upper left plot (observed counts) shows one point for the total
+count of <span class="gene">RORB</span> transcripts observed in a given
+replicate at a given spatial bin. The upper right plot (extrapolated
+counts) shows extrapolated counts got by taking the mean of the actual
+replicates within in bin. These means stand in for observations from a
+hypothetical replicate with no noise or other random effects. The lower
+left plot (observed predictions) shows the model fit to the observed
+counts. The lower right plot (extrapolated predictions) shows the fit to
+the extrapolated counts, which serves as a stand in for the predicted
+rate without random effects.</p>
+<p>Next, let’s look at observed counts (points) and their fits (dashed
+lines) on the same plot, but broken out by sample:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">grid.arrange</a></span><span class="op">(</span>grobs <span class="op">=</span> <span class="va">plots.decomp</span><span class="op">[</span><span class="fl">7</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">plots.decomp</span><span class="op">)</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_ran_decomposed_print2-1.png" class="r-plt" alt="" width="100%"></p>
+<p>Notice how each plot has two dashed lines which fit the observed
+counts well, and two which do not. This is because the model is fit to
+each sample in all treatment conditions. The treatment conditions are
+got by the interaction of covariates <span class="code_variable">hemisphere</span> and <span class="code_variable">age</span>. Although each sample includes both
+hemispheres, it can only include one age. The model pulls information
+across samples to extrapolate the fit for the missing treatment
+conditions. Thus, some of the dashed lines represent fits to observed
+counts in treatment conditions that were not actually observed in that
+sample.</p>
+<h2>
+Time-series plots
+</h2>
+<p>For models fit with a covariate specified as a <a href="tutorial_timeseries.html">time series</a>, wispack provides a
+function to plot predicted rates as a function of time. This is done
+with the <span class="function">plot.timeseries</span> function.
+Although there are only two ages in the cortical laminar data, we can
+still use this function to visualize how predicted rates change with
+age. Let’s look at the time-series plot for <span class="gene">RORB</span> again:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot-timeseries.html">plot.timeseries</a></span><span class="op">(</span></span>
+<span>  <span class="va">model</span>, </span>
+<span>  species <span class="op">=</span> <span class="st">"Rorb"</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_timeseries-1.png" class="r-plt" alt="" width="700"></p>
+<p>As explained in the <a href="tutorial_timeseries.html">time series
+tutorial</a>, the rate represented by the height of the solid lines is
+the rate parameter itself (for each block), not the actual predicted
+rate. The actual predicated rate at a given bin (or the mean predicated
+rate across an entire block) can be lower than the rate parameter,
+depending on the slope parameters of the transitions. In time series
+plots, the points represent the mean observed rate across an entire
+block (with random effects filtered out). Thus, as is the case in this
+example, the distance between the observed points and the predicted
+rates is not necessarily a sign of a bad fit. As can be seen in the
+rate-count plots above, the fit is quite good.</p>
+<h2>
+Parameter plots
+</h2>
+<p>Rate-count and time-series plots show observed and predicted gene
+expression rates as a function of spatial position, time, and (at least
+implicitly) treatment conditions. However, with the exception of
+time-series plots showing rate parameters, these plots do not directly
+show the underlying rate, transition point, and slope parameters – or
+the corresponding random-effect scalars – that define a wisp model.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">plots.param</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-parameters.html">plot.parameters</a></span><span class="op">(</span></span>
+<span>  <span class="va">model</span>,</span>
+<span>  species <span class="op">=</span> <span class="st">"Rorb"</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p>The <span class="function">plot.parameters</span> function produces
+separate plots for the baseline (reference condition) parameters, the
+treatment condition parameters, and the random-effect scalars. Let’s
+look at the baseline parameters first:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">plots.param</span><span class="op">$</span><span class="va">plot_baseline_cortex_Rorb</span></span></code></pre></div>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_parameters_baseline-1.png" class="r-plt" alt="" width="700"></p>
+<p>There are three separate plots: Rorb.rate gives the baseline (left,
+P12) block rates in log space, Rorb.tpoint gives the baseline transition
+point locations, and Rorb.tslope gives the baseline transition slopes
+for each of the three transition points. The horizontal axis tick labels
+are formatted as
+<span class="code_variable"><param type>_T/B<num></num></span>, where <span class="code_variable"><param type></span> is <span class="code_variable">Rt</span> (rate), <span class="code_variable">tpoint</span> (transition point location), or
+<span class="code_variable">tslope</span> (transition slope), <span class="code_variable">T/B</span> stands for “transition/block”, and
+<span class="code_variable"><num></num></span> gives the transition or block
+number. For example, <span class="code_variable">Rt_T/B2</span> is the
+rate parameter for block 2, while <span class="code_variable">tpoint_T/B1</span> is the location of the first
+transition point, i.e., the transition between block 1 and block 2. For
+each horizontal axis tick, there is a violin plot showing the
+distribution of the estimates for that parameter across the bootstraps
+(or the MCMC walk), with a longer horizontal line showing the best-fit
+estimate and two shorter horizontal bars showing the 95% confidence
+interval.</p>
+<p>There are three true (i.e., non-baseline) treatment conditions: the
+left hemisphere at P18, the right hemisphere at P12, and the right
+hemisphere at P18. Let’s look first at the parameters giving the effect
+of switching hemispheres in the reference condition, i.e., the shift
+from left to right hemisphere at P12:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">plots.param</span><span class="op">$</span><span class="va">plot_treatment_right_cortex_Rorb</span></span></code></pre></div>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_parameters_treatment1-1.png" class="r-plt" alt="" width="700"></p>
+<p>Notice that interpreting the parameters in the baseline condition is
+straightforward. For example, <span class="code_variable">Rt_T/B2</span>
+is the actual rate in block 2. However, the parameters for the treatment
+conditions are additive offsets, i.e., log-fold changes. Thus, positive
+parameter values represent an <em>increase</em> in the value, while
+negative parameter values represent a <em>decrease</em> in the
+value.</p>
+<p>Another point of difference between the baseline and (true) treatment
+condition parameters is that the latter are tested for significance
+against a null hypothesis of zero (no change from baseline). The results
+of these tests are shown above the parameter in the typical notation:
+“ns” is not significant, “*” is <span class="math inline">p &lt;
+0.05</span>, “**” is <span class="math inline">p &lt; 0.01</span>, and
+“***” is <span class="math inline">p &lt; 0.001</span>.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">plots.param</span><span class="op">$</span><span class="va">plot_treatment_18_cortex_Rorb</span></span></code></pre></div>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_parameters_treatment2-1.png" class="r-plt" alt="" width="700"></p>
+<p>The above plot shows the parameters for the effect of age (the shift
+from P12 to P18) in the reference condition (left hemisphere). The next
+plot shows the interaction effect of age in the right hemisphere:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">plots.param</span><span class="op">$</span><span class="va">plot_treatment_right18_cortex_Rorb</span></span></code></pre></div>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_parameters_treatment3-1.png" class="r-plt" alt="" width="700"></p>
+<p>Finally, we can look at the random-effect scalars for each
+parameter:</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">plots.param</span><span class="op">$</span><span class="va">plot_ranEff_cortex_Rorb</span></span></code></pre></div>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_parameters_random-1.png" class="r-plt" alt="" width="700"></p>
+<p>There is one scalar for each parameter type (rate, transition point,
+transition slope), with each sample (i.e., replicate) having its own set
+of scalars. For example, in the above plot we can see at a glance that
+samples 1 and 2 have rates that are higher than expected while samples 3
+and 4 have rates that are lower than expected. The exact interpretation
+of the random-effect parameters is discussed in the <a href="tutorial_warping.html">warping tutorial</a>.</p>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
 

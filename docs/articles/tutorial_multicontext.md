@@ -109,17 +109,17 @@ contexts being modeled. This is because each species is treated as
 independent across contexts, e.g., expression of SLC17A7 (a gene
 producing the protein vGLUT which loads glutamate into synaptic
 vesicles) in glutamatergic neurons is presumably independent of its
-expression in GABAergic neurons. So, for example, if there are $`8`$
-fixed-effect treatment levels and $`10`$ genes being modeled, that will
-be $`8\times 10=80`$ parameters per model component. There are three
-model component types (rate, transition point, and transition point
-slope) and the precise number of model components depends on the number
-of transition points per gene. Suppose all genes have one transition
-point, so, two rate values and one transition point and slope value. In
-that case, there are $`80\times 4=320`$ parameters. If instead of one
-context (the tissue sample) we have $`10`$ contexts (e.g., $`10`$ cell
-types), that raises the number of parameters related to fixed effects to
-$`320\times 10 = 3,200`$.
+expression in GABAergic neurons. So, for example, if there are 8
+fixed-effect treatment levels and 10 genes being modeled, that will be
+8\times 10=80 parameters per model component. There are three model
+component types (rate, transition point, and transition point slope) and
+the precise number of model components depends on the number of
+transition points per gene. Suppose all genes have one transition point,
+so, two rate values and one transition point and slope value. In that
+case, there are 80\times 4=320 parameters. If instead of one context
+(the tissue sample) we have 10 contexts (e.g., 10 cell types), that
+raises the number of parameters related to fixed effects to 320\times 10
+= 3,200.
 
 Fortunately, the number of random-effect parameters is independent of
 the number of contexts, as random effects are consistent across contexts
@@ -147,7 +147,7 @@ boundary_path <- system.file(
 layer.boundary.bins <- read.csv(boundary_path)
 ```
 
-## Fitting a wisp model with cell types
+## Fitting a wisp with cell types
 
 The data frame **countdata** has no column named “context”, so the
 context column needs to be specified along with the names for the
@@ -170,11 +170,7 @@ estimation](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md)
 
 ``` r
 library(wispack, quietly = TRUE)
-```
 
-    ## Warning: package 'ggplot2' was built under R version 4.5.2
-
-``` r
 model <- wisp(
     count.data = countdata,
     variables = data.variables,
@@ -184,8 +180,7 @@ model <- wisp(
         print.plots = FALSE, 
         dim.bounds = colMeans(layer.boundary.bins),
         title_size = 12,
-        pred.type = "pred.log",
-        count.type = "count.log", 
+        log.scale = TRUE,
         count.alpha.ran = 0.0,
         pred.alpha.ran = 0.0
       ),
@@ -216,8 +211,7 @@ model <- wisp(
 ## Plot settings:
 ##  print.plots: FALSE
 ##  dim.bounds: 72, 60.2, 23.6, 0
-##  pred.type: pred.log
-##  count.type: count.log
+##  log.scale: TRUE
 ##  splitting_factor: 
 ##  CI_style: TRUE
 ##  label_size: 5.5
@@ -332,7 +326,7 @@ model <- wisp(
 ## Making time series plots...
 ```
 
-## Unpacking the results
+## Results
 
 When given different contexts, wisp will make different rate-count and
 time-series plots for each context. For the big picture, let’s compare
@@ -458,6 +452,11 @@ plt_GABA1 <- model[["plots"]][["timeseries"]][["plot_pred.log_context_GABA_times
 plt_Glut2 <- model[["plots"]][["timeseries"]][["plot_pred.log_context_Glut_timeseries_Satb2"]] + ylim(c(0, 7)) + theme(plot.title = element_text(hjust = 0.0))
 plt_GABA2 <- model[["plots"]][["timeseries"]][["plot_pred.log_context_GABA_timeseries_Satb2"]] + ylim(c(0, 7)) + theme(plot.title = element_text(hjust = 0.0))
 g <- arrangeGrob(plt_Glut1, plt_GABA1, plt_Glut2, plt_GABA2, ncol = 2)  
+```
+
+    ## Warning: Removed 1 row containing missing values or values outside the scale range (`geom_point()`).
+
+``` r
 grid.draw(g)
 ```
 
@@ -476,6 +475,11 @@ GABAergic neurons.
 plt_Glut <- model[["plots"]][["timeseries"]][["plot_pred.log_context_Glut_timeseries_Cux2"]] + ylim(c(0, 5)) + theme(plot.title = element_text(hjust = 0.0))
 plt_GABA <- model[["plots"]][["timeseries"]][["plot_pred.log_context_GABA_timeseries_Cux2"]] + ylim(c(0, 5)) + theme(plot.title = element_text(hjust = 0.0))
 g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
+```
+
+    ## Warning: Removed 2 rows containing missing values or values outside the scale range (`geom_point()`).
+
+``` r
 grid.draw(g)
 ```
 
@@ -493,6 +497,11 @@ recovering at P18.
 plt_Glut <- model[["plots"]][["timeseries"]][["plot_pred.log_context_Glut_timeseries_Fezf2"]] + ylim(c(0, 6)) + theme(plot.title = element_text(hjust = 0.0))
 plt_GABA <- model[["plots"]][["timeseries"]][["plot_pred.log_context_GABA_timeseries_Fezf2"]] + ylim(c(0, 6)) + theme(plot.title = element_text(hjust = 0.0))
 g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
+```
+
+    ## Warning: Removed 1 row containing missing values or values outside the scale range (`geom_point()`).
+
+``` r
 grid.draw(g)
 ```
 
@@ -522,6 +531,11 @@ P12 with recovery at P18, in the left but not the right hemisphere.
 plt_Glut <- model[["plots"]][["timeseries"]][["plot_pred.log_context_Glut_timeseries_Rorb"]] + ylim(c(0, 5)) + theme(plot.title = element_text(hjust = 0.0))
 plt_GABA <- model[["plots"]][["timeseries"]][["plot_pred.log_context_GABA_timeseries_Rorb"]] + ylim(c(0, 5)) + theme(plot.title = element_text(hjust = 0.0))
 g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
+```
+
+    ## Warning: Removed 1 row containing missing values or values outside the scale range (`geom_point()`).
+
+``` r
 grid.draw(g)
 ```
 

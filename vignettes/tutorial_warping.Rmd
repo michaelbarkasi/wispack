@@ -1,5 +1,7 @@
 ---
 title: "Random effects and warping"
+author: "Michael Barkasi"
+date: "`r Sys.Date()`"
 ---
 
 ```{r setup, include = FALSE}

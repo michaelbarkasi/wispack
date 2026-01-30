@@ -15,13 +15,16 @@ studies suggesting age-dependent hemispheric differences. Given the
 established role of RORB in barrel formation, one might want to test for
 age-dependent laterality in RORB expression.
 
-## Labeling the ROI
+## Data preprocessing
 
 This tutorial uses data collected from four male wild-type mice to test
 for age effects on laterality in RORB expression. The mice are split
 between two ages: postnatal day 12 (P12) and postnatal day 18 (P18). The
 starting point was raw, non-normalized mRNA counts from the cells within
 the primary somatosensory cortex (S1), both left and right hemispheres.
+
+### Labeling the ROI
+
 Before using any functions from wispack, S1 was identified in each
 sample by manually fitting the entire slice to the
 [CCFv3](https://doi.org/10.1016/j.cell.2020.04.007).
@@ -35,7 +38,7 @@ highlight indicates the right primary somatosensory cortex. Right: The
 right somatosensory cortex, with RORB molecules in red and laminar and
 columnar axes labeled.
 
-## Coordinate transform
+### Coordinate transform
 
 As wisp can only model one dimension of spatial variation (at least,
 as-of the writing of this demo for v1.1), this axis must be identified
@@ -60,11 +63,15 @@ L6b, 100 the top of L2/3. The columnar axis is encoded as *x*, with 0
 being the most posterior point, 100 the most anterior point. L1 was
 removed from the analysis, as it contains very few cells.
 
-## Data format
+## Model setup
 
 Wispack contains a csv file with the results of this coordinate
-transformation applied to the raw data. To start, load this data and
-print its first few rows:
+transformation applied to the raw data. Let’s set up a wisp model for
+it.
+
+### Data format
+
+To start, load this data and print its first few rows:
 
 ``` r
 countdata <- read.csv(
@@ -272,7 +279,7 @@ data.variables <- list(
   )
 ```
 
-## Model parameters
+### Model parameters
 
 In wisp, a semantic specification of the variable roles suffices
 because, with respect to those roles, all wisp models have the same
@@ -307,7 +314,7 @@ variation due to differences between individual animals or due to
 measurement noise. (Bottom) The wisp poly-sigmoid with warping function
 applied.
 
-## Fitting the model
+## Fitting a wisp
 
 Thus, the goal of fitting a wisp model to spatial transcriptomics data
 is to estimate, for each gene:
@@ -330,22 +337,17 @@ columns with with different names, then the variables (data.variables)
 must be provided via another argument.
 
 The following code fits a wisp model to the data loaded above, with
-verbose output (scroll output box to view). Plots are suppressed, as by
-default many are generated in the fitting process. As noted above, layer
-boundaries are provided to the model, but are used only in making plots
-so that the model fit and parameter estimates can be compared to the
-laminar boundaries estimated by the CCFv3 registration.
+verbose output. Plots are suppressed, as by default many are generated
+in the fitting process. As noted above, layer boundaries are provided to
+the model, but are used only in making plots so that the model fit and
+parameter estimates can be compared to the laminar boundaries estimated
+by the CCFv3 registration.
 
 ``` r
 # Set random seed for reproducibility
 set.seed(123)
 # Load wispack
 library(wispack, quietly = TRUE)
-```
-
-    ## Warning: package 'ggplot2' was built under R version 4.5.2
-
-``` r
 # Fit model
 model <- wisp(
     count.data = countdata,
@@ -381,8 +383,7 @@ model <- wisp(
 ## Plot settings:
 ##  print.plots: FALSE
 ##  dim.bounds: 78.5, 65.25, 44, 0
-##  pred.type: pred
-##  count.type: count
+##  log.scale: FALSE
 ##  splitting_factor: 
 ##  CI_style: TRUE
 ##  label_size: 5.5
@@ -505,9 +506,9 @@ model <- wisp(
 ## Acceptance rate (aim for 0.2-0.3): 0.283432
 ## 
 ## MCMC simulation complete... 
-## MCMC run time (total), minutes: 1.156
-## MCMC run time (per retained step), seconds: 0.063
-## MCMC run time (per step), seconds: 0.063
+## MCMC run time (total), minutes: 0.826
+## MCMC run time (per retained step), seconds: 0.045
+## MCMC run time (per step), seconds: 0.045
 ## 
 ## Setting full-data fit as parameters... 
 ## Checking feasibility of provided parameters
@@ -576,14 +577,18 @@ model <- wisp(
 ## Making parameter plots...
 ```
 
-## Extracting the results
+## Results
 
 As can be seen in the print out above, wisp models typically have
 hundreds (or even thousands) of parameters, which means that they
 usually lack the kind of brief-yet-informative summary familiar from R
-packages for linear models. The most flat-footed way to extract desired
-results is to hunt through the output. The output of wisp() is a list
-with the following named components:
+packages for linear models.
+
+### Extracting results
+
+The most flat-footed way to extract desired results is to hunt through
+the output. The output of wisp() is a list with the following named
+components:
 
 ``` r
 for (n in names(model)) cat(n, ": ", paste0(class(model[[n]]), collapse = ", "), "\n", sep = "")
@@ -683,12 +688,11 @@ the right hemisphere (compared to left) across all blocks, but the
 interaction of age and hemisphere decreases that up-regulation, i.e.,
 the laterality effect is less pronounced at P18 than at P12.
 
-## Plotting results
+### Plotting results
 
-However, it’s difficult to get a handle on the results as pure effect
-numbers. A better way to understand the results is through
-visualization. Wispack provides a number of functions for [making
-intuitive spatial
+It’s difficult to get a handle on the results as pure effect numbers. A
+better way to understand the results is through visualization. Wispack
+provides a number of functions for [making intuitive spatial
 plots](https://michaelbarkasi.github.io/wispack/articles/tutorial_wispplots.md).
 Indeed; a strength of wisp models is their use of concrete spatial
 parameters.
@@ -742,25 +746,25 @@ The time-series plot puts the time points on the x-axis, with rate (as
 before) on the y-axis. However, the rate value is not the expected value
 at a given bin, but rather the rate parameter itself. As each block has
 a different rate parameter, the time-series plot shows the rate for each
-block. As there were four blocks, we see four lines. However, if the
-data also includes a single additional covariate (fixed effect) besides
-the time series, that variable is used as a “splitting factor” to
-generate separate plots for each level of that variable. Here, the
-splitting factor is hemisphere, and so we see separate lines for left
-(orange) and right (blue) hemispheres. Notice how the rate counts are
-relatively low and bunched at the bottom for all but one block. This
-exception is block 3, the block overlapping L4. Here we see the swap
-clearly: right (blue) higher at P12, left (orange) higher at P18.
+block. If the data also includes a single additional covariate (fixed
+effect) besides the time series, that variable is used as a “splitting
+factor” to generate separate lines for each level of that variable.
+Here, the splitting factor is hemisphere, and so we see separate lines
+for left (green) and right (blue) hemispheres. Notice how the rate
+counts are relatively low and bunched at the bottom for all but one
+block. This exception is block 3, the block overlapping L4. Here we see
+the swap clearly: right (blue) higher at P12, left (green) higher at
+P18.
 
-Along with the lines representing block rate, the dots at each age
-represent the mean observed count per bin within that block. Notice that
-sometimes these dots will be lower than the line, as is the case here at
-P18 in block 3. This is because the predicted rate is not just the rate
-parameter for the block, but is also a function of the slopes and
-transition points. The rate parameter is only a good approximation of
-the expected rate far from transition points and assuming relatively
-steep slopes. When slopes are shallow and most bins in a block are near
-a transition point, we can expect the mean observed (and predicted) rate
-per bin within a block to be appreciably lower than the block rate
-parameter. This is not a poor fit of the model, but a limit of the
-visualization.
+Along with the lines representing block rate, the (jittered) dots at
+each age represent the mean observed count per bin within that block.
+Notice that sometimes these dots will be lower than the line, as is the
+case here at P18 in block 3. This is because the predicted rate is not
+just the rate parameter for the block, but is also a function of the
+slopes and transition points. The rate parameter is only a good
+approximation of the expected rate far from transition points and
+assuming relatively steep slopes. When slopes are shallow and most bins
+in a block are near a transition point, we can expect the mean observed
+(and predicted) rate per bin within a block to be appreciably lower than
+the block rate parameter. This is not a poor fit of the model, but a
+limit of the visualization.

@@ -9,7 +9,11 @@ of autocorrelation results for bootstrapping vs MCMC walks.
 ## Usage
 
 ``` r
-plot.MCMC.bs.comparison(wisp.results, print.plots = TRUE, verbose = TRUE)
+plot.MCMC.bs.comparison(
+ wisp.results, 
+ print.plots = FALSE, 
+ verbose = TRUE
+)
 ```
 
 ## Arguments

@@ -75,7 +75,7 @@ boundary_path <- system.file(
 layer.boundary.bins <- read.csv(boundary_path)
 ```
 
-<h2>Fitting a wisp model with cell types</h2>
+<h2>Fitting a wisp with cell types</h2>
 
 The data frame **countdata** has no column named "context", so the context column needs to be specified along with the names for the **species**, **ran**, and **timeseries** variables.
 
@@ -103,8 +103,7 @@ model <- wisp(
         print.plots = FALSE, 
         dim.bounds = colMeans(layer.boundary.bins),
         title_size = 12,
-        pred.type = "pred.log",
-        count.type = "count.log", 
+        log.scale = TRUE,
         count.alpha.ran = 0.0,
         pred.alpha.ran = 0.0
       ),
@@ -112,7 +111,7 @@ model <- wisp(
   )
 ```
 
-<h2>Unpacking the results</h2>
+<h2>Results</h2>
 
 When given different contexts, wisp will make different rate-count and time-series plots for each context. For the big picture, let's compare the reference levels for all gene between glutamatergic and GABAergic neurons.
 

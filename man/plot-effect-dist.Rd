@@ -4,7 +4,11 @@
 \alias{plot.effect.dist}
 \title{Plot parameter distributions from WISP results as histograms}
 \usage{
-plot.effect.dist(wisp.results, print.plots = TRUE, verbose = TRUE)
+plot.effect.dist(
+ wisp.results, 
+ print.plots = FALSE, 
+ verbose = TRUE
+)
 }
 \arguments{
 \item{wisp.results}{List, output of the wisp function.}

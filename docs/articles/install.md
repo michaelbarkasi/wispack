@@ -38,4 +38,6 @@ sudo apt install \
 ## Build documentation
 
 In R, run:  
-pkgdown::build_site()
+pkgdown::build_site() pkgdown::build_article(“
+
+“)

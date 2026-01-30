@@ -25,8 +25,8 @@
   data](https://michaelbarkasi.github.io/wispack/articles/tutorial_timeseries.md):
 - [Random effects and
   warping](https://michaelbarkasi.github.io/wispack/articles/tutorial_warping.md):
-- [The wisp rate-count
-  plot](https://michaelbarkasi.github.io/wispack/articles/tutorial_wispplots.md):
+- [Plotting wisp
+  models](https://michaelbarkasi.github.io/wispack/articles/tutorial_wispplots.md):
 
 ### Legal
 

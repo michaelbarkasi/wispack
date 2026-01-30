@@ -5,50 +5,36 @@
 Wisps naturally model between-group effects describable as two-valued
 categorical factors, e.g., comparing controls vs a treatment or male vs
 female. Coarse-grain comparisons over time, such as pre-hearing-onset vs
-post-hearing-onset or postnatal day $`PX`$ vs postnatal day $`PY`$, can
-be shoehorned into this framework. However, it’s often desirable to
-model longer time series $`T`$.
+post-hearing-onset or postnatal day PX vs postnatal day PY, can be
+shoehorned into this framework. However, it’s often desirable to model
+longer time series T.
 
 ## Time series as factor series
 
-While wisps are limited to binary covariate fixed-effect factors
-$`\xi`$, i.e., $`\xi\in\{0,1\}`$, the number of factor levels can be
-increased to accommodate more time points by modeling time factors
-$`\xi_T`$ as an ordered series of factors $`\xi_{T_m}`$ with additive
-effects $`\beta_{T_m}`$. Given a series of time points:
-``` math
-T_1 < T_2 < \cdots < T_n
-```
-a corresponding time-factor series $`\xi_T`$ is defined with $`n`$
-ordered binary factors:
-``` math
-\xi_{T_1} < \xi_{T_2} < \cdots < \xi_{T_n}
-```
-For binary factors $`\xi`$ with corresponding effect term $`\beta`$, the
-effect on a model parameter $`z`$ is:
-``` math
-z \mapsto z + \beta + \text{interaction terms}
-```
-To achieve the cumulative effect of time, the effect of a time factor
-$`\xi_{T_m}`$, for $`m\leq n`$, is given by summing the series of
-effects $`\beta_{T_i}`$ from time factors $`\xi_{T_i}`$ for
-$`T_i\leq T_m`$:
-``` math
-z \mapsto z + \sum_{i=1}^{m} (\beta_{T_i} + \text{interaction terms for }i)
-```
-For a rigorous definition, suppose that in addition to the time factor
-$`\xi_T`$, there are other fixed-effect factors $`\xi_F`$ each with
-effect $`\beta_F`$. The effect of some time $`\xi_{T_m}`$ from $`\xi_T`$
-will include not only $`\beta_{T_m}`$ and an interaction term
-$`\beta_{T_m\times\xi_F}`$ for all $`\xi_F`$, but also times
-$`\xi_{T_i}`$ for all $`i<m`$ and their respective interaction terms
-$`\beta_{T_i\times\xi_F}`$. Thus, the effect of $`\xi_T`$ can be defined
-to be:
-``` math
-z \mapsto z + \sum_{i=1}^{n} \left(\beta_{T_i}\xi_{T_i} + \sum_{F}\beta_{T_m\times\xi_F}\xi_{T_i}\xi_F\right)
-```
-with the stipulation that, for each sampled data point $`s`$, if
-$`\xi_{T_m}(s)=1`$ then $`\xi_{T_i}(s)=1`$ for all $`i<m`$.
+While wisps are limited to binary covariate fixed-effect factors \xi,
+i.e., \xi\in\\0,1\\, the number of factor levels can be increased to
+accommodate more time points by modeling time factors \xi_T as an
+ordered series of factors \xi\_{T_m} with additive effects \beta\_{T_m}.
+Given a series of time points: T_1 \< T_2 \< \cdots \< T_n a
+corresponding time-factor series \xi_T is defined with n ordered binary
+factors: \xi\_{T_1} \< \xi\_{T_2} \< \cdots \< \xi\_{T_n} For binary
+factors \xi with corresponding effect term \beta, the effect on a model
+parameter z is: z \mapsto z + \beta + \text{interaction terms} To
+achieve the cumulative effect of time, the effect of a time factor
+\xi\_{T_m}, for m\leq n, is given by summing the series of effects
+\beta\_{T_i} from time factors \xi\_{T_i} for T_i\leq T_m: z \mapsto z +
+\sum\_{i=1}^{m} (\beta\_{T_i} + \text{interaction terms for }i) For a
+rigorous definition, suppose that in addition to the time factor \xi_T,
+there are other fixed-effect factors \xi_F each with effect \beta_F. The
+effect of some time \xi\_{T_m} from \xi_T will include not only
+\beta\_{T_m} and an interaction term \beta\_{T_m\times\xi_F} for all
+\xi_F, but also times \xi\_{T_i} for all i\<m and their respective
+interaction terms \beta\_{T_i\times\xi_F}. Thus, the effect of \xi_T can
+be defined to be: z \mapsto z + \sum\_{i=1}^{n}
+\left(\beta\_{T_i}\xi\_{T_i} +
+\sum\_{F}\beta\_{T_m\times\xi_F}\xi\_{T_i}\xi_F\right) with the
+stipulation that, for each sampled data point s, if \xi\_{T_m}(s)=1 then
+\xi\_{T_i}(s)=1 for all i\<m.
 
 ## Example data: postnatal age
 
@@ -203,11 +189,7 @@ estimation](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md)
 
 ``` r
 library(wispack, quietly = TRUE)
-```
 
-    ## Warning: package 'ggplot2' was built under R version 4.5.2
-
-``` r
 model <- wisp(
     count.data = countdata,
     variables = data.variables,
@@ -244,8 +226,7 @@ model <- wisp(
 ## Plot settings:
 ##  print.plots: FALSE
 ##  dim.bounds: 72, 60.2, 23.6, 0
-##  pred.type: pred
-##  count.type: count
+##  log.scale: FALSE
 ##  splitting_factor: 
 ##  CI_style: TRUE
 ##  label_size: 5.5
@@ -388,27 +369,27 @@ refers to the right hemisphere at age P7, which is a treatment condition
 in which only the **hemisphere** factor is in a treatment level.
 
 This matrix is a *weight* matrix because the row and column labels are
-also labels for weights $`w`$. Before
+also labels for weights w. Before
 [warping](https://michaelbarkasi.github.io/wispack/articles/tutorial_warping.md),
-the predicted count $`y`$ of a sample is given by:
-``` math
-y = \beta_{\text{ref}}w_{\text{ref}} + \beta_{\text{right}}w_{\text{right}} + \beta_{12}w_{12} + \beta_{18}w_{18} + \beta_{\text{right}12}w_{\text{right}12} + \beta_{\text{right}18}w_{\text{right}18}
-```
-where $`\beta`$ are the effect parameters and $`w`$ are the weights. The
-rows of the weight matrix give the values of the weights $`w`$
-corresponding to the column labels under the treatment conditions given
-by the row labels. For example, the **right12** row specifies that
-$`w_{\text{ref}}=1`$, $`w_{\text{right}}=1`$, $`w_{12}=1`$,
-$`w_{18}=0`$, $`w_{\text{right}12}=1`$, and $`w_{\text{right}18}=0`$
+the predicted count y of a sample is given by: y =
+\beta\_{\text{ref}}w\_{\text{ref}} +
+\beta\_{\text{right}}w\_{\text{right}} + \beta\_{12}w\_{12} +
+\beta\_{18}w\_{18} + \beta\_{\text{right}12}w\_{\text{right}12} +
+\beta\_{\text{right}18}w\_{\text{right}18} where \beta are the effect
+parameters and w are the weights. The rows of the weight matrix give the
+values of the weights w corresponding to the column labels under the
+treatment conditions given by the row labels. For example, the
+**right12** row specifies that w\_{\text{ref}}=1, w\_{\text{right}}=1,
+w\_{12}=1, w\_{18}=0, w\_{\text{right}12}=1, and w\_{\text{right}18}=0
 when in the treatment condition of the right hemisphere at age P12. That
-is, when estimating a count $`y`$ for a sample in the right hemisphere
-at age P12, the effects $`\beta`$ for the reference level, right
-hemisphere, age P12, and the interaction between right hemisphere and
-age P12 will all be included in the estimate, while the effects for age
-P18 and the interaction between right hemisphere and age P18 will not be
-included. What makes the time series additive is the way a treatment
-level like **18** or **right18** include not only effects related to the
-age **18**, but also effects related to all earlier ages, e.g., **12**.
+is, when estimating a count y for a sample in the right hemisphere at
+age P12, the effects \beta for the reference level, right hemisphere,
+age P12, and the interaction between right hemisphere and age P12 will
+all be included in the estimate, while the effects for age P18 and the
+interaction between right hemisphere and age P18 will not be included.
+What makes the time series additive is the way a treatment level like
+**18** or **right18** include not only effects related to the age
+**18**, but also effects related to all earlier ages, e.g., **12**.
 
 ## Visualizing time series
 
@@ -467,12 +448,6 @@ just the rate parameter itself. This parameter is a vector, each element
 of which is the rate for a block of space defined by transition points.
 In the NXPH3 time-series plot above, the dip in expression at P12 in the
 deep layers (block 1) can be seen more clearly.
-
-Notice that the colors in the time-series plots (blue and orange) are
-different from those in the rate-count plots (blue and green). This is
-to avoid suggesting that there’s a direct correspondence between plot
-coloring. The coloring structures data within a plot type, but not
-across plot types.
 
 We could plot and discuss the rest of the layer-specific genes in this
 data set, but the plots (as produced by these function calls) are messy.

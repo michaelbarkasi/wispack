@@ -2,6 +2,7 @@ url: https://michaelbarkasi.github.io/wispack/
 template:
   bootstrap: 5
   light-switch: true
+  math-rendering: katex
 
 navbar:
   structure:
@@ -17,9 +18,6 @@ navbar:
     github:
       icon: fab fa-github
       href: https://github.com/michaelbarkasi/wispack
-    lightswitch:
-      text: "\U0001F319"
-      href: '#'
 
 articles:
 - title: Installation

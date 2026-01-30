@@ -4,14 +4,19 @@
 \alias{plot.species.summary}
 \title{Print rate-count, residual, and parameter plots for one species level together.}
 \usage{
-plot.species.summary(wisp.results, these.contexts = NULL, these.speciess = NULL, verbose = TRUE)
+plot.species.summary(
+ wisp.results, 
+ contexts = c(), 
+ species = c(), 
+ verbose = TRUE
+)
 }
 \arguments{
 \item{wisp.results}{List, output of the wisp function.}
 
-\item{these.contexts}{Character vector, optional, specifies which context levels to summarize. Defaults to all.}
+\item{contexts}{Character vector, optional, specifies which context levels to summarize. Defaults to all.}
 
-\item{these.speciess}{Character vector, optional, specifies which species levels to summarize. Defaults to all.}
+\item{species}{Character vector, optional, specifies which species levels to summarize. Defaults to all.}
 
 \item{verbose}{Logical, if TRUE, prints information during plotting.}
 }

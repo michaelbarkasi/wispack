@@ -8,7 +8,13 @@ lines for individual random levels.
 ## Usage
 
 ``` r
-plot.decomposition(wisp.results, species, log = FALSE, dim.boundaries = c(), y.lim = NULL)
+plot.decomposition(
+ wisp.results, 
+ species, 
+ log = FALSE, 
+ dim.boundaries = c(), 
+ y.lim = NULL
+)
 ```
 
 ## Arguments
@@ -22,7 +28,7 @@ plot.decomposition(wisp.results, species, log = FALSE, dim.boundaries = c(), y.l
   Character string, the species level to plot. Must be provided, and
   only one at a time.
 
-- log:
+- log.scale:
 
   Logical, if TRUE, plots on a log scale. Defaults to FALSE.
 
