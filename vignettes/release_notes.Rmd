@@ -5,13 +5,12 @@ date: "`r Sys.Date()`"
 
 ## Planned changes for future releases
 
-1. Check why **wisp()** does not clear memory on exit when **fit_only** is TRUE.
-2. Autodetect fixed-effect type? E.g., fixed-effect columns of R type "character" or "factor" are treated as two-level categorical factors, and numeric columns are treated as discrete additive effects (e.g., like a time series). Will need to update the RORB tutorial and any other tutorials which discuss time-series modeling. 
-3. Ensure any columns flagged as a time series are also treated as fixed-effects. 
-4. Add vignette on mixed-effects modeling and random effects (vs normalization). 
-5. Finish vignettes on modeling celltypes, statistical analyses, and the wisp plot. 
-6. Add a check during the fit to see if any transition points can be replaced with a slope.
-7. Add variable check to the loading of plot.settings in wisp().
+- Autodetect fixed-effect type? E.g., fixed-effect columns of R type "character" or "factor" are treated as two-level categorical factors, and numeric columns are treated as discrete additive effects (e.g., like a time series). Will need to update the <span class = "gene">RORB</span> tutorial and any other tutorials which discuss time-series modeling. 
+- Ensure any columns flagged as a time series are also treated as fixed-effects. 
+- Finish vignettes on statistical analyses and random-effect handling.
+- Add a check during the fit to see if any transition points can be replaced with a slope.
+- Add variable check to the loading of <span class = "code_variable">plot.settings</span> in <span class = "function">wisp</span>. Currently only runs <span class = "function">check_list</span> without doing a more substantive check. Compare with the more detailed checks of <span class = "code_variable">MCMC.settings</span>.
+- Allow <span class = "code_variable">MCMC.prior</span> to be a vector of different prior distributions for each parameter. When completed, update the tutorial on customizing statistical analyses.
 
 ## Version 1.1
 

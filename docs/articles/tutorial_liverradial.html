@@ -42,15 +42,15 @@
     <li><a class="dropdown-item" href="../articles/release_notes.html">Release Notes</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_benchmarks.html">Benchmarks and comparisons</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_warping.html">Random effects and warping</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Time-series data</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_liverradial.html">Radial zonation in liver lobules</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling cell types</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Time-series data</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_warping.html">Random effects and warping</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">Plotting wisp models</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_benchmarks.html">Benchmarks and comparisons</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -87,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-02-01</h4>
+            <h4 data-toc-skip class="date">2026-02-04</h4>
       
 
       <div class="d-none name"><code>tutorial_liverradial.Rmd</code></div>
@@ -173,7 +173,7 @@ feed-fast cycles can be modeled by indexing times to the start of each
 day. (Indeed; even Droin et al. exploited this fact by fixing <span class="math inline">\omega=2\pi/24\text{ hr}</span>, instead of
 estimating <span class="math inline">\omega</span> from the data.)</p>
 <h2>
-Data preprocessing
+Processing the data
 </h2>
 <p>Droin et al. have made some of their data available in an easily
 accessible form in a <a href="https://github.com/naef-lab/Circadian-zonation/tree/master/Datasets/Profiles" class="external-link">GitHub
@@ -452,7 +452,6 @@ the number of MCMC steps to zero and the number of bootstraps to
 <span><span class="co">##  warp_precision: 1e-07</span></span>
 <span><span class="co">##  round_none: TRUE</span></span>
 <span><span class="co">##  inf_warp: 450359962.73705</span></span>
-<span><span class="co">##  allow_infeasible_params: TRUE</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Plot settings:</span></span>
 <span><span class="co">##  print.plots: FALSE</span></span>
@@ -572,22 +571,22 @@ the number of MCMC steps to zero and the number of bootstraps to
 <span><span class="co">## Initial boundary distance (want &gt; 0): 0.206765</span></span>
 <span><span class="co">## Performing initial fit of full data</span></span>
 <span><span class="co">## Penalized neg_loglik: 1044.51</span></span>
-<span><span class="co">## Batch: 1/100, 0.180387 sec/bs</span></span>
-<span><span class="co">## Batch: 10/100, 0.160255 sec/bs</span></span>
-<span><span class="co">## Batch: 20/100, 0.156862 sec/bs</span></span>
-<span><span class="co">## Batch: 30/100, 0.148762 sec/bs</span></span>
-<span><span class="co">## Batch: 40/100, 0.15933 sec/bs</span></span>
-<span><span class="co">## Batch: 50/100, 0.164632 sec/bs</span></span>
-<span><span class="co">## Batch: 60/100, 0.160494 sec/bs</span></span>
-<span><span class="co">## Batch: 70/100, 0.161479 sec/bs</span></span>
-<span><span class="co">## Batch: 80/100, 0.181719 sec/bs</span></span>
-<span><span class="co">## Batch: 90/100, 0.154615 sec/bs</span></span>
+<span><span class="co">## Batch: 1/100, 0.203963 sec/bs</span></span>
+<span><span class="co">## Batch: 10/100, 0.179684 sec/bs</span></span>
+<span><span class="co">## Batch: 20/100, 0.179918 sec/bs</span></span>
+<span><span class="co">## Batch: 30/100, 0.175799 sec/bs</span></span>
+<span><span class="co">## Batch: 40/100, 0.183302 sec/bs</span></span>
+<span><span class="co">## Batch: 50/100, 0.194938 sec/bs</span></span>
+<span><span class="co">## Batch: 60/100, 0.190911 sec/bs</span></span>
+<span><span class="co">## Batch: 70/100, 0.192661 sec/bs</span></span>
+<span><span class="co">## Batch: 80/100, 0.231632 sec/bs</span></span>
+<span><span class="co">## Batch: 90/100, 0.180376 sec/bs</span></span>
 <span><span class="co">## All complete!</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Bootstrap simulation complete... </span></span>
-<span><span class="co">## Bootstrap run time (total), minutes: 2.772</span></span>
-<span><span class="co">## Bootstrap run time (per sample), seconds: 0.166</span></span>
-<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 1.663</span></span>
+<span><span class="co">## Bootstrap run time (total), minutes: 3.271</span></span>
+<span><span class="co">## Bootstrap run time (per sample), seconds: 0.196</span></span>
+<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 1.963</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Setting full-data fit as parameters... </span></span>
 <span><span class="co">## Checking feasibility of provided parameters</span></span>
@@ -654,7 +653,7 @@ the number of MCMC steps to zero and the number of bootstraps to
 <span><span class="co">## Making parameter plots... </span></span>
 <span><span class="co">## Making parameter plots...</span></span></code></pre>
 <h2>
-Results
+Examining results
 </h2>
 <p>The <a href="../reference/wisp.html">wisp()</a> function produces
 both a <a href="tutorial_wispplots.html">rate-count plot</a> with space
@@ -674,8 +673,8 @@ zonated, with GLUL being higher in the central region and ASS1 being
 higher in the portal region. Their respective spatial gradients are easy
 to see in the rate-count plot:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plt_glul</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_glul"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">plt_ass1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_ass1"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">plt_glul</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_glul"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">plt_ass1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_ass1"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_glul</span>, <span class="va">plt_ass1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_zonation_space-1.png" class="r-plt" alt="" width="700"></p>
@@ -688,8 +687,8 @@ the central region decreasing in expression as the portal region
 increases. These temporal patterns can be seen more clearly by looking
 at the time-series plots.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plt_glul</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_glul"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">plt_ass1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_ass1"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">plt_glul</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_glul"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">plt_ass1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_ass1"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_glul</span>, <span class="va">plt_ass1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_zonation_time-1.png" class="r-plt" alt="" width="700"></p>
@@ -709,8 +708,8 @@ bit of a spatial gradient. For the portal region of ARNTL, ZT0 and ZT18
 are elevated (yellow and purple), while for DBP it’s ZT6 and ZT12 (green
 and blue) that are elevated.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plt_arntl</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_arntl"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">plt_dbp</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_dbp"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">plt_arntl</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_arntl"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">plt_dbp</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_dbp"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_arntl</span>, <span class="va">plt_dbp</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_rhythm_space-1.png" class="r-plt" alt="" width="700"></p>
@@ -718,8 +717,8 @@ and blue) that are elevated.</p>
 which clearly show the mid-ZT dip in ARNTL and the mid-ZT bump in
 DBP.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plt_arntl</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_arntl"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">plt_dbp</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_dbp"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">plt_arntl</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_arntl"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">plt_dbp</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_dbp"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_arntl</span>, <span class="va">plt_dbp</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_rhythm_time-1.png" class="r-plt" alt="" width="700"></p>
@@ -731,8 +730,8 @@ zonation and temporal rhythm. Spatially, ELOVL3 has the same profile as
 GLUL. Both are expressed more in the central region. PCK1, on the other
 hand, is expressed more in the portal region, just like ASS1.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plt_elovl3</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_elovl3"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">plt_pck1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_pck1"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">plt_elovl3</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_elovl3"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">plt_pck1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_pck1"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_elovl3</span>, <span class="va">plt_pck1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_both_space-1.png" class="r-plt" alt="" width="700"></p>
@@ -740,8 +739,8 @@ hand, is expressed more in the portal region, just like ASS1.</p>
 rhythm. ELOVL3 is similar to ARNTL, with a mid-ZT dip. PCK1 is similar
 to DBP, with a mid-ZT bump.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plt_elovl3</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_elovl3"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">plt_pck1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_pck1"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, legend.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">plt_elovl3</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_elovl3"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">plt_pck1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_pck1"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_elovl3</span>, <span class="va">plt_pck1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_both_time-1.png" class="r-plt" alt="" width="700"></p>

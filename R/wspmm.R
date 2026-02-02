@@ -29,7 +29,6 @@ NULL
 #' @param MCMC.settings List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.
 #' @param plot.settings List, settings for plots to make, including \code{print.plots}, \code{dim.bounds}, \code{log.scale}, \code{splitting_factor}, \code{CI_style}, \code{label_size}, \code{title_size}, \code{axis_size}, \code{legend_size}, \code{count_size}, \code{count_jitter}, \code{count.alpha.ran}, \code{count.alpha.none}, \code{pred.alpha.ran}, and \code{pred.alpha.none}. Default values are provided.
 #' @param ran.seed Integer, random seed for reproducibility. If NULL, no seed is set. Default is 1234.
-#' @param allow_infeasible_params Logical, if TRUE, allows negative rate estimates or other boundary violations during fitting (with warning); if FALSE, boundary violations throw a stop. 
 #' @return List giving the results of the fitted model, including: \code{model.component.list}, \code{count.data.summed}, \code{fitted.parameters}, \code{gamma.disperson}, \code{param.names}, \code{fix}, \code{treatment}, \code{grouping.variables}, \code{param.idx0}, \code{settings}, \code{sample.params}, \code{sample.params.bs}, \code{sample.params.MCMC}, \code{diagnostics.bs}, \code{diagnostics.MCMC}, \code{stats}, and \code{plots}
 #' @export
 wisp <- function(
@@ -44,8 +43,7 @@ wisp <- function(
     model.settings = list(),
     MCMC.settings = list(),
     plot.settings = list(),
-    ran.seed = 1234,
-    allow_infeasible_params = TRUE
+    ran.seed = 1234
   ) {
    
     # Make reproducible
@@ -217,9 +215,6 @@ wisp <- function(
     
     # Add inf_warp 
     model.settings.internal$inf_warp <- model.settings.internal$warp_precision / .Machine$double.eps
-    
-    # Add allow_infeasible_params
-    model.settings.internal$allow_infeasible_params <- allow_infeasible_params
     
     # Parse plot settings 
     plot.settings.internal <- list(
@@ -796,8 +791,8 @@ sample.stats <- function(
         }
       } else {
         # Use Bonferroni method to calculate p-values
-        p_values_adj <- rep(p_values * num_of_tests, n_params) 
-        alpha_adj <- rep(alpha / num_of_tests, n_params) 
+        p_values_adj <- p_values * num_of_tests
+        alpha_adj <- alpha / num_of_tests
         # Adjust CI
         sample.params_ci <- apply(sample_results, 2, quantile, probs = c(alpha_adj[1]/2, 1 - alpha_adj[1]/2), na.rm = TRUE)
       }
@@ -806,16 +801,19 @@ sample.stats <- function(
       sig_marks[!is.na(p_values_adj) & p_values_adj < alpha & p_values_adj >= alpha/5] <- "*"       # < 0.05, >= 0.01
       sig_marks[!is.na(p_values_adj) & p_values_adj >= alpha] <- "ns"                               # >= 0.05
       
+      # Remove names 
+      names(fitted_params) <- NULL
+      
       # Make summary table
       stats.parameters <- data.frame(
-        "parameter" = fitted_params_names,
-        "estimate" = fitted_params,
-        "CI.low" = sample.params_ci[1,], 
-        "CI.high" = sample.params_ci[2,], 
-        "p.value" = p_values, 
-        "p.value.adj" = p_values_adj,
-        "alpha.adj" = alpha_adj,
-        "significance" = sig_marks
+        parameter = fitted_params_names,
+        estimate = fitted_params,
+        CI.low = sample.params_ci[1,], 
+        CI.high = sample.params_ci[2,], 
+        p.value = p_values, 
+        p.value.adj = p_values_adj,
+        alpha.adj = alpha_adj,
+        significance = sig_marks
       )
       rownames(stats.parameters) <- NULL
       
@@ -3199,7 +3197,8 @@ plot.decomposition <- function(
 #' @usage plot.MCMC.bs.comparison(
 #'  wisp.results, 
 #'  print.plots = FALSE, 
-#'  verbose = TRUE
+#'  verbose = TRUE,
+#'  ran.seed = 1234
 #' )
 #' @param wisp.results List, output of the wisp function.
 #' @param print.plots Logical, if TRUE, prints the plots to the current graphics device.
@@ -3615,6 +3614,7 @@ wisp.sigmoid <- function(
 #' @param tslope Numeric vector, slope scalars for the wisp function. Must be one less than the length of Rt.
 #' @param tpoint Numeric vector, transition points for the wisp function. Must be one less than the length of Rt.
 #' @param w_factors Numeric vector, warping factors for the wisp function. Must be length 3. First element is the warping factor for Rt, second for tslope, and third for tpoint. Note that this is more restrictive than the real wisp model, which not only allows for different warping factors across the model components (Rt, tslope, and tpoint), but also across the different elements within each model component as well.
+#' @param return_plots Logical, if TRUE, returns two separate plots; otherwise, returns nothing and prints combined plot.
 #' @return Nothing. A ggplot object is printed to console.
 #' @export
 demo.warp.plots <- function(
@@ -3624,7 +3624,8 @@ demo.warp.plots <- function(
     Rt = c(6, 3, 0.2, 6)*4.65,   # rates for poly-sigmoid
     tslope = c(0.4, 0.75, 1),    # slope scalars for poly-sigmoid
     tpoint = c(15, 38, 80),      # transition points for poly-sigmoid
-    w_factors = c(0.6, -0.9, 0.5)      # warping factors for poly sigmoid
+    w_factors = c(0.6, -0.9, 0.5),      # warping factors for poly sigmoid
+    return_plots = FALSE         # if true, returns two separate plots; otherwise, returns nothing and prints combined plot
   ) {
     
     # Font sizes 
@@ -3846,9 +3847,17 @@ demo.warp.plots <- function(
         plot.background  = element_rect(fill = "white", colour = NA)
       ) 
     
+    if (return_plots) {
+      return(
+        list(
+          demo_plot_warpfunction = demo_plot_warpfunction,
+          demo_plot_warpedsigmoid = demo_plot_warpedsigmoid
+        )
+      )
+    }
+    
     grid.arrange(demo_plot_warpfunction, demo_plot_warpedsigmoid, ncol = 1)
     # Save at 1156 x 843
-    return(NULL)
     
   }
 
@@ -3861,6 +3870,7 @@ demo.warp.plots <- function(
 #' @param Rt Numeric vector, rate parameters for the wisp function. Degree of the wisp model will be length of this vector minus 1.
 #' @param tslope Numeric vector, slope scalars for the wisp function. Must be one less than the length of Rt.
 #' @param tpoint Numeric vector, transition points for the wisp function. Must be one less than the length of Rt.
+#' @param return_plots Logical, if true, returns two separate plots; otherwise, returns nothing and prints combined plot
 #' @return Nothing. A ggplot object is printed to console.
 #' @export
 demo.sigmoid.plots <- function(
@@ -3868,7 +3878,8 @@ demo.sigmoid.plots <- function(
     s = 1,                       # slope scalar at inflection point
     Rt = c(6, 3, 0.2, 6)*4.65,   # rates for poly-sigmoid
     tslope = c(0.4, 0.75, 1),    # slope scalars for poly-sigmoid
-    tpoint = c(15, 38, 80)       # transition points for poly-sigmoid
+    tpoint = c(15, 38, 80),      # transition points for poly-sigmoid
+    return_plots = FALSE         # if true, returns two separate plots; otherwise, returns nothing and prints combined plot
   ) {
     
     # Font sizes 
@@ -4049,8 +4060,16 @@ demo.sigmoid.plots <- function(
         plot.background  = element_rect(fill = "white", colour = NA)
       )
     
+    if (return_plots) {
+      return(
+        list(
+          demo_plot_logistic = demo_plot_logistic,
+          demo_plot_sigmoid = demo_plot_sigmoid
+        )
+      )
+    }
+    
     grid.arrange(demo_plot_logistic, demo_plot_sigmoid, ncol = 1)
     # Saved at 1186 x 1032
-    return(NULL)
     
   }

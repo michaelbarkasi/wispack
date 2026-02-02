@@ -19,8 +19,7 @@ wisp(
   model.settings = list(),
   MCMC.settings = list(),
   plot.settings = list(),
-  ran.seed = 1234,
-  allow_infeasible_params = TRUE
+  ran.seed = 1234
 )
 ```
 
@@ -96,12 +95,6 @@ wisp(
 
   Integer, random seed for reproducibility. If NULL, no seed is set.
   Default is 1234.
-
-- allow_infeasible_params:
-
-  Logical, if TRUE, allows negative rate estimates or other boundary
-  violations during fitting (with warning); if FALSE, boundary
-  violations throw a stop.
 
 ## Value
 

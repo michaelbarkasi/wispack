@@ -14,7 +14,8 @@ demo.warp.plots(
   Rt = c(6, 3, 0.2, 6) * 4.65,
   tslope = c(0.4, 0.75, 1),
   tpoint = c(15, 38, 80),
-  w_factors = c(0.6, -0.9, 0.5)
+  w_factors = c(0.6, -0.9, 0.5),
+  return_plots = FALSE
 )
 ```
 
@@ -57,6 +58,11 @@ demo.warp.plots(
   the real wisp model, which not only allows for different warping
   factors across the model components (Rt, tslope, and tpoint), but also
   across the different elements within each model component as well.
+
+- return_plots:
+
+  Logical, if TRUE, returns two separate plots; otherwise, returns
+  nothing and prints combined plot.
 
 ## Value
 

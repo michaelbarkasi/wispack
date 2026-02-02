@@ -9,7 +9,8 @@ demo.sigmoid.plots(
   s = 1,
   Rt = c(6, 3, 0.2, 6) * 4.65,
   tslope = c(0.4, 0.75, 1),
-  tpoint = c(15, 38, 80)
+  tpoint = c(15, 38, 80),
+  return_plots = FALSE
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ demo.sigmoid.plots(
 \item{tslope}{Numeric vector, slope scalars for the wisp function. Must be one less than the length of Rt.}
 
 \item{tpoint}{Numeric vector, transition points for the wisp function. Must be one less than the length of Rt.}
+
+\item{return_plots}{Logical, if true, returns two separate plots; otherwise, returns nothing and prints combined plot}
 }
 \value{
 Nothing. A ggplot object is printed to console.

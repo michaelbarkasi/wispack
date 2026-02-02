@@ -42,15 +42,15 @@
     <li><a class="dropdown-item" href="../articles/release_notes.html">Release Notes</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_benchmarks.html">Benchmarks and comparisons</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_warping.html">Random effects and warping</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Time-series data</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_liverradial.html">Radial zonation in liver lobules</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling cell types</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Time-series data</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_warping.html">Random effects and warping</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">Plotting wisp models</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_benchmarks.html">Benchmarks and comparisons</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -87,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-02-01</h4>
+            <h4 data-toc-skip class="date">2026-02-04</h4>
       
 
       <div class="d-none name"><code>tutorial_warping.Rmd</code></div>
@@ -95,8 +95,233 @@ Barkasi</h4>
 
     
     
-<p>Under construction. Will discuss mixed-effects modeling in general,
-along with how wisp implements these as a warping function.</p>
+<h2>
+Introduction
+</h2>
+<p>Separating signal from noise is a central issue in science.
+Observations of a variable reflect both the true expected population
+value and random variation. The lower the sample size, the more random
+variation will influence the observed values.</p>
+<p>A common method for dealing with random variation is to normalize
+observations. For example, with our <a href="tutorial_corticallaminar">somatosensory cortex data</a>, we could
+have tested the effect (if any) of hemisphere on transcript spatial
+distribution by making the point of highest expression rate equal across
+the hemispheres (e.g., both set to one), then rescaled the other values
+accordingly. These rescaled, i.e., <em>normalized</em>, values would
+then be used in our statistical tests or regression modeling.
+Alternatively, instead of normalizing, we could model the raw data, but
+use a regularization technique to prevent overfitting to the random
+variation. For example, <a href="tutorial_benchmarks.html">ELLA</a> uses
+L1 regression to good effect to control false-positive and
+false-discovery rates.</p>
+<p>In the context of spatially variable genes, regularization is a
+better option than normalization, as normalization can wash out
+differences in spatial distribution (<a href="https://doi.org/10.1186/s13059-025-03565-y" class="external-link">Salim et al 2025</a>,
+<a href="https://doi.org/10.1186/s13059-024-03241-7" class="external-link">Bhuva et al
+2024</a>). However, there is a third approach to handling sample noise:
+explicitly modeling the random variation as a <em>random effect</em>.
+Models with random-effect terms are often called <em>mixed-effects
+models</em>, as they contain both fixed-effect terms (e.g., the effect
+of hemisphere on expression rate) and random-effect terms (e.g., the
+random variation in expression rate due to sample-specific factors).
+Wisp models are mixed-effects models. They employ a random-effect term
+to factor out individual variation.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Set random seed for reproducibility</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
+<span><span class="co"># Load wispack</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<h2>
+Random-effect structure
+</h2>
+<p>In a traditional <em>linear</em> mixed-effects model, the
+observations <span class="math inline">y</span> are modeled as a
+function of some fixed effects <span class="math inline">\mathbf{X}\beta</span> plus random effects <span class="math inline">\mathbf{Z}\rho</span> plus noise <span class="math inline">\epsilon</span>, for covariate design matrices <span class="math inline">\mathbf{X}</span> and <span class="math inline">\mathbf{Z}</span>, fixed-effect coefficients <span class="math inline">\beta</span>, random-effect coefficients <span class="math inline">\rho</span>, and noise <span class="math inline">\epsilon</span>: <span class="math display">y =
+\mathbf{X}\beta + \mathbf{Z}\rho + \epsilon</span> <a href="tutorial_Poisson.html">Recall</a> the logistic function: <span class="math display">\psi(x,r,s) = \frac{r}{1 + \exp({sx})}</span> Also
+recall that a wisp models the log transform (plus one) of expression
+rate <span class="math inline">\lambda</span> as a function of the
+poly-sigmoid function: <span class="math display">\Psi(x,r,s,p) = r_1 +
+\sum_{i=1}^n \psi(x - p_i, r_{i+1} - r_{i}, -s_i)</span> of spatial
+position <span class="math inline">x</span>, rates <span class="math inline">r</span>, slopes <span class="math inline">s</span>,
+and transition points <span class="math inline">p</span>.</p>
+<p>A possible suggestion is to treat random effects for individual
+samples <span class="math inline">k</span> just as in the linear case,
+as an additive term: <span class="math display">\log_e(\lambda + 1) =
+\Psi(x,r,s,p) + \rho(k)</span> However, this proposal is unworkable.
+From an intuitive point of view, a constant value added across the
+entire space could at best be a very rough approximation of the true
+random effect. More importantly, there are bounds to consider. The
+predicted rate <span class="math inline">\lambda</span> must be
+positive. There will be many cases in which <span class="math inline">\lambda</span> is well above zero for some points
+<span class="math inline">x</span> and near zero for other points <span class="math inline">x</span>, while some <span class="math inline">k</span> has a negative random effect <span class="math inline">\rho(k)</span> in the high-expression region with a
+magnitude larger than the predicted rate in the low-expression region.
+This situation could be avoided if <span class="math inline">\rho</span>
+were also a function of <span class="math inline">x</span>, but that
+only raises the question of how to model <span class="math inline">\rho(x,k)</span>. For example, a function <span class="math inline">\rho</span> linear in <span class="math inline">x</span> certainly would not solve the problem.</p>
+<p>Another potential solution would be to treat <span class="math inline">\rho</span> as a function of <span class="math inline">\Psi</span> itself: <span class="math display">\log_e(\lambda + 1) = \rho(\Psi(x,r,s,p), k)</span>
+However, on this proposal <span class="math inline">\rho</span> would
+only be sensitive to changes in predicted rate. It would be indifferent
+to the other spatial parameters (transition slopes <span class="math inline">s</span> and transition points <span class="math inline">p</span>). This problem has an obvious solution: the
+random-effects <span class="math inline">\rho</span> should be applied
+directly to the spatial parameters: <span class="math display">\log_e(\lambda + 1) = \Psi(x, \rho_r(r,k),
+\rho_s(s,k), \rho_p(p,k))</span> Still, it’s not clear what form <span class="math inline">\rho</span> should take. In addition, each spatial
+parameter comes with its own bounds. All three spatial parameters have a
+lower bound of zero, while transition points are bounded above by the
+maximum spatial position (e.g., bin 100 in our cortex data). Thus,
+whatever form <span class="math inline">\rho</span> takes, it must
+respect these bounds.</p>
+<h2>
+Warping
+</h2>
+<p>To solve our problem about the form of <span class="math inline">\rho</span>, let’s distinguish between:</p>
+<ol style="list-style-type: decimal">
+<li>some scalar value unique to sample <span class="math inline">k</span> and parameter <span class="math inline">z</span> which specifies how much the value of <span class="math inline">z</span> for <span class="math inline">k</span> is
+off what’s expected, and</li>
+<li>a function which transforms <span class="math inline">z</span>
+according to this value, in a way that respects the bounds on <span class="math inline">z</span>, consistent across all <span class="math inline">k</span>.</li>
+</ol>
+<p>Let’s reserve the symbol “<span class="math inline">\rho</span>” for
+the scalar value (or a vector of these scalar values) and use the symbol
+“<span class="math inline">\omega</span>” for the transforming function.
+Let’s also assume that <span class="math inline">\rho\geq 0</span>
+indicates values above what’s expected, and <span class="math inline">\rho&lt;0</span> indicates values below what’s
+expected. If <span class="math inline">\Delta(z,b) = b - z</span> is the
+distance from <span class="math inline">z</span> to the <em>upper</em>
+boundary <span class="math inline">b</span> and we assume that <span class="math inline">z\leq b</span>, then: <span class="math display">
+\begin{array}{l l}
+z \leq \omega(z, b) \leq z + \Delta(z,b) &amp; \text{ if } \rho\geq 0 \\
+z \geq \omega(z, b) \geq 0 &amp; \text{ if } \rho &lt; 0
+\end{array}
+</span> Thus, a possible form for <span class="math inline">\omega</span> would use a ratio term <span class="math inline">\varphi</span> between zero and one to scale the
+distance to the upper boundary according for positive <span class="math inline">\rho</span> and to scale <span class="math inline">z</span> itself down towards zero for negative <span class="math inline">\rho</span>: <span class="math display">
+\omega(z, b) =
+\begin{cases}
+z + \varphi(\rho)\Delta(z,b) &amp; \text{if } \rho \geq 0 \\
+z - \varphi(\rho)z &amp; \text{if } \rho &lt; 0
+\end{cases}
+</span> What form could this function <span class="math inline">\varphi</span> take? There are a few constraints to
+consider:</p>
+<ol style="list-style-type: decimal">
+<li>When <span class="math inline">\rho=0</span>, <span class="math inline">\varphi</span> should be zero, so that <span class="math inline">\omega(z,b)=z</span>. That is: <span class="math inline">\varphi(0) = 0</span>.</li>
+<li>
+<span class="math inline">\varphi</span> is a smooth function for
+all values of <span class="math inline">\rho</span> and <span class="math inline">b</span> (allowing for well-defined gradients).</li>
+<li>For all inputs, <span class="math inline">0\leq\varphi\leq
+1</span>.</li>
+</ol>
+<p>Many functions could satisfy these requirements. The one used by wisp
+models is: <span class="math display">\varphi(X, \rho, b) = 1 -
+(e^{\rho^2})^{-X / b}</span> Condition (1) is clearly satisfied, give
+that <span class="math inline">e^{\rho^2}=1</span> when <span class="math inline">\rho=0</span>. Condition (2) is satisfied as well,
+as the exponential function is smooth everywhere. That condition (3) is
+satisfied, so long as <span class="math inline">X&gt;0</span>, can be
+seen by noting three lemmas: first, <span class="math inline">e^{\rho^2X/b}</span> is monotonically increasing in
+<span class="math inline">\rho</span> whenever <span class="math inline">X&gt;0</span> and <span class="math inline">b&gt;0</span>. Second, if <span class="math inline">\rho = 0</span>, then <span class="math inline">1/e^{\rho^2X/b} = 1</span>. Third, <span class="math inline">1/e^{\rho^2X/b} = 0</span> as <span class="math inline">\rho\rightarrow\infty</span>.</p>
+<p>What is <span class="math inline">X</span> in the function <span class="math inline">\varphi(X, \rho, b)</span> and how do we know it
+will be positive? Let’s first examine a plot of the warp-ratio function
+<span class="math inline">\varphi</span>:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Code the ratio function</span></span>
+<span><span class="va">warp_ratio</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">X</span>,<span class="va">rho</span>,<span class="va">b</span><span class="op">)</span> <span class="fl">1</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">rho</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">^</span><span class="op">(</span><span class="op">-</span><span class="va">X</span> <span class="op">/</span> <span class="va">b</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Set some demo terms</span></span>
+<span><span class="va">rhos</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.75</span>, <span class="fl">1.5</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">bs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">1e3</span><span class="op">)</span></span>
+<span><span class="va">max_X</span> <span class="op">&lt;-</span> <span class="fl">100</span></span>
+<span></span>
+<span><span class="co"># Make data frame for plotting</span></span>
+<span><span class="va">demo_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  X <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">max_X</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">bs</span><span class="op">)</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">rhos</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  rho <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">rhos</span>, each <span class="op">=</span> <span class="va">max_X</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">bs</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  b <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">bs</span>, each <span class="op">=</span> <span class="va">max_X</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">rhos</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  ratio <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">bs</span>, </span>
+<span>      <span class="kw">function</span><span class="op">(</span><span class="va">j</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>        <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span></span>
+<span>          <span class="va">rhos</span>, </span>
+<span>          <span class="kw">function</span><span class="op">(</span><span class="va">r</span><span class="op">)</span> <span class="fu">warp_ratio</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">max_X</span><span class="op">)</span>, <span class="va">r</span>, <span class="va">j</span><span class="op">)</span>, </span>
+<span>          <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="va">max_X</span><span class="op">)</span></span>
+<span>          <span class="op">)</span></span>
+<span>        <span class="op">)</span>,</span>
+<span>      <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="va">max_X</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">rhos</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Make plots</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">demo_data</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">X</span>, y <span class="op">=</span> <span class="va">ratio</span>, color <span class="op">=</span> <span class="va">rho</span><span class="op">)</span>, linewidth <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/expansion.html" class="external-link">expansion</a></span><span class="op">(</span>mult <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span><span class="va">b</span>, labeller <span class="op">=</span> <span class="va">label_both</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span></span>
+<span>    title <span class="op">=</span> <span class="st">"Warp ratio function demo"</span>,</span>
+<span>    x <span class="op">=</span> <span class="st">"X"</span>,</span>
+<span>    y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="fu">varphi</span><span class="op">(</span><span class="va">X</span>, <span class="va">rho</span>, <span class="va">b</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    color <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="va">rho</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_warping_files/figure-html/ratio_function_demo-1.png" class="r-plt" alt="" width="700"></p>
+<p>As the plots show, the closer <span class="math inline">X</span> is
+to the upper bound <span class="math inline">b</span>, the closer <span class="math inline">\varphi</span> is to <span class="math inline">1</span>, and the closer <span class="math inline">\text{max}(X)</span> is to <span class="math inline">b</span>, the steeper the curve of <span class="math inline">\varphi</span>. Thus, for the case when <span class="math inline">\rho \geq 0</span>, it seems reasonable to set <span class="math inline">X=z</span>. That is, when <span class="math inline">z</span> is small and needs to be increased, it
+should only be increased a small amount of the total possible distance
+<span class="math inline">\Delta(z,b)</span>. Conversely, the larger
+<span class="math inline">z</span> is, the larger the increase should
+be.</p>
+<p>What about the case when <span class="math inline">\rho &lt;
+0</span>? The same logic would seem to hold, suggesting that again <span class="math inline">X=z</span>, except for one problem. When <span class="math inline">b</span> is near the maximum possible value of <span class="math inline">z</span>, then <span class="math inline">\omega</span> will send <span class="math inline">z</span> towards zero as <span class="math inline">z</span> increases. To see why this behavior is a
+problem, consider the one case in a wisp model in which <span class="math inline">b</span> is not infinite: transition point locations
+<span class="math inline">p</span>. If the points <span class="math inline">p</span> near the upper spatial boundary <span class="math inline">b</span> can be pulled down to zero, then they will
+bunch up on top of each other.</p>
+<p>Thus, for the case when <span class="math inline">\rho &lt; 0</span>,
+a natural suggestion is to set: <span class="math display">X=\Delta(z,\text{max}(z))=\text{max}(z)-z</span>
+However, while this works when <span class="math inline">b</span> is
+near <span class="math inline">\text{max}(z)</span>, it fails when <span class="math inline">b=\infty</span>. In that case, <span class="math inline">\varphi\approx 0</span>, and so <span class="math inline">\omega(z,b)\approx z</span>. A better approach is to
+set: <span class="math display">X=\Delta(z,b)=b-z</span> This achieves
+the same effect when <span class="math inline">b</span> is near <span class="math inline">\text{max}(z)</span>, but still works when <span class="math inline">b=\infty</span>.</p>
+<p>Thus, the final form of the random-effect term is: <span class="math display">
+\omega(z, \rho, b) =
+\begin{cases}
+z + \varphi(z,\rho,b)\Delta(z,b) &amp; \text{if } \rho \geq 0 \\
+z - \varphi(\Delta(z,b),\rho,b)z &amp; \text{if } \rho &lt; 0
+\end{cases}
+</span> A positive benefit of this approach is that when there is no
+upper bound, i.e., <span class="math inline">b=\infty</span>, <span class="math inline">\omega(z,b)</span> is linear with respect to <span class="math inline">z</span>. A proof of this theorem is provided in
+appendix section A.4 of the original wisp <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">preprint</a>.</p>
+<p>Wispack provides a function <span class="function">demo.warp.plots</span> for visualizing the function
+<span class="math inline">\omega</span> and its effect on the
+poly-sigmoid <span class="math inline">\Phi</span>.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">warp_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/demo.warp.plots.html">demo.warp.plots</a></span><span class="op">(</span></span>
+<span>    w <span class="op">=</span> <span class="fl">2</span>,                       <span class="co"># warping factor</span></span>
+<span>    point_pos <span class="op">=</span> <span class="fl">60</span>,</span>
+<span>    point_neg <span class="op">=</span> <span class="fl">40</span>,</span>
+<span>    Rt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">6</span>, <span class="fl">3</span>, <span class="fl">0.2</span>, <span class="fl">6</span><span class="op">)</span><span class="op">*</span><span class="fl">4.65</span>,   <span class="co"># rates for poly-sigmoid</span></span>
+<span>    tslope <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.4</span>, <span class="fl">0.75</span>, <span class="fl">1</span><span class="op">)</span>,    <span class="co"># slope scalars for poly-sigmoid</span></span>
+<span>    tpoint <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">15</span>, <span class="fl">38</span>, <span class="fl">80</span><span class="op">)</span>,      <span class="co"># transition points for poly-sigmoid</span></span>
+<span>    w_factors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.6</span>, <span class="op">-</span><span class="fl">0.9</span>, <span class="fl">0.5</span><span class="op">)</span>,      <span class="co"># warping factors for poly sigmoid</span></span>
+<span>    return_plots <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p>The function <span class="function">demo.warp.plot</span> creates two
+plots. The first shows <span class="math inline">\omega</span> itself
+for a specified warping factors <span class="math inline">\rho=\langle-w,0,w\rangle</span>.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">warp_plots</span><span class="op">$</span><span class="va">demo_plot_warpfunction</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_warping_files/figure-html/warp_demo_plot1-1.png" class="r-plt" alt="" width="672"></p>
+<p>As can be seen clearly in this plot, <span class="math inline">\omega</span> is referred to as a “warping function”
+because it warps the input <span class="math inline">z</span> towards
+the upper and lower bounds. Indeed; the “w” in “wisp” refers to this
+behavior: <em>warped</em> sigmoidal Poisson-process mixed-effects
+models.</p>
+<p>The second plot created by <span class="function">demo.warp.plot</span> shows the effect of <span class="math inline">\omega</span> on <span class="math inline">\Phi</span>.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">warp_plots</span><span class="op">$</span><span class="va">demo_plot_warpedsigmoid</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_warping_files/figure-html/warp_demo_plot2-1.png" class="r-plt" alt="" width="672"></p>
+<p>Notice that to make this plot, three warping factors <span class="math inline">\rho</span> were provided: <span class="math inline">\langle 0.6, -0.9, and 0.5\rangle</span>. The first
+is the warping factor for the rate parameter, the second is for the
+slope parameter, and the third is for the transition point parameter. As
+can be seen in the plot, the warping function <span class="math inline">\omega</span> has the effect of increasing the rate,
+decreasing the slope, and increasing the transition point location.</p>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>

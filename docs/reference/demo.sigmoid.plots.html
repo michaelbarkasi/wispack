@@ -25,15 +25,15 @@
     <li><a class="dropdown-item" href="../articles/release_notes.html">Release Notes</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_benchmarks.html">Benchmarks and comparisons</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_warping.html">Random effects and warping</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Time-series data</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_liverradial.html">Radial zonation in liver lobules</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling cell types</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Time-series data</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_warping.html">Random effects and warping</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">Plotting wisp models</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_benchmarks.html">Benchmarks and comparisons</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -71,7 +71,8 @@
 <span>  s <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  Rt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">6</span>, <span class="fl">3</span>, <span class="fl">0.2</span>, <span class="fl">6</span><span class="op">)</span> <span class="op">*</span> <span class="fl">4.65</span>,</span>
 <span>  tslope <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.4</span>, <span class="fl">0.75</span>, <span class="fl">1</span><span class="op">)</span>,</span>
-<span>  tpoint <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">15</span>, <span class="fl">38</span>, <span class="fl">80</span><span class="op">)</span></span>
+<span>  tpoint <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">15</span>, <span class="fl">38</span>, <span class="fl">80</span><span class="op">)</span>,</span>
+<span>  return_plots <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -97,6 +98,10 @@
 
 <dt id="arg-tpoint">tpoint<a class="anchor" aria-label="anchor" href="#arg-tpoint"></a></dt>
 <dd><p>Numeric vector, transition points for the wisp function. Must be one less than the length of Rt.</p></dd>
+
+
+<dt id="arg-return-plots">return_plots<a class="anchor" aria-label="anchor" href="#arg-return-plots"></a></dt>
+<dd><p>Logical, if true, returns two separate plots; otherwise, returns nothing and prints combined plot</p></dd>
 
 </dl></div>
     <div class="section level2">

@@ -11,7 +11,8 @@ demo.warp.plots(
   Rt = c(6, 3, 0.2, 6) * 4.65,
   tslope = c(0.4, 0.75, 1),
   tpoint = c(15, 38, 80),
-  w_factors = c(0.6, -0.9, 0.5)
+  w_factors = c(0.6, -0.9, 0.5),
+  return_plots = FALSE
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ demo.warp.plots(
 \item{tpoint}{Numeric vector, transition points for the wisp function. Must be one less than the length of Rt.}
 
 \item{w_factors}{Numeric vector, warping factors for the wisp function. Must be length 3. First element is the warping factor for Rt, second for tslope, and third for tpoint. Note that this is more restrictive than the real wisp model, which not only allows for different warping factors across the model components (Rt, tslope, and tpoint), but also across the different elements within each model component as well.}
+
+\item{return_plots}{Logical, if TRUE, returns two separate plots; otherwise, returns nothing and prints combined plot.}
 }
 \value{
 Nothing. A ggplot object is printed to console.

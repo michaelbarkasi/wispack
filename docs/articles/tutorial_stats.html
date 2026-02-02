@@ -42,15 +42,15 @@
     <li><a class="dropdown-item" href="../articles/release_notes.html">Release Notes</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tutorials</h6></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_benchmarks.html">Benchmarks and comparisons</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_warping.html">Random effects and warping</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_corticallaminar.html">RORB along the cortical laminar axis</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Time-series data</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_liverradial.html">Radial zonation in liver lobules</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_multicontext.html">Modeling cell types</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_Poisson.html">Poisson processes and sigmoids</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_timeseries.html">Time-series data</a></li>
-    <li><a class="dropdown-item" href="../articles/tutorial_warping.html">Random effects and warping</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">Plotting wisp models</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
+    <li><a class="dropdown-item" href="../articles/tutorial_benchmarks.html">Benchmarks and comparisons</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -87,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-02-01</h4>
+            <h4 data-toc-skip class="date">2026-02-04</h4>
       
 
       <div class="d-none name"><code>tutorial_stats.Rmd</code></div>
@@ -95,8 +95,739 @@ Barkasi</h4>
 
     
     
-<p>Under construction. Will discuss bootstrapping vs MCMC, the settings,
-etc. Also include parameter plots.</p>
+<h2>
+Introduction
+</h2>
+<p>The purpose of a wisp model is to test whether a factor <span class="math inline">\xi</span> has an effect <span class="math inline">\beta_\xi</span> (such that <span class="math inline">\beta_\xi \neq 0</span>) on the spatial distribution
+of a gene’s expression, that distribution being parameterized in terms
+of expression rate, expression-rate transition points, and transition
+slopes. The true value of <span class="math inline">\beta_\xi</span> is
+estimated by resampling, either using a Markov chain Monte Carlo (MCMC)
+algorithm, or by refitting the model to resamples of the data
+(bootstrapping). This tutorial will not explain how the MCMC walk or
+bootstrap resampling is performed; these details are covered in the <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">paper introducing
+wisp</a>. Instead, this tutorial will focus on how <span class="math inline">p</span>-values and confidence intervals (CI) are
+computed from the sampling (i.e., hypothesis testing), how the MCMC and
+bootstrapping approaches compare, and how to adjust various key settings
+in wispack.</p>
+<h2>
+Hypothesis testing
+</h2>
+<p>Suppose for each spatial parameter <span class="math inline">z</span>, gene <span class="math inline">g</span>,
+context <span class="math inline">c</span>, and factor <span class="math inline">\xi</span> we have some set of resamples of the
+associated effect <span class="math inline">\beta</span>, either
+generated via MCMC walk or bootstrapping.</p>
+<h3>
+Computations
+</h3>
+<p>Let <span class="math inline">\bar{\Phi}</span> be the matrix of all
+of these values <span class="math inline">\beta</span>, with rows <span class="math inline">I</span> corresponding to resamples and rows <span class="math inline">J</span> corresponding to the various combinations
+of <span class="math inline">z</span>, <span class="math inline">g</span>, <span class="math inline">c</span>, and
+<span class="math inline">\xi</span>. Let <span class="math inline">\Phi_{IJ}</span> be an element of this matrix, <span class="math inline">\langle\Phi\rangle_J</span> be a column of the
+matrix, and <span class="math inline">\langle\Phi\rangle_I</span> be a
+row of the matrix. Then a CI for significance level <span class="math inline">\alpha</span> can be computed for each parameter
+<span class="math inline">J</span> via the quantiles of the sampled
+values:</p>
+<p><span class="math display">\text{CI}(J,\alpha) = \langle
+Q_J(\alpha/2), Q_J(1-\alpha/2)\rangle</span></p>
+<p>In wispack, the quantiles <span class="math inline">Q_J</span> are
+computed using type 7 linear interpolation (the default for R) over
+<span class="math inline">\langle\Phi\rangle_J</span>.</p>
+<p>To compute <span class="math inline">p</span>-values, we use the
+empirical cumulative distribution function:</p>
+<p><span class="math display">\text{ecdf}(X,X^\prime) = \frac{|\{X\leq
+X^\prime\}|_{\#}}{|X|_{\#}}</span></p>
+<p>with <span class="math inline">|\cdot|_{\#}</span> being the
+cardinality operator. First, for each parameter <span class="math inline">J</span>, we compute the two-sided <span class="math inline">p</span>-value by first recentering the sampled
+values <span class="math inline">\langle\Phi\rangle_J</span> around the
+null hypothesis of zero effect (i.e., <span class="math inline">\mu =
+0</span>):</p>
+<p><span class="math display">\langle\Phi\rangle_J^{\mu=0} =
+\langle\Phi_J - \mu(\langle\Phi\rangle_J)\rangle_J</span></p>
+<p>for <span class="math inline">\Phi_J</span> the scalar value of the
+effect <span class="math inline">\beta</span> of parameter <span class="math inline">J</span> to be tested. Next, the probability of
+observing a value of at least <span class="math inline">|\Phi_{IJ}|_{\text{abs}}</span> for the effect <span class="math inline">\beta</span> of parameter <span class="math inline">J</span>, assuming the true value is zero, is
+computed as:</p>
+<p><span class="math display">p(\Phi_{IJ}) = 1 -
+\text{ecdf}(\langle\Phi\rangle_J^{\mu=0}, |\Phi_{IJ}|_{\text{abs}}) +
+\text{ecdf}(\langle\Phi\rangle_J^{\mu=0},
+-|\Phi_{IJ}|_{\text{abs}})</span></p>
+<p>with <span class="math inline">|\cdot|_{\text{abs}}</span> being
+absolute value. Wispack uses either Holm-Bonferroni or Bonferroni
+corrections for multiple comparisons, with Holm-Bonferroni the
+default.</p>
+<h3>
+Implementation
+</h3>
+<p>Suppose we have the results from a run of <span class="function">wisp</span>, such as this one which matches the example
+from the <span class="gene">RORB</span> <a href="tutorial_corticallaminar.html">tutorial</a>, except that in
+addition to the default thousand-step MCMC walk with a hundred-step
+burn-in, it also performs a thousand bootstrap resamples:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
+<span>    count.data <span class="op">=</span> <span class="va">countdata</span>,</span>
+<span>    variables <span class="op">=</span> <span class="va">data.variables</span>,</span>
+<span>    plot.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>        print.plots <span class="op">=</span> <span class="cn">FALSE</span>, </span>
+<span>        dim.bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span></span>
+<span>      <span class="op">)</span>,</span>
+<span>    bootstraps.num <span class="op">=</span> <span class="fl">1000</span>, </span>
+<span>    max.fork <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p>The result of this run comes with wispack and can be loaded as
+follows:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Set random seed for reproducibility</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
+<span><span class="co"># Load wispack</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co"># Load demo model</span></span>
+<span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
+<span>      <span class="st">"extdata"</span>, </span>
+<span>      <span class="st">"corticallaminar_model.rds"</span>, </span>
+<span>      package <span class="op">=</span> <span class="st">"wispack"</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p>The function <span class="function">wisp</span> will automatically
+compute <span class="math inline">p</span>-values and CIs, unless its
+option <span class="code_variable">fit_only</span> is set to <span class="code_variable">true</span> (by default, it’s <span class="code_variable">false</span>). However, <span class="function">wisp</span> does not allow for customizing the
+computations for <span class="math inline">p</span>-values and CIs. By
+default, it uses <span class="math inline">\alpha = 0.05</span> and a
+Holm-Bonferroni correction.</p>
+<p>This default analysis can be accessed from the output of <span class="function">wisp</span> via its object <span class="code_variable">stats</span> and sub-object <span class="code_variable">parameters</span>:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameters</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<pre class="scroll-output"><code><span><span class="co">##                                  parameter      estimate      CI.low    CI.high   p.value p.value.adj    alpha.adj significance</span></span>
+<span><span class="co">## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3874762662  3.30569175 3.40219340        NA          NA           NA             </span></span>
+<span><span class="co">## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0002723492 -0.07161064 0.07342381 0.9920080    1.984016 0.0250000000           ns</span></span>
+<span><span class="co">## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6059294086  0.53617581 0.74222905 0.0000000    0.000000 0.0002923977          ***</span></span>
+<span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0476934492 -0.09456036 0.16707228 0.2447552   13.951049 0.0008771930           ns</span></span>
+<span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786  1.99915464 2.53133579        NA          NA           NA             </span></span>
+<span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 -0.42595429 0.51137301 0.5404595   18.375624 0.0014705882           ns</span></span></code></pre>
+<p>To customize the computations for <span class="math inline">p</span>-values and CIs, we can use the function
+<span class="function">sample.stats</span>. This function assumes that
+resamples have already been generated, by either MCMC walk or
+bootstrapping. It itself does not run these resamples; it merely
+extracts <span class="math inline">p</span>-values and CIs from them.
+The function <span class="function">sample.stats</span> allows for
+setting a new alpha level and for switching between Holm-Bonferroni and
+Bonferroni corrections. It returns the data frame which populates <span class="code_variable">model$stats$parameters</span>:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameters</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.stats.html">sample.stats</a></span><span class="op">(</span></span>
+<span>    <span class="va">model</span>,</span>
+<span>    alpha <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>    Bonferroni <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<pre class="scroll-output"><code><span><span class="co">## </span></span>
+<span><span class="co">## Running stats on simulation results</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Grabbing sample results, only resamples with converged fit... </span></span>
+<span><span class="co">## Grabbing parameter values... </span></span>
+<span><span class="co">## Computing 95% confidence intervals... </span></span>
+<span><span class="co">## Estimating p-values from resampled parameters... </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Recommended resample size for alpha = 0.01, 171 tests</span></span>
+<span><span class="co">## with bootstrapping/MCMC: 17100</span></span>
+<span><span class="co">## Actual resample size: 1001</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Stat summary (head only):</span></span>
+<span><span class="co">## ------------------------------</span></span>
+<span><span class="co">##                                  parameter      estimate     CI.low    CI.high   p.value p.value.adj    alpha.adj significance</span></span>
+<span><span class="co">## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3874762662  3.2789558 3.43808630        NA          NA 5.847953e-05             </span></span>
+<span><span class="co">## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0002723492 -0.1249142 0.09502461 0.9920080   169.63337 5.847953e-05           ns</span></span>
+<span><span class="co">## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6059294086  0.5361412 0.74281736 0.0000000     0.00000 5.847953e-05          ***</span></span>
+<span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0476934492 -0.1029796 0.16720287 0.2447552    41.85315 5.847953e-05           ns</span></span>
+<span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786  1.7743039 2.71545562        NA          NA 5.847953e-05             </span></span>
+<span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 -0.4328437 0.52219934 0.5404595    92.41858 5.847953e-05           ns</span></span>
+<span><span class="co">## ----</span></span></code></pre>
+<p>Above we switched from <span class="math inline">\alpha = 0.05</span>
+to <span class="math inline">\alpha = 0.01</span> and from a
+Holm-Bonferroni to a Bonferroni correction. As can be seen in the print
+out, if <span class="code_variable">verbose</span> is set to <span class="code_variable">true</span>, <span class="function">sample.stats</span> will print out both the head of
+<span class="code_variable">model$stats$parameters</span> and also
+information about the threshold <span class="math inline">\alpha</span>
+and the number of hypothesis tests run. In this case, <span class="math inline">\alpha = 0.01</span> and 171 tests are fun. In
+addition, the function <span class="function">summary.stats</span>
+estimates the number of resamples needed for threshold <span class="math inline">\alpha</span> and outputs both this number and the
+actual number of resamples used. In this case, it’s recommended that
+17,100 resamples are used, but only 1,001 are given (the thousand
+bootstraps, plus the original fit of the model to the data). Hence, if
+this were a real analysis, either <span class="math inline">\alpha</span> should be increased (e.g., back up to
+0.05), or the number of bootstraps increased.</p>
+<h2>
+MCMC
+</h2>
+<p>By default, wispack resamples effects <span class="math inline">\beta</span> using a MCMC walk of a thousand steps
+with a hundred-step burn-in.</p>
+<h3>
+Adjusting settings
+</h3>
+<p>The settings for the MCMC walk can be adjusted with the <span class="code_variable">MCMC.settings</span> argument of the <span class="function">wisp</span> function:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Set new MCMC values </span></span>
+<span><span class="va">MCMC.settings.new</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      MCMC.burnin <span class="op">=</span> <span class="fl">1e2</span>,</span>
+<span>      MCMC.steps <span class="op">=</span> <span class="fl">1e3</span>,</span>
+<span>      MCMC.step.size <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>      MCMC.prior <span class="op">=</span> <span class="fl">1.0</span>, </span>
+<span>      MCMC.neighbor.filter <span class="op">=</span> <span class="fl">1</span></span>
+<span>    <span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Use new settings in wisp</span></span>
+<span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
+<span>    count.data <span class="op">=</span> <span class="va">countdata</span>,</span>
+<span>    variables <span class="op">=</span> <span class="va">data.variables</span>,</span>
+<span>    MCMC.settings <span class="op">=</span> <span class="va">MCMC.settings.new</span>,</span>
+<span>    plot.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>        print.plots <span class="op">=</span> <span class="cn">FALSE</span>, </span>
+<span>        dim.bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span></span>
+<span>      <span class="op">)</span>,</span>
+<span>    bootstraps.num <span class="op">=</span> <span class="fl">1000</span>, </span>
+<span>    max.fork <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p>This code chunk is just for demonstration; it is not run. Also, the
+values shown are the defaults.</p>
+<ul>
+<li>
+<strong>MCMC.burnin</strong>: Number of initial steps to discard as
+burn-in. This is the number of steps it’s expected to take to find a
+reasonable fit of the data.</li>
+<li>
+<strong>MCMC.steps</strong>: Total number of MCMC steps to run after
+burn-in. These are the steps used for estimating the effects <span class="math inline">\beta</span>.</li>
+<li>
+<strong>MCMC.step.size</strong>: Step size for the MCMC walk. Larger
+values lead to larger jumps in parameter space, which can help escape
+local minima, but can also lead to lower acceptance rates.</li>
+<li>
+<strong>MCMC.prior</strong>: For a given effect value <span class="math inline">\beta</span>, a random step <span class="math inline">\beta^\prime</span> is accepted or rejected based on
+the ratio <span class="math inline">\text{P}(\beta^\prime) /
+\text{P}(\beta)</span>, where the probabilities <span class="math inline">\text{P}(\cdot)</span> are computed using Bayes rule
+from the product of the likelihood <span class="math inline">\text{P}(y|\beta)</span> and the prior <span class="math inline">\text{P}(\beta)</span>. The likelihoods are
+straightforward to compute; the priors are not. For transition-points,
+it’s assumed that all positions – and hence all effects <span class="math inline">\beta</span> are equally likely. Thus, the prior
+drops out. For rates and slopes, however, the prior is assumed to be a
+normal distribution centered at zero. The value of <span class="code_variable">MCMC.prior</span> sets the standard deviation of
+this normal distribution. Currently this variable must be a single
+numeric value.</li>
+<li>
+<strong>MCMC.neighbor.filter</strong>: If this value is <span class="math inline">&gt;1</span>, then only every <span class="code_variable">MCMC.neighbor.filter</span>-th step is saved for
+statistical analysis. This can help reduce autocorrelation between
+samples.</li>
+</ul>
+<h3>
+Plotting walks
+</h3>
+<p>Wispack includes the function <span class="function">plot.MCMC.walks</span> for visualizing MCMC walks.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">MCMC_walk_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-MCMC-walks.html">plot.MCMC.walks</a></span><span class="op">(</span></span>
+<span> <span class="va">model</span>, </span>
+<span> print.plots <span class="op">=</span> <span class="cn">FALSE</span>, </span>
+<span> verbose <span class="op">=</span> <span class="cn">FALSE</span>, </span>
+<span> low_samples <span class="op">=</span> <span class="fl">10</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>This function returns three plots: one showing the walks taken by
+high-valued parameters (i.e., mean <span class="math inline">&gt;20</span>), one showing the walks taken by
+low-valued parameters (i.e., mean <span class="math inline">\leq
+20</span>), and one showing the negative log-likelihood (NLL) across the
+MCMC steps. It’s assumed that the vast majority of model parameters will
+be low-valued. Thus, it’s impractical to plot them all. So, the <span class="code_variable">low_samples</span> argument sets the number of
+low-value parameters to plot. Parameters are chosen at random, as a
+sampling to see how the MCMC walk behaves.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">MCMC_walk_plots</span><span class="op">$</span><span class="va">plot.walks.parameters_low</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_stats_files/figure-html/plot_MCMC_walks_low-1.png" class="r-plt" alt="" width="700"></p>
+<p>As can be seen, there is high autocorrelation between steps, i.e.,
+the value at a given point is much closer to the values of its neighbors
+than to the values of more distant points. This is undesirable, as it
+means that many of the samples are not independent. A higher value for
+<span class="code_variable">MCMC.neighbor.filter</span> may help, as it
+essentially skips nearby samples.</p>
+<p>Now, for the walks from the high-value parameters (which will
+generally include only the baseline values for transition points):</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">MCMC_walk_plots</span><span class="op">$</span><span class="va">plot.walks.parameters_high</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_stats_files/figure-html/plot_MCMC_walks_high-1.png" class="r-plt" alt="" width="700"></p>
+<p>Here again we see high amounts of autocorrelation.</p>
+<p>Finally, we can inspect the neglative log-likelihood (NLL) across the
+MCMC steps:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">MCMC_walk_plots</span><span class="op">$</span><span class="va">plot.walks.nll</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_stats_files/figure-html/plot_MCMC_walks_nll-1.png" class="r-plt" alt="" width="700"></p>
+<p>Notice that the NLL is generally decreasing across the MCMC steps,
+but only by about <span class="math inline">\sim 0.2\%</span>. This
+suggests that the MCMC walk is exploring a minima without much chance of
+escaping. This is good if it’s the global minima, but bad if it’s a
+local minima. We can get some insight into whether the MCMC walk has
+found the global minima by looking at how its NLL values compare to the
+NLL value found by the gradient-descent optimization (L-BFGS) used to
+fit the model to the data initially. The function <span class="function">plot.MCMC.walks</span> makes this comparison easy, as
+it normalizes the NLL values from the MCMC walk by dividing them by the
+NLL value from the initial fit. The plot shows these values hover around
+<span class="math inline">1.01</span>, meaning that the MCMC walk stays
+around <span class="math inline">1\%</span> worse than the initial fit.
+Hence, the walk is caught in a local minima.</p>
+<h3>
+Reconciling MCMC and L-BFGS
+</h3>
+<p>Despite being the default, MCMC walks are often a poor choice for all
+but the simplest wisp models, given the high autocorrelation and
+tendency to get trapped in local minima. MCMC walks are the default
+because they are computationally much faster and can be run on a single
+core. However, using them often requires throwing out the initial fit
+from L-BFGS. To see why, first note that the <span class="function">wisp</span> function returns three matrices of
+parameter resamples:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"sample.params"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span><span class="op">)</span><span class="op">]</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span></span></code></pre></div>
+<pre class="scroll-output"><code><span><span class="co">## [1] "sample.params, sample.params.bs, sample.params.MCMC"</span></span></code></pre>
+<p>The matrices <span class="code_variable">sample.params.bs</span> and
+<span class="code_variable">sample.params.MCMC</span> contain the
+bootstrap and MCMC resamples, respectively. The matrix <span class="code_variable">sample.params</span> is used by the <span class="function">sample.stats</span> function. If <span class="code_variable">sample.params.bs</span> is not present, then <span class="code_variable">sample.params</span> is a copy of <span class="code_variable">sample.params.MCMC</span>. If <span class="code_variable">sample.params.bs</span> is present, then <span class="code_variable">sample.params</span> is a copy of it. Thus, when
+both MCMC walks and bootstrap resamples are run, <span class="code_variable">sample.params</span> ignores the MCMC walks and
+uses the bootstrap resamples.</p>
+<p>Let’s make a copy of our model that uses the MCMC walks and re-run
+the statistical analysis on it:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model_MCMC</span> <span class="op">&lt;-</span> <span class="va">model</span></span>
+<span><span class="va">model_MCMC</span><span class="op">$</span><span class="va">sample.params</span> <span class="op">&lt;-</span> <span class="va">model_MCMC</span><span class="op">$</span><span class="va">sample.params.MCMC</span></span>
+<span><span class="va">model_MCMC</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameters</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.stats.html">sample.stats</a></span><span class="op">(</span><span class="va">model_MCMC</span><span class="op">)</span></span></code></pre></div>
+<pre class="scroll-output"><code><span><span class="co">## </span></span>
+<span><span class="co">## Running stats on simulation results</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Grabbing sample results, only resamples with converged fit... </span></span>
+<span><span class="co">## Grabbing parameter values... </span></span>
+<span><span class="co">## Computing 95% confidence intervals... </span></span>
+<span><span class="co">## Estimating p-values from resampled parameters... </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Recommended resample size for alpha = 0.05, 171 tests</span></span>
+<span><span class="co">## with bootstrapping/MCMC: 3420</span></span>
+<span><span class="co">## Actual resample size: 1001</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Stat summary (head only):</span></span>
+<span><span class="co">## ------------------------------</span></span>
+<span><span class="co">##                                  parameter      estimate       CI.low      CI.high     p.value p.value.adj    alpha.adj significance</span></span>
+<span><span class="co">## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3874762662 3.2423579199 3.6060658268          NA          NA           NA             </span></span>
+<span><span class="co">## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0002723492 0.0002701605 0.0009564635 0.000999001  0.04495504 0.0011111111            *</span></span>
+<span><span class="co">## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6059294086 0.4971755126 0.6552261694 0.000000000  0.00000000 0.0002923977          ***</span></span>
+<span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0476934492 0.0324878078 0.0563049808 0.000000000  0.00000000 0.0002941176          ***</span></span>
+<span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786 1.9117544868 2.6135187197          NA          NA           NA             </span></span>
+<span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 0.0504651545 0.0951689705 0.000000000  0.00000000 0.0002958580          ***</span></span>
+<span><span class="co">## ----</span></span></code></pre>
+<p>Now, let’s plot the values <span class="math inline">\beta</span> for
+<span class="gene">RORB</span> for the effect of age in the left
+hemisphere. We will highlight the value found by the L-BFGS fit with a
+large yellow asterisk. Here are the distributions from the bootstrap
+resamples:</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">plots.param</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-parameters.html">plot.parameters</a></span><span class="op">(</span><span class="va">model</span>, species <span class="op">=</span> <span class="st">"Rorb"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> </span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span></span>
+<span>  <span class="va">plots.param</span><span class="op">$</span><span class="va">plot_treatment_18_cortex_Rorb</span> <span class="op">+</span> </span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/expansion.html" class="external-link">expansion</a></span><span class="op">(</span>mult <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">means</span><span class="op">)</span>, shape <span class="op">=</span> <span class="fl">8</span>, size <span class="op">=</span> <span class="fl">4</span>, stroke <span class="op">=</span> <span class="fl">2</span>, color <span class="op">=</span> <span class="st">"black"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">means</span><span class="op">)</span>, shape <span class="op">=</span> <span class="fl">8</span>, size <span class="op">=</span> <span class="fl">4</span>, stroke <span class="op">=</span> <span class="fl">1</span>, color <span class="op">=</span> <span class="st">"yellow"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_stats_files/figure-html/plot_RORB_bootstrap-1.png" class="r-plt" alt="" width="700"></p>
+<p>Notice that the L-BFGS fits mostly fall near the medians (i.e.,
+peaks) of the distributions. The L-BFGS fits are certainly all
+<em>within</em> the distributions found by the bootstraps. This is to be
+expected, as the bootstrapped resamples are got by performing new L-BFGS
+fits to resamples of the count data.</p>
+<p>In contrast, by plotting the distributions from the MCMC walks, we
+can see that the L-BFGS fits never fall near the median, and often fall
+well outside the range of MCMC walk values. Within the MCMC walk
+results, the L-BFGS fit is often an outlier.</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">plots.param_MCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-parameters.html">plot.parameters</a></span><span class="op">(</span><span class="va">model_MCMC</span>, species <span class="op">=</span> <span class="st">"Rorb"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span></span>
+<span>  <span class="va">plots.param_MCMC</span><span class="op">$</span><span class="va">plot_treatment_18_cortex_Rorb</span> <span class="op">+</span> </span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/expansion.html" class="external-link">expansion</a></span><span class="op">(</span>mult <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">means</span><span class="op">)</span>, shape <span class="op">=</span> <span class="fl">8</span>, size <span class="op">=</span> <span class="fl">4</span>, stroke <span class="op">=</span> <span class="fl">2</span>, color <span class="op">=</span> <span class="st">"black"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">means</span><span class="op">)</span>, shape <span class="op">=</span> <span class="fl">8</span>, size <span class="op">=</span> <span class="fl">4</span>, stroke <span class="op">=</span> <span class="fl">1</span>, color <span class="op">=</span> <span class="st">"yellow"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_stats_files/figure-html/plot_RORB_MCMC-1.png" class="r-plt" alt="" width="700"></p>
+<p>The reason for this mismatch is that the MCMC walk gets stuck in a
+local minima and cannot properly explore the parameter space. Both the
+L-BFGS gradient descent and the MCMC walk start from the same set of
+initial parameters, but they don’t end up in the same place.</p>
+<p>Three possible solutions suggest themselves:</p>
+<ol style="list-style-type: decimal">
+<li>Increase the value of <span class="code_variable">MCMC.step.size</span> to allow for more
+exploration of the parameter space.</li>
+<li>Set <span class="code_variable">MCMC.burnin</span> to zero and start
+the walk from the L-BFGS fit.</li>
+<li>Discard the L-BFGS fit and use the median of the MCMC walk as the
+estimate of each effect <span class="math inline">\beta</span>.</li>
+</ol>
+<p>Each of these options have downsides. In practical terms, (1) is
+often unworkable, as significantly larger step sizes tend to lead to
+acceptance rates near (or at) zero. Option (2), interestingly, has the
+same problem, unless step size is so small that acceptance rate is very
+high, leaving the space around the L-BFGS fit underexplored. (As to
+implementing this option, if the number of burn-in steps is set to zero,
+wispack will automatically switch to starting the walk at the L-BGGS
+fit.) In both cases, the root issue is presumably the non-linearity of
+the model: small changes to viable parameters often produce large
+changes in predictions, leading to a worse fit with the data. The L-BFGS
+fit gets around this issue because following the gradient allows for
+navigating around these non-linearities.</p>
+<p>We’re left with option (3), which is unsatisfactory (of course)
+because it leaves us with final estimates that are known to be
+suboptimal fits. Still, if we wish to implement it, the argument <span class="code_variable">use.median</span> in the <span class="function">wisp</span> function allows for doing so. If this
+argument is set to <span class="code_variable">true</span>, then the
+median of the MCMC walk is used as the estimate of each effect <span class="math inline">\beta</span>, rather than the L-BFGS fit. As an
+example, we can re-run the model:</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Grab data </span></span>
+<span><span class="va">countdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
+<span>      <span class="st">"extdata"</span>, </span>
+<span>      <span class="st">"S1_laminar_countdata_demo.csv"</span>, </span>
+<span>      package <span class="op">=</span> <span class="st">"wispack"</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Specify variables for wisp</span></span>
+<span><span class="va">data.variables</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    species <span class="op">=</span> <span class="st">"gene"</span>,</span>
+<span>    ran <span class="op">=</span> <span class="st">"mouse"</span>,</span>
+<span>    timeseries <span class="op">=</span> <span class="st">"age"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Run with median</span></span>
+<span><span class="va">model_median</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
+<span>    count.data <span class="op">=</span> <span class="va">countdata</span>,</span>
+<span>    variables <span class="op">=</span> <span class="va">data.variables</span>,</span>
+<span>    use.median <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    plot.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print.plots <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>    bootstraps.num <span class="op">=</span> <span class="fl">0</span>, </span>
+<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<pre class="scroll-output"><code><span><span class="co">## </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Parsing data and settings for wisp model</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Model settings:</span></span>
+<span><span class="co">##  buffer_factor: 0.05</span></span>
+<span><span class="co">##  ctol: 1e-06</span></span>
+<span><span class="co">##  max_penalty_at_distance_factor: 0.01</span></span>
+<span><span class="co">##  LROcutoff: 2</span></span>
+<span><span class="co">##  LROwindow_factor: 1.25</span></span>
+<span><span class="co">##  rise_threshold_factor: 0.8</span></span>
+<span><span class="co">##  max_evals: 1000</span></span>
+<span><span class="co">##  rng_seed: 42</span></span>
+<span><span class="co">##  warp_precision: 1e-07</span></span>
+<span><span class="co">##  round_none: TRUE</span></span>
+<span><span class="co">##  inf_warp: 450359962.73705</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Plot settings:</span></span>
+<span><span class="co">##  print.plots: FALSE</span></span>
+<span><span class="co">##  dim.bounds: </span></span>
+<span><span class="co">##  log.scale: FALSE</span></span>
+<span><span class="co">##  splitting_factor: </span></span>
+<span><span class="co">##  CI_style: TRUE</span></span>
+<span><span class="co">##  label_size: 5.5</span></span>
+<span><span class="co">##  title_size: 20</span></span>
+<span><span class="co">##  axis_size: 12</span></span>
+<span><span class="co">##  legend_size: 10</span></span>
+<span><span class="co">##  count_size: 1.5</span></span>
+<span><span class="co">##  count_jitter: 0.5</span></span>
+<span><span class="co">##  count.alpha.ran: 0.25</span></span>
+<span><span class="co">##  count.alpha.none: 0.25</span></span>
+<span><span class="co">##  pred.alpha.ran: 0.9</span></span>
+<span><span class="co">##  pred.alpha.none: 1</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## MCMC settings:</span></span>
+<span><span class="co">##  MCMC.burnin: 100</span></span>
+<span><span class="co">##  MCMC.steps: 1000</span></span>
+<span><span class="co">##  MCMC.step.size: 0.5</span></span>
+<span><span class="co">##  MCMC.prior: 1</span></span>
+<span><span class="co">##  MCMC.neighbor.filter: 1</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Variable dictionary:</span></span>
+<span><span class="co">##  count: count</span></span>
+<span><span class="co">##  bin: bin</span></span>
+<span><span class="co">##  context: context</span></span>
+<span><span class="co">##  species: gene</span></span>
+<span><span class="co">##  ran: mouse</span></span>
+<span><span class="co">##  timeseries: age</span></span>
+<span><span class="co">##  fixedeffects: hemisphere, age</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Parsed data (head only):</span></span>
+<span><span class="co">## ------------------------------</span></span>
+<span><span class="co">##   count bin context species ran hemisphere timeseries</span></span>
+<span><span class="co">## 1     0 100  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## 2     0  99  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## 3     0  93  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## 4     0  98  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## 5     0  94  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## 6     0  94  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## ----</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Initializing Cpp (wspc) model</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Infinity handling:</span></span>
+<span><span class="co">## machine epsilon: (eps_): 2.22045e-16</span></span>
+<span><span class="co">## pseudo-infinity (inf_): 1e+100</span></span>
+<span><span class="co">## warp_precision: 1e-07</span></span>
+<span><span class="co">## implied pseudo-infinity for unbounded warp (inf_warp): 4.5036e+08</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Extracting variables and data information:</span></span>
+<span><span class="co">## Found max bin: 100.000000</span></span>
+<span><span class="co">## Fixed effects:</span></span>
+<span><span class="co">## "hemisphere" "timeseries"</span></span>
+<span><span class="co">## Ref levels:</span></span>
+<span><span class="co">## "left" "12"</span></span>
+<span><span class="co">## Time series detected:</span></span>
+<span><span class="co">## "12" "18"</span></span>
+<span><span class="co">## Created treatment levels:</span></span>
+<span><span class="co">## "ref" "right" "18" "right18"</span></span>
+<span><span class="co">## Context grouping levels:</span></span>
+<span><span class="co">## "cortex"</span></span>
+<span><span class="co">## Species grouping levels:</span></span>
+<span><span class="co">## "Bcl11b" "Cux2" "Fezf2" "Nxph3" "Rorb" "Satb2"</span></span>
+<span><span class="co">## Random-effect grouping levels:</span></span>
+<span><span class="co">## "none" "1" "2" "3" "4"</span></span>
+<span><span class="co">## Total rows in summed count data table: 12000</span></span>
+<span><span class="co">## Number of rows with unique model components: 120</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Creating summed-count data columns and weight matrix:</span></span>
+<span><span class="co">## Random level 0, 1/5 complete</span></span>
+<span><span class="co">## Random level 1, 2/5 complete</span></span>
+<span><span class="co">## Random level 2, 3/5 complete</span></span>
+<span><span class="co">## Random level 3, 4/5 complete</span></span>
+<span><span class="co">## Random level 4, 5/5 complete</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Making extrapolation pool:</span></span>
+<span><span class="co">## row: 480/2400</span></span>
+<span><span class="co">## row: 960/2400</span></span>
+<span><span class="co">## row: 1440/2400</span></span>
+<span><span class="co">## row: 1920/2400</span></span>
+<span><span class="co">## row: 2400/2400</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Making initial parameter estimates:</span></span>
+<span><span class="co">## Extrapolated 'none' rows</span></span>
+<span><span class="co">## Took log of observed counts</span></span>
+<span><span class="co">## Estimated gamma dispersion of raw counts</span></span>
+<span><span class="co">## Estimated change points</span></span>
+<span><span class="co">## Found average log counts for each context-species combination</span></span>
+<span><span class="co">## Estimated initial parameters for fixed-effect treatments</span></span>
+<span><span class="co">## Built initial beta (ref and fixed-effects) matrices</span></span>
+<span><span class="co">## Initialized random-effect warping factors</span></span>
+<span><span class="co">## Made and mapped parameter vector</span></span>
+<span><span class="co">## Number of parameters: 300</span></span>
+<span><span class="co">## Constructed grouping variable IDs</span></span>
+<span><span class="co">## Size of boundary vector: 1260</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Estimating model parameters</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Running MCMC stimulations</span></span>
+<span><span class="co">## Checking feasibility of provided parameters</span></span>
+<span><span class="co">## ... no tpoints below buffer</span></span>
+<span><span class="co">## ... no NAN rates predicted</span></span>
+<span><span class="co">## ... no negative rates predicted</span></span>
+<span><span class="co">## Provided parameters are feasible</span></span>
+<span><span class="co">## Initial boundary distance (want &gt; 0): 0.247647</span></span>
+<span><span class="co">## Performing initial fit of full data</span></span>
+<span><span class="co">## Penalized neg_loglik: 11975.6</span></span>
+<span><span class="co">## step: 1/1100</span></span>
+<span><span class="co">## step: 110/1100</span></span>
+<span><span class="co">## step: 220/1100</span></span>
+<span><span class="co">## step: 330/1100</span></span>
+<span><span class="co">## step: 440/1100</span></span>
+<span><span class="co">## step: 550/1100</span></span>
+<span><span class="co">## step: 660/1100</span></span>
+<span><span class="co">## step: 770/1100</span></span>
+<span><span class="co">## step: 880/1100</span></span>
+<span><span class="co">## step: 990/1100</span></span>
+<span><span class="co">## All complete!</span></span>
+<span><span class="co">## Acceptance rate (aim for 0.2-0.3): 0.283432</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## MCMC simulation complete... </span></span>
+<span><span class="co">## MCMC run time (total), minutes: 1.176</span></span>
+<span><span class="co">## MCMC run time (per retained step), seconds: 0.064</span></span>
+<span><span class="co">## MCMC run time (per step), seconds: 0.064</span></span>
+<span><span class="co">## Setting median parameter samples as final parameters... </span></span>
+<span><span class="co">## Checking feasibility of provided parameters</span></span>
+<span><span class="co">## ... no tpoints below buffer</span></span>
+<span><span class="co">## ... no NAN rates predicted</span></span>
+<span><span class="co">## ... no negative rates predicted</span></span>
+<span><span class="co">## Provided parameters are feasible</span></span>
+<span><span class="co">## Initial boundary distance (want &gt; 0): 0.176668</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Running stats on simulation results</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Grabbing sample results... </span></span>
+<span><span class="co">## Grabbing parameter values... </span></span>
+<span><span class="co">## Computing 95% confidence intervals... </span></span>
+<span><span class="co">## Estimating p-values from resampled parameters... </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Recommended resample size for alpha = 0.05, 171 tests</span></span>
+<span><span class="co">## with bootstrapping/MCMC: 3420</span></span>
+<span><span class="co">## Actual resample size: 1001</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Stat summary (head only):</span></span>
+<span><span class="co">## ------------------------------</span></span>
+<span><span class="co">##                                  parameter     estimate       CI.low      CI.high     p.value p.value.adj    alpha.adj significance</span></span>
+<span><span class="co">## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1 3.4171645316 3.2423579199 3.6060658268          NA          NA           NA             </span></span>
+<span><span class="co">## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 0.0008409778 0.0001214079 0.0009566762 0.000999001  0.06193806 0.0008064516           ns</span></span>
+<span><span class="co">## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1 0.5789275569 0.4971755126 0.6552261694 0.000000000  0.00000000 0.0002923977          ***</span></span>
+<span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1 0.0459829185 0.0324878078 0.0563049808 0.000000000  0.00000000 0.0002941176          ***</span></span>
+<span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2 2.2148115952 1.9117544868 2.6135187197          NA          NA           NA             </span></span>
+<span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2 0.0571963983 0.0504651545 0.0951689705 0.000000000  0.00000000 0.0002958580          ***</span></span>
+<span><span class="co">## ----</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Computing 95% CI for predicated values by bin</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Grabbing sample results... </span></span>
+<span><span class="co">## Computing predicted values for each sampled parameter set... </span></span>
+<span><span class="co">## Computing 95% CIs... </span></span>
+<span><span class="co">## Analyzing residuals</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Computing residuals... </span></span>
+<span><span class="co">## Making masks... </span></span>
+<span><span class="co">## Making plots and saving stats... </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Log-residual summary by grouping variables (head only):</span></span>
+<span><span class="co">## ------------------------------</span></span>
+<span><span class="co">##          group         mean        sd  variance</span></span>
+<span><span class="co">## 1          all  0.200397489 0.5218355 0.2723122</span></span>
+<span><span class="co">## 2 ran_lvl_none  0.204318220 0.3651730 0.1333513</span></span>
+<span><span class="co">## 3    ran_lvl_1 -0.238834690 0.4570011 0.2088500</span></span>
+<span><span class="co">## 4    ran_lvl_2  0.009588838 0.4834547 0.2337285</span></span>
+<span><span class="co">## 5    ran_lvl_3  0.544623373 0.5043003 0.2543188</span></span>
+<span><span class="co">## 6    ran_lvl_4  0.478370970 0.4958014 0.2458191</span></span>
+<span><span class="co">## ----</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Making MCMC walks plots... </span></span>
+<span><span class="co">## Making effect parameter distribution plots... </span></span>
+<span><span class="co">## Making rate-count plots... </span></span>
+<span><span class="co">## Making time series plots... </span></span>
+<span><span class="co">## Making parameter plots... </span></span>
+<span><span class="co">## Making parameter plots... </span></span>
+<span><span class="co">## Making parameter plots... </span></span>
+<span><span class="co">## Making parameter plots... </span></span>
+<span><span class="co">## Making parameter plots... </span></span>
+<span><span class="co">## Making parameter plots...</span></span></code></pre>
+<p>Now, let’s plot the age-effect parameters again, this time with the
+median estimate from the MCMC walk highlighted:</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span></span>
+<span>  <span class="va">model_median</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">plot_treatment_18_cortex_Rorb</span> <span class="op">+</span> </span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/expansion.html" class="external-link">expansion</a></span><span class="op">(</span>mult <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">means</span><span class="op">)</span>, shape <span class="op">=</span> <span class="fl">8</span>, size <span class="op">=</span> <span class="fl">4</span>, stroke <span class="op">=</span> <span class="fl">2</span>, color <span class="op">=</span> <span class="st">"black"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">means</span><span class="op">)</span>, shape <span class="op">=</span> <span class="fl">8</span>, size <span class="op">=</span> <span class="fl">4</span>, stroke <span class="op">=</span> <span class="fl">1</span>, color <span class="op">=</span> <span class="st">"yellow"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_stats_files/figure-html/plot_RORB_median-1.png" class="r-plt" alt="" width="700"></p>
+<p>As can be seen, we have more-or-less the same distributions as the
+first MCMC walk, except now the estimates (yellow asterisks) fall
+exactly at the median, by design. Note also that without the outlier of
+the L-BFGS fit, the significance levels are different.</p>
+<h2>
+Bootstraps
+</h2>
+<p>Given the above issues with MCMC walks, it is usually preferable to
+perform hypothesis testing with bootstrap resamples. Using bootstrapping
+to do the resampling ensures that the samples come from a fit that’s at
+least as good as the fit found by L-BFGS optimization, because each
+bootstrap refits the model to a resample of the data using L-BFGS.</p>
+<h3>
+Adjusting settings
+</h3>
+<p>Unlike MCMC walks, there aren’t any technical settings for
+bootstrapping. The only options available are directly in the <span class="function">wisp</span> function: <span class="code_variable">bootstraps.num</span> sets the number of bootstrap
+resamples to perform, <span class="code_variable">max.fork</span> sets
+the number of CPU cores to use in parallel for performing the
+bootstraps, <span class="code_variable">converged.resamples.only</span>
+controls whether only parameters from resampled with a converged fit are
+used for statistical analysis, and <span class="code_variable">use.median</span> will also work with
+bootstrapping.</p>
+<h3>
+Limitations
+</h3>
+<p>There are two important limitations to note about the bootstrapping
+implemented by wispack. The first concerns parallelization. Wispack uses
+process forking (via custom Rcpp code) to run fits of bootstrapped data
+in parallel. Forking is only available on Unix-based systems such as Mac
+and Linux. It’s not possible on Windows. A value for <span class="code_variable">max.fork</span> greater than one on Windows will
+trigger a warning and the value will be automatically reset to one.</p>
+<p>The second limitation is that the data supplied to <span class="function">wisp</span> via the <span class="code_variable">count.data</span> must be resamplable. For any row
+in the count data, a resampled value for <span class="code_variable">count</span> is choosen from the set of rows with
+matching values for the variables <span class="code_variable">bin</span>, <span class="code_variable">context</span>, <span class="code_variable">species</span>, <span class="code_variable">ran</span>, as well as any other variables
+specified in the <span class="code_variable">fixedeffects</span>
+argument of <span class="code_variable">variables</span> input. Hence,
+if there is only one observation for a given combination of modeling
+variables, bootstrapping will not be possible. From a mathematical point
+of view, the nature of these observations is irrelevant; however, a
+typical application would be for each row to represent a cell or sub-bin
+spatial region, with multiple observations per variable combination
+coming from multiple cells or sub-bins.</p>
+<h3>
+Comparison with MCMC
+</h3>
+<p>Beyond the comparisons already made, wispack provides the function
+<span class="function">plot.MCMC.bs.comparison</span> for visualizing
+autocorrelation and normality in the resampled parameters.</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bs_comp_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-MCMC-bs-comparison.html">plot.MCMC.bs.comparison</a></span><span class="op">(</span></span>
+<span>  <span class="va">model</span>, </span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The function <span class="function">plot.MCMC.bs.comparison</span>
+returns three plots in a list, labeled <span class="code_variable">plot_sample_correlations</span>, <span class="code_variable">plot_comparison_Shaprio</span>, and <span class="code_variable">plot_comparison_density</span>. The first plot
+shows next-step autocorrelation for both MCMC walks and bootstrap
+resamples. The plot shows density of autocorrelation values over the
+population of resampled model parameters. As expected from plots of the
+MCMC walks, there are a high number of parameters with autocorrelation
+<span class="math inline">&gt;0.5</span>. In contrast, the bootstrap
+resamples show essentially zero autocorrelation.</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span></span>
+<span>  <span class="va">bs_comp_plots</span><span class="op">$</span><span class="va">plot_sample_correlations</span> <span class="op">+</span> </span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>hjust <span class="op">=</span> <span class="fl">0.5</span>, size <span class="op">=</span> <span class="va">model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">title_size</span><span class="op">*</span><span class="fl">0.75</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_stats_files/figure-html/plot_autocorrelation-1.png" class="r-plt" alt="" width="700"></p>
+<p>Another important consideration is the distribution of the resampled
+parameter values. The plots of the age effect show this distribution
+(for each parameter separately) as a violin plot. From these it’s clear
+that the bootstrap resamples are more normal than the MCMC walk
+resamples. We can get a more complete picture by looking at the
+distribution of Shapiro-Wilk normality test <span class="math inline">p</span>-values across all parameters, which is the
+second plot provided by the <span class="function">plot.MCMC.bs.comparison</span> function. As seen in the
+plot, the two resampling methods produce mirror results: MCMC walks
+produce many parameter distributions with low <span class="math inline">p</span>-values (i.e., non-normal distributions),
+while bootstrap resamples produce many parameter distributions with high
+<span class="math inline">p</span>-values (i.e., normal
+distributions).</p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span></span>
+<span>  <span class="va">bs_comp_plots</span><span class="op">$</span><span class="va">plot_comparison_Shaprio</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>hjust <span class="op">=</span> <span class="fl">0.5</span>, size <span class="op">=</span> <span class="va">model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">title_size</span><span class="op">*</span><span class="fl">0.75</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_stats_files/figure-html/plot_shapiro_wilk-1.png" class="r-plt" alt="" width="700"></p>
+<p>Finally, the third plot of the <span class="function">plot.MCMC.bs.comparison</span> function provides
+another look at the parameter distributions produced by each method by
+plotting a few randomly chosen distributions:</p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span></span>
+<span>  <span class="va">bs_comp_plots</span><span class="op">$</span><span class="va">plot_comparison_density</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>hjust <span class="op">=</span> <span class="fl">0.5</span>, size <span class="op">=</span> <span class="va">model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">title_size</span><span class="op">*</span><span class="fl">0.75</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="tutorial_stats_files/figure-html/plot_random_parameter_distributions-1.png" class="r-plt" alt="" width="700"></p>
+<p>A natural question to ask concerns the false-positive rate,
+false-discovery rate, and power of the bootstrap-based hypothesis
+testing. This question is addressed in the <a href="tutorial_benchmarks.html">benchmarking tutorial</a>.</p>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>

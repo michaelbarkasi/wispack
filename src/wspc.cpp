@@ -35,7 +35,6 @@ wspc::wspc(
     warp_precision = (sdouble)settings["warp_precision"];
     inf_warp = (sdouble)settings["inf_warp"];
     round_none = (bool)settings["round_none"];
-    allow_infeasible_params = (bool)settings["allow_infeasible_params"];
     model_settings = Rcpp::clone(settings);
     
     // Report warp_inf 
@@ -1837,11 +1836,7 @@ void wspc::set_parameters(
     
     // Stop if not feasible 
     if (!feasible) {
-      if (allow_infeasible_params) {
-        Rcpp::Rcout << "Warning: Negative rates predicted or other boundary condition violated, but allow_infeasible_params = TRUE so proceeding anyway." << std::endl;
-      } else {
-        Rcpp::stop("Negative or nan rates predicted, or other boundary condition violated!");
-      }
+      Rcpp::stop("Negative or nan rates predicted, or other boundary condition violated!");
     }
     
     // Convert back to doubles, remove from log space, and save predicted values
@@ -1878,7 +1873,7 @@ Rcpp::List wspc::check_parameter_feasibility(
         vprint("... tpoints found below buffer");
       }
     }
-    if (feasible || allow_infeasible_params) {
+    if (feasible) {
       
       // Predict rates 
       predicted_rates_log_var = predict_rates(

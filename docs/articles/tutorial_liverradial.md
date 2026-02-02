@@ -80,7 +80,7 @@ to the start of each day. (Indeed; even Droin et al. exploited this fact
 by fixing \omega=2\pi/24\text{ hr}, instead of estimating \omega from
 the data.)
 
-## Data preprocessing
+## Processing the data
 
 Droin et al. have made some of their data available in an easily
 accessible form in a [GitHub
@@ -351,7 +351,6 @@ radial.model <- wisp(
 ##  warp_precision: 1e-07
 ##  round_none: TRUE
 ##  inf_warp: 450359962.73705
-##  allow_infeasible_params: TRUE
 ## 
 ## Plot settings:
 ##  print.plots: FALSE
@@ -471,22 +470,22 @@ radial.model <- wisp(
 ## Initial boundary distance (want > 0): 0.206765
 ## Performing initial fit of full data
 ## Penalized neg_loglik: 1044.51
-## Batch: 1/100, 0.180387 sec/bs
-## Batch: 10/100, 0.160255 sec/bs
-## Batch: 20/100, 0.156862 sec/bs
-## Batch: 30/100, 0.148762 sec/bs
-## Batch: 40/100, 0.15933 sec/bs
-## Batch: 50/100, 0.164632 sec/bs
-## Batch: 60/100, 0.160494 sec/bs
-## Batch: 70/100, 0.161479 sec/bs
-## Batch: 80/100, 0.181719 sec/bs
-## Batch: 90/100, 0.154615 sec/bs
+## Batch: 1/100, 0.203963 sec/bs
+## Batch: 10/100, 0.179684 sec/bs
+## Batch: 20/100, 0.179918 sec/bs
+## Batch: 30/100, 0.175799 sec/bs
+## Batch: 40/100, 0.183302 sec/bs
+## Batch: 50/100, 0.194938 sec/bs
+## Batch: 60/100, 0.190911 sec/bs
+## Batch: 70/100, 0.192661 sec/bs
+## Batch: 80/100, 0.231632 sec/bs
+## Batch: 90/100, 0.180376 sec/bs
 ## All complete!
 ## 
 ## Bootstrap simulation complete... 
-## Bootstrap run time (total), minutes: 2.772
-## Bootstrap run time (per sample), seconds: 0.166
-## Bootstrap run time (per sample, per thread), seconds: 1.663
+## Bootstrap run time (total), minutes: 3.271
+## Bootstrap run time (per sample), seconds: 0.196
+## Bootstrap run time (per sample, per thread), seconds: 1.963
 ## 
 ## Setting full-data fit as parameters... 
 ## Checking feasibility of provided parameters
@@ -554,7 +553,7 @@ radial.model <- wisp(
 ## Making parameter plots...
 ```
 
-## Results
+## Examining results
 
 The [wisp()](https://michaelbarkasi.github.io/wispack/reference/wisp.md)
 function produces both a [rate-count
@@ -578,8 +577,8 @@ higher in the portal region. Their respective spatial gradients are easy
 to see in the rate-count plot:
 
 ``` r
-plt_glul <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_glul"]] + theme(legend.position = "bottom", legend.title = element_blank())
-plt_ass1 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_ass1"]] + theme(legend.position = "bottom", legend.title = element_blank())
+plt_glul <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_glul"]]
+plt_ass1 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_ass1"]]
 g <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
 grid.draw(g)
 ```
@@ -596,8 +595,8 @@ These temporal patterns can be seen more clearly by looking at the
 time-series plots.
 
 ``` r
-plt_glul <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_glul"]] + theme(legend.position = "bottom", legend.title = element_blank())
-plt_ass1 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_ass1"]] + theme(legend.position = "bottom", legend.title = element_blank())
+plt_glul <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_glul"]]
+plt_ass1 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_ass1"]]
 g <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
 grid.draw(g)
 ```
@@ -622,8 +621,8 @@ are elevated (yellow and purple), while for DBP it’s ZT6 and ZT12 (green
 and blue) that are elevated.
 
 ``` r
-plt_arntl <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_arntl"]] + theme(legend.position = "bottom", legend.title = element_blank())
-plt_dbp <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_dbp"]] + theme(legend.position = "bottom", legend.title = element_blank())
+plt_arntl <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_arntl"]]
+plt_dbp <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_dbp"]]
 g <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
 grid.draw(g)
 ```
@@ -634,8 +633,8 @@ These temporal dynamics are made more clear in the time-series plots,
 which clearly show the mid-ZT dip in ARNTL and the mid-ZT bump in DBP.
 
 ``` r
-plt_arntl <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_arntl"]] + theme(legend.position = "bottom", legend.title = element_blank())
-plt_dbp <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_dbp"]] + theme(legend.position = "bottom", legend.title = element_blank())
+plt_arntl <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_arntl"]]
+plt_dbp <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_dbp"]]
 g <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
 grid.draw(g)
 ```
@@ -650,8 +649,8 @@ Both are expressed more in the central region. PCK1, on the other hand,
 is expressed more in the portal region, just like ASS1.
 
 ``` r
-plt_elovl3 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_elovl3"]] + theme(legend.position = "bottom", legend.title = element_blank())
-plt_pck1 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_pck1"]] + theme(legend.position = "bottom", legend.title = element_blank())
+plt_elovl3 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_elovl3"]]
+plt_pck1 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_pck1"]]
 g <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
 grid.draw(g)
 ```
@@ -663,8 +662,8 @@ rhythm. ELOVL3 is similar to ARNTL, with a mid-ZT dip. PCK1 is similar
 to DBP, with a mid-ZT bump.
 
 ``` r
-plt_elovl3 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_elovl3"]] + theme(legend.position = "bottom", legend.title = element_blank())
-plt_pck1 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_pck1"]] + theme(legend.position = "bottom", legend.title = element_blank())
+plt_elovl3 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_elovl3"]]
+plt_pck1 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_pck1"]]
 g <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
 grid.draw(g)
 ```

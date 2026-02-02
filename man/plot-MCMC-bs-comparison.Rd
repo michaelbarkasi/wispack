@@ -7,7 +7,8 @@
 plot.MCMC.bs.comparison(
  wisp.results, 
  print.plots = FALSE, 
- verbose = TRUE
+ verbose = TRUE,
+ ran.seed = 1234
 )
 }
 \arguments{

@@ -221,7 +221,6 @@ model <- wisp(
 ##  warp_precision: 1e-07
 ##  round_none: TRUE
 ##  inf_warp: 450359962.73705
-##  allow_infeasible_params: TRUE
 ## 
 ## Plot settings:
 ##  print.plots: FALSE

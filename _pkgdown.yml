@@ -29,7 +29,15 @@ articles:
 - title: Tutorials
   navbar: Tutorials
   contents: 
-  - starts_with("tutorial_")
+  - tutorial_Poisson
+  - tutorial_warping
+  - tutorial_corticallaminar
+  - tutorial_timeseries
+  - tutorial_liverradial
+  - tutorial_multicontext
+  - tutorial_wispplots
+  - tutorial_stats
+  - tutorial_benchmarks
 
 - title: Legal
   navbar: Legal
@@ -50,7 +58,7 @@ reference:
 - title: Analysis functions
   navbar: Analysis functions
   contents:
-  - starts_with("analyze.")
+  - analyze.residuals
   - pvalues.samples
   - sample.stats
   
@@ -67,6 +75,7 @@ reference:
   - attractor_simulation
   - model_attractor_simulation_wisp
   - run_attractor_sim_benchmarks
+  - analyze_attractor_sim_benchmarks
 
 - title: MERFISH preprocessing functions 
   navbar: MERFISH preprocessing functions 

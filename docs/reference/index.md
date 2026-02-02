@@ -16,9 +16,6 @@
 
 - [`analyze.residuals()`](https://michaelbarkasi.github.io/wispack/reference/analyze.residuals.md)
   : Analyze residuals from wisp fit
-- [`analyze_attractor_sim_benchmarks()`](https://michaelbarkasi.github.io/wispack/reference/analyze_attractor_sim_benchmarks.md)
-  : Function to analyze benchmark results from attractor-based
-  simulations
 - [`pvalues.samples()`](https://michaelbarkasi.github.io/wispack/reference/pvalues.samples.md)
   : Compute p-values using ecdf from parameter resamples
 - [`sample.stats()`](https://michaelbarkasi.github.io/wispack/reference/sample.stats.md)
@@ -68,6 +65,10 @@
 
 - [`run_attractor_sim_benchmarks()`](https://michaelbarkasi.github.io/wispack/reference/run_attractor_sim_benchmarks.md)
   : Function to run benchmarks on attractor-based simulations
+
+- [`analyze_attractor_sim_benchmarks()`](https://michaelbarkasi.github.io/wispack/reference/analyze_attractor_sim_benchmarks.md)
+  : Function to analyze benchmark results from attractor-based
+  simulations
 
 ## MERFISH preprocessing functions
 

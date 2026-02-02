@@ -378,7 +378,6 @@ model <- wisp(
 ##  warp_precision: 1e-07
 ##  round_none: TRUE
 ##  inf_warp: 450359962.73705
-##  allow_infeasible_params: TRUE
 ## 
 ## Plot settings:
 ##  print.plots: FALSE
@@ -506,9 +505,9 @@ model <- wisp(
 ## Acceptance rate (aim for 0.2-0.3): 0.283432
 ## 
 ## MCMC simulation complete... 
-## MCMC run time (total), minutes: 0.826
-## MCMC run time (per retained step), seconds: 0.045
-## MCMC run time (per step), seconds: 0.045
+## MCMC run time (total), minutes: 1.189
+## MCMC run time (per retained step), seconds: 0.065
+## MCMC run time (per step), seconds: 0.065
 ## 
 ## Setting full-data fit as parameters... 
 ## Checking feasibility of provided parameters

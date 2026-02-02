@@ -9,24 +9,24 @@
 
 ### Tutorials
 
-- [Benchmarks and
-  comparisons](https://michaelbarkasi.github.io/wispack/articles/tutorial_benchmarks.md):
+- [Poisson processes and
+  sigmoids](https://michaelbarkasi.github.io/wispack/articles/tutorial_Poisson.md):
+- [Random effects and
+  warping](https://michaelbarkasi.github.io/wispack/articles/tutorial_warping.md):
 - [RORB along the cortical laminar
   axis](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.md):
+- [Time-series
+  data](https://michaelbarkasi.github.io/wispack/articles/tutorial_timeseries.md):
 - [Radial zonation in liver
   lobules](https://michaelbarkasi.github.io/wispack/articles/tutorial_liverradial.md):
 - [Modeling cell
   types](https://michaelbarkasi.github.io/wispack/articles/tutorial_multicontext.md):
-- [Poisson processes and
-  sigmoids](https://michaelbarkasi.github.io/wispack/articles/tutorial_Poisson.md):
-- [Customizing statistical
-  analyses](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md):
-- [Time-series
-  data](https://michaelbarkasi.github.io/wispack/articles/tutorial_timeseries.md):
-- [Random effects and
-  warping](https://michaelbarkasi.github.io/wispack/articles/tutorial_warping.md):
 - [Plotting wisp
   models](https://michaelbarkasi.github.io/wispack/articles/tutorial_wispplots.md):
+- [Customizing statistical
+  analyses](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md):
+- [Benchmarks and
+  comparisons](https://michaelbarkasi.github.io/wispack/articles/tutorial_benchmarks.md):
 
 ### Legal
 
