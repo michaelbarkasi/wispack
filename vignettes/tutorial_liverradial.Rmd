@@ -21,22 +21,22 @@ Mammalian liver tissue is organized into concentric rings of cells called *lobul
 
 Thus, the zonated expression of genes in the liver is a good candidate for functionally relevant spatial gene variation, and hence rhythmic  oscillations in gene expression which potentially interact with this spatial variation are good candidates for functional spatial effects (FSE). To investigate this question, albeit not using the jargon "FSE", [Droin et al.](https://doi.org/10.1038/s42255-020-00323-1) used a linear mixed-effects model with second-degree polynomials to represent spatial variation and harmonic terms to represent temporal rhythm. Specifically, after normalizing transcript counts $y$, they log-transformed those counts:
 \[y \mapsto \log_2(y + \Delta) - B\]
-such that the "offset $\Delta = 1\times 10^{-4}$ buffers variability in genes with low expression, while the shift $B = -log_2(11\times 10^{-3})$ changes the scale so that $y=0$ corresponds to about 10 mRNA copies per cell" (p. 55). They then modeled the transformed counts $y_{x,t,i}$ for spatial position $x$, time $t$, and individual mouse $i$ as:
+such that "the offset $\Delta = 1\times 10^{-4}$ buffers variability in genes with low expression, while the shift $B = -\log_2(11\times 10^{-3})$ changes the scale so that $y=0$ corresponds to about 10 mRNA copies per cell" (p. 55). They then modeled the transformed counts $y_{x,t,i}$ for spatial position $x$, time $t$, and individual mouse $i$ as:
 \[y_{x,t,i} = \mu_i + \mu(x) + a(x)\text{cos}(\omega t) + b(x)\text{sin}(\omega t) + \epsilon_{x,t,i}\]
 with: 
-\begin{align}
+\begin{aligned}
 \mu(x) &= \mu_0 + \mu_1P_1(x) + \mu_2P_2(x) \\
 a(x) &= a_0 + a_1P_1(x) + a_2P_2(x) \\
 b(x) &= b_0 + b_1P_1(x) + b_2P_2(x)
-\end{align}
+\end{aligned}
 for $P_1(x)$ and $P_2(x)$ the first- and second-degree Legendre polynomials. Statistical testing showing significant coefficients $\mu_1$ or $\mu_2$ (terms of pure spatial variation) and $a_0$ or $b_0$ (terms of pure temporal variation) would indicate *additive* spatial zonation and temporal rhythm, while significant coefficients $a_1$, $a_2$, $b_1$, or $b_2$ (terms for position-dependent temporal variation) would indicate *interacting* spatial and temporal effects. These model coefficients are, of course, log2 fold changes (L2FC). 
 
-Whether or not interaction is required for a FSE, or if instead the combination of additive zonation and temporal rhythm suffices, is a conceptual question we can set aside here. What's important is that this model allowed [Droin et al.](https://doi.org/10.1038/s42255-020-00323-1) to test for FSEs by first 
+Whether or not interaction is required for a FSE, or if instead the combination of additive zonation and temporal rhythm suffices, is a conceptual question we can set aside here. What's important is that this model allowed [Droin et al.](https://doi.org/10.1038/s42255-020-00323-1) to test for FSEs by first: 
 
 * testing for significant model coefficients, then 
 * searching for KEGG pathways enriched with genes having these significant model coefficients. 
 
-They found enriched KEGG pathways for many of their additive genes. Depending on one's perspective, this finding is either evidence that temporal rhythm has a FSE, or (if interaction is necessary) evidence that temporal rhythm has no FSE. Either way, their model allowed them to test for FSEs in a principled way.
+They found enriched KEGG pathways for many of their additive genes. Depending on one's perspective, this finding is either evidence that temporal rhythm has a FSE, or (if interaction is necessary) evidence that temporal rhythm has no FSE. Either way, their model afforded a principled test for FSEs.
 
 This same analysis can be run with a wisp. Wisp models are, of course, built explicitly for modeling effects on one-dimensional spatial variation, including temporal effects from a time series. While wisp models represent time as a [discrete additive effect](tutorial_timeseries.html) rather than as a harmonic oscillation (and thus lack a period term $\omega$ which could be used to test for period length), known or expected oscillations can be represented by indexing times to some repeating point in the series ("zeitgeber time"). In this case, effects of circadian rhythms or feed-fast cycles can be modeled by indexing times to the start of each day. (Indeed; even Droin et al. exploited this fact by fixing $\omega=2\pi/24\text{ hr}$, instead of estimating $\omega$ from the data.)
 

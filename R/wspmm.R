@@ -839,7 +839,7 @@ analyze.residuals <- function(
   ) {
     
     if (verbose) {
-      snk.report("Analyzing residuals", initial_breaks = 1)
+      snk.report("Analyzing residuals", initial_breaks = 2)
       snk.horizontal_rule(reps = snk.simple_break_reps)
     }
     
@@ -1092,7 +1092,7 @@ plot.ratecount <- function(
   ) {
     
     if (verbose) snk.report...("Making rate-count plots")
-   
+    
     # Set y-axis scale 
     pred.type <- "pred"
     count.type <- "count"
@@ -1326,7 +1326,7 @@ plot.ratecount <- function(
               hjust = -0.2,
               color = "gray30",
               fill = "gray90",
-              label.size = 0,
+              linewidth = 0,
               size = 0.4 * wisp.results$plot.settings$axis_size,
               inherit.aes = FALSE,
               fontface = "bold"
@@ -1351,10 +1351,18 @@ plot.ratecount <- function(
     }
     
     # Create function for plotting fixed effects
-    plot_context_fixEff <- function(df, cxt, sps) {
+    plot_context_fixEff <- function(df, cxt = c(), sps = c()) {
       
       # Grab index mask for this context-species level combination
-      gvf_idx_cxt <- df[,"species"] == sps & df[,"context"] == cxt
+      if (length(cxt) == 0 && length(sps) == 0) {
+        gvf_idx_cxt <- rep(TRUE, nrow(df))
+      } else if (length(cxt) == 0) {
+        gvf_idx_cxt <- df[,"species"] == sps
+      } else if (length(sps) == 0) {
+        gvf_idx_cxt <- df[,"context"] == cxt
+      } else {
+        gvf_idx_cxt <- df[,"species"] == sps & df[,"context"] == cxt
+      }
       
       # Grab index mask for case without random effects
       gvf_idx_cxt_noRanEff <- gvf_idx_cxt
@@ -1477,6 +1485,8 @@ plot.ratecount <- function(
           na.rm = TRUE
         )
         if (!is.null(names(dim.boundaries))) {
+          lab_size <- 0.4
+          if (length(cxt) == 0 || length(sps) == 0) lab_size <- lab_size * 0.75
           plot <- plot + 
             geom_label(
               data = data.frame(
@@ -1488,8 +1498,8 @@ plot.ratecount <- function(
               hjust = -0.2,
               color = "gray30",
               fill = "gray90",
-              label.size = 0,
-              size = 0.4 * wisp.results$plot.settings$axis_size,
+              linewidth = 0,
+              size = lab_size * wisp.results$plot.settings$axis_size,
               inherit.aes = FALSE,
               fontface = "bold"
             ) + 
@@ -1497,6 +1507,16 @@ plot.ratecount <- function(
         }
       }
       
+      # Handle faceting 
+      if (length(cxt) == 0 && length(sps) == 0) {
+        plot <- plot + facet_wrap(~ species + context, scales = "free_y")
+      } else if (length(cxt) == 0) {
+        plot <- plot + facet_wrap(~ context, scales = "free_y")
+      } else if (length(sps) == 0) {
+        plot <- plot + facet_wrap(~ species, scales = "free_y")
+      }
+      
+      # Add theme controls
       plot <- plot +
         theme(
           plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
@@ -1510,16 +1530,6 @@ plot.ratecount <- function(
       
       return(plot)
       
-    }
-    
-    # Helper function
-    sqrt_or_next <- function(x) {
-      sqrt_x <- sqrt(x)          # Take the square root
-      if (sqrt_x == floor(sqrt_x)) {
-        return(sqrt_x)           # Return the square root if it's an integer
-      } else {
-        return(ceiling(sqrt_x))  # Return the next integer up if not
-      }
     }
     
     # Start list to hold plots
@@ -1560,6 +1570,12 @@ plot.ratecount <- function(
         }
       }
       
+    }
+    plot_list[["plot_all"]] <- plot_context_fixEff(df) + theme(
+      strip.text = element_text(size = wisp.results$plot.settings$title_size/1.5)
+    )
+    if (print.plots) {
+      print(plot_list[["plot_all"]])
     }
     
     return(plot_list)
@@ -1943,6 +1959,41 @@ plot.timeseries <- function(
         if (print.plots) print(plt)
       }
     }
+    
+    # Make faceted plot of all
+    if (splitting_name != "none") {
+      plt <- ggplot(
+        df, 
+        aes(x = timeseries, y = rate, color = interaction(block, splitting_factor, sep = ", "))
+      ) 
+    } else {
+      plt <- ggplot(
+        df, 
+        aes(x = timeseries, y = rate, color = block)
+      ) 
+    }
+    plt <- plt  + 
+      geom_line(linewidth = 1.5) +
+      geom_point(aes(y = count), position = position_jitter(width = 0.2)) +
+      facet_wrap(~ species + context, scales = "free_y") +
+      theme_minimal() +
+      theme(
+        plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+        axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+        axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+        legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+        legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+        panel.background = element_rect(fill = "white", colour = NA),
+        plot.background  = element_rect(fill = "white", colour = NA),
+        strip.text = element_text(size = wisp.results$plot.settings$title_size/1.5)
+      ) +
+      labs(y = y_lab, x = "Time point", color = color_name) +
+      scale_color_manual(
+        labels = color_lvl,
+        values = color_values
+      ) 
+    out[["plot_all"]] <- plt
+    if (print.plots) print(plt)
     
     return(out)
     

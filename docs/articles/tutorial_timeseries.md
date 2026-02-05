@@ -22,19 +22,19 @@ factors \xi with corresponding effect term \beta, the effect on a model
 parameter z is: z \mapsto z + \beta + \text{interaction terms} To
 achieve the cumulative effect of time, the effect of a time factor
 \xi\_{T_m}, for m\leq n, is given by summing the series of effects
-\beta\_{T_i} from time factors \xi\_{T_i} for T_i\leq T_m: z \mapsto z +
-\sum\_{i=1}^{m} (\beta\_{T_i} + \text{interaction terms for }i) For a
+\beta\_{T_l} from time factors \xi\_{T_l} for T_l\leq T_m: z \mapsto z +
+\sum\_{l=1}^{m} (\beta\_{T_l} + \text{interaction terms for }i) For a
 rigorous definition, suppose that in addition to the time factor \xi_T,
 there are other fixed-effect factors \xi_F each with effect \beta_F. The
 effect of some time \xi\_{T_m} from \xi_T will include not only
 \beta\_{T_m} and an interaction term \beta\_{T_m\times\xi_F} for all
-\xi_F, but also times \xi\_{T_i} for all i\<m and their respective
-interaction terms \beta\_{T_i\times\xi_F}. Thus, the effect of \xi_T can
-be defined to be: z \mapsto z + \sum\_{i=1}^{n}
-\left(\beta\_{T_i}\xi\_{T_i} +
-\sum\_{F}\beta\_{T_m\times\xi_F}\xi\_{T_i}\xi_F\right) with the
-stipulation that, for each sampled data point s, if \xi\_{T_m}(s)=1 then
-\xi\_{T_i}(s)=1 for all i\<m.
+\xi_F, but also effects \beta\_{T_l} from times \xi\_{T_l} for all l\<m
+and their respective interaction terms \beta\_{T_l\times\xi_F}. Thus,
+the effect of \xi\_{T_m} can be defined to be: z \mapsto z +
+\sum\_{l=1}^{n} \left(\beta\_{T_l}\xi\_{T_l} +
+\sum\_{F}\beta\_{T_l\times\xi_F}\xi\_{T_l}\xi_F\right) with the
+stipulation that, if \xi\_{T_m}=1 for some sampled data point, then for
+that data point \xi\_{T_l}=1 for all i\<m.
 
 ## Example data: postnatal age
 

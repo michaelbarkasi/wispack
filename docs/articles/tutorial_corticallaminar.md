@@ -505,9 +505,9 @@ model <- wisp(
 ## Acceptance rate (aim for 0.2-0.3): 0.283432
 ## 
 ## MCMC simulation complete... 
-## MCMC run time (total), minutes: 1.189
-## MCMC run time (per retained step), seconds: 0.065
-## MCMC run time (per step), seconds: 0.065
+## MCMC run time (total), minutes: 0.816
+## MCMC run time (per retained step), seconds: 0.045
+## MCMC run time (per step), seconds: 0.045
 ## 
 ## Setting full-data fit as parameters... 
 ## Checking feasibility of provided parameters

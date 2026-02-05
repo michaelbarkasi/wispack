@@ -1067,9 +1067,14 @@ plot_count_density <- function(
       )
     
     # Arrange
-    title <- textGrob(
-      paste0("Density comparison of radial transform, ", replicate),
-      gp = gpar(fontsize = 14, fontface = "bold")
+    title <- grobTree(
+      rectGrob(
+        gp = gpar(fill = "white", col = NA)
+      ),
+      textGrob(
+        paste0("Density comparison of radial transform, ", replicate),
+        gp = gpar(fontsize = 14, fontface = "bold")
+      )
     )
     panels <- arrangeGrob(p_x, p_r, ncol = 2)
     grid.arrange(

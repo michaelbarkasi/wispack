@@ -32,23 +32,25 @@ spatial variation are good candidates for functional spatial effects
 mixed-effects model with second-degree polynomials to represent spatial
 variation and harmonic terms to represent temporal rhythm. Specifically,
 after normalizing transcript counts y, they log-transformed those
-counts: y \mapsto \log_2(y + \Delta) - B such that the “offset \Delta =
+counts: y \mapsto \log_2(y + \Delta) - B such that the offset \Delta =
 1\times 10^{-4} buffers variability in genes with low expression, while
-the shift B = -log_2(11\times 10^{-3}) changes the scale so that y=0
+the shift B = -\log_2(11\times 10^{-3}) changes the scale so that y=0
 corresponds to about 10 mRNA copies per cell” (p. 55). They then modeled
 the transformed counts y\_{x,t,i} for spatial position x, time t, and
 individual mouse i as: y\_{x,t,i} = \mu_i + \mu(x) +
 a(x)\text{cos}(\omega t) + b(x)\text{sin}(\omega t) + \epsilon\_{x,t,i}
-with: \begin{align} \mu(x) &= \mu_0 + \mu_1P_1(x) + \mu_2P_2(x) \\ a(x)
-&= a_0 + a_1P_1(x) + a_2P_2(x) \\ b(x) &= b_0 + b_1P_1(x) + b_2P_2(x)
-\end{align} for P_1(x) and P_2(x) the first- and second-degree Legendre
-polynomials. Statistical testing showing significant coefficients \mu_1
-or \mu_2 (terms of pure spatial variation) and a_0 or b_0 (terms of pure
-temporal variation) would indicate *additive* spatial zonation and
-temporal rhythm, while significant coefficients a_1, a_2, b_1, or b_2
-(terms for position-dependent temporal variation) would indicate
-*interacting* spatial and temporal effects. These model coefficients
-are, of course, log2 fold changes (L2FC).
+with: \begin{aligned} \mu(x) &= \mu_0 + \mu_1P_1(x) + \mu_2P_2(x) \\
+a(x) &= a_0 + a_1P_1(x) + a_2P_2(x) \\ b(x) &= b_0 + b_1P_1(x) +
+b_2P_2(x) \end{aligned}
+
+for P_1(x) and P_2(x) the first- and second-degree Legendre polynomials.
+Statistical testing showing significant coefficients \mu_1 or \mu_2
+(terms of pure spatial variation) and a_0 or b_0 (terms of pure temporal
+variation) would indicate *additive* spatial zonation and temporal
+rhythm, while significant coefficients a_1, a_2, b_1, or b_2 (terms for
+position-dependent temporal variation) would indicate *interacting*
+spatial and temporal effects. These model coefficients are, of course,
+log2 fold changes (L2FC).
 
 Whether or not interaction is required for a FSE, or if instead the
 combination of additive zonation and temporal rhythm suffices, is a
@@ -470,22 +472,22 @@ radial.model <- wisp(
 ## Initial boundary distance (want > 0): 0.206765
 ## Performing initial fit of full data
 ## Penalized neg_loglik: 1044.51
-## Batch: 1/100, 0.203963 sec/bs
-## Batch: 10/100, 0.179684 sec/bs
-## Batch: 20/100, 0.179918 sec/bs
-## Batch: 30/100, 0.175799 sec/bs
-## Batch: 40/100, 0.183302 sec/bs
-## Batch: 50/100, 0.194938 sec/bs
-## Batch: 60/100, 0.190911 sec/bs
-## Batch: 70/100, 0.192661 sec/bs
-## Batch: 80/100, 0.231632 sec/bs
-## Batch: 90/100, 0.180376 sec/bs
+## Batch: 1/100, 0.171679 sec/bs
+## Batch: 10/100, 0.175567 sec/bs
+## Batch: 20/100, 0.158651 sec/bs
+## Batch: 30/100, 0.153633 sec/bs
+## Batch: 40/100, 0.168188 sec/bs
+## Batch: 50/100, 0.177906 sec/bs
+## Batch: 60/100, 0.17016 sec/bs
+## Batch: 70/100, 0.180133 sec/bs
+## Batch: 80/100, 0.192582 sec/bs
+## Batch: 90/100, 0.165501 sec/bs
 ## All complete!
 ## 
 ## Bootstrap simulation complete... 
-## Bootstrap run time (total), minutes: 3.271
-## Bootstrap run time (per sample), seconds: 0.196
-## Bootstrap run time (per sample, per thread), seconds: 1.963
+## Bootstrap run time (total), minutes: 2.909
+## Bootstrap run time (per sample), seconds: 0.175
+## Bootstrap run time (per sample, per thread), seconds: 1.745
 ## 
 ## Setting full-data fit as parameters... 
 ## Checking feasibility of provided parameters

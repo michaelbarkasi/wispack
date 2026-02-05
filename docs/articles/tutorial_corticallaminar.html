@@ -87,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-02-04</h4>
+            <h4 data-toc-skip class="date">2026-02-08</h4>
       
 
       <div class="d-none name"><code>tutorial_corticallaminar.Rmd</code></div>
@@ -277,7 +277,7 @@ with mouse as a random-effect grouping factor. A linear model from the
 well-known R package lme4 with the appropriate effects structure could
 be gotten with the following call:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu">lme4</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu">lme4</span><span class="fu">::</span><span class="fu">lmer</span><span class="op">(</span></span>
 <span>    <span class="va">count</span> <span class="op">~</span> <span class="va">age</span> <span class="op">*</span> <span class="va">hemisphere</span> <span class="op">+</span> <span class="op">(</span><span class="va">age</span> <span class="op">*</span> <span class="va">hemisphere</span><span class="op">|</span><span class="va">mouse</span><span class="op">)</span>, </span>
 <span>    data <span class="op">=</span> <span class="va">countdata</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
@@ -581,9 +581,9 @@ by the CCFv3 registration.</p>
 <span><span class="co">## Acceptance rate (aim for 0.2-0.3): 0.283432</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## MCMC simulation complete... </span></span>
-<span><span class="co">## MCMC run time (total), minutes: 1.189</span></span>
-<span><span class="co">## MCMC run time (per retained step), seconds: 0.065</span></span>
-<span><span class="co">## MCMC run time (per step), seconds: 0.065</span></span>
+<span><span class="co">## MCMC run time (total), minutes: 0.816</span></span>
+<span><span class="co">## MCMC run time (per retained step), seconds: 0.045</span></span>
+<span><span class="co">## MCMC run time (per step), seconds: 0.045</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Setting full-data fit as parameters... </span></span>
 <span><span class="co">## Checking feasibility of provided parameters</span></span>

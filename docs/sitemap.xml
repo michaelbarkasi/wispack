@@ -6,7 +6,6 @@
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/license.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/release_notes.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/tutorial_Poisson.html</loc></url>
-<url><loc>https://michaelbarkasi.github.io/wispack/articles/tutorial_basic.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/tutorial_benchmarks.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/articles/tutorial_liverradial.html</loc></url>
@@ -37,14 +36,6 @@
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot-ratecount.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot-species-summary.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/plot-timeseries.html</loc></url>
-<url><loc>https://michaelbarkasi.github.io/wispack/reference/plot.MCMC.bs.comparison.html</loc></url>
-<url><loc>https://michaelbarkasi.github.io/wispack/reference/plot.MCMC.walks.html</loc></url>
-<url><loc>https://michaelbarkasi.github.io/wispack/reference/plot.child.summary.html</loc></url>
-<url><loc>https://michaelbarkasi.github.io/wispack/reference/plot.decomposition.html</loc></url>
-<url><loc>https://michaelbarkasi.github.io/wispack/reference/plot.effect.dist.html</loc></url>
-<url><loc>https://michaelbarkasi.github.io/wispack/reference/plot.parameters.html</loc></url>
-<url><loc>https://michaelbarkasi.github.io/wispack/reference/plot.ratecount.html</loc></url>
-<url><loc>https://michaelbarkasi.github.io/wispack/reference/plot.species.summary.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/pvalues.samples.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/run_attractor_sim_benchmarks.html</loc></url>
 <url><loc>https://michaelbarkasi.github.io/wispack/reference/sample.stats.html</loc></url>

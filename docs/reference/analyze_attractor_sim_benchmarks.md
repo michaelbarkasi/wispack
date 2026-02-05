@@ -5,7 +5,21 @@ attractor-based simulation datasets. It computes the performance
 metrics: correlation coefficients for rate and random effect parameters,
 false positive rates (FPR), false discovery rates (FDR), and power for
 spatially variable gene (SVG) and functional spatial effect (FSE)
-parameters.
+parameters. FPR, FDR, and power are defined as follows:
+
+- FP: *p*-value below \\\alpha\\ for true null effect
+
+- TN: *p*-value above \\\alpha\\ for true null effect
+
+- TP: *p*-value below \\\alpha\\ for true non-null effect
+
+- FN: *p*-value above \\\alpha\\ for true non-null effect
+
+- FPR: FP / (FP + TN)
+
+- FDR: FP / (FP + TP)
+
+- Power: TP / (TP + FN)
 
 ## Usage
 

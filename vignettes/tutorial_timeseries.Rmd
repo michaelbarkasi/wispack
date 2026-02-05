@@ -21,12 +21,12 @@ a corresponding time-factor series $\xi_T$ is defined with $n$ ordered binary fa
 \[\xi_{T_1} < \xi_{T_2} < \cdots < \xi_{T_n}\]
 For binary factors $\xi$ with corresponding effect term $\beta$, the effect on a model parameter $z$ is:
 \[z \mapsto z + \beta + \text{interaction terms}\]
-To achieve the cumulative effect of time, the effect of a time factor $\xi_{T_m}$, for $m\leq n$, is given by summing the series of effects $\beta_{T_i}$ from time factors $\xi_{T_i}$ for $T_i\leq T_m$:
-\[z \mapsto z + \sum_{i=1}^{m} (\beta_{T_i} + \text{interaction terms for }i)\]
-For a rigorous definition, suppose that in addition to the time factor $\xi_T$, there are other fixed-effect factors $\xi_F$ each with effect $\beta_F$. The effect of some time $\xi_{T_m}$ from $\xi_T$ will include not only $\beta_{T_m}$ and an interaction term $\beta_{T_m\times\xi_F}$ for all $\xi_F$, but also times $\xi_{T_i}$ for all $i<m$ and their respective interaction terms $\beta_{T_i\times\xi_F}$. 
-Thus, the effect of $\xi_T$ can be defined to be:
-\[z \mapsto z + \sum_{i=1}^{n} \left(\beta_{T_i}\xi_{T_i} + \sum_{F}\beta_{T_m\times\xi_F}\xi_{T_i}\xi_F\right)\]
-with the stipulation that, for each sampled data point $s$, if $\xi_{T_m}(s)=1$ then $\xi_{T_i}(s)=1$ for all $i<m$. 
+To achieve the cumulative effect of time, the effect of a time factor $\xi_{T_m}$, for $m\leq n$, is given by summing the series of effects $\beta_{T_l}$ from time factors $\xi_{T_l}$ for $T_l\leq T_m$:
+\[z \mapsto z + \sum_{l=1}^{m} (\beta_{T_l} + \text{interaction terms for }i)\]
+For a rigorous definition, suppose that in addition to the time factor $\xi_T$, there are other fixed-effect factors $\xi_F$ each with effect $\beta_F$. The effect of some time $\xi_{T_m}$ from $\xi_T$ will include not only $\beta_{T_m}$ and an interaction term $\beta_{T_m\times\xi_F}$ for all $\xi_F$, but also effects $\beta_{T_l}$ from times $\xi_{T_l}$ for all $l<m$ and their respective interaction terms $\beta_{T_l\times\xi_F}$. 
+Thus, the effect of $\xi_{T_m}$ can be defined to be:
+\[z \mapsto z + \sum_{l=1}^{n} \left(\beta_{T_l}\xi_{T_l} + \sum_{F}\beta_{T_l\times\xi_F}\xi_{T_l}\xi_F\right)\]
+with the stipulation that, if $\xi_{T_m}=1$ for some sampled data point, then for that data point $\xi_{T_l}=1$ for all $i<m$. 
 
 <h2>Example data: postnatal age</h2>
 

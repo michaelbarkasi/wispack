@@ -87,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-02-04</h4>
+            <h4 data-toc-skip class="date">2026-02-08</h4>
       
 
       <div class="d-none name"><code>tutorial_timeseries.Rmd</code></div>
@@ -122,20 +122,21 @@ the effect on a model parameter <span class="math inline">z</span> is:
 <span class="math display">z \mapsto z + \beta + \text{interaction
 terms}</span> To achieve the cumulative effect of time, the effect of a
 time factor <span class="math inline">\xi_{T_m}</span>, for <span class="math inline">m\leq n</span>, is given by summing the series of
-effects <span class="math inline">\beta_{T_i}</span> from time factors
-<span class="math inline">\xi_{T_i}</span> for <span class="math inline">T_i\leq T_m</span>: <span class="math display">z
-\mapsto z + \sum_{i=1}^{m} (\beta_{T_i} + \text{interaction terms for
+effects <span class="math inline">\beta_{T_l}</span> from time factors
+<span class="math inline">\xi_{T_l}</span> for <span class="math inline">T_l\leq T_m</span>: <span class="math display">z
+\mapsto z + \sum_{l=1}^{m} (\beta_{T_l} + \text{interaction terms for
 }i)</span> For a rigorous definition, suppose that in addition to the
 time factor <span class="math inline">\xi_T</span>, there are other
 fixed-effect factors <span class="math inline">\xi_F</span> each with
 effect <span class="math inline">\beta_F</span>. The effect of some time
-<span class="math inline">\xi_{T_m}</span> from <span class="math inline">\xi_T</span> will include not only <span class="math inline">\beta_{T_m}</span> and an interaction term <span class="math inline">\beta_{T_m\times\xi_F}</span> for all <span class="math inline">\xi_F</span>, but also times <span class="math inline">\xi_{T_i}</span> for all <span class="math inline">i&lt;m</span> and their respective interaction terms
-<span class="math inline">\beta_{T_i\times\xi_F}</span>. Thus, the
-effect of <span class="math inline">\xi_T</span> can be defined to be:
-<span class="math display">z \mapsto z + \sum_{i=1}^{n}
-\left(\beta_{T_i}\xi_{T_i} +
-\sum_{F}\beta_{T_m\times\xi_F}\xi_{T_i}\xi_F\right)</span> with the
-stipulation that, for each sampled data point <span class="math inline">s</span>, if <span class="math inline">\xi_{T_m}(s)=1</span> then <span class="math inline">\xi_{T_i}(s)=1</span> for all <span class="math inline">i&lt;m</span>.</p>
+<span class="math inline">\xi_{T_m}</span> from <span class="math inline">\xi_T</span> will include not only <span class="math inline">\beta_{T_m}</span> and an interaction term <span class="math inline">\beta_{T_m\times\xi_F}</span> for all <span class="math inline">\xi_F</span>, but also effects <span class="math inline">\beta_{T_l}</span> from times <span class="math inline">\xi_{T_l}</span> for all <span class="math inline">l&lt;m</span> and their respective interaction terms
+<span class="math inline">\beta_{T_l\times\xi_F}</span>. Thus, the
+effect of <span class="math inline">\xi_{T_m}</span> can be defined to
+be: <span class="math display">z \mapsto z + \sum_{l=1}^{n}
+\left(\beta_{T_l}\xi_{T_l} +
+\sum_{F}\beta_{T_l\times\xi_F}\xi_{T_l}\xi_F\right)</span> with the
+stipulation that, if <span class="math inline">\xi_{T_m}=1</span> for
+some sampled data point, then for that data point <span class="math inline">\xi_{T_l}=1</span> for all <span class="math inline">i&lt;m</span>.</p>
 <h2>
 Example data: postnatal age
 </h2>

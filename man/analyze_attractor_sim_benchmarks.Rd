@@ -15,5 +15,15 @@ analyze_attractor_sim_benchmarks(results, sig_thresh = list(wisp = 0.05))
 A data frame summarizing the performance metrics for each modeling method.
 }
 \description{
-This function analyzes the results from benchmarking modeling methods on attractor-based simulation datasets. It computes the performance metrics: correlation coefficients for rate and random effect parameters, false positive rates (FPR), false discovery rates (FDR), and power for spatially variable gene (SVG) and functional spatial effect (FSE) parameters.
+This function analyzes the results from benchmarking modeling methods on attractor-based simulation datasets. It computes the performance metrics: correlation coefficients for rate and random effect parameters, false positive rates (FPR), false discovery rates (FDR), and power for spatially variable gene (SVG) and functional spatial effect (FSE) parameters. FPR, FDR, and power are defined as follows:
+\itemize{
+\item FP: \emph{p}-value below \eqn{\alpha} for true null effect
+\item TN: \emph{p}-value above \eqn{\alpha} for true null effect
+\item TP: \emph{p}-value below \eqn{\alpha} for true non-null effect
+\item FN: \emph{p}-value above \eqn{\alpha} for true non-null effect
+\item FPR: FP / (FP + TN)
+\item FDR: FP / (FP + TP)
+\item Power: TP / (TP + FN)
+}
+The exact interpretation will depend on what's returned by the modeling functions used. For example, \code{model_attractor_simulation_wisp} returns \emph{p}-values for the rate-effect parameter only and returns it under the "FSE" parameter type, so FPR, FDR, and power for the "FSE" parameter type will be computed based on the rate-effect estimates only.
 }

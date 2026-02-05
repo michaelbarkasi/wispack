@@ -227,7 +227,6 @@ ggplot(data, aes(x = coord_x, y = coord_y, size = log(count + 1))) +
     legend.position = "none",
     panel.background = element_rect(fill = "white", colour = NA),
     plot.background  = element_rect(fill = "white", colour = NA))
-
 ```
 
 <h2>Modeling simulations</h2>
@@ -775,9 +774,14 @@ plot_count_density <- function(
       )
     
     # Arrange
-    title <- textGrob(
-      paste0("Density comparison of radial transform, ", replicate),
-      gp = gpar(fontsize = 14, fontface = "bold")
+    title <- grobTree(
+      rectGrob(
+        gp = gpar(fill = "white", col = NA)
+      ),
+      textGrob(
+        paste0("Density comparison of radial transform, ", replicate),
+        gp = gpar(fontsize = 14, fontface = "bold")
+      )
     )
     panels <- arrangeGrob(p_x, p_r, ncol = 2)
     grid.arrange(
@@ -789,7 +793,6 @@ plot_count_density <- function(
     
   }
 plot_count_density(ella_sim$expr, test_sim$data)
-
 ```
 
 Before writing the ELLA modeling function, let's write helper functions for running ELLA on simulation data and extracting SVG results. Note that three settings for the ELLA class have been changed from the default. Minimum learning rate and maximum iterations have been set to speed up the fits. More importantly, the L1 regression penalty factor has been changed from a default of zero to 0.2. Initial testing showed poor performance (high false discovery and false positive rates) without the L1 penalty. 

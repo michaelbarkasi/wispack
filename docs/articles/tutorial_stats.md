@@ -620,9 +620,9 @@ model_median <- wisp(
 ## Acceptance rate (aim for 0.2-0.3): 0.283432
 ## 
 ## MCMC simulation complete... 
-## MCMC run time (total), minutes: 1.176
-## MCMC run time (per retained step), seconds: 0.064
-## MCMC run time (per step), seconds: 0.064
+## MCMC run time (total), minutes: 0.835
+## MCMC run time (per retained step), seconds: 0.046
+## MCMC run time (per step), seconds: 0.046
 ## Setting median parameter samples as final parameters... 
 ## Checking feasibility of provided parameters
 ## ... no tpoints below buffer
