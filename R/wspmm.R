@@ -527,6 +527,7 @@ wisp <- function(
           as.vector(sampled_params[sp,]),
           TRUE
         )
+        cpp_model$clear_stan_mem()
       }
       if (verbose) snk.report...("Computing 95% CIs")
       # ... note: It doesn't make sense to "adjust" these CIs for multiple comparisons using Holm-Bonferroni, as there's
