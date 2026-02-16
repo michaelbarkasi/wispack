@@ -2018,7 +2018,7 @@ plot.timeseries <- function(
 #' @param species Character string, the species level to be plotted. If c(), all species levels are plotted.
 #' @param violin Logical, if TRUE, plots violin plots for each parameter; if FALSE, uses bar plots. 
 #' @param print.plots Logical, if TRUE, prints the plots to the console; if FALSE, only returns a list of plots without printing.
-#' @param species.classes List, a list of character vectors specifying which species levels to include together in plots. If NULL, all species levels are included in a single plot.
+#' @param species.classes List, a list of character vectors specifying which species levels to include together in plots. If NULL, all species levels are plotted separately.
 #' @param mc_type Character string, type of model component to plot ("rate", "tpoint", "tslope"). If NULL, all model components are plotted.
 #' @param verbose Logical, if TRUE, prints updates about the plotting process.
 #' @return List of ggplot objects for parameter plots.
@@ -2034,7 +2034,7 @@ plot.parameters <- function(
   ) {
     
     # aes (aesthetics) settings
-    star_gap_factor <- 0.15
+    star_gap_factor <- 0.25
     expand_factor <- 0.1
     vscale <- "area"       # default is "area", can also try "width"
     mean_dash_size <- 8
@@ -2102,7 +2102,7 @@ plot.parameters <- function(
       if (class(species.classes) != "list") stop("species.classes must be a list")
       for (cc in 1:length(species.classes)) {
         if (length(species.classes[[cc]]) == 0) stop("species.classes must have at least one element")
-        if (class(species.classes[[cc]] != "character")) stop("species.classes must be a list of character vectors")
+        if (class(species.classes[[cc]]) != "character") stop("species.classes must be a list of character vectors")
         if (!all(species.classes[[cc]] %in% as.character(wisp.results$grouping.variables$species.lvls))) {
           stop("species.classes must be a list of character vectors containing only levels of the species grouping variable")
           }
@@ -2375,7 +2375,7 @@ plot.parameters <- function(
               width = 0.2, na.rm = TRUE) +
             geom_text(
               aes(x = parameter, 
-                  y = value_high + star_gap_factor*(value_high-value_low),
+                  y = value_high + star_gap_factor * (exp(-(value_high - value_low)) + (value_high - value_low)),
                   label = sig_marks,
                   size = sig_marks_size),
               size.unit = sig_marks_unit, 

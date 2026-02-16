@@ -21,6 +21,12 @@ parameters. FPR, FDR, and power are defined as follows:
 
 - Power: TP / (TP + FN)
 
+The exact interpretation will depend on what's returned by the modeling
+functions used. For example, `model_attractor_simulation_wisp` returns
+*p*-values for the rate-effect parameter only and returns it under the
+"FSE" parameter type, so FPR, FDR, and power for the "FSE" parameter
+type will be computed based on the rate-effect estimates only.
+
 ## Usage
 
 ``` r

@@ -284,7 +284,7 @@ model <- wisp(
 ## Making rate-count plots...
 ```
 
-![](tutorial_Poisson_files/figure-html/model-1.png)
+![](tutorial_Poisson_files/figure-html/model-1.png)![](tutorial_Poisson_files/figure-html/model-2.png)
 
 The above plot makes visually clear that the wisp is a good fit for the
 data. The

@@ -98,7 +98,7 @@ plot.ratecount(
   )
 ```
 
-![](tutorial_wispplots_files/figure-html/RORB_CI-1.png)
+![](tutorial_wispplots_files/figure-html/RORB_CI-1.png)![](tutorial_wispplots_files/figure-html/RORB_CI-2.png)
 
 CI rate-count plots are straightforward to interpret: The horizontal (x)
 axis shows spatial position along the modeled spatial dimension, the
@@ -132,7 +132,7 @@ plot.ratecount(
   )
 ```
 
-![](tutorial_wispplots_files/figure-html/RORB_CI_log-1.png)
+![](tutorial_wispplots_files/figure-html/RORB_CI_log-1.png)![](tutorial_wispplots_files/figure-html/RORB_CI_log-2.png)
 
 ### Scatter plots
 
@@ -151,7 +151,7 @@ plot.ratecount(
   )
 ```
 
-![](tutorial_wispplots_files/figure-html/RORB_ran-1.png)
+![](tutorial_wispplots_files/figure-html/RORB_ran-1.png)![](tutorial_wispplots_files/figure-html/RORB_ran-2.png)
 
 As with CI rate-count plots, the horizontal axis represents spatial
 position along the modeled dimension, and the vertical axis represents
@@ -227,7 +227,7 @@ plot.timeseries(
   )
 ```
 
-![](tutorial_wispplots_files/figure-html/RORB_timeseries-1.png)
+![](tutorial_wispplots_files/figure-html/RORB_timeseries-1.png)![](tutorial_wispplots_files/figure-html/RORB_timeseries-2.png)
 
 As explained in the [time series
 tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_timeseries.md),

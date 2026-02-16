@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.01</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -87,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-02-08</h4>
+            <h4 data-toc-skip class="date">2026-02-19</h4>
       
 
       <div class="d-none name"><code>tutorial_wispplots.Rmd</code></div>
@@ -175,7 +175,7 @@ shown in the previous tutorial:</p>
 <span>  dim.boundaries <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span>,</span>
 <span>  species <span class="op">=</span> <span class="st">"Rorb"</span> </span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_wispplots_files/figure-html/RORB_CI-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_CI-1.png" class="r-plt" alt="" width="700"><img src="tutorial_wispplots_files/figure-html/RORB_CI-2.png" class="r-plt" alt="" width="700"></p>
 <p>CI rate-count plots are straightforward to interpret: The horizontal
 (<span class="math inline">x</span>) axis shows spatial position along
 the modeled spatial dimension, the vertical (<span class="math inline">y</span>) axis shows predicated rate. The solid line
@@ -201,7 +201,7 @@ However, it’s possible to rescale the vertical axis into log form:</p>
 <span>  species <span class="op">=</span> <span class="st">"Rorb"</span>,</span>
 <span>  log.scale <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_wispplots_files/figure-html/RORB_CI_log-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_CI_log-1.png" class="r-plt" alt="" width="700"><img src="tutorial_wispplots_files/figure-html/RORB_CI_log-2.png" class="r-plt" alt="" width="700"></p>
 <h3>
 Scatter plots
 </h3>
@@ -216,7 +216,7 @@ counts as scatter points. It’s accessed via the <span class="code_variable">CI
 <span>  CI_style <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  species <span class="op">=</span> <span class="st">"Rorb"</span> </span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_wispplots_files/figure-html/RORB_ran-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_ran-1.png" class="r-plt" alt="" width="700"><img src="tutorial_wispplots_files/figure-html/RORB_ran-2.png" class="r-plt" alt="" width="700"></p>
 <p>As with CI rate-count plots, the horizontal axis represents spatial
 position along the modeled dimension, and the vertical axis represents
 predicted rate.</p>
@@ -274,7 +274,7 @@ age. Let’s look at the time-series plot for <span class="gene">RORB</span> aga
 <span>  <span class="va">model</span>, </span>
 <span>  species <span class="op">=</span> <span class="st">"Rorb"</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_wispplots_files/figure-html/RORB_timeseries-1.png" class="r-plt" alt="" width="700"></p>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_timeseries-1.png" class="r-plt" alt="" width="700"><img src="tutorial_wispplots_files/figure-html/RORB_timeseries-2.png" class="r-plt" alt="" width="700"></p>
 <p>As explained in the <a href="tutorial_timeseries.html">time series
 tutorial</a>, the rate represented by the height of the solid lines is
 the rate parameter itself (for each block), not the actual predicted

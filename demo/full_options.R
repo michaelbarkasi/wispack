@@ -63,16 +63,16 @@ data.variables <- list(
 # Model settings 
 # ... all settings shown here are defaults
 model.settings <- list(
-    # ... these are global options needed to set up model
-    buffer_factor = 0.05,                                 # buffer factor for penalizing distance from structural parameter values
-    ctol = 1e-6,                                          # convergence tolerance
-    max_penalty_at_distance_factor = 0.01,                # maximum penalty at distance from structural parameter values
-    LROcutoff = 2.0,                                      # cutoff for LROcp, a multiple of standard deviation
-    LROwindow_factor = 1.25,                              # window factor for LROcp, larger means larger rolling window
-    rise_threshold_factor = 0.8,                          # amount of detected rise as fraction of total required to end run in initial slope estimation
-    max_evals = 1000,                                     # maximum number of evaluations for optimization
-    rng_seed = 42,                                        # random seed for optimization (controls bootstrap resamples only)
-    warp_precision = 1e-7                                 # decimal precision to retain when selecting really big number as pseudo infinity for unbound warping
+    buffer_factor = 0.05,                       # buffer factor for minimum distance between t-points
+    ctol = 1e-6,                                # convergence tolerance
+    max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from structural parameter values
+    LROcutoff = 2.0,                            # cutoff for LROcp, a multiple of standard deviation
+    LROwindow_factor = 1.25,                    # controls size of window used in LROcp algorithm (window = LROwindow_factor * bin_num * buffer_factor)
+    rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
+    max_evals = 1000,                           # maximum number of evaluations for optimization
+    rng_seed = 42,                              # seed for random number generator
+    warp_precision = 1e-7,                      # decimal precision to retain when selecting really big number as pseudo infinity for unbound warping
+    round_none = TRUE                           # round extrapoloted counts for "none" (no random effect) to nearest integer? 
   )
 
 # Setting suggestions: 
@@ -96,14 +96,20 @@ MCMC.settings <- list(
 # Settings for plotting
 plot.settings <- list(
   print.plots = TRUE,
-  dim.bounds = colMeans(layer.boundary.bins), 
+  dim.bounds =colMeans(layer.boundary.bins), 
   log.scale = FALSE,
   splitting_factor = NULL,
   CI_style = TRUE,
   label_size = 5.5,
   title_size = 20,
   axis_size = 12, 
-  legend_size = 10
+  legend_size = 10,
+  count_size = 1.5,
+  count_jitter = 0.5,
+  count.alpha.ran = 0.25,
+  count.alpha.none = 0.25,
+  pred.alpha.ran = 0.9,
+  pred.alpha.none = 1.0
 )
 
 # Fit model
@@ -119,7 +125,8 @@ laminar.model <- wisp(
     verbose = TRUE,
     model.settings = model.settings,
     MCMC.settings = MCMC.settings,
-    plot.settings = plot.settings
+    plot.settings = plot.settings,
+    ran.seed = 1234
   )
 
 # Demo plots showing anatomy of a wisp

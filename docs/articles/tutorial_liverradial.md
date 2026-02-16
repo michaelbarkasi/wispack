@@ -32,7 +32,7 @@ spatial variation are good candidates for functional spatial effects
 mixed-effects model with second-degree polynomials to represent spatial
 variation and harmonic terms to represent temporal rhythm. Specifically,
 after normalizing transcript counts y, they log-transformed those
-counts: y \mapsto \log_2(y + \Delta) - B such that the offset \Delta =
+counts: y \mapsto \log_2(y + \Delta) - B such that “the offset \Delta =
 1\times 10^{-4} buffers variability in genes with low expression, while
 the shift B = -\log_2(11\times 10^{-3}) changes the scale so that y=0
 corresponds to about 10 mRNA copies per cell” (p. 55). They then modeled
@@ -56,7 +56,7 @@ Whether or not interaction is required for a FSE, or if instead the
 combination of additive zonation and temporal rhythm suffices, is a
 conceptual question we can set aside here. What’s important is that this
 model allowed [Droin et al.](https://doi.org/10.1038/s42255-020-00323-1)
-to test for FSEs by first
+to test for FSEs by first:
 
 - testing for significant model coefficients, then
 - searching for KEGG pathways enriched with genes having these
@@ -65,8 +65,8 @@ to test for FSEs by first
 They found enriched KEGG pathways for many of their additive genes.
 Depending on one’s perspective, this finding is either evidence that
 temporal rhythm has a FSE, or (if interaction is necessary) evidence
-that temporal rhythm has no FSE. Either way, their model allowed them to
-test for FSEs in a principled way.
+that temporal rhythm has no FSE. Either way, their model afforded a
+principled test for FSEs.
 
 This same analysis can be run with a wisp. Wisp models are, of course,
 built explicitly for modeling effects on one-dimensional spatial
@@ -472,22 +472,22 @@ radial.model <- wisp(
 ## Initial boundary distance (want > 0): 0.206765
 ## Performing initial fit of full data
 ## Penalized neg_loglik: 1044.51
-## Batch: 1/100, 0.171679 sec/bs
-## Batch: 10/100, 0.175567 sec/bs
-## Batch: 20/100, 0.158651 sec/bs
-## Batch: 30/100, 0.153633 sec/bs
-## Batch: 40/100, 0.168188 sec/bs
-## Batch: 50/100, 0.177906 sec/bs
-## Batch: 60/100, 0.17016 sec/bs
-## Batch: 70/100, 0.180133 sec/bs
-## Batch: 80/100, 0.192582 sec/bs
-## Batch: 90/100, 0.165501 sec/bs
+## Batch: 1/100, 0.16258 sec/bs
+## Batch: 10/100, 0.145449 sec/bs
+## Batch: 20/100, 0.142449 sec/bs
+## Batch: 30/100, 0.136924 sec/bs
+## Batch: 40/100, 0.143721 sec/bs
+## Batch: 50/100, 0.153708 sec/bs
+## Batch: 60/100, 0.148936 sec/bs
+## Batch: 70/100, 0.15052 sec/bs
+## Batch: 80/100, 0.179867 sec/bs
+## Batch: 90/100, 0.142145 sec/bs
 ## All complete!
 ## 
 ## Bootstrap simulation complete... 
-## Bootstrap run time (total), minutes: 2.909
-## Bootstrap run time (per sample), seconds: 0.175
-## Bootstrap run time (per sample, per thread), seconds: 1.745
+## Bootstrap run time (total), minutes: 2.567
+## Bootstrap run time (per sample), seconds: 0.154
+## Bootstrap run time (per sample, per thread), seconds: 1.54
 ## 
 ## Setting full-data fit as parameters... 
 ## Checking feasibility of provided parameters
@@ -526,6 +526,7 @@ radial.model <- wisp(
 ## Grabbing sample results, only resamples with converged fit... 
 ## Computing predicted values for each sampled parameter set... 
 ## Computing 95% CIs... 
+## 
 ## Analyzing residuals
 ## ----------------------------------------
 ## 

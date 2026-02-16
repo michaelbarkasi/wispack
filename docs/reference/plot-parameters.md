@@ -41,8 +41,8 @@ plot.parameters(
 - species.classes:
 
   List, a list of character vectors specifying which species levels to
-  include together in plots. If NULL, all species levels are included in
-  a single plot.
+  include together in plots. If NULL, all species levels are plotted
+  separately.
 
 - mc_type:
 

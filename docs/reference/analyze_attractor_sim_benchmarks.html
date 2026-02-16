@@ -7,8 +7,7 @@ FN: p-value above \(\alpha\) for true non-null effect
 FPR: FP / (FP + TN)
 FDR: FP / (FP + TP)
 Power: TP / (TP + FN)
-
-"><meta property="og:description" content="This function analyzes the results from benchmarking modeling methods on attractor-based simulation datasets. It computes the performance metrics: correlation coefficients for rate and random effect parameters, false positive rates (FPR), false discovery rates (FDR), and power for spatially variable gene (SVG) and functional spatial effect (FSE) parameters. FPR, FDR, and power are defined as follows:
+The exact interpretation will depend on what's returned by the modeling functions used. For example, model_attractor_simulation_wisp returns p-values for the rate-effect parameter only and returns it under the &quot;FSE&quot; parameter type, so FPR, FDR, and power for the &quot;FSE&quot; parameter type will be computed based on the rate-effect estimates only."><meta property="og:description" content="This function analyzes the results from benchmarking modeling methods on attractor-based simulation datasets. It computes the performance metrics: correlation coefficients for rate and random effect parameters, false positive rates (FPR), false discovery rates (FDR), and power for spatially variable gene (SVG) and functional spatial effect (FSE) parameters. FPR, FDR, and power are defined as follows:
 FP: p-value below \(\alpha\) for true null effect
 TN: p-value above \(\alpha\) for true null effect
 TP: p-value below \(\alpha\) for true non-null effect
@@ -16,8 +15,7 @@ FN: p-value above \(\alpha\) for true non-null effect
 FPR: FP / (FP + TN)
 FDR: FP / (FP + TP)
 Power: TP / (TP + FN)
-
-"></head><body>
+The exact interpretation will depend on what's returned by the modeling functions used. For example, model_attractor_simulation_wisp returns p-values for the rate-effect parameter only and returns it under the &quot;FSE&quot; parameter type, so FPR, FDR, and power for the &quot;FSE&quot; parameter type will be computed based on the rate-effect estimates only."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -25,7 +23,7 @@ Power: TP / (TP + FN)
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.01</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -86,7 +84,8 @@ Power: TP / (TP + FN)
 <li><p>FPR: FP / (FP + TN)</p></li>
 <li><p>FDR: FP / (FP + TP)</p></li>
 <li><p>Power: TP / (TP + FN)</p></li>
-</ul></div>
+</ul><p>The exact interpretation will depend on what's returned by the modeling functions used. For example, <code>model_attractor_simulation_wisp</code> returns <em>p</em>-values for the rate-effect parameter only and returns it under the "FSE" parameter type, so FPR, FDR, and power for the "FSE" parameter type will be computed based on the rate-effect estimates only.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>

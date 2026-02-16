@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.01</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -106,32 +106,71 @@ install the package<br>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">rm</span> <span class="at">-rf</span> wispack.Rcheck</span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">rm</span> <span class="at">-f</span> wispack_<span class="pp">*</span>.tar.gz</span>
 <span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="ex">./build_install.sh</span></span></code></pre></div>
+<p>Note that additional system dependencies are required <em>before</em>
+the building process. Below are instructions for Mac and Linux
+(Ubuntu/Debian). Installation on Windows should be possible, but is not
+currently tested or supported.</p>
+<div class="section level2">
+<h2 id="mac">Mac<a class="anchor" aria-label="anchor" href="#mac"></a>
+</h2>
+<p>First, ensure your Mac has the necessary backend dependencies:</p>
+<ol style="list-style-type: decimal">
+<li>Xcode developer tools: In terminal, run
+<code>xcode-select --install</code> and follow the instructions</li>
+<li>GNU Fortran compiler: Go to <a href="https://mac.r-project.org/tools/" class="external-link uri">https://mac.r-project.org/tools/</a>, then download and run
+the relevant gfortran-[version]-universal.pkg</li>
+<li>Follow the instructions at this same website to install LaTeX for
+R</li>
+</ol>
+<p>Ensure pkg-config and nlopt are installed, e.g., using Homebrew in a
+terminal:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="ex">brew</span> install pkg-config</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="ex">brew</span> install nlopt</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="bu">export</span> <span class="va">PKG_CONFIG_PATH</span><span class="op">=</span><span class="st">"/opt/homebrew/lib/pkgconfig:</span><span class="va">$PKG_CONFIG_PATH</span><span class="st">"</span></span></code></pre></div>
+<p>Install Homebrew if needed:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="ex">/bin/bash</span> <span class="at">-c</span> <span class="st">"</span><span class="va">$(</span><span class="ex">curl</span> <span class="at">-fsSL</span> https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh<span class="va">)</span><span class="st">"</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="bu">echo</span> <span class="op">&gt;&gt;</span> /Users/<span class="pp">[</span><span class="ss">name</span><span class="pp">]</span>/.zprofile</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="bu">echo</span> <span class="st">'eval "$(/opt/homebrew/bin/brew shellenv zsh)"'</span> <span class="op">&gt;&gt;</span> /Users/<span class="pp">[</span><span class="ss">name</span><span class="pp">]</span>/.zprofile</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="bu">eval</span> <span class="st">"</span><span class="va">$(</span><span class="ex">/opt/homebrew/bin/brew</span> shellenv zsh<span class="va">)</span><span class="st">"</span></span></code></pre></div>
+<p>Rebuild and cleanly install Rcpp and Stan, in R:
+<code>install.packages(c("Rcpp", "RcppEigen", "RcppParallel", "StanHeaders"))</code></p>
+</div>
 <div class="section level2">
 <h2 id="linux">Linux<a class="anchor" aria-label="anchor" href="#linux"></a>
 </h2>
-<p>On Linux (Ubuntu/Debian), additional system dependencies are required
-<em>before</em> the building process: - <code>libxml2</code> for
-roxygen2 - <code>r-base-dev</code>, <code>libnlopt-dev</code> (or
-<code>libnlopt-cxx-dev</code>) for Rcpp, RcppEigen, and StanHeaders</p>
+<p>Need to install the following system dependencies: -
+<code>libxml2</code> for roxygen2 - <code>r-base-dev</code>,
+<code>libnlopt-dev</code> (or <code>libnlopt-cxx-dev</code>) for Rcpp,
+RcppEigen, and StanHeaders</p>
 <p>For PDF documentation generation, <code>pdflatex</code> should also
 be installed</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">sudo</span> apt install <span class="dt">\</span></span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>    libxml2 <span class="dt">\</span></span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>    r-base-dev <span class="dt">\</span></span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>    libnlopt-dev <span class="dt">\</span></span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>    libnlopt-cxx-dev <span class="dt">\</span></span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>    texlive-latex-base <span class="dt">\</span></span>
-<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>    texlive-fonts-recommended <span class="dt">\</span></span>
-<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>    texlive-fonts-extra <span class="dt">\</span></span>
-<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>    texlive-latex-extra</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">sudo</span> apt install <span class="dt">\</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>    libxml2 <span class="dt">\</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>    r-base-dev <span class="dt">\</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>    libnlopt-dev <span class="dt">\</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>    libnlopt-cxx-dev <span class="dt">\</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>    texlive-latex-base <span class="dt">\</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>    texlive-fonts-recommended <span class="dt">\</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>    texlive-fonts-extra <span class="dt">\</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>    texlive-latex-extra</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="build-documentation">Build documentation<a class="anchor" aria-label="anchor" href="#build-documentation"></a>
 </h2>
-In R, run:<br>
-pkgdown::build_site() pkgdown::build_article(“
-<article name><p>“)</p>
-</article>
+<p>In R, run:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_articles.html" class="external-link">build_article</a></span><span class="op">(</span><span class="st">"&lt;article name&gt;"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="system-requirements">System requirements<a class="anchor" aria-label="anchor" href="#system-requirements"></a>
+</h2>
+<p>Wispack is computationally intense. Fitting all but the smallest
+models can easily use four or five Gb of RAM. We strongly recommend a
+modern multi-core Unix system (Apple Silicon or Linux) with at least 24
+Gb of RAM, although realistically a workstation or compute cluster with
+100+ Gb of available RAM and 20 or more cores are needed for realistic
+run times of complex models.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
