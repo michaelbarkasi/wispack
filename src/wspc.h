@@ -223,7 +223,7 @@ class wspc {
     NumericVector predict_rates_R(
         const NumericVector& parameters_R,
         const bool& all_rows 
-    ) const;
+    );
     
     // ***** computing objective function (i.e., fitting model and parameter boundary distances)
     

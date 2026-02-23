@@ -735,7 +735,7 @@ sVec wspc::predict_rates(
 NumericVector wspc::predict_rates_R(
     const NumericVector& parameters_R,
     const bool& all_rows 
-  ) const {
+  ) {
     
     // Convert parameters to sVec
     sVec parameters = to_sVec(parameters_R);
@@ -746,8 +746,11 @@ NumericVector wspc::predict_rates_R(
       all_rows
     );
     
-    // Convert to NumericVector and return
+    // Convert to NumericVector 
     NumericVector predicted_rates_R = to_NumVec(predicted_rates);
+    
+    // Clear memory and return
+    clear_stan_mem();
     return predicted_rates_R;
     
   }
