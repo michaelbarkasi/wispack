@@ -11,6 +11,10 @@ date: "`r Sys.Date()`"
 - Add variable check to the loading of <span class = "code_variable">plot.settings</span> in <span class = "function">wisp</span>. Currently only runs <span class = "function">check_list</span> without doing a more substantive check. Compare with the more detailed checks of <span class = "code_variable">MCMC.settings</span>.
 - Allow <span class = "code_variable">MCMC.prior</span> to be a vector of different prior distributions for each parameter. When completed, update the tutorial on customizing statistical analyses.
 
+## Version 2.1 (Feb 26, 2026)
+
+- Added <span class = "code_variable">model.settings</span> argument <span class = "code_variable">trtKO</span> to <span class = "function">wisp</span> which enables excluding treatments to run reduced models. 
+
 ## Version 2.0 (Feb 19, 2026)
 
 - Release attached to NAR resubmission.
@@ -19,12 +23,12 @@ date: "`r Sys.Date()`"
 
 ## Version 1.1
 
-- Added discrete time-series modeling functionality (the **timeseries** variable option) and plotting (the function plot.timeseries()).
-- Ensured code would robustly run for any data including at least **count** and **bin** columns, without need for **context**, **species**, **ran**, or fixed-effect variables. 
-- Added explicit **fit_only** option to wisp() to avoid running any parameter estimation (MCMC or bootstrapping). 
+- Added discrete time-series modeling functionality (the <span class = "code_variable">timeseries</span> variable option) and plotting (the function <span class = "function">plot.timeseries</span>).
+- Ensured code would robustly run for any data including at least <span class = "code_variable">count</span> and <span class = "code_variable">bin</span> columns, without need for <span class = "code_variable">context</span>, <span class = "code_variable">species</span>, <span class = "code_variable">ran</span>, or fixed-effect variables. 
+- Added explicit <span class = "code_variable">fit_only</span> option to <span class = "function">wisp</span> to avoid running any parameter estimation (MCMC or bootstrapping). 
 
 ## Version 1.0
 
 - Initial public release of wispack, as used in [this preprint](https://doi.org/10.1101/2025.06.11.659209).
-- Defines the wisp() function for implementing wisps. 
+- Defines the <span class = "function">wisp</span> function for implementing wisps. 
 - Introduces one-dimensional warped sigmoidal Poisson-process mixed-effect modeling (one-dimensional wisps) for testing for functional spatial effects in spatial transcriptomics data.

@@ -992,6 +992,26 @@ List estimate_initial_parameters(
     const List& count_log_avg_mat_list             // list of average log counts (NumericMatrix) for each context-species combination
   ) {
     
+    // Check which (if any) treatments are being skipped
+    bool reduced_rank = false;
+    std::vector<int> reduced_trts;
+    // ... identify nonzero columns
+    for (int j = 0; j < weight_rows.cols(); ++j) {
+        if (weight_rows.col(j).array().abs().sum().val() > 0) {
+          reduced_trts.push_back(j);
+        } else {
+          reduced_rank = true;
+        }
+    }
+    // ... build reduced matrix
+    const int treatment_num_reduced = reduced_trts.size();
+    sMat weight_rows_reduced(treatment_num_reduced, treatment_num_reduced);
+    for (int i = 0; i < treatment_num_reduced; ++i) {
+      for (int j = 0; j < treatment_num_reduced; ++j) {
+        weight_rows_reduced(i,j) = weight_rows(reduced_trts[i], reduced_trts[j]);
+      }
+    }
+    
     // Grab number of context and species levels
     int n_species = species_lvls.size();
     int n_context = context_lvls.size();
@@ -1041,6 +1061,8 @@ List estimate_initial_parameters(
         int deg = degMat(s, c);
         int n_blocks = deg + 1;
         
+        Rcpp::Rcout << "Context: " << context_lvls[c] << ", Species: " << species_lvls[s] << "\n";
+        
         // Extract found_cp, found_cp_trt, and count_log_avg_mat for this context-species pair
         IntegerMatrix found_cp = found_cp_list_c[(String)species_lvls[s]];
         NumericMatrix found_cp_trt = found_cp_trt_list_c[(String)species_lvls[s]];
@@ -1066,6 +1088,7 @@ List estimate_initial_parameters(
             
             // Loop through treatments
             sMat RtVals(treatment_num, n_blocks);
+            sMat RtVals_reduced(treatment_num_reduced, n_blocks);
             for (int t = 0; t < treatment_num; t++) {
               
               NumericVector count_log_avg = count_log_avg_mat.column(t);
@@ -1092,9 +1115,22 @@ List estimate_initial_parameters(
               
             }
             
+            // Make reduced-rank RtVals, if needed
+            if (reduced_rank) {
+              for (int i = 0; i < treatment_num_reduced; ++i) {
+                RtVals_reduced.row(i) = RtVals.row(reduced_trts[i]);
+              }
+            } 
+            
             // Estimate fixed effects from treatments for each block, rate
             for (int bk = 0; bk < n_blocks; bk++) {
-              sVec beta_bk_Rt = weight_rows.fullPivLu().solve(RtVals.col(bk));
+              sVec beta_bk_Rt = sVec::Zero(treatment_num);
+              if (reduced_rank) {
+                sVec beta_bk_Rt_reduced = weight_rows_reduced.fullPivLu().solve(RtVals_reduced.col(bk));
+                for (int i = 0; i < treatment_num_reduced; ++i) {beta_bk_Rt[reduced_trts[i]] = beta_bk_Rt_reduced[i];}
+              } else {
+                beta_bk_Rt = weight_rows.fullPivLu().solve(RtVals.col(bk));
+              }
               placeholder_RtEffs.column(bk) = to_NumVec(beta_bk_Rt);
             }
             
@@ -1109,8 +1145,24 @@ List estimate_initial_parameters(
               // Estimate fixed effects from treatments for each tpoint, point value
               // ... put into Eigen for solving and make rows trts, cols tpoints
               sMat found_cp_trt_transposed = to_sMat(found_cp_trt).transpose(); 
+              sMat found_cp_trt_transposed_reduced(treatment_num_reduced, deg);
+              if (reduced_rank) { 
+                for (int i = 0; i < treatment_num_reduced; ++i) {
+                  found_cp_trt_transposed_reduced.row(i) = found_cp_trt_transposed.row(reduced_trts[i]);
+                }
+              }
+              
               for (int d = 0; d < deg; d++) {
-                sVec beta_d_tpoint = weight_rows.fullPivLu().solve(found_cp_trt_transposed.col(d));
+                sVec beta_d_tpoint = sVec::Zero(treatment_num);
+                if (reduced_rank) {
+                  Eigen::MatrixXd W = value_of(weight_rows_reduced);
+                  Eigen::VectorXd p = value_of(found_cp_trt_transposed_reduced.col(d));
+                  Eigen::VectorXd beta = W.colPivHouseholderQr().solve(p);
+                  sVec beta_d_tpoint_reduced = beta.cast<stan::math::var>();
+                  for (int i = 0; i < treatment_num_reduced; ++i) {beta_d_tpoint[reduced_trts[i]] = beta_d_tpoint_reduced[i];}
+                } else {
+                  beta_d_tpoint = weight_rows.fullPivLu().solve(found_cp_trt_transposed.col(d));
+                }
                 placeholder_tpointEffs.column(d) = to_NumVec(beta_d_tpoint);
               }
               
@@ -1132,8 +1184,20 @@ List estimate_initial_parameters(
               // Estimate fixed effects from treatments for each tslope, point slope
               // ... put into Eigen for solving and make rows trts, cols tslopes
               sMat found_slope_trt_transposed = to_sMat(found_slope_trt).transpose();
+              sMat found_slope_trt_transposed_reduced(treatment_num_reduced, deg);
+              if (reduced_rank) {
+                for (int i = 0; i < treatment_num_reduced; ++i) {
+                  found_slope_trt_transposed_reduced.row(i) = found_slope_trt_transposed.row(reduced_trts[i]);
+                }
+              }
               for (int d = 0; d < deg; d++) {
-                sVec beta_d_tslope = weight_rows.fullPivLu().solve(found_slope_trt_transposed.col(d));
+                sVec beta_d_tslope = sVec::Zero(treatment_num);
+                if (reduced_rank) {
+                  sVec beta_d_tslope_reduced = weight_rows_reduced.fullPivLu().solve(found_slope_trt_transposed_reduced.col(d));
+                  for (int i = 0; i < treatment_num_reduced; ++i) {beta_d_tslope[reduced_trts[i]] = beta_d_tslope_reduced[i];}
+                } else {
+                  beta_d_tslope = weight_rows.fullPivLu().solve(found_slope_trt_transposed.col(d));
+                }
                 placeholder_tslopeEffs.column(d) = to_NumVec(beta_d_tslope);
               }
               
@@ -1141,6 +1205,7 @@ List estimate_initial_parameters(
           }
           
         }
+        
         assign_proxylist(ref_values[(String)context_lvls[c]], (String)species_lvls[s], placeholder_ref_values);
         assign_proxylist(RtEffs[(String)context_lvls[c]], (String)species_lvls[s], placeholder_RtEffs);
         assign_proxylist(tpointEffs[(String)context_lvls[c]], (String)species_lvls[s], placeholder_tpointEffs);

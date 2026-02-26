@@ -183,7 +183,8 @@ wisp <- function(
       max_evals = 1000,                           # maximum number of evaluations for optimization
       rng_seed = 42,                              # seed for random number generator
       warp_precision = 1e-7,                      # decimal precision to retain when selecting really big number as pseudo infinity for unbound warping
-      round_none = TRUE                           # round extrapoloted counts for "none" (no random effect) to nearest integer? 
+      round_none = TRUE,                          # round extrapoloted counts for "none" (no random effect) to nearest integer? 
+      trtKO = c("none")
     )
     # ... check that provided model.settings is a list with valid names
     model.settings.names <- check_list(model.settings, model.settings.internal)
@@ -207,6 +208,11 @@ wisp <- function(
         s == "warp_precision") {
         if (ms > 1) {
           warning(paste0("model.settings$", s, " should be a number less than 1"))
+        }
+      }
+      if (s == "trtKO") {
+        if (class(ms) != "character") {
+          stop("model.settings$trtKO must be a character vector of treatment names to knock out for the 'none' model fit")
         }
       }
       # ... load value 
@@ -749,7 +755,7 @@ sample.stats <- function(
       
       # Compute 95% confidence intervals
       if (verbose) snk.report...("Computing 95% confidence intervals")
-      sample.params_ci <- apply(sample_results, 2, quantile, probs = c(alpha/2, 1 - alpha/2))
+      sample.params_ci <- apply(sample_results, 2, quantile, probs = c(alpha/2, 1 - alpha/2), na.rm = TRUE)
       
       # Estimate p_values from samples
       if (verbose) snk.report...("Estimating p-values from resampled parameters")

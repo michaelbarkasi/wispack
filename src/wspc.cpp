@@ -35,6 +35,7 @@ wspc::wspc(
     warp_precision = (sdouble)settings["warp_precision"];
     inf_warp = (sdouble)settings["inf_warp"];
     round_none = (bool)settings["round_none"];
+    trtKO = Rcpp::as<CharacterVector>(settings["trtKO"]);
     model_settings = Rcpp::clone(settings);
     
     // Report warp_inf 
@@ -216,6 +217,18 @@ wspc::wspc(
           Rcpp::stop("Error in constructing weight matrix.");
         }
         if (!all_true(input_comp_included)) {weight_rows(tr_predict, tr_input) = 0.0;}
+      }
+    }
+    vprint("Constructed weight_row matrix", verbose);
+    
+    
+    // Check for any treatment-level knockouts and set to zero in weight matrix
+    for (String this_trtKO : trtKO) {
+      LogicalVector trtKO_mask = eq_left_broadcast(treatment_lvls, this_trtKO);
+      if (any_true(trtKO_mask)) {
+        int idx = Rwhich(trtKO_mask)[0];
+        weight_rows.col(idx).setZero();
+        vprint("Knocked out treatment level with zeros in weight_row matrix: " + (std::string)this_trtKO, verbose);
       }
     }
    
@@ -1040,14 +1053,22 @@ double wspc::min_boundary_dist_NLopt(
     // Convert dVec to Eigen with stan
     sVec parameters_var = to_sVec(x);
     
-    // Compute max_boundary_dist
+    // Compute min_boundary_dist
     sdouble fx = model->min_boundary_dist(parameters_var);
+    if (!std::isfinite(fx.val())) {
+      Rcpp::Rcout << "Non-finite objective from min_boundary_dist_NLopt" << std::endl;
+    }
     
     // Compute gradient if needed
     if (!grad.empty()) {
       Eigen::VectorXd grad_eigen = model->grad_min_boundary_dist(parameters_var);
       grad.assign(grad_eigen.data(), grad_eigen.data() + grad_eigen.size());
     }  
+    for (size_t i = 0; i < grad.size(); ++i) {
+      if (!std::isfinite(grad[i])) {
+        grad[i] = 0.0;
+      }
+    }
     
     // Return the value of the neg_loglik
     return fx.val(); 
@@ -1138,7 +1159,7 @@ Eigen::VectorXd wspc::grad_bounded_nll(
     
   }
 
-// Compute the gradient of the max_boundary_dist function
+// Compute the gradient of the min_boundary_dist function
 // ... this is the gradient function used in the search for feasible parameters
 Eigen::VectorXd wspc::grad_min_boundary_dist(
     const sVec& p_
@@ -1375,6 +1396,11 @@ dVec wspc::bs_fit(
     param_baseline_idx = params["param_baseline_idx"];
     beta_idx = params["beta_idx"];
     wfactor_idx = params["wfactor_idx"];
+    
+    // Check for any treatment-level knockouts and set effects to zero in param vector
+    for (String this_trtKO : trtKO) {
+      fitted_parameters[grep_cpp(param_names, "_" + ((std::string)this_trtKO) + "_")] = 0.0;
+    }
     
     // Check feasibility 
     List feasibility_results = check_parameter_feasibility(to_sVec(fitted_parameters), false); 
@@ -1869,14 +1895,9 @@ Rcpp::List wspc::check_parameter_feasibility(
     
     // Test if any tpoints are below the buffer 
     bool feasible = test_tpoints(parameters_var, verbose);
-    if (verbose) {
-      if (feasible) {
-        vprint("... no tpoints below buffer");
-      } else {
-        vprint("... tpoints found below buffer");
-      }
-    }
+    
     if (feasible) {
+      if (verbose) {vprint("... no tpoints below buffer");}
       
       // Predict rates 
       predicted_rates_log_var = predict_rates(
@@ -1914,8 +1935,9 @@ Rcpp::List wspc::check_parameter_feasibility(
         }
       } 
       
-    }
+    } 
     
+    // Report feasibility of provided parameters
     if (verbose) {
       if (feasible) {
         vprint("Provided parameters are feasible");
@@ -1936,6 +1958,11 @@ Rcpp::List wspc::check_parameter_feasibility(
       // Variables for optimization
       dVec x = to_dVec(to_NumVec(parameters_var));
       size_t n = x.size();
+      
+      // Manually reduce t-point effects 
+      for (int i : param_beta_tpoint_idx) {
+        x[i] *= 0.5;
+      }
       
       // Set up NLopt optimizer
       nlopt::opt opt(nlopt::LD_LBFGS, n);
