@@ -1,0 +1,5 @@
+CXX_STD = CXX14
+PKG_CXXFLAGS = -IC:/local/nlopt/include
+PKG_LIBS = -LC:/local/nlopt/lib -lnlopt
+PKG_CPPFLAGS = $(shell "${R_HOME}/bin/Rscript.exe" -e "StanHeaders:::CxxFlags(TRUE)")
+PKG_LIBS = $(shell "${R_HOME}/bin/Rscript.exe" -e "StanHeaders:::LdFlags(TRUE)")
