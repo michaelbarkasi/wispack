@@ -15,16 +15,17 @@ number of
 [contexts](https://michaelbarkasi.github.io/wispack/articles/tutorial_multicontext.md),
 and the number of treatment conditions. The random-effect scalars
 multiply by replicate count and species. The upshot is that a wisp model
-will produce a dizzying array of parameter estimates and hypothesis test
+includes a dizzying array of parameter estimates and hypothesis test
 results. To help with interpretation, wispack includes a number of
-intuitive plotting options for visualizing wisp model results.
+intuitive plotting methods for visualizing wisp model results.
 
 ## Rate-count plots
 
 The backbone of wisp visualization is the rate-count plot, as in
 “predicted rate, observed count”. Rate-count plots come in two forms,
 one giving confidence-intervals (CI) and the other giving a scatter plot
-of observations.
+of observations. Both forms give predicted rates across the spatial axis
+for all treatment conditions.
 
 ### Confidence intervals
 
@@ -73,8 +74,8 @@ model <- wisp(
   )
 ```
 
-For now, for the rate-count plots, we can also grab the layer-boundary
-points from the [CCFv3](https://doi.org/10.1016/j.cell.2020.04.007)
+For the rate-count plots, we can also grab the layer-boundary points
+from the [CCFv3](https://doi.org/10.1016/j.cell.2020.04.007)
 registration for comparison:
 
 ``` r
@@ -98,7 +99,7 @@ plot.ratecount(
   )
 ```
 
-![](tutorial_wispplots_files/figure-html/RORB_CI-1.png)![](tutorial_wispplots_files/figure-html/RORB_CI-2.png)
+![](tutorial_wispplots_files/figure-html/RORB_CI-1.png)
 
 CI rate-count plots are straightforward to interpret: The horizontal (x)
 axis shows spatial position along the modeled spatial dimension, the
@@ -132,7 +133,7 @@ plot.ratecount(
   )
 ```
 
-![](tutorial_wispplots_files/figure-html/RORB_CI_log-1.png)![](tutorial_wispplots_files/figure-html/RORB_CI_log-2.png)
+![](tutorial_wispplots_files/figure-html/RORB_CI_log-1.png)
 
 ### Scatter plots
 
@@ -151,7 +152,7 @@ plot.ratecount(
   )
 ```
 
-![](tutorial_wispplots_files/figure-html/RORB_ran-1.png)![](tutorial_wispplots_files/figure-html/RORB_ran-2.png)
+![](tutorial_wispplots_files/figure-html/RORB_ran-1.png)
 
 As with CI rate-count plots, the horizontal axis represents spatial
 position along the modeled dimension, and the vertical axis represents
@@ -184,12 +185,12 @@ The upper left plot (observed counts) shows one point for the total
 count of RORB transcripts observed in a given replicate at a given
 spatial bin. The upper right plot (extrapolated counts) shows
 extrapolated counts got by taking the mean of the actual replicates
-within in bin. These means stand in for observations from a hypothetical
+within a bin. These means stand in for observations from a hypothetical
 replicate with no noise or other random effects. The lower left plot
 (observed predictions) shows the model fit to the observed counts. The
 lower right plot (extrapolated predictions) shows the fit to the
-extrapolated counts, which serves as a stand in for the predicted rate
-without random effects.
+extrapolated counts, which stand in for the predicted rate without
+random effects.
 
 Next, let’s look at observed counts (points) and their fits (dashed
 lines) on the same plot, but broken out by sample:
@@ -227,7 +228,7 @@ plot.timeseries(
   )
 ```
 
-![](tutorial_wispplots_files/figure-html/RORB_timeseries-1.png)![](tutorial_wispplots_files/figure-html/RORB_timeseries-2.png)
+![](tutorial_wispplots_files/figure-html/RORB_timeseries-1.png)
 
 As explained in the [time series
 tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_timeseries.md),
@@ -273,16 +274,16 @@ There are three separate plots: Rorb.rate gives the baseline (left, P12)
 block rates in log space, Rorb.tpoint gives the baseline transition
 point locations, and Rorb.tslope gives the baseline transition slopes
 for each of the three transition points. The horizontal axis tick labels
-are formatted as \_T/B, where is Rt (rate), tpoint (transition point
-location), or tslope (transition slope), T/B stands for
-“transition/block”, and gives the transition or block number. For
-example, Rt_T/B2 is the rate parameter for block 2, while tpoint_T/B1 is
-the location of the first transition point, i.e., the transition between
-block 1 and block 2. For each horizontal axis tick, there is a violin
-plot showing the distribution of the estimates for that parameter across
-the bootstraps (or the MCMC walk), with a longer horizontal line showing
-the best-fit estimate and two shorter horizontal bars showing the 95%
-confidence interval.
+are formatted as \<param type\>\_T/B\<num\>, where \<param type\> is Rt
+(rate), tpoint (transition point location), or tslope (transition
+slope), T/B stands for “transition/block”, and \<num\> gives the
+transition or block number. For example, Rt_T/B2 is the rate parameter
+for block 2, while tpoint_T/B1 is the location of the first transition
+point, i.e., the transition between block 1 and block 2. For each
+horizontal axis tick, there is a violin plot showing the distribution of
+the estimates for that parameter across the bootstraps (or the MCMC
+walk), with a longer horizontal line showing the best-fit estimate and
+two shorter horizontal bars showing the 95% confidence interval.
 
 There are three true (i.e., non-baseline) treatment conditions: the left
 hemisphere at P18, the right hemisphere at P12, and the right hemisphere

@@ -26,7 +26,7 @@ generated via MCMC walk or bootstrapping.
 ### Computations
 
 Let \bar{\Phi} be the matrix of all of these values \beta, with rows I
-corresponding to resamples and rows J corresponding to the various
+corresponding to resamples and columns J corresponding to the various
 combinations of z, g, c, and \xi. Let \Phi\_{IJ} be an element of this
 matrix, \langle\Phi\rangle_J be a column of the matrix, and
 \langle\Phi\rangle_I be a row of the matrix. Then a CI for significance
@@ -44,10 +44,10 @@ function:
 \text{ecdf}(X,X^\prime) = \frac{\|\\X\leq
 X^\prime\\\|\_{\\}}{\|X\|\_{\\}}
 
-with \|\cdot\|\_{\\} being the cardinality operator. First, for each
-parameter J, we compute the two-sided p-value by first recentering the
-sampled values \langle\Phi\rangle_J around the null hypothesis of zero
-effect (i.e., \mu = 0):
+with \|\cdot\|\_{\\} being the cardinality operator. For each parameter
+J, we compute the two-sided p-value by first recentering the sampled
+values \langle\Phi\rangle_J around the null hypothesis of zero effect
+(i.e., \mu = 0):
 
 \langle\Phi\rangle_J^{\mu=0} = \langle\Phi_J -
 \mu(\langle\Phi\rangle_J)\rangle_J
@@ -105,7 +105,7 @@ model <- readRDS(
 ```
 
 The function wisp will automatically compute p-values and CIs, unless
-its option fit_only is set to true (by default, it’s false). However,
+its option fit_only is set to TRUE (by default, it’s FALSE). However,
 wisp does not allow for customizing the computations for p-values and
 CIs. By default, it uses \alpha = 0.05 and a Holm-Bonferroni correction.
 
@@ -171,7 +171,7 @@ model$stats$parameters <- sample.stats(
 
 Above we switched from \alpha = 0.05 to \alpha = 0.01 and from a
 Holm-Bonferroni to a Bonferroni correction. As can be seen in the print
-out, if verbose is set to true, sample.stats will print out both the
+out, if verbose is set to TRUE, sample.stats will print out both the
 head of model\$stats\$parameters and also information about the
 threshold \alpha and the number of hypothesis tests run. In this case,
 \alpha = 0.01 and 171 tests are fun. In addition, the function
@@ -430,8 +430,8 @@ Three possible solutions suggest themselves:
 Each of these options have downsides. In practical terms, (1) is often
 unworkable, as significantly larger step sizes tend to lead to
 acceptance rates near (or at) zero. Option (2), interestingly, has the
-same problem, unless step size is so small that acceptance rate is very
-high, leaving the space around the L-BFGS fit underexplored. (As to
+same problem, unless step size is so small that the acceptance rate is
+very high, leaving the space around the L-BFGS fit underexplored. (As to
 implementing this option, if the number of burn-in steps is set to zero,
 wispack will automatically switch to starting the walk at the L-BGGS
 fit.) In both cases, the root issue is presumably the non-linearity of
@@ -443,7 +443,7 @@ navigating around these non-linearities.
 We’re left with option (3), which is unsatisfactory (of course) because
 it leaves us with final estimates that are known to be suboptimal fits.
 Still, if we wish to implement it, the argument use.median in the wisp
-function allows for doing so. If this argument is set to true, then the
+function allows for doing so. If this argument is set to TRUE, then the
 median of the MCMC walk is used as the estimate of each effect \beta,
 rather than the L-BFGS fit. As an example, we can re-run the model:
 
@@ -588,12 +588,6 @@ model_median <- wisp(
 ## Estimated gamma dispersion of raw counts
 ## Estimated change points
 ## Found average log counts for each context-species combination
-## Context: cortex, Species: Bcl11b
-## Context: cortex, Species: Cux2
-## Context: cortex, Species: Fezf2
-## Context: cortex, Species: Nxph3
-## Context: cortex, Species: Rorb
-## Context: cortex, Species: Satb2
 ## Estimated initial parameters for fixed-effect treatments
 ## Built initial beta (ref and fixed-effects) matrices
 ## Initialized random-effect warping factors
@@ -733,7 +727,7 @@ bootstrapping. The only options available are directly in the wisp
 function: bootstraps.num sets the number of bootstrap resamples to
 perform, max.fork sets the number of CPU cores to use in parallel for
 performing the bootstraps, converged.resamples.only controls whether
-only parameters from resampled with a converged fit are used for
+only parameters from resamples with a converged fit are used for
 statistical analysis, and use.median will also work with bootstrapping.
 
 ### Limitations

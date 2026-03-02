@@ -52,16 +52,15 @@ represent random effects, e.g., variation due to differences between
 individual animals or due to measurement noise. (D) The wisp
 poly-sigmoid from (B) with warping function applied.
 
-Wispack provides a user-facing function, wisp(), which takes a data
-frame in the familiar format expected by standard R functions for linear
+Wispack provides a user-facing function, wisp, which takes a data frame
+in the familiar format expected by standard R functions for linear
 models (e.g.,
-[lme4::lmer()](https://cran.r-project.org/web/packages/lme4/index.html)
-or
-[stats::lm()](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html))
+[lme4::lmer](https://cran.r-project.org/web/packages/lme4/index.html) or
+[stats::lm](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html))
 and runs the complete test for FSEs. Preprocessing of the data is
-generally required before passing it to wisp(), after which wisp()
-executes a pipeline involving parameter estimates, prediction, model
-fitting, and hypothesis testing.
+generally required before passing it to wisp, after which wisp executes
+a pipeline involving parameter estimates, prediction, model fitting, and
+hypothesis testing.
 
 ![Diagram of top-level of wisp modeling
 pipeline](reference/figures/fig_modelpipeline_simple.png)
@@ -79,7 +78,7 @@ or operations performed on variables. Arrows represent input-output
 relationships between these variables and operations.
 
 Unlike standard linear modeling packages in R which require a model
-formula, wisp() merely needs the data. For example, the quick-start demo
+formula, wisp merely needs the data. For example, the quick-start demo
 (which uses data from mice on RORB expression across the laminar axis of
 the primary somatosensory cortex) runs the following code:
 
@@ -106,10 +105,12 @@ laminar.model <- wisp(countdata)
 View(laminar.model)
 ```
 
-No model formula is required, as all wisp models have the same
-mathematical form. However, the variables involved in that form can, of
-course, have different names. These names will come from the column
-names of the data and can be set manually by the user, as so:
+No model formula is required. By default, wisp models include all
+possible effect interactions. However, effect interactions can be
+removed from the model using the trtKO argument in model.settings.
+Further, if not a set of defaults, column names from the data must be
+associated with model variables using the variables argument. For
+example:
 
 ``` r
 # Define variables in the dataframe for the model
@@ -123,10 +124,16 @@ data.variables <- list(
     fixedeffects = c("hemisphere", "age")
   )
   
+# Remove the hemisphere x age interaction from the model
+model.settings <- list(
+    trtKO = c("right12")
+  )
+  
 # Fit model
 laminar.model <- wisp(
     count.data = countdata,
-    variables = data.variables
+    variables = data.variables,
+    model.settings = model.settings
   )
 ```
 
@@ -138,8 +145,48 @@ demo("quick_start", package = "wispack")
 demo("full_options", package = "wispack")
 ```
 
-Please see the tutorials for more detailed walkthroughs of the package
-and its options.
+The tutorials provide more detailed walkthroughs of the package and its
+options:
+
+1.  [*Poisson processes and
+    sigmoids:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_Poisson.md)
+    Introduction to how wisps parameterize and model the spatial
+    distribution of count data from a Poisson process such as gene
+    transcription.
+2.  [*Random effects and
+    warping:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_warping.md)
+    Explanation of random-effect modeling and how it’s implemented in a
+    wisp.
+3.  [*RORB along the cortical laminar
+    axis:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.md)
+    A detailed walkthrough of modeling a real biological dataset with
+    wisp.
+4.  [*Time-series
+    data:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_timeseries.md)
+    Explanation of how wisp models times-series data.
+5.  [*Radial zonation in liver
+    lobules:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_liverradial.md)
+    A second example application from a different biological dataset,
+    with an emphasis on time series and temporal-spatial interactions.
+6.  [*Modeling cell
+    types:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_multicontext.md)
+    An extension of the RORB example showing how to model not only
+    Poisson-process species (i.e., genes), but also the broader
+    biological context (i.e., cell type).
+7.  [*Plotting wisp
+    models:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_wispplots.md)
+    An explanation of the various kinds of plots available through
+    wispack.
+8.  [*Customizing statistical
+    analyses:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md)
+    A walkthrough of the various options for customizing the statistical
+    analyses performed by wisp, including bootstrapping and MCMC
+    resampling.
+9.  [*Benchmarks and
+    comparisons:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_benchmarks.md)
+    Development of a simulation framework (attractor simulations) for
+    benchmarking wispack and two other packages for analyzing
+    transcriptomics data.
 
 ![Artistic rendering of wisp model](reference/figures/wisp_art.png)
 

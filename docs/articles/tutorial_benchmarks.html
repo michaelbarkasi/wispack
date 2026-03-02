@@ -87,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-03-01</h4>
+            <h4 data-toc-skip class="date">2026-03-23</h4>
       
 
       <div class="d-none name"><code>tutorial_benchmarks.Rmd</code></div>
@@ -142,10 +142,10 @@ et al 2014</a>) and <a href="https://github.com/jadexq/ELLA/tree/main" class="ex
 <h2>
 Benchmark simulations
 </h2>
-<p>Wispack comes with a function, <em>attractor_simulation</em>, for
-generating simulations with stipulated DE genes, SVGs, FSEs, and
-inter-replicate variation. This function uses seed data, either from
-real spatial transcriptomics runs or itself simulated.</p>
+<p>Wispack comes with a function, <span class="function">attractor_simulation</span>, for generating simulations
+with stipulated DE genes, SVGs, FSEs, and inter-replicate variation.
+This function uses seed data, either from real spatial transcriptomics
+runs or itself simulated.</p>
 <h3>
 Simulation seed
 </h3>
@@ -154,9 +154,9 @@ set</a>, described by <a href="https://www.nature.com/articles/s41586-023-06812-
 2023</a>, contains coronal brain slices from an adult male mouse imaged
 with the Vizgen MERSCOPE platform with a 500 gene panel. Wispack
 includes a csv file with counts for four marker genes from three slices:
-Pvalb (parvalbumin neurons), Slc17a7 (glutamatergic neurons), Tac2
-(somatostatin neurons), and Vip (vasoactive intestinal peptide
-neurons).</p>
+<span class="gene">Pvalb</span> (parvalbumin neurons), <span class="gene">Slc17a7</span> (glutamatergic neurons), <span class="gene"><span class="gene">Tac2</span></span> (somatostatin
+neurons), and <span class="gene">Vip</span> (vasoactive intestinal
+peptide neurons).</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">countdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
@@ -190,7 +190,7 @@ neurons).</p>
 <p><img src="tutorial_benchmarks_files/figure-html/preview_data-1.png" class="r-plt" alt="" width="100%"></p>
 <p>The point of starting with real data is to ensure that the
 simulations contain genes with realistic transcript counts and
-distributions. We will seed the simulations with data from a <span class="math inline">2\times 2</span> mm region of slice 33.</p>
+distributions. We will seed the simulations with data from a <span class="math inline">2\times 2</span> mm region of slice <span class="math inline">33</span>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">seed_patch</span> <span class="op">&lt;-</span> <span class="va">countdata</span><span class="op">[</span></span>
 <span>  <span class="va">countdata</span><span class="op">$</span><span class="va">slice_num</span> <span class="op">==</span> <span class="fl">33</span> <span class="op">&amp;</span></span>
@@ -215,8 +215,8 @@ Simulating SVGs
 <p>With a patch of seed data in hand, we need functions which will
 transform this data into simulations with known (stipulated) DE genes,
 SVGs, FSEs, and inter-replicate variation. Wispack provides the function
-<em>attractor_simulation</em> for this purpose. Let’s load wispack and
-run this function once to see how it works.</p>
+<span class="function">attractor_simulation</span> for this purpose.
+Let’s load wispack and run this function once to see how it works.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load wispack </span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -231,21 +231,20 @@ run this function once to see how it works.</p>
 <span>    min_effect_size <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>    print_plots <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p>The function <em>attractor_simulation</em> assumes that the input
-seed is a data frame with at least the columns <em>gene</em>,
-<em>coord_x</em>, <em>coord_y</em>, and <em>count</em>. It assumes
-<em>coord_x</em> and <em>coord_y</em> are continuous variables and will
-bin them into a discrete grid with <em>n_bins</em> bins along each axis.
-The function will create <em>n_replicates</em> replicates for two
-conditions, called <em>ref</em> for “reference” and <em>trt</em> for
-“treatment”. The parameter <em>replicate_spatial_scalar</em> controls
-the amount of inter-replicate spatial variation, while
-<em>min_effect_size</em> controls the minimum effect size for FSE genes.
-(The amount of inter-replicate <em>rate</em> variation is always set
-randomly.) Setting <em>print_plots</em> to TRUE will generate plots of
-the simulated data for visual inspection.</p>
-<p>A list is returned by <em>attractor_simulation</em>, with the
-following components:</p>
+<p>The function <span class="function">attractor_simulation</span>
+assumes that the input seed is a data frame with at least the columns
+<span class="code_variable">gene</span>, <span class="code_variable">coord_x</span>, <span class="code_variable">coord_y</span>, and <span class="code_variable">count</span>. It assumes <span class="code_variable">coord_x</span> and <span class="code_variable">coord_y</span> are continuous variables and will
+bin them into a discrete grid with <span class="code_variable">n_bins</span> bins along each axis. The function
+will create <span class="code_variable">n_replicates</span> replicates
+for two conditions, called <span class="code_variable">ref</span> for
+“reference” and <span class="code_variable">trt</span> for “treatment”.
+The parameter <span class="code_variable">replicate_spatial_scalar</span> controls the
+amount of inter-replicate spatial variation, while <span class="code_variable">min_effect_size</span> controls the minimum effect
+size for FSE genes. (The amount of inter-replicate <span class="code_variable">rate</span> variation is always set randomly.)
+Setting <span class="code_variable">print_plots</span> to <span class="code_variable">TRUE</span> will generate plots of the simulated
+data for visual inspection.</p>
+<p>A list is returned by <span class="function">attractor_simulation</span>, with the following
+components:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">test_sim</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n"</span>, <span class="va">i</span>, <span class="st">": "</span>, <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">test_sim</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## </span></span>
@@ -276,7 +275,8 @@ exhibiting a FSE under the simulated treatment condition:</p>
 the spatial distribution of all genes is smoothed by randomly shuffling
 the spatial coordinates. (Cell IDs are not preserved during this
 shuffling, so any cell-type related statistics will be lost.) Here, for
-example, are the plots of Vip before and after smoothing:</p>
+example, are the plots of <span class="gene">Vip</span> before and after
+smoothing:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">grid.arrange</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">test_sim</span><span class="op">$</span><span class="va">plots</span><span class="op">[[</span><span class="st">"Vip"</span><span class="op">]</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_benchmarks_files/figure-html/plot_Vip-1.png" class="r-plt" alt="" width="100%"></p>
@@ -287,13 +287,13 @@ to serve as an attractor point. Spatial points <span class="math inline">\langle
 attractor point according to the transformation: <span class="math display">x\mapsto x - (x - x^\prime)\eta</span> <span class="math display">y\mapsto y - (y - y^\prime)\eta</span> The term
 <span class="math inline">\eta</span> is a noise variable from a beta
 distribution: <span class="math display">\eta \sim
-\text{Beta}(1,\frac{1-D}{D})</span> And the term <span class="math inline">D</span> is the normalized distance from the
+\mathrm{Beta}(1,\frac{1-D}{D})</span> And the term <span class="math inline">D</span> is the normalized distance from the
 attractor point: <span class="math display">d = \sqrt{(x - x^\prime)^2 +
 (y - y^\prime)^2}</span> <span class="math display">D = 1 -
-\frac{d}{\text{max}(d)}</span> In fact, <span class="math inline">D</span> is the expected value of the beta
+\frac{d}{\mathrm{max}(d)}</span> In fact, <span class="math inline">D</span> is the expected value of the beta
 distribution. Thus, points closer to the attractor are pulled more
-strongly towards it. For example, here are the plots of Slc17a7 before
-smoothing, after smoothing, and after inducing spatial variability:</p>
+strongly towards it. For example, here are the plots of <span class="gene">Slc17a7</span> before smoothing, after smoothing, and after
+inducing spatial variability:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">grid.arrange</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">test_sim</span><span class="op">$</span><span class="va">plots</span><span class="op">[[</span><span class="st">"Slc17a7"</span><span class="op">]</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_benchmarks_files/figure-html/plot_Slc17a7-1.png" class="r-plt" alt="" width="100%"></p>
@@ -301,17 +301,19 @@ smoothing, after smoothing, and after inducing spatial variability:</p>
 Simulating FSEs
 </h3>
 <p>Notice that two plots are shown with spatial variability: one for the
-reference condition and one for the treatment condition. As Slc17a7 was
-not selected to be exhibit a FSE in the treatment condition, the spatial
-distributions are the same. For all SVGs, the treatment condition is
-simulated by inducing a rate change via an effect term <span class="math inline">b</span> between zero and one: <span class="math display">\lambda\mapsto\lambda_{\text{trt}} =
+reference condition and one for the treatment condition. As <span class="gene">Slc17a7</span> was not selected to be exhibit a FSE in the
+treatment condition, the spatial distributions are the same. For all
+SVGs, the treatment condition is simulated by inducing a rate change via
+an effect term <span class="math inline">b</span> between zero and one:
+<span class="math display">\lambda\mapsto\lambda_{\mathrm{trt}} =
 4b^2\lambda</span> The actual count <span class="math inline">y</span>
-at each point is then pulled from a Poisson distribution with rate <span class="math inline">\lambda_{\text{trt}}</span>. <span class="math display">y \sim \text{Pois}(\lambda_{\text{trt}})</span> For
-genes like Slc17a7 not selected to exhibit FSEs, <span class="math inline">b = 0.5</span>. For genes like Pvalb and Tac2
-selected to exhibit FSEs, <span class="math inline">b</span> is randomly
-chosen to be a value between zero and one but such that the absolute
-value of <span class="math inline">4b^2 - 1</span> is greater than
-<em>min_effect_size</em> (by default, 0.05). In this example:</p>
+at each point is then pulled from a Poisson distribution with rate <span class="math inline">\lambda_{\mathrm{trt}}</span>. <span class="math display">y \sim \mathrm{Pois}(\lambda_{\mathrm{trt}})</span>
+For genes like <span class="gene">Slc17a7</span> not selected to exhibit
+FSEs, <span class="math inline">b = 0.5</span>. For genes like <span class="gene">Pvalb</span> and <span class="gene">Tac2</span> selected to
+exhibit FSEs, <span class="math inline">b</span> is randomly chosen to
+be a value between zero and one but such that the absolute value of
+<span class="math inline">4b^2 - 1</span> is greater than <span class="code_variable">min_effect_size</span> (by default, 0.05). In this
+example:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">g</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n"</span>, <span class="va">test_sim</span><span class="op">$</span><span class="va">genes</span><span class="op">[</span><span class="va">g</span><span class="op">]</span>, <span class="st">": b = "</span>, <span class="va">test_sim</span><span class="op">$</span><span class="va">effect</span><span class="op">[</span><span class="va">g</span><span class="op">]</span>, sep <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## </span></span>
@@ -319,18 +321,17 @@ value of <span class="math inline">4b^2 - 1</span> is greater than
 <span><span class="co">## Slc17a7: b = 0</span></span>
 <span><span class="co">## Tac2: b = -0.4785648</span></span>
 <span><span class="co">## Vip: b = 0</span></span></code></pre>
-<p>For convenience, the <em>attractor_simulation</em> function returns
-<span class="math inline">b - 0.5</span> under the <em>effect</em>
-component of the output list. The advantage here is that genes without a
-FSE in the treatment condition will show an effect value of zero, a FSE
-that down-regulates expression will be negative, and a FSE that
-up-regulates expression will be positive. For example, here are the
-plots for Pvalb, which exhibits a slight up-regulating FSE:</p>
+<p>For convenience, the <span class="function">attractor_simulation</span> function returns <span class="math inline">b - 0.5</span> under the <span class="code_variable">effect</span> component of the output list. The
+advantage here is that genes without a FSE in the treatment condition
+will show an effect value of zero, a FSE that down-regulates expression
+will be negative, and a FSE that up-regulates expression will be
+positive. For example, here are the plots for <span class="gene">Pvalb</span>, which exhibits a slight up-regulating
+FSE:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">grid.arrange</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">test_sim</span><span class="op">$</span><span class="va">plots</span><span class="op">[[</span><span class="st">"Pvalb"</span><span class="op">]</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_benchmarks_files/figure-html/plot_Pvalb-1.png" class="r-plt" alt="" width="100%"></p>
-<p>And here are the plots for Tac2, which exhibits a large
-down-regulating FSE:</p>
+<p>And here are the plots for <span class="gene">Tac2</span>, which
+exhibits a large down-regulating FSE:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">grid.arrange</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">test_sim</span><span class="op">$</span><span class="va">plots</span><span class="op">[[</span><span class="st">"Tac2"</span><span class="op">]</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_benchmarks_files/figure-html/plot_Tac2-1.png" class="r-plt" alt="" width="100%"></p>
@@ -339,9 +340,9 @@ Simulating replicates
 </h3>
 <p>The above procedure generates a single data set, from the seed patch,
 consisting of counts <span class="math inline">y</span> (possibly <span class="math inline">&gt; 1</span>) for each gene at some number of
-spatial coordinates, for both the <em>ref</em> and <em>trt</em>
-conditions. This single data set is itself used as a seed (with counts
-<span class="math inline">y</span> becoming rates <span class="math inline">\lambda</span>) to make psuedo-replicates exibhiting
+spatial coordinates, for both the <span class="code_variable">ref</span>
+and <span class="code_variable">trt</span> conditions. This single data
+set is itself used as a seed (with counts <span class="math inline">y</span> becoming rates <span class="math inline">\lambda</span>) to make psuedo-replicates exibhiting
 some amount of variation, both in spatial distribution and in counts.
 Variation in spatial distribution is simulated by a scaled application
 of a random affine transformation <span class="math inline">A</span> of
@@ -368,15 +369,14 @@ x \\
 y
 \end{pmatrix}
 </span> In the above equation, the “<span class="math inline">\circ</span>” is the Hadamard (element-wise)
-product. With <span class="math inline">x_{\text{mid}}</span> and <span class="math inline">y_{\text{mid}}</span> being the midpoints of <span class="math inline">x</span> and <span class="math inline">y</span>,
-respectively, the scaling terms <span class="math inline">d_x</span> and
-<span class="math inline">d_y</span> are defined as: <span class="math display">d_x = (x - x_{\text{mid}})^2/\text{max}((x -
-x_{\text{mid}})^2)</span> <span class="math display">d_y = (y -
-y_{\text{mid}})^2/\text{max}((y - y_{\text{mid}})^2)</span> Variation in
-counts for each replicate is simulated by scaling according to a
-randomly chosen replicate scalar <span class="math inline">c</span>
-between zero and one: <span class="math display">y \sim \text{Pois}(2c
-\lambda)</span></p>
+product. With <span class="math inline">x_{\mathrm{mid}}</span> and
+<span class="math inline">y_{\mathrm{mid}}</span> being the midpoints of
+<span class="math inline">x</span> and <span class="math inline">y</span>, respectively, the scaling terms <span class="math inline">d_x</span> and <span class="math inline">d_y</span>
+are defined as: <span class="math display">d_x = (x -
+x_{\mathrm{mid}})^2/\mathrm{max}((x - x_{\mathrm{mid}})^2)</span> <span class="math display">d_y = (y - y_{\mathrm{mid}})^2/\mathrm{max}((y -
+y_{\mathrm{mid}})^2)</span> Variation in counts for each replicate is
+simulated by scaling according to a randomly chosen replicate scalar
+<span class="math inline">c</span> between zero and one: <span class="math display">y \sim \mathrm{Pois}(2c \lambda)</span></p>
 <p>For example, in our test simulation, the scale factors <span class="math inline">c</span> are:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">r</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nReplicate "</span>, <span class="va">r</span>, <span class="st">": c = "</span>, <span class="va">test_sim</span><span class="op">$</span><span class="va">replicate_rate_scalars</span><span class="op">[</span><span class="va">r</span><span class="op">]</span>, sep <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
@@ -404,443 +404,36 @@ in the reference condition across all replicates:</p>
 Modeling simulations
 </h2>
 <p>Functions are needed to apply software packages to the simulations
-made with <em>attractor_simulation</em>.</p>
+made with <span class="function">attractor_simulation</span>.</p>
 <h3>
 Wispack
 </h3>
 <p>For wisp modelling, wispack comes with a ready-made function for
-benchmarking attractor-based simulations, called
-<em>model_attractor_simulation_wisp</em>. The function takes four
-arguments: <em>sim</em>, <em>sim_num</em>, <em>bs_num</em>, and
-<em>max_fork</em>. The <em>sim</em> argument takes the output of the
-<em>attractor_simulation</em> function. The <em>sim_num</em> is an
-integer value used to label the results of this particular simulation
-run for later aggregation with other simulation runs. Wispack also uses
-this number to set the seed for the random-number generator. The
-<em>bs_num</em> argument is the number of bootstrap resamples to use for
-estimating p-values. (The <em>model_attractor_simulation_wisp</em>
-function will only use bootstrapping; MCMC estimation is not an option.)
-Finally, the <em>max_fork</em> argument sets the maximum number of
-parallel processes to use during bootstrapping. The function
-<em>model_attractor_simulation_wisp</em> outputs a data frame with
-results that can be aggregated with other simulation runs for benchmark
-metrics, including false-positive rate, false-discovery rate, power, and
-correlation between estimated and true effect sizes.</p>
-<p>Let’s do a demo run of the function with only 100 bootstraps, so we
-can see the output of the function.</p>
+benchmarking attractor-based simulations, called <span class="code_variable">model_attractor_simulation_wisp</span>. The
+function takes four arguments: <span class="code_variable">sim</span>,
+<span class="code_variable">sim_num</span>, <span class="code_variable">bs_num</span>, and <span class="code_variable">max_fork</span>. The <span class="code_variable">sim</span> argument takes the output of the <span class="function">attractor_simulation</span> function. The <span class="code_variable">sim_num</span> is an integer value used to label
+the results of this particular simulation run for later aggregation with
+other simulation runs. Wispack also uses this number to set the seed for
+the random-number generator. The <span class="code_variable">bs_num</span> argument is the number of bootstrap
+resamples to use for estimating p-values. (The <span class="code_variable">model_attractor_simulation_wisp</span> function
+will only use bootstrapping; MCMC estimation is not an option.) Finally,
+the <span class="code_variable">max_fork</span> argument sets the
+maximum number of parallel processes to use during bootstrapping. The
+function <span class="code_variable">model_attractor_simulation_wisp</span> outputs a
+data frame with results that can be aggregated with other simulation
+runs for benchmark metrics, including false-positive rate,
+false-discovery rate, power, and correlation between estimated and true
+effect sizes.</p>
+<p>Let’s do a demo run of the function with only <span class="math inline">100</span> bootstraps, so we can see the output of
+the function.</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">wisp_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/model_attractor_simulation_wisp.html">model_attractor_simulation_wisp</a></span><span class="op">(</span></span>
 <span>    sim <span class="op">=</span> <span class="va">test_sim</span>,</span>
 <span>    sim_num <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>    bs_num <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>    max_fork <span class="op">=</span> <span class="fl">10</span></span>
-<span>  <span class="op">)</span></span></code></pre></div>
-<pre class="scroll-output"><code><span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: Context: Context: contextcontext, Species: Pvalb</span></span>
-<span><span class="co">## , Species: Pvalb</span></span>
-<span><span class="co">## context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: Context: contextcontext, Species: Slc17a7Context: Context: contextcontext</span></span>
-<span><span class="co">## , Species: , Species: PvalbContext: </span></span>
-<span><span class="co">## contextSlc17a7, Species: Context: context</span></span>
-<span><span class="co">## , Species: Slc17a7</span></span>
-<span><span class="co">## , Species: Pvalb</span></span>
-<span><span class="co">## Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: Context: Context: Context: Context: Context: contextContext: context, Species: , Species: contextcontext, Species: contextSlc17a7, Species: Context: Context: contextTac2</span></span>
-<span><span class="co">## , Species: context</span></span>
-<span><span class="co">## contextTac2, Species: </span></span>
-<span><span class="co">## context, Species: , Species: PvalbTac2, Species: Tac2</span></span>
-<span><span class="co">## Tac2Context: Tac2context</span></span>
-<span><span class="co">## Tac2</span></span>
-<span><span class="co">## , Species: Context: </span></span>
-<span><span class="co">## Context: </span></span>
-<span><span class="co">## contextContext: context</span></span>
-<span><span class="co">## context, Species: , Species: Context: VipContext: Context: contextVipTac2, Species: context, Species: Context: Slc17a7</span></span>
-<span><span class="co">## Context: </span></span>
-<span><span class="co">## Context: contextcontextcontext</span></span>
-<span><span class="co">## , Species: context</span></span>
-<span><span class="co">## , Species: , Species: Vip, Species: , Species: VipContext: </span></span>
-<span><span class="co">## VipVip</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## VipVip</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## context, Species: Vip</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: contextContext: , Species: contextPvalb, Species: Pvalbcontext</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## , Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: Context: context, Species: Vip</span></span>
-<span><span class="co">## context, Species: Pvalb</span></span>
-<span><span class="co">## Context: contextContext: context, Species: Tac2</span></span>
-<span><span class="co">## , Species: Vip</span></span>
-<span><span class="co">## Context: Context: context, Species: Vip</span></span>
-<span><span class="co">## context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: Context: context, Species: contextVip</span></span>
-<span><span class="co">## , Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: contextTac2</span></span>
-<span><span class="co">## , Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: Context: contextcontext, Species: , Species: Pvalb</span></span>
-<span><span class="co">## VipContext: </span></span>
-<span><span class="co">## Context: contextcontext, Species: Pvalb</span></span>
-<span><span class="co">## , Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: Context: Context: contextcontextcontext, Species: Pvalb</span></span>
-<span><span class="co">## , Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## , Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: Context: context, Species: Vip</span></span>
-<span><span class="co">## context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: Context: Context: contextcontext, Species: Context: , Species: contextPvalb</span></span>
-<span><span class="co">## , Species: Pvalb</span></span>
-<span><span class="co">## context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7Context: contextPvalb</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## , Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2Context: contextContext: , Species: Slc17a7Context: context, Species: Tac2context, Species: </span></span>
-<span><span class="co">## Slc17a7</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span>
-<span><span class="co">## Context: context, Species: Pvalb</span></span>
-<span><span class="co">## Context: context, Species: Slc17a7</span></span>
-<span><span class="co">## Context: context, Species: Tac2</span></span>
-<span><span class="co">## Context: context, Species: Vip</span></span></code></pre>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">wisp_results</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">wisp_results</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">##             est        true         param         id method sim</span></span>
 <span><span class="co">## 1   0.539478541  0.11578059   rate_effect      Pvalb   wisp   1</span></span>
 <span><span class="co">## 2  -0.105849303  0.00000000   rate_effect    Slc17a7   wisp   1</span></span>
@@ -854,44 +447,37 @@ can see the output of the function.</p>
 <span><span class="co">## 10  0.845940594  0.00000000           FSE    Slc17a7   wisp   1</span></span>
 <span><span class="co">## 11  0.130569307  1.00000000           FSE       Tac2   wisp   1</span></span>
 <span><span class="co">## 12  1.295841584  0.00000000           FSE        Vip   wisp   1</span></span></code></pre>
-<p>Here we see three different parameters (under the <em>param</em>
-column) for benchmarking: the rate effect of the <em>trt</em> condition
-(<em>rate_effect</em>) for each gene (under the <em>id</em> column), the
-random effect (<em>random_effect</em>) of each replicate (under the
-<em>id</em> column), and whether the <em>trt</em> condition induces a
-FSE (<em>FSE</em>) for each gene (under the <em>id</em> column). For
-each parameter, the stipulated value used in the simulation is given
-under the <em>true</em> column, while the estimate from wisp is given
-under the <em>est</em> column. Note that for <em>rate_effect</em> and
-<em>random_effect</em>, the parameter is a continuous value. The true,
-stipulated value will always be between <span class="math inline">-0.5</span> and <span class="math inline">0.5</span>. (As explained above, these values are
+<p>Here we see three different parameters (under the <span class="code_variable">param</span> column) for benchmarking: the rate
+effect of the <span class="code_variable">trt</span> condition (<span class="code_variable">rate_effect</span>) for each gene (under the <span class="code_variable">id</span> column), the random effect (<span class="code_variable">random_effect</span>) of each replicate (under the
+<span class="code_variable">id</span> column), and whether the <span class="code_variable">trt</span> condition induces a FSE (<span class="code_variable">FSE</span>) for each gene (under the <span class="code_variable">id</span> column). For each parameter, the
+stipulated value used in the simulation is given under the <span class="code_variable">true</span> column, while the estimate from wisp
+is given under the <span class="code_variable">est</span> column. Note
+that for <span class="code_variable">rate_effect</span> and <span class="code_variable">random_effect</span>, the parameter is a
+continuous value. The true, stipulated value will always be between
+<span class="math inline">-0.5</span> and <span class="math inline">0.5</span>. (As explained above, these values are
 randomly choosen from between zero and one, and reported after
-subtracting 0.5 so that down-regulation is negative and up-regulation is
-positive). For <em>FSE</em>, the parameter is binary, with a
-<em>true</em> value of 1 indicating that the gene exhibits a FSE in the
-treatment condition, and a <em>true</em> value of 0 indicating no FSE.
-The estimated value for <em>FSE</em> is a <span class="math inline">p</span>-value. The obvious idea is that a <span class="math inline">p</span>-value below some threshold (e.g., 0.05)
-indicates the presence of a FSE, while a <span class="math inline">p</span>-value above that threshold indicates no
-FSE.</p>
-<p>Two points are worth noting. First, the
-<em>model_attractor_simulation_wisp</em> function does not return any
-results related to SVGs because wisp does not run statistical tests for
-SVGs. Second, wisp does not make a single rate-effect estimate or
-compute a single <span class="math inline">p</span>-value for
-rate-effect estimates. It makes one estimate and computes one <span class="math inline">p</span>-value per expression-rate block. The
-natural solution is thus to take the mean of the estimates and the mean
-of the <span class="math inline">p</span>-values across all blocks (for
-each gene) to get a single rate-effect estimate and single rate-effect
-<span class="math inline">p</span>-value. This approach is sensible for
-the effect estimate, but the <span class="math inline">p</span>-values
-are computed under the assumption that rate effects are independent
-across blocks. To address this, after taking the mean of the <span class="math inline">p</span>-values (which may be <span class="math inline">&gt; 1</span> due to multiple-comparison
-correction), the <em>model_attractor_simulation_wisp</em> function
-divides the result by the number of blocks. Actually,
-<em>model_attractor_simulation_wisp</em> calls a helper function
-<em>extract_pvalue_attractor_simulation_wisp</em> to do this
-computation. Here is the code for that function:</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+subtracting <span class="math inline">0.5</span> so that down-regulation
+is negative and up-regulation is positive). For <span class="code_variable">FSE</span>, the parameter is binary, with a <span class="code_variable">true</span> value of 1 indicating that the gene
+exhibits a FSE in the treatment condition, and a <span class="code_variable">true</span> value of 0 indicating no FSE. The
+estimated value for <span class="code_variable">FSE</span> is a <span class="math inline">p</span>-value. The obvious idea is that a <span class="math inline">p</span>-value below some threshold (e.g., <span class="math inline">0.05</span>) indicates the presence of a FSE, while
+a <span class="math inline">p</span>-value above that threshold
+indicates no FSE.</p>
+<p>Two points are worth noting. First, the <span class="code_variable">model_attractor_simulation_wisp</span> function
+does not return any results related to SVGs because wisp does not run
+statistical tests for SVGs. Second, wisp does not make a single
+rate-effect estimate or compute a single <span class="math inline">p</span>-value for rate-effect estimates. It makes
+one estimate and computes one <span class="math inline">p</span>-value
+per expression-rate block. The natural solution is thus to take the mean
+of the estimates and the mean of the <span class="math inline">p</span>-values across all blocks (for each gene) to
+get a single rate-effect estimate and single rate-effect <span class="math inline">p</span>-value. This approach is sensible for the
+effect estimate, but the <span class="math inline">p</span>-values are
+computed under the assumption that rate effects are independent across
+blocks. To address this, after taking the mean of the <span class="math inline">p</span>-values (which may be <span class="math inline">&gt; 1</span> due to multiple-comparison
+correction), the <span class="code_variable">model_attractor_simulation_wisp</span> function
+divides the result by the number of blocks. Actually, <span class="code_variable">model_attractor_simulation_wisp</span> calls a
+helper function <span class="code_variable">extract_pvalue_attractor_simulation_wisp</span> to
+do this computation. Here is the code for that function:</p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Function to extract mean p-value across blocks for each gene </span></span>
 <span><span class="va">extract_pvalue_attractor_simulation_wisp</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">model</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="va">genes</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">[[</span><span class="st">"grouping.variables"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"species.lvls"</span><span class="op">]</span><span class="op">]</span></span>
@@ -905,72 +491,74 @@ computation. Here is the code for that function:</p>
 <span>    <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">p_values</span><span class="op">)</span></span>
 <span>  <span class="op">}</span></span></code></pre></div>
 <p>In addition to a built-in function for modeling attractor-based
-simulations with wisp, wispack also provides a function, called
-<em>run_attractor_sim_benchmarks</em>, for running multiple simulations
-and aggregating the results for benchmark metrics. This function takes
-several arguments:</p>
+simulations with wisp, wispack also provides a function, called <span class="function">run_attractor_sim_benchmarks</span>, for running
+multiple simulations and aggregating the results for benchmark metrics.
+This function takes several arguments:</p>
 <ol style="list-style-type: decimal">
 <li>
-<em>seed_data</em>: A data frame containing the seed dataset with
-columns: <em>gene</em>, <em>coord_x</em>, <em>coord_y</em>, and
-<em>count</em>. Will be given to <em>attractor_simulation</em> to
-generate simulations.</li>
+<span class="code_variable">seed_data</span>: A data frame
+containing the seed dataset with columns: <span class="code_variable">gene</span>, <span class="code_variable">coord_x</span>, <span class="code_variable">coord_y</span>, and <span class="code_variable">count</span>. Will be given to <span class="function">attractor_simulation</span> to generate
+simulations.</li>
 <li>
-<em>n_sims</em>: An integer specifying the number of simulations to
-run. Default is 100.</li>
+<span class="code_variable">n_sims</span>: An integer specifying the
+number of simulations to run. Default is <span class="math inline">100</span>.</li>
 <li>
-<em>n_bins</em>: An integer specifying the number of spatial bins to
-divide the data coordinates into for each simulation. Default is
-100.</li>
+<span class="code_variable">n_bins</span>: An integer specifying the
+number of spatial bins to divide the data coordinates into for each
+simulation. Default is <span class="math inline">100</span>.</li>
 <li>
-<em>n_replicates</em>: An integer specifying the number of
-replicates to generate for each treatment condition in each simulation.
-Default is 4.</li>
+<span class="code_variable">n_replicates</span>: An integer
+specifying the number of replicates to generate for each treatment
+condition in each simulation. Default is <span class="math inline">4</span>.</li>
 <li>
-<em>replicate_spatial_scalar</em>: A numeric value controlling the
-amount of spatial variation introduced in each replicate for each
-simulation. Default is 0.05.</li>
+<span class="code_variable">replicate_spatial_scalar</span>: A
+numeric value controlling the amount of spatial variation introduced in
+each replicate for each simulation. Default is <span class="math inline">0.05</span>.</li>
 <li>
-<em>min_effect_size</em>: A numeric value specifying the minimum
-effect size for functional spatial effects (FSEs) in each simulation.
-Default is 0.05. Max positive effect size is always 4, i.e., a 4x change
-in rate. There is no max to the min effect size, i.e., an effect can
-drop the rate to zero.</li>
+<span class="code_variable">min_effect_size</span>: A numeric value
+specifying the minimum effect size for functional spatial effects (FSEs)
+in each simulation. Default is <span class="math inline">0.05</span>.
+Max positive effect size is always <span class="math inline">4</span>,
+i.e., a <span class="math inline">4\times</span> change in rate. There
+is no max to the min effect size, i.e., an effect can drop the rate to
+zero.</li>
 <li>
-<em>modeling_functions</em>: A named list of modeling functions to
-benchmark. Each function should take at least the arguments <em>sim</em>
-(the simulation object produced by <em>attractor_simulation</em>) and
-<em>sim_num</em> (the simulation number). Default is a list containing
-only the <em>model_attractor_simulation_wisp</em> function. Functions
-provided in this list should return a dataframe with columns
-<em>est</em>, <em>true</em>, <em>param</em>, <em>id</em>,
-<em>method</em>, and <em>sim</em>.
+<span class="code_variable">modeling_functions</span>: A named list
+of modeling functions to benchmark. Each function should take at least
+the arguments <span class="code_variable">sim</span> (the simulation
+object produced by <span class="function">attractor_simulation</span>)
+and <span class="code_variable">sim_num</span> (the simulation number).
+Default is a list containing only the <span class="code_variable">model_attractor_simulation_wisp</span> function.
+Functions provided in this list should return a dataframe with columns
+<span class="code_variable">est</span>, <span class="code_variable">true</span>, <span class="code_variable">param</span>, <span class="code_variable">id</span>, <span class="code_variable">method</span>, and <span class="code_variable">sim</span>.
 <ul>
-<li>The <em>true</em> column should contain, for each simulation and
-each applicable parameter, the ground-truth value returned by the
-<em>attractor_simulation_ground_truth</em> function.</li>
-<li>The <em>est</em> column should contain the corresponding estimated
-value from the modeling function.</li>
-<li>The <em>param</em> column should contain the name of the parameter
-(one of “rate_effect”, “random_effect”, “FSE”, or “SVG”).</li>
-<li>The <em>id</em> column should contain the name of the gene or
-replicate associated with the parameter.</li>
-<li>The <em>method</em> column should contain the name of the modeling
-method used.</li>
-<li>The <em>sim</em> column should contain the simulation number.</li>
+<li>The <span class="code_variable">true</span> column should contain,
+for each simulation and each applicable parameter, the ground-truth
+value returned by the <span class="code_variable">attractor_simulation_ground_truth</span>
+function.</li>
+<li>The <span class="code_variable">est</span> column should contain the
+corresponding estimated value from the modeling function.</li>
+<li>The <span class="code_variable">param</span> column should contain
+the name of the parameter (one of “rate_effect”, “random_effect”, “FSE”,
+or “SVG”).</li>
+<li>The <span class="code_variable">id</span> column should contain the
+name of the gene or replicate associated with the parameter.</li>
+<li>The <span class="code_variable">method</span> column should contain
+the name of the modeling method used.</li>
+<li>The <span class="code_variable">sim</span> column should contain the
+simulation number.</li>
 </ul>
 </li>
 <li>
-<em>modeling_function_args</em>: A named list of lists, where each
-sub-list contains additional arguments to pass to the corresponding
-modeling function in <em>modeling_functions</em>. Default is a list
-containing arguments for the <em>model_attractor_simulation_wisp</em>
+<span class="code_variable">modeling_function_args</span>: A named
+list of lists, where each sub-list contains additional arguments to pass
+to the corresponding modeling function in <span class="code_variable">modeling_functions</span>. Default is a list
+containing arguments for the <span class="code_variable">model_attractor_simulation_wisp</span>
 function.</li>
 </ol>
-<p>The modeling functions given in <em>modeling_functions</em> should
-parallel <em>model_attractor_simulation_wisp</em> in structure. For
-reference, here is the code:</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<p>The modeling functions given in <span class="code_variable">modeling_functions</span> should parallel <span class="code_variable">model_attractor_simulation_wisp</span> in
+structure. For reference, here is the code:</p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model_attractor_simulation_wisp</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span></span>
 <span>    <span class="va">sim</span>, </span>
 <span>    <span class="va">sim_num</span>,</span>
@@ -1024,11 +612,10 @@ reference, here is the code:</p>
 <span>    <span class="op">)</span></span>
 <span>    </span>
 <span>  <span class="op">}</span></span></code></pre></div>
-<p>The function <em>extract_wisp_attractor_simulation_results</em> is a
-helper function custom written for wisp, but the function
-<em>attractor_simulation_ground_truth</em> is provided by wispack and
-will be useful for extracting ground-truth values for benchmarking other
-modeling functions.</p>
+<p>The function <span class="function">extract_wisp_attractor_simulation_results</span> is a
+helper function custom written for wisp, but the function <span class="code_variable">attractor_simulation_ground_truth</span> is
+provided by wispack and will be useful for extracting ground-truth
+values for benchmarking other modeling functions.</p>
 <h3>
 DESeq2
 </h3>
@@ -1048,17 +635,17 @@ mathematical principles: nonlinear models with random-effects (wispack)
 compared to generalized linear models with shrinkage estimation, i.e.,
 with ridge regression (DESeq2).</p>
 <p>Benchmarking DESeq2 on the attractor simulations will require writing
-a custom function similar to <em>model_attractor_simulation_wisp</em>
-for use in <em>run_attractor_sim_benchmarks</em>.</p>
+a custom function similar to <span class="code_variable">model_attractor_simulation_wisp</span> for use in
+<span class="function">run_attractor_sim_benchmarks</span>.</p>
 <p>First, install and load DESeq2:</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="st"><a href="https://bioconductor.github.io/BiocManager/" class="external-link">"BiocManager"</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"BiocManager"</span><span class="op">)</span><span class="op">}</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="st"><a href="https://github.com/thelovelab/DESeq2" class="external-link">"DESeq2"</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span><span class="fu">BiocManager</span><span class="fu">::</span><span class="fu"><a href="https://bioconductor.github.io/BiocManager/reference/install.html" class="external-link">install</a></span><span class="op">(</span><span class="st">"DESeq2"</span><span class="op">)</span><span class="op">}</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="st">"apeglm"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span><span class="fu">BiocManager</span><span class="fu">::</span><span class="fu"><a href="https://bioconductor.github.io/BiocManager/reference/install.html" class="external-link">install</a></span><span class="op">(</span><span class="st">"apeglm"</span><span class="op">)</span><span class="op">}</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/thelovelab/DESeq2" class="external-link">DESeq2</a></span><span class="op">)</span> </span></code></pre></div>
 <p>Next, we need a helper function to convert our simulation data into
 the format expected by DESeq2:</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">make_DESeq2_data</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span></span>
 <span>    <span class="va">sim_data</span></span>
 <span>  <span class="op">)</span> <span class="op">{</span></span>
@@ -1094,10 +681,9 @@ the format expected by DESeq2:</p>
 <span>    <span class="op">}</span></span>
 <span>    <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>cts <span class="op">=</span> <span class="va">cts</span>, coldata <span class="op">=</span> <span class="va">coldata</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="op">}</span></span></code></pre></div>
-<p>Now, paralleling the structure of
-<em>model_attractor_simulation_wisp</em>, we can write the DESeq2
-modeling function:</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<p>Now, paralleling the structure of <span class="code_variable">model_attractor_simulation_wisp</span>, we can
+write the DESeq2 modeling function:</p>
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model_attractor_simulation_DESeq2</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span></span>
 <span>    <span class="va">sim</span>,</span>
 <span>    <span class="va">sim_num</span></span>
@@ -1141,7 +727,7 @@ modeling function:</p>
 <p>As a sanity check, let’s model our test simulation with DESeq2 and
 plot the aggregate counts per gene per replicate per condition (as
 points), along with the DESeq2-fitted values (as lines):</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Make data for DESeq2</span></span>
 <span><span class="va">ddata</span> <span class="op">&lt;-</span> <span class="fu">make_DESeq2_data</span><span class="op">(</span><span class="va">test_sim</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
 <span><span class="va">dds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/DESeq2/man/DESeqDataSet.html" class="external-link">DESeqDataSetFromMatrix</a></span><span class="op">(</span>countData <span class="op">=</span> <span class="va">ddata</span><span class="op">$</span><span class="va">cts</span>, colData <span class="op">=</span> <span class="va">ddata</span><span class="op">$</span><span class="va">coldata</span>, design <span class="op">=</span> <span class="op">~</span> <span class="va">fixedeffect</span><span class="op">)</span></span>
@@ -1206,7 +792,7 @@ functions are beta distributions describing component count
 distributions.</p>
 <p>As ELLA is a Python package, we need to integrate it into our R-based
 benchmarking pipeline with the reticulate package:</p>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Set up virtual python environment for reticulate, in bash (terminal): </span></span>
 <span><span class="co">#   python3 -m venv ~/.virtualenvs/r-reticulate</span></span>
 <span><span class="co">#   source ~/.virtualenvs/r-reticulate/bin/activate</span></span>
@@ -1234,9 +820,8 @@ benchmarking pipeline with the reticulate package:</p>
 <span>  pip <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p>With a virtual Python environment set up, we can now install and load
-ELLA. Note that we are using the original ELLA version (branch
-<em>ella1</em>), not the most current.</p>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+ELLA. Note that we are using the original ELLA version (branch <span class="function">ella1</span>), not the most current.</p>
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install ELLA, in bash (terminal):</span></span>
 <span><span class="co"># git clone --branch ella1 https://github.com/jadexq/ELLA.git</span></span>
 <span><span class="co"># cd ELLA</span></span>
@@ -1247,19 +832,18 @@ ELLA. Note that we are using the original ELLA version (branch
 <span><span class="va">ELLA_mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rstudio.github.io/reticulate/reference/import.html" class="external-link">import_from_path</a></span><span class="op">(</span><span class="st">"ELLA"</span>, path <span class="op">=</span> <span class="va">my_ELLA_dir</span><span class="op">)</span></span></code></pre></div>
 <p>As with DESeq2, we need a function to convert our simulation data
 into the format expected by ELLA. First, we will limit the data to only
-the reference condition, as ELLA cannot test between-groups. The
-<em>fixedeffect</em> column will have a single unique value
-(<em>ref</em>) and will be renamed <em>type</em> as a stand-in for cell
+the reference condition, as ELLA cannot test between-groups. The <span class="code_variable">fixedeffect</span> column will have a single
+unique value (<span class="code_variable">ref</span>) and will be
+renamed <span class="code_variable">type</span> as a stand-in for cell
 type. Second, ELLA is designed to model intracellular gene expression.
 It expects each replicate to be a single cell, so we will change the
-<em>replicate</em> column of the simulation data to <em>cell</em>.
-Third, we will rename <em>bin_x</em> and <em>bin_y</em> to <em>x</em>
-and <em>y</em>, respectively, as ELLA expects these names. Fourth, we
-rename <em>count</em> to <em>umi</em>, for the same reason.</p>
+<span class="code_variable">umi</span> column of the simulation data to
+<span class="code_variable">cell</span>. Third, we will rename <span class="code_variable">bin_x</span> and <span class="code_variable">bin_y</span> to <span class="code_variable">x</span> and <span class="code_variable">y</span>,
+respectively, as ELLA expects these names. Fourth, we rename <span class="code_variable">count</span> to <span class="code_variable">umi</span>, for the same reason.</p>
 <p>The most complex issue is that ELLA is intended to model the radial
 axis out from a cell’s nucleus. It requires, for each cell, an center
-coordinate <span class="math inline">\langle \text{centerX},
-\text{centerY} \rangle</span> from which the radial distance of each
+coordinate <span class="math inline">\langle \mathrm{centerX},
+\mathrm{centerY} \rangle</span> from which the radial distance of each
 spatial point is computed. The attractor simulations are, of course,
 purpose-built to exhibit spatial variation along the <span class="math inline">x</span> and <span class="math inline">y</span>
 axes. This stipulated spatial variance will be lost if we simply pick a
@@ -1272,12 +856,14 @@ original Cartesian coordinates <span class="math inline">\langle
 x,y\rangle</span> into new Cartesian coordinates <span class="math inline">\langle x^\prime,y^\prime\rangle</span> in which the
 old <span class="math inline">x</span> coordinate becomes radial
 distance and the old <span class="math inline">y</span> coordinate
-becomes angular displacement is given by: <span class="math display">x^\prime = x \cos((y/\text{max}(y)) 2 \pi)</span>
-<span class="math display">y^\prime = x \sin((y/\text{max}(y)) 2
-\pi)</span> This transformation puts the cell center at <span class="math inline">\langle 0,0\rangle</span> for all cells. It also
-requires compensating for radial dilution, which we do by multiplying
-the count at each point by its radial distance and normalizing.</p>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+becomes angular displacement is given by: <span class="math display">x^\prime = x \cos\left(\frac{2 \pi
+y}{\mathrm{max}(y)} \right)</span> <span class="math display">y^\prime =
+x \sin\left(\frac{2 \pi y}{\mathrm{max}(y)} \right)</span> This
+transformation puts the cell center at <span class="math inline">\langle
+0,0\rangle</span> for all cells. It also requires compensating for
+radial dilution, which we do by multiplying the count at each point by
+its radial distance and normalizing.</p>
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">make_ELLA_data</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span></span>
 <span>    <span class="va">sim_data</span>,</span>
 <span>    <span class="va">radial_dim</span> <span class="op">=</span> <span class="st">"bin_x"</span>,</span>
@@ -1383,7 +969,7 @@ the count at each point by its radial distance and normalizing.</p>
 <span>  <span class="op">}</span></span></code></pre></div>
 <p>Let’s plot one replicate from this simulation data to see the
 transformation:</p>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ella_sim</span> <span class="op">&lt;-</span> <span class="fu">make_ELLA_data</span><span class="op">(</span><span class="va">test_sim</span><span class="op">$</span><span class="va">data</span><span class="op">)</span></span>
 <span><span class="va">plt1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">test_sim</span><span class="op">$</span><span class="va">data</span><span class="op">[</span><span class="va">test_sim</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">replicate</span> <span class="op">==</span> <span class="st">"replicate1"</span> <span class="op">&amp;</span> <span class="va">test_sim</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">fixedeffect</span> <span class="op">==</span> <span class="st">"ref"</span>,<span class="op">]</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">bin_x</span>, y <span class="op">=</span> <span class="va">bin_y</span>, color <span class="op">=</span> <span class="va">gene</span>, size <span class="op">=</span> <span class="va">count</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
@@ -1411,7 +997,7 @@ transformation:</p>
 across the transform by plotting the count density along the original
 <span class="math inline">x</span> axis and the transformed radial
 axis:</p>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plot_count_density</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span></span>
 <span>    <span class="va">df_rad</span>, </span>
 <span>    <span class="va">df_car</span>, </span>
@@ -1513,7 +1099,7 @@ set to speed up the fits. More importantly, the L1 regression penalty
 factor has been changed from a default of zero to 0.2. Initial testing
 showed poor performance (high false discovery and false positive rates)
 without the L1 penalty.</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Run ELLA on simulated data</span></span>
 <span><span class="va">run_ELLA</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span></span>
 <span>    <span class="va">sim_data</span>,</span>
@@ -1553,7 +1139,7 @@ without the L1 penalty.</p>
 <span><span class="op">}</span></span></code></pre></div>
 <p>Finally, we can write the full ELLA modeling function for
 benchmarking:</p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Full model pipeline </span></span>
 <span><span class="va">model_attractor_simulation_ELLA</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span></span>
 <span>    <span class="va">sim</span>,</span>
@@ -1592,7 +1178,7 @@ benchmarking:</p>
 <p>Before performing the benchmarking itself, let’s spot-check how well
 ELLA fits the simulated data. Here is a function for producing a plot of
 the fit:</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Show how ELLA fits the simulated data</span></span>
 <span><span class="va">plot_ella_fit</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span></span>
 <span>    <span class="va">ella_sim</span>,</span>
@@ -1671,7 +1257,7 @@ the fit:</p>
 <span>      <span class="op">)</span></span>
 <span>  <span class="op">}</span></span></code></pre></div>
 <p>And here are the results:</p>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plt_ella1</span> <span class="op">&lt;-</span> <span class="fu">plot_ella_fit</span><span class="op">(</span><span class="fu">run_ELLA</span><span class="op">(</span><span class="va">test_sim</span><span class="op">$</span><span class="va">data</span><span class="op">)</span>, <span class="va">test_sim</span><span class="op">$</span><span class="va">data</span>, title_extra <span class="op">=</span> <span class="st">" (L1 penalty = 0.2)"</span><span class="op">)</span></span>
 <span><span class="va">plt_ella2</span> <span class="op">&lt;-</span> <span class="fu">plot_ella_fit</span><span class="op">(</span><span class="fu">run_ELLA</span><span class="op">(</span><span class="va">test_sim</span><span class="op">$</span><span class="va">data</span>, L1_lam <span class="op">=</span> <span class="fl">0.0</span><span class="op">)</span>, <span class="va">test_sim</span><span class="op">$</span><span class="va">data</span>, title_extra <span class="op">=</span> <span class="st">" (L1 penalty = 0.0)"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">grid.arrange</a></span><span class="op">(</span><span class="va">plt_ella1</span>, <span class="va">plt_ella2</span>, nrow <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
@@ -1680,19 +1266,17 @@ the fit:</p>
 set the penalty back to the default of zero, we get a much better fit.
 However, although this looks like a better fit, prior testing (not shown
 here) demonstrated that it leads to very high false discovery and false
-positive rates (around 0.2 to 0.5) across the benchmark simulations.
-Therefore, we will keep the L1 penalty at 0.2 for the benchmarking
-itself.</p>
+positive rates (around <span class="math inline">0.2</span> to <span class="math inline">0.5</span>) across the benchmark simulations.
+Therefore, we will keep the L1 penalty at <span class="math inline">0.2</span> for the benchmarking itself.</p>
 <h2>
 Running benchmarks
 </h2>
 <p>To begin, we need a function which will loop through the simulation
-and modeling functions, collecting results. The function
-<em>run_attractor_sim_benchmarks</em> is provided with wispack for this
-purpose. We will run 250 simulations and model each with wisp, DESeq2,
-and ELLA. As there are four genes per simulation, this will yield a
-thousand sample points for computing benchmark metrics.</p>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+and modeling functions, collecting results. The function <span class="function">run_attractor_sim_benchmarks</span> is provided with
+wispack for this purpose. We will run <span class="math inline">250</span> simulations and model each with wisp,
+DESeq2, and ELLA. As there are four genes per simulation, this will
+yield a thousand sample points for computing benchmark metrics.</p>
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_attractor_sim_benchmarks.html">run_attractor_sim_benchmarks</a></span><span class="op">(</span></span>
 <span>  seed_data <span class="op">=</span> <span class="va">count_data_neurons_patch</span>,</span>
 <span>  n_sims <span class="op">=</span> <span class="fl">250</span>,</span>
@@ -1707,7 +1291,7 @@ thousand sample points for computing benchmark metrics.</p>
 Results
 </h3>
 <p>The results of this run are provided with wispack:</p>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">benchmark_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
 <span>      <span class="st">"extdata"</span>, </span>
@@ -1715,19 +1299,18 @@ Results
 <span>      package <span class="op">=</span> <span class="st">"wispack"</span></span>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p>Wispack also includes a function,
-<em>analyze_attractor_sim_benchmarks</em>, for aggregating all of the
-benchmark metrics from the results of the
-<em>run_attractor_sim_benchmarks</em> function:</p>
-<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<p>Wispack also includes a function, <span class="function">analyze_attractor_sim_benchmarks</span>, for
+aggregating all of the benchmark metrics from the results of the <span class="function">run_attractor_sim_benchmarks</span> function:</p>
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">benchmark_metrics</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/analyze_attractor_sim_benchmarks.html">analyze_attractor_sim_benchmarks</a></span><span class="op">(</span><span class="va">benchmark_results</span><span class="op">)</span></span></code></pre></div>
 <p>By default, this function computes false positive rate (FPR), false
 discovery rate (FDR), and power based on a significance threshold of
-0.05. For methods which return estimates for FSE size or random effect
-size, it also computers the correlation between the estimated and true
-effect size. The mean run time is computed for each method as well. Here
-are the results for wisp, DESeq2, and ELLA:</p>
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<span class="math inline">0.05</span>. For methods which return
+estimates for FSE size or random effect size, it also computers the
+correlation between the estimated and true effect size. The mean run
+time is computed for each method as well. Here are the results for wisp,
+DESeq2, and ELLA:</p>
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">benchmark_metrics</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">##                   DESeq2   ELLA    wisp</span></span>
 <span><span class="co">## cor_rate           0.228     NA   0.848</span></span>
@@ -1740,19 +1323,18 @@ are the results for wisp, DESeq2, and ELLA:</p>
 <span><span class="co">## power_fse          0.815     NA   0.428</span></span>
 <span><span class="co">## mean_sec_to_model  1.722 27.428 426.717</span></span></code></pre>
 <p>As can be seen, both ELLA and wisp control for false positives very
-well, with FDRs well below the intended 0.05 threshold. This control is
-evidently bought at the price of power, however. On the other hand,
-DESeq2 shows higher power, but at the cost of a very high FDR. This is
-perhaps due to design, as DESeq2 is intended to be used for data
-exploration on large gene panels, while ELLA and wisp are aimed at
-hypothesis testing.</p>
+well, with FDRs well below the intended <span class="math inline">0.05</span> threshold. This control is evidently
+bought at the price of power, however. On the other hand, DESeq2 shows
+higher power, but at the cost of a very high FDR. This is perhaps due to
+design, as DESeq2 is intended to be used for data exploration on large
+gene panels, while ELLA and wisp are aimed at hypothesis testing.</p>
 <h3>
 Visualizing correlations
 </h3>
 <p>We can also visualize the correlation between estimated and true
 effect sizes for wisp and DESeq2. Here are the results for FSE size
 estimation:</p>
-<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">corr_results</span> <span class="op">&lt;-</span> <span class="va">benchmark_results</span><span class="op">[</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"_effect"</span>, <span class="va">benchmark_results</span><span class="op">$</span><span class="va">results.param</span><span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"est|true|param|method|id"</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">benchmark_results</span><span class="op">)</span><span class="op">)</span></span>
@@ -1776,19 +1358,18 @@ estimation:</p>
 <p><img src="tutorial_benchmarks_files/figure-html/unnamed-chunk-1-1.png" class="r-plt" alt="" width="700"></p>
 <p>Notice that, for all four gene types, wisp produces a tight (but
 non-linear) correlation between estimated and true FSE size.
-Interestingly, DESeq2 produces a roughly linear correlation for PvalB
-and Slc17a7, but the correlation is very poor with true null effects
-associating with a wide range of effect estimates. For Tac2 and Vip,
-DESeq2 produces a result more like wisp, with a tight, non-linear
-correlation. It’s not immediately clear why DESeq2 performs well for
-Tac2 and Vip, but poorly for Pvalb and Slc17a7. It’s not explained by
-performing well on true positives, as Tac2 and Pvalb are both true
-positives, while Vip and Slc17a7 are both true negatives. Neither does
-count seem to matter; while Slc17a7 and Tac2 differ in counts, Pvalb and
-Vip do not.</p>
+Interestingly, DESeq2 produces a roughly linear correlation for <span class="gene">Pvalb</span> and <span class="gene">Slc17a7</span>, but the
+correlation is very poor with true null effects associating with a wide
+range of effect estimates. For <span class="gene">Tac2</span> and <span class="gene">Vip</span>, DESeq2 produces a result more like wisp, with a
+tight, non-linear correlation. It’s not immediately clear why DESeq2
+performs well for <span class="gene">Tac2</span> and <span class="gene">Vip</span>, but poorly for <span class="gene">Pvalb</span>
+and <span class="gene">Slc17a7</span>. It’s not explained by performing
+well on true positives, as <span class="gene">Tac2</span> and <span class="gene">Pvalb</span> are both true positives, while <span class="gene">Vip</span> and <span class="gene">Slc17a7</span> are both
+true negatives. Neither does count seem to matter; while <span class="gene">Slc17a7</span> and <span class="gene">Tac2</span> differ in
+counts, <span class="gene">Pvalb</span> and <span class="gene">Vip</span> do not.</p>
 <p>We can also get a sense for how well wisp did estimating random
 effects by plot true vs estimated values:</p>
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">corr_results</span><span class="op">[</span><span class="va">corr_results</span><span class="op">$</span><span class="va">param</span> <span class="op">==</span> <span class="st">"random_effect"</span>,<span class="op">]</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">true</span>, y <span class="op">=</span> <span class="va">est</span>, color <span class="op">=</span> <span class="va">id</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_abline</a></span><span class="op">(</span>slope <span class="op">=</span> <span class="fl">1</span>, intercept <span class="op">=</span> <span class="fl">0</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
@@ -1806,18 +1387,18 @@ effects by plot true vs estimated values:</p>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_benchmarks_files/figure-html/unnamed-chunk-2-1.png" class="r-plt" alt="" width="700"></p>
 <p>A final note concerns the mean run times for each method: on average,
-it took 2 seconds to fit DESeq2 to the data, 27 seconds to fit ELLA, and
-427 seconds to fit wisp. This is, of course, an order of magnitude
-increase at each step. That DESeq2 would be (at least) an order of
-magnitude faster than ELLA or wisp makes sense: DESeq2 essentially fits
-a GLM to group means, while ELLA and wisp fit models to transcript
-counts at individual spatial points. However, the order of magnitude
-increase from ELLA to wisp is explained by the hypothesis testing.
-Wispack would also need only about 20-30 seconds to fit a single model,
-but estimating <span class="math inline">p</span>-values through
-bootstrap resampling. For this benchmark, a thousand bootstraps were
-done per model, in parallel across a hundred cores, leading to the
-ten-fold increase in computation time.</p>
+it took <span class="math inline">2</span> seconds to fit DESeq2 to the
+data, <span class="math inline">27</span> seconds to fit ELLA, and <span class="math inline">427</span> seconds to fit wisp. This is, of course,
+an order of magnitude increase at each step. That DESeq2 would be (at
+least) an order of magnitude faster than ELLA or wisp makes sense:
+DESeq2 essentially fits a GLM to group means, while ELLA and wisp fit
+models to transcript counts at individual spatial points. However, the
+order of magnitude increase from ELLA to wisp is explained by the
+hypothesis testing. Wispack would also need only about <span class="math inline">20</span>-<span class="math inline">30</span>
+seconds to fit a single model, but estimating <span class="math inline">p</span>-values through bootstrap resampling. For
+this benchmark, a thousand bootstraps were done per model, in parallel
+across a hundred cores, leading to the ten-fold increase in computation
+time.</p>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>

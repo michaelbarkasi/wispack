@@ -87,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-03-01</h4>
+            <h4 data-toc-skip class="date">2026-03-23</h4>
       
 
       <div class="d-none name"><code>tutorial_multicontext.Rmd</code></div>
@@ -100,10 +100,10 @@ Introduction
 </h2>
 <p>Most biological tissue will contain many different cell types. As all
 cells have the same DNA, what distinguishes cell types is the set of
-genes they express. Hence, when analyzing the spatial distribution of
-gene transcripts, it’s important to consider the kinds of cells
-producing those transcripts. Wisp is able to model different cell types
-using the <strong>context</strong> variable.</p>
+genes expressed. Hence, when analyzing the spatial distribution of gene
+transcripts, it’s important to consider the kinds of cells producing
+those transcripts. Wisp is able to model different cell types using the
+<span class="code_variable">context</span> variable.</p>
 <h2>
 Data and cell-typing
 </h2>
@@ -112,12 +112,11 @@ cortex of mice. The data has been preprocessed into laminar coordinates
 as described in <a href="tutorial_corticallaminar.html">the tutorial</a>
 on modeling the cortical-laminar axis (see also <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">this preprint</a>). As
 with all data appropriate for wispack, and in line with well-known
-modeling functions in R (e.g., <a href="https://cran.r-project.org/web/packages/lme4/index.html" class="external-link">lme4::lmer()</a>
-and <a href="https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html" class="external-link">stats::lm()</a>),
-the data must be in long format. That is, each row must correspond to a
-single observation, which when modeling spatial transcriptomics data
-will typically be a count of transcripts from an RNA species in a single
-cell.</p>
+modeling functions in R (e.g., <a href="https://cran.r-project.org/web/packages/lme4/index.html" class="external-link"><span class="function">lme4::lmer</span></a> and <a href="https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html" class="external-link"><span class="function">stats::lm</span></a>), the data must be in long format.
+That is, each row must correspond to a single observation, which when
+modeling spatial transcriptomics data will typically be a count of
+transcripts from an RNA species in a single cell, holding all covariates
+constant.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">countdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
@@ -136,9 +135,10 @@ cell.</p>
 <span><span class="co">## 5     0  99   IT-ET Glut Bcl11b     1       left  12</span></span>
 <span><span class="co">## 6     0  99      MB GABA Bcl11b     1       left  12</span></span></code></pre>
 <p>Notice that this data is the same as the data used in the <a href="tutorial_timeseries.html">time series tutorial</a>, except that
-instead of the <strong>context</strong> column filled with the
-placeholder “cortex”, there is a <strong>celltype_MMC</strong> column
-filled with the following cell type annotations:</p>
+instead of the <span class="code_variable">context</span> column filled
+with the placeholder <span class="code_variable">cortex</span>, there is
+a <span class="code_variable">celltype_MMC</span> column filled with the
+following cell type annotations:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">unique_celltypes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">$</span><span class="va">celltype_MMC</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span></span>
@@ -152,7 +152,8 @@ filled with the following cell type annotations:</p>
 tool, although the purpose of this tutorial is not to explain how to do
 cell typing.</p>
 <p>As thirty-one cell types is too many for demonstration purposes,
-let’s simplify to just two: “Glut” and “GABA”.</p>
+let’s simplify to just two: <span class="code_variable">Glut</span> and
+<span class="code_variable">GABA</span>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Make masks</span></span>
 <span><span class="va">Glut_mask</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Glut"</span>, <span class="va">countdata</span><span class="op">$</span><span class="va">celltype_MMC</span><span class="op">)</span></span>
@@ -174,14 +175,13 @@ let’s simplify to just two: “Glut” and “GABA”.</p>
 <span><span class="co">## Number of unique cell types: 2 </span></span>
 <span><span class="co">##  </span></span>
 <span><span class="co">## Cell types: Glut, GABA</span></span></code></pre>
-<p>Cutting down to three cell types will both make the results more easy
+<p>Cutting down to two cell types will both make the results more easy
 to visualize and speed up model fitting. Unfortunately, the number of
 model parameters related to fixed effects is a multiple of the number of
 contexts being modeled. This is because each species is treated as
-independent across contexts, e.g., expression of SLC17A7 (a gene
-producing the protein vGLUT which loads glutamate into synaptic
-vesicles) in glutamatergic neurons is presumably independent of its
-expression in GABAergic neurons. So, for example, if there are <span class="math inline">8</span> fixed-effect treatment levels and <span class="math inline">10</span> genes being modeled, that will be <span class="math inline">8\times 10=80</span> parameters per model component.
+independent across contexts, e.g., expression of <span class="gene">SLC17A7</span> (a gene producing the protein <span class="gene">vGLUT</span> which loads glutamate into synaptic vesicles)
+in glutamatergic neurons is presumably independent of its expression in
+GABAergic neurons. So, for example, if there are <span class="math inline">8</span> fixed-effect treatment levels and <span class="math inline">10</span> genes being modeled, that will be <span class="math inline">8\times 10=80</span> parameters per model component.
 There are three model component types (rate, transition point, and
 transition point slope) and the precise number of model components
 depends on the number of transition points per gene. Suppose all genes
@@ -193,11 +193,11 @@ raises the number of parameters related to fixed effects to <span class="math in
 <p>Fortunately, the number of random-effect parameters is independent of
 the number of contexts, as random effects are consistent across contexts
 while varying between species. For example, if one mouse expresses more
-SLC17A7 than another mouse, that effect is assumed to be the same
-regardless of cell type. This is because the modeling of random effects
-by warping factors is intended to capture variation from external noise
-(e.g., tissue preparation), rather than from internal biological
-variation (e.g., cell type differences).</p>
+<span class="gene">SLC17A7</span> than another mouse, that effect is
+assumed to be the same regardless of cell type. This is because the
+modeling of random effects by warping factors is intended to capture
+variation from external noise (e.g., tissue preparation), rather than
+from internal biological variation (e.g., cell type differences).</p>
 <p>Lastly, we’re modeling <a href="tutorial_corticallaminar.html">layer-specific genes</a>, so it’s
 also useful to grab cortical layer boundaries estimated for this data
 independent of wisp (using manual <a href="https://doi.org/10.1016/j.cell.2020.04.007" class="external-link">CCFv3</a>
@@ -214,10 +214,10 @@ itself.</p>
 <h2>
 Fitting a wisp with cell types
 </h2>
-<p>The data frame <strong>countdata</strong> has no column named
-“context”, so the context column needs to be specified along with the
-names for the <strong>species</strong>, <strong>ran</strong>, and
-<strong>timeseries</strong> variables.</p>
+<p>The data frame <span class="code_variable">countdata</span> has no
+column named “context”, so the span class =
+“code_variable”&gt;context column needs to be specified along
+with the names for the <span class="code_variable">species</span>, <span class="code_variable">ran</span>, and <span class="code_variable">timeseries</span> variables.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Define variables in the dataframe for the model</span></span>
 <span><span class="va">data.variables</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -228,7 +228,9 @@ names for the <strong>species</strong>, <strong>ran</strong>, and
 <span>  <span class="op">)</span></span></code></pre></div>
 <p>With data loaded and variables set, we can fit the wisp model. As
 it’s not necessary for demonstrating cell-type modeling, we’ll only fit
-the model (<strong>fit_only = TRUE</strong>) without running any <a href="tutorial_stats.html">statistical parameter estimation</a>.</p>
+the model (<span class="code_variable">fit_only = TRUE</span>) without
+running any <a href="tutorial_stats.html">statistical parameter
+estimation</a>.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
@@ -353,18 +355,6 @@ the model (<strong>fit_only = TRUE</strong>) without running any <a href="tutori
 <span><span class="co">## Estimated gamma dispersion of raw counts</span></span>
 <span><span class="co">## Estimated change points</span></span>
 <span><span class="co">## Found average log counts for each context-species combination</span></span>
-<span><span class="co">## Context: GABA, Species: Bcl11b</span></span>
-<span><span class="co">## Context: GABA, Species: Cux2</span></span>
-<span><span class="co">## Context: GABA, Species: Fezf2</span></span>
-<span><span class="co">## Context: GABA, Species: Nxph3</span></span>
-<span><span class="co">## Context: GABA, Species: Rorb</span></span>
-<span><span class="co">## Context: GABA, Species: Satb2</span></span>
-<span><span class="co">## Context: Glut, Species: Bcl11b</span></span>
-<span><span class="co">## Context: Glut, Species: Cux2</span></span>
-<span><span class="co">## Context: Glut, Species: Fezf2</span></span>
-<span><span class="co">## Context: Glut, Species: Nxph3</span></span>
-<span><span class="co">## Context: Glut, Species: Rorb</span></span>
-<span><span class="co">## Context: Glut, Species: Satb2</span></span>
 <span><span class="co">## Estimated initial parameters for fixed-effect treatments</span></span>
 <span><span class="co">## Built initial beta (ref and fixed-effects) matrices</span></span>
 <span><span class="co">## Initialized random-effect warping factors</span></span>
@@ -396,10 +386,10 @@ the model (<strong>fit_only = TRUE</strong>) without running any <a href="tutori
 <h2>
 Results
 </h2>
-<p>When given different contexts, wisp will make different rate-count
-and time-series plots for each context. For the big picture, let’s
-compare the reference levels for all gene between glutamatergic and
-GABAergic neurons.</p>
+<p>When given different contexts, the <span class="function">wisp</span>
+function will make different rate-count and time-series plots for each
+context. For the big picture, let’s compare the reference levels for all
+gene between glutamatergic and GABAergic neurons.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plt_Glut</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_Glut"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span></span>
 <span><span class="va">plt_GABA</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_GABA"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span></span>
@@ -414,15 +404,17 @@ GABAergic neurons.</p>
 varies between cell types.</p>
 <ul>
 <li>Expression levels for these six genes are much higher in
-glutamatergic neurons compared with GABAergic neurons.</li>
+glutamatergic neurons compared with GABAergic neurons, although this is
+in part because there are more glutamatergic cells.</li>
 <li>The characteristic bump in <a href="tutorial_corticallaminar.html">RORB expression</a> in L4 is only
 there is glutamatergic neurons; it is gone in GABAergic neurons.</li>
-<li>Conversely, there appears to be a bump in BCL11B expression in L4 of
-GABAergic neurons which is absent in glutamatergic neurons.</li>
-<li>NXPH3 and SATB2 expression takes on roughly the same shape in both
-cell types, with higher expression in deeper layers for NXPH3 and higher
-expression in surface layers in SATB2, but the expression levels are
-dramatically higher overall in glutamatergic neurons.</li>
+<li>Conversely, there appears to be a bump in <span class="gene">BCL11B</span> expression in L4 of GABAergic neurons which
+is absent in glutamatergic neurons.</li>
+<li>
+<span class="gene">NXPH3</span> and <span class="gene">SATB2</span>
+expression takes on roughly the same shape in both cell types, with
+higher expression in deeper layers for <span class="gene">NXPH3</span>
+and higher expression in surface layers in <span class="gene">SATB2</span>.</li>
 </ul>
 <h3>
 Fixed-effect structure
@@ -448,18 +440,20 @@ at all treatment levels.</p>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_Glut1</span>, <span class="va">plt_GABA1</span>, <span class="va">plt_Glut2</span>, <span class="va">plt_GABA2</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_multicontext_files/figure-html/print_plots_Bcl11bFezf2-1.png" class="r-plt" alt="" width="700"></p>
-<p>Starting with BCL11b, we see that the bump in L4 at P7 isn’t confined
-to the left hemisphere in GABAergic cells, but also appears (perhaps
-shifted down into L5) in the right as well. Curiously, not only do
-expression levels drop with age (P12, P18), but the bump seems to
-disappear in both hemispheres. In contrast, the up-regulation of BCL11b
-in deep layers (L5 and L6) in glutamatergic neurons is stable across age
-and hemisphere, albeit with a notable drop after P7.</p>
-<p>Similar to BCL11B, FEZF2 expression in GABAergic cells seems to show
-a bilateral bump, this time across all of L5 and L4, which disappears
-after P7. In glutamatergic neurons, FEZF2 expression parallels BCL11b
-just as closely, albeit with higher overall expression and, perhaps,
-with retained up-regulation in L5 after P7.</p>
+<p>Starting with <span class="gene">BCL11B</span>, we see that the bump
+in L4 at P7 isn’t confined to the left hemisphere in GABAergic cells,
+but also appears (perhaps shifted down into L5) in the right as well.
+Curiously, not only do expression levels drop with age (P12, P18), but
+the bump seems to disappear in both hemispheres. In contrast, the
+up-regulation of <span class="gene">BCL11B</span> in deep layers (L5 and
+L6) in glutamatergic neurons is stable across age and hemisphere, albeit
+with a notable drop after P7.</p>
+<p>Similar to <span class="gene">BCL11B</span>, <span class="gene">FEZF2</span> expression in GABAergic cells seems to show a
+bilateral bump, this time across all of L5 and L4, which disappears
+after P7. In glutamatergic neurons, <span class="gene">FEZF2</span>
+expression parallels <span class="gene">BCL11B</span> just as closely,
+albeit with higher overall expression and, perhaps, with retained
+up-regulation in L5 after P7.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plt_Glut</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_Glut_fixEff_Cux2"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span></span>
 <span><span class="va">plt_GABA</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_GABA_fixEff_Cux2"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span> </span>
@@ -506,18 +500,19 @@ perhaps a small bump in L6 in the right hemisphere at P7.</p>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_Glut1</span>, <span class="va">plt_GABA1</span>, <span class="va">plt_Glut2</span>, <span class="va">plt_GABA2</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_multicontext_files/figure-html/print_plots_Nxph3Satb2-1.png" class="r-plt" alt="" width="700"></p>
-<p>Finally, as observed in the reference level, NXPH3 and SATB2
-expression is extremely similar across glutamatergic and GABAergic
-neurons, albeit with higher levels across the board in glutamatergic
-neurons.</p>
+<p>Finally, as observed in the reference level, <span class="gene">NXPH3</span> and <span class="gene">SATB2</span> expression
+is extremely similar across glutamatergic and GABAergic neurons, albeit
+with higher levels across the board in glutamatergic neurons (which, as
+noted above, may simply be due to a higher number of cells).</p>
 <h3>
 Time-series plots
 </h3>
 <p>Temporal trajectories of the count (y-axis) across age (x-axis) can
 be visualized with the <a href="tutorial_timeseries.html">time-series
 plots</a>. These show some interesting patterns on their own. For
-example, while BCL11B shares spatial pattern with FEZF2, its temporal
-pattern is more similar to that of SATB2.</p>
+example, while <span class="gene">BCL11B</span> shares spatial pattern
+with <span class="gene">FEZF2</span>, its temporal pattern is more
+similar to that of <span class="gene">SATB2</span>.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plt_Glut1</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_Glut_timeseries_Bcl11b"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>hjust <span class="op">=</span> <span class="fl">0.0</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">plt_GABA1</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_GABA_timeseries_Bcl11b"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>hjust <span class="op">=</span> <span class="fl">0.0</span><span class="op">)</span><span class="op">)</span></span>
@@ -535,13 +530,13 @@ pattern is more similar to that of SATB2.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_multicontext_files/figure-html/print_timeseries_plots_Bcl11bSatb2-1.png" class="r-plt" alt="" width="700"></p>
 <p>The similar trajectories of the count (y-axis) across age (x-axis)
-for glutamatergic and GABAergic neurons for BCL11B and SATB2 suggest a
+for glutamatergic and GABAergic neurons for <span class="gene">BCL11B</span> and <span class="gene">SATB2</span> suggest a
 similar effect from age, regardless of cell type, hemisphere, or
 cortical layer (block). What is different between the cell types,
-however, is that while BCL11B expression in glutamatergic neurons varies
-by cortical layer in glutamatergic neurons (with higher expression in
-the deeper layers, block 1), it is constant across cortical layers in
-GABAergic neurons.</p>
+however, is that while <span class="gene">BCL11B</span> expression in
+glutamatergic neurons varies by cortical layer in glutamatergic neurons
+(with higher expression in the deeper layers, block 1), it is constant
+across cortical layers in GABAergic neurons.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plt_Glut</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_Glut_timeseries_Cux2"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>hjust <span class="op">=</span> <span class="fl">0.0</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">plt_GABA</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_GABA_timeseries_Cux2"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>hjust <span class="op">=</span> <span class="fl">0.0</span><span class="op">)</span><span class="op">)</span></span>
@@ -569,10 +564,10 @@ recovering at P18.</p>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_Glut</span>, <span class="va">plt_GABA</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_multicontext_files/figure-html/print_timeseries_plots_Fezf2-1.png" class="r-plt" alt="" width="700"></p>
-<p>While the GABAergic neurons show a temporal trajectory for FEZF2
-expression that is similar to that seen for BCL11B and CUX2, the
-glutamatergic neurons show variation across cortical layers (blocks),
-but no real lateralization in temporal trajectory.</p>
+<p>While the GABAergic neurons show a temporal trajectory for <span class="gene">FEZF2</span> expression that is similar to that seen for
+<span class="gene">BCL11B</span> and CUX2, the glutamatergic neurons
+show variation across cortical layers (blocks), but no real
+lateralization in temporal trajectory.</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plt_Glut</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_Glut_timeseries_Nxph3"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>hjust <span class="op">=</span> <span class="fl">0.0</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">plt_GABA</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_GABA_timeseries_Nxph3"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>hjust <span class="op">=</span> <span class="fl">0.0</span><span class="op">)</span><span class="op">)</span></span>
@@ -583,11 +578,12 @@ but no real lateralization in temporal trajectory.</p>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_Glut</span>, <span class="va">plt_GABA</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_multicontext_files/figure-html/print_timeseries_plots_Nxph3-1.png" class="r-plt" alt="" width="700"></p>
-<p>NXPH3, on the other hand, shows lateralization of the temporal
-trajectory in both glutamatergic and GABAergic neurons. While the
-patterns in GABAergic neurons are hard to discern visually, there is a
-clear pattern in the glutamatergic neurons, with a dip in expression at
-P12 with recovery at P18, in the left but not the right hemisphere.</p>
+<p><span class="gene">NXPH3</span>, on the other hand, shows
+lateralization of the temporal trajectory in both glutamatergic and
+GABAergic neurons. While the patterns in GABAergic neurons are hard to
+discern visually, there is a clear pattern in the glutamatergic neurons,
+with a dip in expression at P12 with recovery at P18, in the left but
+not the right hemisphere.</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plt_Glut</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_Glut_timeseries_Rorb"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>hjust <span class="op">=</span> <span class="fl">0.0</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">plt_GABA</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_GABA_timeseries_Rorb"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>hjust <span class="op">=</span> <span class="fl">0.0</span><span class="op">)</span><span class="op">)</span></span>
@@ -598,11 +594,11 @@ P12 with recovery at P18, in the left but not the right hemisphere.</p>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_Glut</span>, <span class="va">plt_GABA</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_multicontext_files/figure-html/print_timeseries_plots_Rorb-1.png" class="r-plt" alt="" width="700"></p>
-<p>RORB is perhaps the most difficult to interpret visually, at least
-for glutamatergic neurons, which possibly have complex temporal
-trajectories interacting with both cortical layer and hemisphere.
-GABAergic neurons, on the other hand, show little variation along any
-dimension.</p>
+<p><span class="gene">RORB</span> is perhaps the most difficult to
+interpret visually, at least for glutamatergic neurons, which possibly
+have complex temporal trajectories interacting with both cortical layer
+and hemisphere. GABAergic neurons, on the other hand, show little
+variation along any dimension.</p>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>

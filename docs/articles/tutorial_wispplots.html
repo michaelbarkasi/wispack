@@ -87,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-03-01</h4>
+            <h4 data-toc-skip class="date">2026-03-23</h4>
       
 
       <div class="d-none name"><code>tutorial_wispplots.Rmd</code></div>
@@ -105,17 +105,18 @@ rates, transition points, and transition slopes – plus <a href="tutorial_warpi
 fixed-effect spatial parameters. However, the fixed-effect spatial
 parameters multiply with the number of species, the number of <a href="tutorial_multicontext.html">contexts</a>, and the number of
 treatment conditions. The random-effect scalars multiply by replicate
-count and species. The upshot is that a wisp model will produce a
-dizzying array of parameter estimates and hypothesis test results. To
-help with interpretation, wispack includes a number of intuitive
-plotting options for visualizing wisp model results.</p>
+count and species. The upshot is that a wisp model includes a dizzying
+array of parameter estimates and hypothesis test results. To help with
+interpretation, wispack includes a number of intuitive plotting methods
+for visualizing wisp model results.</p>
 <h2>
 Rate-count plots
 </h2>
 <p>The backbone of wisp visualization is the rate-count plot, as in
 “predicted rate, observed count”. Rate-count plots come in two forms,
 one giving confidence-intervals (CI) and the other giving a scatter plot
-of observations.</p>
+of observations. Both forms give predicted rates across the spatial axis
+for all treatment conditions.</p>
 <h3>
 Confidence intervals
 </h3>
@@ -155,9 +156,9 @@ walk.</p>
 <span>    max.fork <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>    verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p>For now, for the rate-count plots, we can also grab the
-layer-boundary points from the <a href="https://doi.org/10.1016/j.cell.2020.04.007" class="external-link">CCFv3</a> registration
-for comparison:</p>
+<p>For the rate-count plots, we can also grab the layer-boundary points
+from the <a href="https://doi.org/10.1016/j.cell.2020.04.007" class="external-link">CCFv3</a>
+registration for comparison:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">layer.boundary.bins</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
@@ -175,7 +176,7 @@ shown in the previous tutorial:</p>
 <span>  dim.boundaries <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span>,</span>
 <span>  species <span class="op">=</span> <span class="st">"Rorb"</span> </span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_wispplots_files/figure-html/RORB_CI-1.png" class="r-plt" alt="" width="700"><img src="tutorial_wispplots_files/figure-html/RORB_CI-2.png" class="r-plt" alt="" width="700"></p>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_CI-1.png" class="r-plt" alt="" width="700"></p>
 <p>CI rate-count plots are straightforward to interpret: The horizontal
 (<span class="math inline">x</span>) axis shows spatial position along
 the modeled spatial dimension, the vertical (<span class="math inline">y</span>) axis shows predicated rate. The solid line
@@ -201,7 +202,7 @@ However, it’s possible to rescale the vertical axis into log form:</p>
 <span>  species <span class="op">=</span> <span class="st">"Rorb"</span>,</span>
 <span>  log.scale <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_wispplots_files/figure-html/RORB_CI_log-1.png" class="r-plt" alt="" width="700"><img src="tutorial_wispplots_files/figure-html/RORB_CI_log-2.png" class="r-plt" alt="" width="700"></p>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_CI_log-1.png" class="r-plt" alt="" width="700"></p>
 <h3>
 Scatter plots
 </h3>
@@ -216,7 +217,7 @@ counts as scatter points. It’s accessed via the <span class="code_variable">CI
 <span>  CI_style <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  species <span class="op">=</span> <span class="st">"Rorb"</span> </span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_wispplots_files/figure-html/RORB_ran-1.png" class="r-plt" alt="" width="700"><img src="tutorial_wispplots_files/figure-html/RORB_ran-2.png" class="r-plt" alt="" width="700"></p>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_ran-1.png" class="r-plt" alt="" width="700"></p>
 <p>As with CI rate-count plots, the horizontal axis represents spatial
 position along the modeled dimension, and the vertical axis represents
 predicted rate.</p>
@@ -240,12 +241,12 @@ counts vs predicted rates without random effects):</p>
 count of <span class="gene">RORB</span> transcripts observed in a given
 replicate at a given spatial bin. The upper right plot (extrapolated
 counts) shows extrapolated counts got by taking the mean of the actual
-replicates within in bin. These means stand in for observations from a
+replicates within a bin. These means stand in for observations from a
 hypothetical replicate with no noise or other random effects. The lower
 left plot (observed predictions) shows the model fit to the observed
 counts. The lower right plot (extrapolated predictions) shows the fit to
-the extrapolated counts, which serves as a stand in for the predicted
-rate without random effects.</p>
+the extrapolated counts, which stand in for the predicted rate without
+random effects.</p>
 <p>Next, let’s look at observed counts (points) and their fits (dashed
 lines) on the same plot, but broken out by sample:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
@@ -274,7 +275,7 @@ age. Let’s look at the time-series plot for <span class="gene">RORB</span> aga
 <span>  <span class="va">model</span>, </span>
 <span>  species <span class="op">=</span> <span class="st">"Rorb"</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_wispplots_files/figure-html/RORB_timeseries-1.png" class="r-plt" alt="" width="700"><img src="tutorial_wispplots_files/figure-html/RORB_timeseries-2.png" class="r-plt" alt="" width="700"></p>
+<p><img src="tutorial_wispplots_files/figure-html/RORB_timeseries-1.png" class="r-plt" alt="" width="700"></p>
 <p>As explained in the <a href="tutorial_timeseries.html">time series
 tutorial</a>, the rate represented by the height of the solid lines is
 the rate parameter itself (for each block), not the actual predicted
@@ -311,12 +312,12 @@ look at the baseline parameters first:</p>
 P12) block rates in log space, Rorb.tpoint gives the baseline transition
 point locations, and Rorb.tslope gives the baseline transition slopes
 for each of the three transition points. The horizontal axis tick labels
-are formatted as
-<span class="code_variable"><param type>_T/B<num></num></span>, where <span class="code_variable"><param type></span> is <span class="code_variable">Rt</span> (rate), <span class="code_variable">tpoint</span> (transition point location), or
+are formatted as <span class="code_variable">&lt;param
+type&gt;_T/B&lt;num&gt;</span>, where <span class="code_variable">&lt;param type&gt;</span> is <span class="code_variable">Rt</span> (rate), <span class="code_variable">tpoint</span> (transition point location), or
 <span class="code_variable">tslope</span> (transition slope), <span class="code_variable">T/B</span> stands for “transition/block”, and
-<span class="code_variable"><num></num></span> gives the transition or block
-number. For example, <span class="code_variable">Rt_T/B2</span> is the
-rate parameter for block 2, while <span class="code_variable">tpoint_T/B1</span> is the location of the first
+<span class="code_variable">&lt;num&gt;</span> gives the transition or
+block number. For example, <span class="code_variable">Rt_T/B2</span> is
+the rate parameter for block 2, while <span class="code_variable">tpoint_T/B1</span> is the location of the first
 transition point, i.e., the transition between block 1 and block 2. For
 each horizontal axis tick, there is a violin plot showing the
 distribution of the estimates for that parameter across the bootstraps

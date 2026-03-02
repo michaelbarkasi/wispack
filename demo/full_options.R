@@ -72,7 +72,8 @@ model.settings <- list(
     max_evals = 1000,                           # maximum number of evaluations for optimization
     rng_seed = 42,                              # seed for random number generator
     warp_precision = 1e-7,                      # decimal precision to retain when selecting really big number as pseudo infinity for unbound warping
-    round_none = TRUE                           # round extrapoloted counts for "none" (no random effect) to nearest integer? 
+    round_none = TRUE,                          # round extrapoloted counts for "none" (no random effect) to nearest integer? 
+    trtKO = c("none")                           # list of effect names to remove from the model, e.g., model without the Factor1 x Factor2 interaction
   )
 
 # Setting suggestions: 
@@ -96,7 +97,7 @@ MCMC.settings <- list(
 # Settings for plotting
 plot.settings <- list(
   print.plots = TRUE,
-  dim.bounds =colMeans(layer.boundary.bins), 
+  dim.bounds = colMeans(layer.boundary.bins), 
   log.scale = FALSE,
   splitting_factor = NULL,
   CI_style = TRUE,

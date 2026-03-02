@@ -87,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-03-01</h4>
+            <h4 data-toc-skip class="date">2026-03-23</h4>
       
 
       <div class="d-none name"><code>tutorial_corticallaminar.Rmd</code></div>
@@ -98,26 +98,26 @@ Barkasi</h4>
 <h2>
 Introduction
 </h2>
-<p>The gene RORB plays a key role in the development of somatosensory
-cortex in rodents. RORB expression leads axons from thalamic neurons to
-innervate cortical layer 4. These thalamocortical projections organize
-into discrete “barrel” formations, each barrel containing the inputs
-from a single whisker.</p>
+<p>The gene <span class="gene">RORB</span> plays a key role in the
+development of somatosensory cortex in rodents. <span class="gene">RORB</span> expression leads axons from thalamic neurons to
+innervate cortical layer 4 (L4). These thalamocortical projections
+organize into discrete “barrel” formations, each barrel containing the
+inputs from a single whisker.</p>
 <p>While it’s sometimes assumed that there are no major differences in
 barrel formations between the left and right hemispheres (i.e., no
-“laterality”), over the years there have been several histological
-studies suggesting age-dependent hemispheric differences. Given the
-established role of RORB in barrel formation, one might want to test for
-age-dependent laterality in RORB expression.</p>
+<em>laterality</em>), over the years there have been several
+histological studies suggesting age-dependent hemispheric differences.
+Given the established role of <span class="gene">RORB</span> in barrel
+formation, one might want to test for age-dependent laterality in <span class="gene">RORB</span> expression.</p>
 <h2>
 Data preprocessing
 </h2>
 <p>This tutorial uses data collected from four male wild-type mice to
-test for age effects on laterality in RORB expression. The mice are
-split between two ages: postnatal day 12 (P12) and postnatal day 18
-(P18). The starting point was raw, non-normalized mRNA counts from the
-cells within the primary somatosensory cortex (S1), both left and right
-hemispheres.</p>
+test for age effects on laterality in <span class="gene">RORB</span>
+expression. The mice are split between two ages: postnatal day 12 (P12)
+and postnatal day 18 (P18). The starting point was raw, non-normalized
+mRNA counts from the cells within the primary somatosensory cortex (S1),
+both left and right hemispheres.</p>
 <h3>
 Labeling the ROI
 </h3>
@@ -127,22 +127,23 @@ sample by manually fitting the entire slice to the <a href="https://doi.org/10.1
 <img src="fig_S1_Rorb.png" alt="Image of horizontal mouse brain slice with primary somatosensory cortex highlight and second image of the laminar and columnar axes of the cortex" width="90%"><p class="caption">
 Left: Example horizontal slice as reconstructed from MERFISH data. Red
 highlight indicates the right primary somatosensory cortex. Right: The
-right somatosensory cortex, with RORB molecules in red and laminar and
-columnar axes labeled.
+right somatosensory cortex, with <span class="gene">RORB</span>
+molecules in red and laminar and columnar axes labeled.
 </p>
 </div>
 <h3>
 Coordinate transform
 </h3>
 <p>As wisp can only model one dimension of spatial variation (at least,
-as-of the writing of this demo for v1.1), this axis must be identified
-and the RORB molecule coordinates must be transformed into it. As the
-primary concern is with how RORB is distributed across cortical layers,
-the laminar axis is the obvious candidate. Coordinate transformation
-into an axis of interest must be done outside of wispack. For this case,
-a custom coordinate transformation, described in this <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">preprint</a> (and
-available as code via the function <a href="../reference/cortical_coordinate_transform.html">cortical_coordinate_transform()</a>),
-was written.</p>
+as of v2.1), this axis must be identified and the <span class="gene">RORB</span> molecule coordinates must be transformed into
+it. As the primary concern is with how <span class="gene">RORB</span> is
+distributed across cortical layers, the laminar axis is the obvious
+candidate. Coordinate transformation into an axis of interest must be
+done outside of wispack. For this case, a custom coordinate
+transformation, described in this <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">preprint</a> (and
+available as code via the wispack function
+<span class="function">cortical_coordinate_transform&lt;&gt;), was
+written.</span></p>
 <div class="figure">
 <img src="fig_coordtrans.png" alt="Image showing the steps to transform coordinates from the CCFv3 registration to laminar and columnar axes" width="90%"><p class="caption">
 Visualization of coordinate transform steps from initial CCFv3
@@ -181,10 +182,8 @@ Data format
 <span><span class="co">## 4     0  98  cortex Bcl11b     1       left  12</span></span>
 <span><span class="co">## 5     0  94  cortex Bcl11b     1       left  12</span></span>
 <span><span class="co">## 6     0  94  cortex Bcl11b     1       left  12</span></span></code></pre>
-<p>As can be seen, the imported data has the columns: count, bin,
-context, gene, mouse, hemisphere, age. Although the focus is on RORB,
-these first few rows show that there are other genes in the data as
-well. How many?</p>
+<p>As can be seen, the imported data has the columns: <span class="code_variable">count</span>, <span class="code_variable">bin</span>, <span class="code_variable">context</span>, <span class="code_variable">gene</span>, <span class="code_variable">mouse</span>, <span class="code_variable">hemisphere</span>, and <span class="code_variable">age</span>. Although the focus is on <span class="gene">RORB</span>, these first few rows show that there are other
+genes in the data as well. How many?</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">num_genes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">$</span><span class="va">gene</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Number of genes:"</span>, <span class="va">num_genes</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
@@ -193,9 +192,15 @@ well. How many?</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Gene names:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">$</span><span class="va">gene</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## Gene names: Bcl11b, Fezf2, Satb2, Nxph3, Cux2, Rorb</span></span></code></pre>
-<p>Just as RORB is known to be localized to L4, the other genes are also
-known to be localized to specific layers.</p>
+<p>Just as <span class="gene">RORB</span> is known to be localized to
+L4, the other genes are also known to be localized to specific
+layers.</p>
 <table class="table">
+<colgroup>
+<col width="51%">
+<col width="22%">
+<col width="25%">
+</colgroup>
 <thead><tr class="header">
 <th align="left">Abbreviation</th>
 <th align="left">Name</th>
@@ -203,32 +208,34 @@ known to be localized to specific layers.</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">BCL11B, CTIP2</td>
+<td align="left">
+<span class="gene">BCL11B</span>, <span class="gene">CTIP2</span>
+</td>
 <td align="left">B-cell CLL/lymphoma 11b</td>
 <td align="left">5/6</td>
 </tr>
 <tr class="even">
-<td align="left">FEZF2</td>
+<td align="left"><span class="gene">FEZF2</span></td>
 <td align="left">FEZ Family Zinc Finger 2</td>
 <td align="left">5</td>
 </tr>
 <tr class="odd">
-<td align="left">SATB2</td>
+<td align="left"><span class="gene">SATB2</span></td>
 <td align="left">SATB Homeobox 2</td>
 <td align="left">2/3</td>
 </tr>
 <tr class="even">
-<td align="left">NXPH3</td>
+<td align="left"><span class="gene">NXPH3</span></td>
 <td align="left">Neurexophilin 3</td>
 <td align="left">6</td>
 </tr>
 <tr class="odd">
-<td align="left">CUX2</td>
+<td align="left"><span class="gene">CUX2</span></td>
 <td align="left">Cut like homeobox 2</td>
 <td align="left">2/3/4</td>
 </tr>
 <tr class="even">
-<td align="left">RORB</td>
+<td align="left"><span class="gene">RORB</span></td>
 <td align="left">Retinoic acid-related orphan receptor beta</td>
 <td align="left">4</td>
 </tr>
@@ -298,48 +305,50 @@ by specifying which variables in the data frame correspond to which
 roles in the model. The roles are:</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong>count:</strong> either a non-negative integer giving the
-number of RNA molecules of a given species in a given cell, or a
-non-negative real number giving normalized or log-transformed expression
-values.</li>
+<span class="code_variable">count</span>: either a non-negative
+integer giving the number of RNA molecules of a given species in a given
+cell, or a non-negative real number giving normalized or log-transformed
+expression values.</li>
 <li>
-<strong>bin:</strong> the position of the cell along the axis of
-interest (whether or not the actual unit is “bin”).</li>
+<span class="code_variable">bin</span>: the position of the cell
+along the axis of interest (whether or not the actual unit is
+“bin”).</li>
 <li>
-<strong>context:</strong> the biological context of the cell,
-typically a celltype label.</li>
+<span class="code_variable">context</span>: the biological context
+of the cell, typically a cell-type label.</li>
 <li>
-<strong>species:</strong> the RNA species (gene) being modeled.</li>
+<span class="code_variable">species</span>: the RNA species (gene)
+being modeled.</li>
 <li>
-<strong>ran:</strong> the random-effect grouping factor, typically a
-sample or animal ID.</li>
+<span class="code_variable">ran</span>: the random-effect grouping
+factor, typically a sample or animal ID.</li>
 <li>
-<strong>timeseries:</strong> a fixed-effects factor to treat as a
-time series (if any), typically developmental or experimental time
-points.</li>
+<span class="code_variable">timeseries</span>: a fixed-effects
+factor to treat as a time series (if any), typically developmental or
+experimental time points.</li>
 <li>
-<strong>fixedeffects:</strong> a vector of fixed-effect factors,
-typically biological or experimental conditions.</li>
+<span class="code_variable">fixedeffects</span>: a vector of
+fixed-effect factors, typically biological or experimental
+conditions.</li>
 </ol>
 <p>Note that wisps are intended to model <a href="tutorial_Poisson.html">Poisson processes</a>, and so both the
 underlying optimization and <a href="tutorial_stats.html">statistical
 parameter estimation</a> assume the count variable is a
 Poisson-distributed integer. However, the code will accept and attempt
 to fit normalized and log-transformed real-valued expression data as
-well (as shown <a href="tutorial_liverradial.html">here</a>), albeit
-with care needed in interpreting the results.</p>
+well, albeit with care needed in interpreting the results.</p>
 <p>The timeseries variable is optional. If none is provided, wisp will
 not treat any fixed effects as time series. However, if a variable is
 flagged as a time series, wisp will model it as a <a href="tutorial_timeseries.html">discrete additive effect</a>.</p>
-<p>In the data frame loaded above, the count, bin, and context columns
-match the names of the roles to which they correspond. Wispack will find
-those columns automatically. However, the species and ran roles have
-different names in the data frame, and thus wispack needs to know which
-data columns carry these variables. While wispack has no default names
-for fixed effects, if no fixed effects are specified, all columns not
-identified as one of the other roles will be treated as fixed effects.
-Unless flagged as a time series, all fixed effects must have at most two
-levels.</p>
+<p>In the data frame loaded above, the <span class="code_variable">count</span>, <span class="code_variable">bin</span>, and <span class="code_variable">context</span> columns match the names of the
+roles to which they correspond. Wispack will find those columns
+automatically. However, the <span class="code_variable">species</span>
+and <span class="code_variable">ran</span> roles have different names in
+the data frame, and thus wispack needs to know which data columns carry
+these variables. While wispack has no default names for fixed effects,
+if no fixed effects are specified, all columns not identified as one of
+the other roles will be treated as fixed effects. Unless flagged as a
+time series, all fixed effects must have at most two levels.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Specify variables for wisp</span></span>
 <span><span class="va">data.variables</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -371,13 +380,16 @@ because, with respect to those roles, all wisp models have the same
 effects structure. This effects structure is defined over a
 parameterization of the spatial distribution of RNA molecules. Wisp
 models describe the distribution of RNA molecules along a
-one-dimensional axis (the bin variable) as a log-transformed rate that
-is constant across space, except for transition points where the rate
-changes with a slope given by a logistic function. Within this <a href="tutorial_Poisson.html">spatial parameterization</a>, fixed effects
+one-dimensional axis (the <span class="code_variable">bin</span>
+variable) as a log-transformed rate that is constant across space,
+except for transition points where the rate changes with a slope given
+by a logistic function. Within this <a href="tutorial_Poisson.html">spatial parameterization</a>, fixed effects
 from fixed-effect factors or their interactions are simple linear
 effects, being multiplicative on rates and additive on transition points
 and slopes. The multiplicative effects on rate are log-fold changes, and
-so mesh nicely with standard practice.</p>
+so mesh nicely with standard practice. (Note that while all interactions
+of fixed-effect factors are included by default, interactions can be
+removed from the model using the <span class="code_variable">trtKO</span> argument in <span class="code_variable">model.settings</span>.)</p>
 <div class="figure">
 <img src="fig_logisticpolysig.png" alt="Demo plots of functions involved in wisp, the logistic function" width="90%"><p class="caption">
 (Top) The logistic function, used to model a single change point in gene
@@ -411,11 +423,10 @@ on spatial parameters.</li>
 </ol>
 <p>Although wispack includes many settings for fine-tuning the modeling
 process, fitting a wisp model and estimating its parameters is done with
-a single R function, <a href="../reference/wisp.html">wisp()</a>. This
-function only needs one argument, the data to be modeled (count.data).
-If, as above, the variable roles are filled by data columns with with
-different names, then the variables (data.variables) must be provided
-via another argument.</p>
+a single R function, <span class="function">wisp</span>. This function
+only needs one argument, the data to be modeled (<span class="code_variable">count.data</span>). If, as above, the variable
+roles are filled by data columns with with different names, then the
+variables must be provided via another argument (<span class="code_variable">variables</span>).</p>
 <p>The following code fits a wisp model to the data loaded above, with
 verbose output. Plots are suppressed, as by default many are generated
 in the fitting process. As noted above, layer boundaries are provided to
@@ -549,12 +560,6 @@ by the CCFv3 registration.</p>
 <span><span class="co">## Estimated gamma dispersion of raw counts</span></span>
 <span><span class="co">## Estimated change points</span></span>
 <span><span class="co">## Found average log counts for each context-species combination</span></span>
-<span><span class="co">## Context: cortex, Species: Bcl11b</span></span>
-<span><span class="co">## Context: cortex, Species: Cux2</span></span>
-<span><span class="co">## Context: cortex, Species: Fezf2</span></span>
-<span><span class="co">## Context: cortex, Species: Nxph3</span></span>
-<span><span class="co">## Context: cortex, Species: Rorb</span></span>
-<span><span class="co">## Context: cortex, Species: Satb2</span></span>
 <span><span class="co">## Estimated initial parameters for fixed-effect treatments</span></span>
 <span><span class="co">## Built initial beta (ref and fixed-effects) matrices</span></span>
 <span><span class="co">## Initialized random-effect warping factors</span></span>
@@ -589,9 +594,9 @@ by the CCFv3 registration.</p>
 <span><span class="co">## Acceptance rate (aim for 0.2-0.3): 0.283432</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## MCMC simulation complete... </span></span>
-<span><span class="co">## MCMC run time (total), minutes: 0.852</span></span>
-<span><span class="co">## MCMC run time (per retained step), seconds: 0.046</span></span>
-<span><span class="co">## MCMC run time (per step), seconds: 0.046</span></span>
+<span><span class="co">## MCMC run time (total), minutes: 0.806</span></span>
+<span><span class="co">## MCMC run time (per retained step), seconds: 0.044</span></span>
+<span><span class="co">## MCMC run time (per step), seconds: 0.044</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Setting full-data fit as parameters... </span></span>
 <span><span class="co">## Checking feasibility of provided parameters</span></span>
@@ -670,8 +675,8 @@ packages for linear models.</p>
 Extracting results
 </h3>
 <p>The most flat-footed way to extract desired results is to hunt
-through the output. The output of wisp() is a list with the following
-named components:</p>
+through the output. The output of <span class="function">wisp</span> is
+a list with the following named components:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">n</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">n</span>, <span class="st">": "</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">model</span><span class="op">[[</span><span class="va">n</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span>, sep <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## model.component.list: character</span></span>
@@ -694,8 +699,8 @@ named components:</p>
 <span><span class="co">## plot.settings: list</span></span>
 <span><span class="co">## stats: list</span></span>
 <span><span class="co">## plots: list</span></span></code></pre>
-<p>Within the “stats” object (another list itself), the following is
-found:</p>
+<p>Within the <span class="code_variable">stats</span> object (another
+list itself), the following is found:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">n</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">n</span>, <span class="st">": "</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">[[</span><span class="va">n</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span>, sep <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## parameters: data.frame</span></span>
@@ -703,10 +708,9 @@ found:</p>
 <span><span class="co">## residuals: data.frame</span></span>
 <span><span class="co">## residuals.log: data.frame</span></span>
 <span><span class="co">## variance: data.frame</span></span></code></pre>
-<p>The parameter object (stats$parameter) is a data frame the rows of
+<p>The parameter object <span class="code_variable">stats$parameter</span> is a data frame the rows of
 which are the model parameters, the columns of which are various
-statistical results of interest, e.g., confidence intervals and
-p-values:</p>
+statistical results of interest, e.g., confidence intervals and <span class="math inline">p</span>-values:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameter</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">##                                  parameter      estimate       CI.low      CI.high     p.value p.value.adj    alpha.adj significance</span></span>
@@ -717,10 +721,10 @@ p-values:</p>
 <span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786 1.9117544868 2.6135187197          NA          NA           NA             </span></span>
 <span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 0.0504651545 0.0951689705 0.000000000  0.00000000 0.0002958580          ***</span></span></code></pre>
 <p>All fixed-effects of hemisphere (i.e., laterality) on the expression
-rate of RORB can be extracted by masking with the treatment variable
-name for the factor hemisphere (which is “right”, with “left” as the
-reference level), the name of the gene of interest (“Rorb”), and the
-type of parameter (fixed effect on rate, which is “beta” on “Rt”):</p>
+rate of <span class="gene">RORB</span> can be extracted by masking with
+the treatment variable name for the factor <span class="code_variable">hemisphere</span> (which is “right”, with “left”
+as the reference level), the name of the gene of interest (“<span class="gene">RORB</span>”), and the type of parameter (fixed effect on
+rate, which is “beta” on “Rt”):</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mask</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Rorb"</span>, <span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">parameter</span><span class="op">)</span> <span class="op">&amp;</span>    <span class="co"># just this gene</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"right"</span>, <span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">parameter</span><span class="op">)</span> <span class="op">&amp;</span>         <span class="co"># just the effect of hemisphere</span></span>
@@ -738,15 +742,14 @@ type of parameter (fixed effect on rate, which is “beta” on “Rt”):</p>
 <span><span class="co">## 80 beta_Rt_cortex_Rorb_right18_X_Tns/Blk4 -0.5650512  0.0045191349 0.041503420 0.000999001  0.02597403 0.0019230769            *</span></span></code></pre>
 <p>Notice that all of the parameter names end in “Tns/Blk1”, “Tns/Blk2”,
 “Tns/Blk3”, or “Tns/Blk4”. This is because the model fit found three
-transition points, thus dividing the laminar axis into four “blocks” of
-roughly constant expression rate. The estimated effect of hemisphere on
-rate is given for each of the four blocks. Each block lists two
-estimates, one for the effect of laterality at the reference age (P12),
-and one for the interaction of laterality with age (the effect of
-laterality at P18). As can be seen, RORB expression is up-regulated in
-the right hemisphere (compared to left) across all blocks, but the
-interaction of age and hemisphere decreases that up-regulation, i.e.,
-the laterality effect is less pronounced at P18 than at P12.</p>
+transition points, thus dividing the laminar axis into four blocks of
+roughly constant expression rate. The estimated effect of <span class="code_variable">hemisphere</span> on rate is given for each of the
+four blocks. Each block lists two estimates, one for the effect at the
+reference age (P12), and one for the interaction of <span class="code_variable">hemisphere</span> with <span class="code_variable">age</span> (the effect of laterality at P18). As
+can be seen, <span class="gene">RORB</span> expression is up-regulated
+in the right hemisphere (compared to left) across all blocks, but the
+interaction of <span class="code_variable">hemisphere</span> with <span class="code_variable">age</span> decreases that up-regulation, i.e., the
+laterality effect is less pronounced at P18 than at P12.</p>
 <h3>
 Plotting results
 </h3>
@@ -756,28 +759,27 @@ provides a number of functions for <a href="tutorial_wispplots.html">making intu
 Indeed; a strength of wisp models is their use of concrete spatial
 parameters.</p>
 <p>The standard way to visualize a fitted wisp model, for an individual
-gene, is to plot gene expression level (e.g., total count per bin) on
-the y-axis and spatial position (bin) on the x-axis, with effects
-conditions represented by different colors. The wisp() function
-automatically generates these plots and stores them in plots$ratecount.
-Here, for example, is the plot for RORB:</p>
+gene, is to plot gene expression level (e.g., total <span class="code_variable">count</span> per bin) on the y-axis and spatial
+position (<span class="code_variable">bin</span>) on the x-axis, with
+effects conditions represented by different colors. The <span class="function">wisp</span> function automatically generates these
+plots and stores them in <span class="code_variable">plots$ratecount</span>. Here, for example, is the
+plot for <span class="gene">RORB</span>:</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">ratecount</span><span class="op">$</span><span class="va">plot_pred_context_cortex_fixEff_Rorb</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_corticallaminar_files/figure-html/plot_RORB_ratecount-1.png" class="r-plt" alt="" width="700"></p>
 <p>The shading shows 95% confidence intervals for the rate estimates.
 Note that while the p-values and confidence intervals for the model
-<em>parameters</em> are corrected for multiple-comparisons (by default,
-using Holm-Bonferroni), the confidence intervals shown in these plots
-are not corrected for multiple comparisons. This is because the
-confidence intervals on this plot are for predicted rate, not for model
-parameters. Model parameter estimates can be adjusted for multiple
-comparisons because they each constitute a well-defined single
-hypothesis test. However, predicted rates at different spatial positions
-are not independent of one another and so do not constitute distinct
-hypothesis tests; hence, there’s no well-defined way to correct for
-multiple comparisons.</p>
-<p>Regarding what this particular plot shows for RORB, as expected there
-is a large peak in RORB expression in L4. This peak is present for both
+parameters are corrected for multiple-comparisons (by default, using
+Holm-Bonferroni), the confidence intervals shown in these plots are not
+corrected for multiple comparisons. This is because the confidence
+intervals on this plot are for predicted rate, not for model parameters.
+Model parameter estimates can be adjusted for multiple comparisons
+because they each constitute a well-defined single hypothesis test.
+However, predicted rates at different spatial positions are not
+independent of one another and so do not constitute distinct hypothesis
+tests; hence, there’s no well-defined way to correct for multiple
+comparisons.</p>
+<p>Regarding what this particular plot shows for <span class="gene">RORB</span>, as expected there is a large peak in <span class="gene">RORB</span> expression in L4. This peak is present for both
 left (green) and right (blue) hemispheres. However, the plot suggests
 that there is laterality at both ages, albeit with a swap in
 up-regulation. Specifically, at P12 the plot shows up-regulation in the
@@ -785,7 +787,8 @@ right hemisphere (light blue) compared to the left (light green), while
 at P18 there is up-regulation in the left hemisphere (dark green)
 compared to the right (dark blue).</p>
 <p>This swap is easy to see on a time-series plot. When a time series is
-provided (via the variables argument), the wisp() function automatically
+provided (via the <span class="code_variable">variables</span>
+argument), the <span class="function">wisp</span> function automatically
 generates time-series plots for each gene.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">timeseries</span><span class="op">$</span><span class="va">plot_pred_context_cortex_timeseries_Rorb</span><span class="op">)</span></span></code></pre></div>
@@ -796,12 +799,12 @@ value at a given bin, but rather the rate parameter itself. As each
 block has a different rate parameter, the time-series plot shows the
 rate for each block. If the data also includes a single additional
 covariate (fixed effect) besides the time series, that variable is used
-as a “splitting factor” to generate separate lines for each level of
-that variable. Here, the splitting factor is hemisphere, and so we see
-separate lines for left (green) and right (blue) hemispheres. Notice how
-the rate counts are relatively low and bunched at the bottom for all but
-one block. This exception is block 3, the block overlapping L4. Here we
-see the swap clearly: right (blue) higher at P12, left (green) higher at
+as a splitting factor to generate separate lines for each level of that
+variable. Here, the splitting factor is <span class="code_variable">hemisphere</span>, and so we see separate lines
+for left (green) and right (blue) hemispheres. Notice how the rate
+counts are relatively low and bunched at the bottom for all but one
+block. This exception is block 3, the block overlapping L4. Here we see
+the swap clearly: right (blue) higher at P12, left (green) higher at
 P18.</p>
 <p>Along with the lines representing block rate, the (jittered) dots at
 each age represent the mean observed count per bin within that block.

@@ -4,10 +4,10 @@
 
 Most biological tissue will contain many different cell types. As all
 cells have the same DNA, what distinguishes cell types is the set of
-genes they express. Hence, when analyzing the spatial distribution of
-gene transcripts, it’s important to consider the kinds of cells
-producing those transcripts. Wisp is able to model different cell types
-using the **context** variable.
+genes expressed. Hence, when analyzing the spatial distribution of gene
+transcripts, it’s important to consider the kinds of cells producing
+those transcripts. Wisp is able to model different cell types using the
+context variable.
 
 ## Data and cell-typing
 
@@ -19,13 +19,13 @@ on modeling the cortical-laminar axis (see also [this
 preprint](https://doi.org/10.1101/2025.06.11.659209)). As with all data
 appropriate for wispack, and in line with well-known modeling functions
 in R (e.g.,
-[lme4::lmer()](https://cran.r-project.org/web/packages/lme4/index.html)
+[lme4::lmer](https://cran.r-project.org/web/packages/lme4/index.html)
 and
-[stats::lm()](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html)),
+[stats::lm](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html)),
 the data must be in long format. That is, each row must correspond to a
 single observation, which when modeling spatial transcriptomics data
 will typically be a count of transcripts from an RNA species in a single
-cell.
+cell, holding all covariates constant.
 
 ``` r
 countdata <- read.csv(
@@ -51,9 +51,9 @@ print(head(countdata))
 
 Notice that this data is the same as the data used in the [time series
 tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_timeseries.md),
-except that instead of the **context** column filled with the
-placeholder “cortex”, there is a **celltype_MMC** column filled with the
-following cell type annotations:
+except that instead of the context column filled with the placeholder
+cortex, there is a celltype_MMC column filled with the following cell
+type annotations:
 
 ``` r
 unique_celltypes <- unique(countdata$celltype_MMC)
@@ -75,7 +75,7 @@ tool, although the purpose of this tutorial is not to explain how to do
 cell typing.
 
 As thirty-one cell types is too many for demonstration purposes, let’s
-simplify to just two: “Glut” and “GABA”.
+simplify to just two: Glut and GABA.
 
 ``` r
 # Make masks
@@ -103,7 +103,7 @@ cat(
 ## Cell types: Glut, GABA
 ```
 
-Cutting down to three cell types will both make the results more easy to
+Cutting down to two cell types will both make the results more easy to
 visualize and speed up model fitting. Unfortunately, the number of model
 parameters related to fixed effects is a multiple of the number of
 contexts being modeled. This is because each species is treated as
@@ -150,9 +150,9 @@ layer.boundary.bins <- read.csv(boundary_path)
 
 ## Fitting a wisp with cell types
 
-The data frame **countdata** has no column named “context”, so the
-context column needs to be specified along with the names for the
-**species**, **ran**, and **timeseries** variables.
+The data frame countdata has no column named “context”, so the span
+class = “code_variable”\>context column needs to be specified along with
+the names for the species, ran, and timeseries variables.
 
 ``` r
 # Define variables in the dataframe for the model
@@ -166,7 +166,7 @@ data.variables <- list(
 
 With data loaded and variables set, we can fit the wisp model. As it’s
 not necessary for demonstrating cell-type modeling, we’ll only fit the
-model (**fit_only = TRUE**) without running any [statistical parameter
+model (fit_only = TRUE) without running any [statistical parameter
 estimation](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md).
 
 ``` r
@@ -296,18 +296,6 @@ model <- wisp(
 ## Estimated gamma dispersion of raw counts
 ## Estimated change points
 ## Found average log counts for each context-species combination
-## Context: GABA, Species: Bcl11b
-## Context: GABA, Species: Cux2
-## Context: GABA, Species: Fezf2
-## Context: GABA, Species: Nxph3
-## Context: GABA, Species: Rorb
-## Context: GABA, Species: Satb2
-## Context: Glut, Species: Bcl11b
-## Context: Glut, Species: Cux2
-## Context: Glut, Species: Fezf2
-## Context: Glut, Species: Nxph3
-## Context: Glut, Species: Rorb
-## Context: Glut, Species: Satb2
 ## Estimated initial parameters for fixed-effect treatments
 ## Built initial beta (ref and fixed-effects) matrices
 ## Initialized random-effect warping factors
@@ -340,10 +328,10 @@ model <- wisp(
 
 ## Results
 
-When given different contexts, wisp will make different rate-count and
-time-series plots for each context. For the big picture, let’s compare
-the reference levels for all gene between glutamatergic and GABAergic
-neurons.
+When given different contexts, the wisp function will make different
+rate-count and time-series plots for each context. For the big picture,
+let’s compare the reference levels for all gene between glutamatergic
+and GABAergic neurons.
 
 ``` r
 plt_Glut <- model[["plots"]][["ratecount"]][["plot_pred.log_context_Glut"]] + theme(legend.position = "bottom")
@@ -362,7 +350,8 @@ There are a few things to notice, which exemplify how gene expression
 varies between cell types.
 
 - Expression levels for these six genes are much higher in glutamatergic
-  neurons compared with GABAergic neurons.
+  neurons compared with GABAergic neurons, although this is in part
+  because there are more glutamatergic cells.
 - The characteristic bump in [RORB
   expression](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.md)
   in L4 is only there is glutamatergic neurons; it is gone in GABAergic
@@ -371,8 +360,7 @@ varies between cell types.
   GABAergic neurons which is absent in glutamatergic neurons.
 - NXPH3 and SATB2 expression takes on roughly the same shape in both
   cell types, with higher expression in deeper layers for NXPH3 and
-  higher expression in surface layers in SATB2, but the expression
-  levels are dramatically higher overall in glutamatergic neurons.
+  higher expression in surface layers in SATB2.
 
 ### Fixed-effect structure
 
@@ -401,17 +389,17 @@ grid.draw(g)
 
 ![](tutorial_multicontext_files/figure-html/print_plots_Bcl11bFezf2-1.png)
 
-Starting with BCL11b, we see that the bump in L4 at P7 isn’t confined to
+Starting with BCL11B, we see that the bump in L4 at P7 isn’t confined to
 the left hemisphere in GABAergic cells, but also appears (perhaps
 shifted down into L5) in the right as well. Curiously, not only do
 expression levels drop with age (P12, P18), but the bump seems to
-disappear in both hemispheres. In contrast, the up-regulation of BCL11b
+disappear in both hemispheres. In contrast, the up-regulation of BCL11B
 in deep layers (L5 and L6) in glutamatergic neurons is stable across age
 and hemisphere, albeit with a notable drop after P7.
 
 Similar to BCL11B, FEZF2 expression in GABAergic cells seems to show a
 bilateral bump, this time across all of L5 and L4, which disappears
-after P7. In glutamatergic neurons, FEZF2 expression parallels BCL11b
+after P7. In glutamatergic neurons, FEZF2 expression parallels BCL11B
 just as closely, albeit with higher overall expression and, perhaps,
 with retained up-regulation in L5 after P7.
 
@@ -475,7 +463,8 @@ grid.draw(g)
 
 Finally, as observed in the reference level, NXPH3 and SATB2 expression
 is extremely similar across glutamatergic and GABAergic neurons, albeit
-with higher levels across the board in glutamatergic neurons.
+with higher levels across the board in glutamatergic neurons (which, as
+noted above, may simply be due to a higher number of cells).
 
 ### Time-series plots
 

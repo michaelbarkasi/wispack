@@ -9,7 +9,7 @@ influence the observed values.
 
 A common method for dealing with random variation is to normalize
 observations. For example, with our [somatosensory cortex
-data](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar),
+data](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.md),
 we could have tested the effect (if any) of hemisphere on transcript
 spatial distribution by making the point of highest expression rate
 equal across the hemispheres (e.g., both set to one), then rescaled the
@@ -35,6 +35,8 @@ random-effect terms (e.g., the random variation in expression rate due
 to sample-specific factors). Wisp models are mixed-effects models. They
 employ a random-effect term to factor out individual variation.
 
+Although we won’t use it right away, let’s load wispack awhile:
+
 ``` r
 # Set random seed for reproducibility
 set.seed(123)
@@ -47,9 +49,9 @@ library(wispack, quietly = TRUE)
 In a traditional *linear* mixed-effects model, the observations y are
 modeled as a function of some fixed effects \mathbf{X}\beta plus random
 effects \mathbf{Z}\rho plus noise \epsilon, for covariate design
-matrices \mathbf{X} and \mathbf{Z}, fixed-effect coefficients \beta,
-random-effect coefficients \rho, and noise \epsilon: y =
-\mathbf{X}\beta + \mathbf{Z}\rho + \epsilon
+matrices \mathbf{X} and \mathbf{Z}, fixed-effect coefficients \beta, and
+random-effect coefficients \rho: y = \mathbf{X}\beta + \mathbf{Z}\rho +
+\epsilon
 [Recall](https://michaelbarkasi.github.io/wispack/articles/tutorial_Poisson.md)
 the logistic function: \psi(x,r,s) = \frac{r}{1 + \exp({sx})} Also
 recall that a wisp models the log transform (plus one) of expression
@@ -222,7 +224,7 @@ warp_plots <- demo.warp.plots(
 ```
 
 The function demo.warp.plot creates two plots. The first shows \omega
-itself for a specified warping factors \rho=\langle-w,0,w\rangle.
+itself for specified warping factors \rho=\langle-w,0,w\rangle.
 
 ``` r
 print(warp_plots$demo_plot_warpfunction)
@@ -245,8 +247,8 @@ print(warp_plots$demo_plot_warpedsigmoid)
 ![](tutorial_warping_files/figure-html/warp_demo_plot2-1.png)
 
 Notice that to make this plot, three warping factors \rho were provided:
-\langle 0.6, -0.9, and 0.5\rangle. The first is the warping factor for
-the rate parameter, the second is for the slope parameter, and the third
-is for the transition point parameter. As can be seen in the plot, the
+\langle 0.6, -0.9, 0.5\rangle. The first is the warping factor for the
+rate parameter, the second is for the slope parameter, and the third is
+for the transition point parameter. As can be seen in the plot, the
 warping function \omega has the effect of increasing the rate,
 decreasing the slope, and increasing the transition point location.

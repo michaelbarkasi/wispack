@@ -22,7 +22,7 @@ Wispack performs FSE testing by first using change-point detection to find spati
   <p class="caption">Demo plots of the functions involved in wisp. (A) The logistic function, used to model a single change point in gene expression. (B) The wisp poly-sigmoid function, built from three logistic components, representing three change points. (C) The warping function used to represent random effects, e.g., variation due to differences between individual animals or due to measurement noise. (D) The wisp poly-sigmoid from (B) with warping function applied.</p>
 </div>
 
-Wispack provides a user-facing function, wisp(), which takes a data frame in the familiar format expected by standard R functions for linear models (e.g., [lme4::lmer()](https://cran.r-project.org/web/packages/lme4/index.html) or [stats::lm()](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html)) and runs the complete test for FSEs. Preprocessing of the data is generally required before passing it to wisp(), after which wisp() executes a pipeline involving parameter estimates, prediction, model fitting, and hypothesis testing. 
+Wispack provides a user-facing function, <span class = "function">wisp</span>, which takes a data frame in the familiar format expected by standard R functions for linear models (e.g., [<span class = "function">lme4::lmer</span>](https://cran.r-project.org/web/packages/lme4/index.html) or [<span class = "function">stats::lm</span>](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html)) and runs the complete test for FSEs. Preprocessing of the data is generally required before passing it to <span class = "function">wisp</span>, after which <span class = "function">wisp</span> executes a pipeline involving parameter estimates, prediction, model fitting, and hypothesis testing. 
 
 <div class="figure">
   <img src="man/figures/fig_modelpipeline_simple.png" alt="Diagram of top-level of wisp modeling pipeline" width="90%">
@@ -36,7 +36,7 @@ As shown by the figure below, the steps of this pipeline are nonlinear and recur
   <p class="caption">Full modeling pipeline for wisp. Boxes represent variables in the model, or operations performed on variables. Arrows represent input-output relationships between these variables and operations.</p>
 </div>
  
-Unlike standard linear modeling packages in R which require a model formula, wisp() merely needs the data. For example, the quick-start demo (which uses data from mice on RORB expression across the laminar axis of the primary somatosensory cortex) runs the following code: 
+Unlike standard linear modeling packages in R which require a model formula, <span class = "function">wisp</span> merely needs the data. For example, the quick-start demo (which uses data from mice on <span class = "gene">RORB</span> expression across the laminar axis of the primary somatosensory cortex) runs the following code: 
 
 ```R
 # Set random seed for reproducibility
@@ -61,7 +61,7 @@ laminar.model <- wisp(countdata)
 View(laminar.model)
 ```
 
-No model formula is required, as all wisp models have the same mathematical form. However, the variables involved in that form can, of course, have different names. These names will come from the column names of the data and can be set manually by the user, as so: 
+No model formula is required. By default, wisp models include all possible effect interactions. However, effect interactions can be removed from the model using the <span class = "code_variable">trtKO</span> argument in <span class = "code_variable">model.settings</span>. Further, if not a set of defaults, column names from the data must be associated with model variables using the <span class = "code_variable">variables</span> argument. For example:
 
 ```R
 # Define variables in the dataframe for the model
@@ -75,10 +75,16 @@ data.variables <- list(
     fixedeffects = c("hemisphere", "age")
   )
   
+# Remove the hemisphere x age interaction from the model
+model.settings <- list(
+    trtKO = c("right12")
+  )
+  
 # Fit model
 laminar.model <- wisp(
     count.data = countdata,
-    variables = data.variables
+    variables = data.variables,
+    model.settings = model.settings
   )
 ```
 
@@ -89,7 +95,17 @@ demo("quick_start", package = "wispack")
 demo("full_options", package = "wispack")
 ```
 
-Please see the tutorials for more detailed walkthroughs of the package and its options.
+The tutorials provide more detailed walkthroughs of the package and its options: 
+
+1. [*Poisson processes and sigmoids:*](articles/tutorial_Poisson.html) Introduction to how wisps parameterize and model the spatial distribution of count data from a Poisson process such as gene transcription. 
+2. [*Random effects and warping:*](articles/tutorial_warping.html) Explanation of random-effect modeling and how it's implemented in a wisp. 
+3. [*RORB along the cortical laminar axis:*](articles/tutorial_corticallaminar.html) A detailed walkthrough of modeling a real biological dataset with wisp.
+4. [*Time-series data:*](articles/tutorial_timeseries.html) Explanation of how wisp models times-series data.
+5. [*Radial zonation in liver lobules:*](articles/tutorial_liverradial.html) A second example application from a different biological dataset, with an emphasis on time series and temporal-spatial interactions. 
+6. [*Modeling cell types:*](articles/tutorial_multicontext.html) An extension of the <span class = "gene">RORB</span> example showing how to model not only Poisson-process species (i.e., genes), but also the broader biological context (i.e., cell type). 
+7. [*Plotting wisp models:*](articles/tutorial_wispplots.html) An explanation of the various kinds of plots available through wispack.
+8. [*Customizing statistical analyses:*](articles/tutorial_stats.html) A walkthrough of the various options for customizing the statistical analyses performed by wisp, including bootstrapping and MCMC resampling.
+9. [*Benchmarks and comparisons:*](articles/tutorial_benchmarks.html) Development of a simulation framework (attractor simulations) for benchmarking wispack and two other packages for analyzing transcriptomics data. 
 
 <div class="figure">
   <img src="man/figures/wisp_art.png" alt="Artistic rendering of wisp model" width="90%">

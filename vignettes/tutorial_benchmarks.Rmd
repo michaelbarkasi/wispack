@@ -12,7 +12,7 @@ library(ggplot2)
 
 <h2>Introduction</h2>
 
-Wispack tests for *functional spatial effects* (FSEs) using spatial transcriptomics data. Consider a two-level covariate $\xi$ (e.g., control vs treatment, healthy vs diseased, left vs right hemisphere) and spatial coordinate $x$ (e.g., cortical depth, distance from a tumor, distance from a central vein in the liver). A gene is *differentially expressed* (DE) with respect to $\xi$ if its expression level depends on $\xi$. A gene is *spatially variable* (SVG) if its expression level depends on spatial coordinate $x$. A covariate $\xi$ has a FSE on a gene if the spatial distribution of that gene with respect to $x$ depends on $\xi$. (The adjective "functional" is included because it's assumed that the distribution of the gene with respect to $x$ has biological significance.) 
+Wispack tests for _functional spatial effects_ (FSEs) using spatial transcriptomics data. Consider a two-level covariate $\xi$ (e.g., control vs treatment, healthy vs diseased, left vs right hemisphere) and spatial coordinate $x$ (e.g., cortical depth, distance from a tumor, distance from a central vein in the liver). A gene is _differentially expressed_ (DE) with respect to $\xi$ if its expression level depends on $\xi$. A gene is _spatially variable_ (SVG) if its expression level depends on spatial coordinate $x$. A covariate $\xi$ has a FSE on a gene if the spatial distribution of that gene with respect to $x$ depends on $\xi$. (The adjective "functional" is included because it's assumed that the distribution of the gene with respect to $x$ has biological significance.) 
 
 <div class="figure">
   <img src="fig_FSE.png" alt="DE vs SVG vs FSE" width="90%">
@@ -27,11 +27,11 @@ This tutorial will use simulations to benchmark wispack's ability to detect FSEs
 
 <h2>Benchmark simulations</h2>
 
-Wispack comes with a function, *attractor_simulation*, for generating simulations with stipulated DE genes, SVGs, FSEs, and inter-replicate variation. This function uses seed data, either from real spatial transcriptomics runs or itself simulated.  
+Wispack comes with a function, <span class = "function">attractor_simulation</span>, for generating simulations with stipulated DE genes, SVGs, FSEs, and inter-replicate variation. This function uses seed data, either from real spatial transcriptomics runs or itself simulated.  
 
 <h3>Simulation seed</h3>
 
-We begin with real spatial transcriptomics data from the [Allen Institute](https://alleninstitute.org/). This [data set](https://alleninstitute.github.io/abc_atlas_access/descriptions/MERFISH-C57BL6J-638850.html), described by [Yao et al 2023](https://www.nature.com/articles/s41586-023-06812-z), contains coronal brain slices from an adult male mouse imaged with the Vizgen MERSCOPE platform with a 500 gene panel. Wispack includes a csv file with counts for four marker genes from three slices: Pvalb (parvalbumin neurons), Slc17a7 (glutamatergic neurons), Tac2 (somatostatin neurons), and Vip (vasoactive intestinal peptide neurons). 
+We begin with real spatial transcriptomics data from the [Allen Institute](https://alleninstitute.org/). This [data set](https://alleninstitute.github.io/abc_atlas_access/descriptions/MERFISH-C57BL6J-638850.html), described by [Yao et al 2023](https://www.nature.com/articles/s41586-023-06812-z), contains coronal brain slices from an adult male mouse imaged with the Vizgen MERSCOPE platform with a 500 gene panel. Wispack includes a csv file with counts for four marker genes from three slices: <span class = "gene">Pvalb</span> (parvalbumin neurons), <span class = "gene">Slc17a7</span> (glutamatergic neurons), <span class = "gene"><span class = "gene">Tac2</span></span> (somatostatin neurons), and <span class = "gene">Vip</span> (vasoactive intestinal peptide neurons). 
 
 ```{r load_data}
 countdata <- read.csv(
@@ -64,7 +64,7 @@ ggplot(countdata, aes(x = coord_x, y = coord_y, color = gene)) +
     )
 ```
 
-The point of starting with real data is to ensure that the simulations contain genes with realistic transcript counts and distributions. We will seed the simulations with data from a $2\times 2$ mm region of slice 33.
+The point of starting with real data is to ensure that the simulations contain genes with realistic transcript counts and distributions. We will seed the simulations with data from a $2\times 2$ mm region of slice $33$.
 
 ```{r subset_seed_data}
 seed_patch <- countdata[
@@ -87,7 +87,7 @@ ggplot(seed_patch, aes(x = coord_x, y = coord_y, color = gene)) +
 
 <h3>Simulating SVGs</h3>
 
-With a patch of seed data in hand, we need functions which will transform this data into simulations with known (stipulated) DE genes, SVGs, FSEs, and inter-replicate variation. Wispack provides the function *attractor_simulation* for this purpose. Let's load wispack and run this function once to see how it works. 
+With a patch of seed data in hand, we need functions which will transform this data into simulations with known (stipulated) DE genes, SVGs, FSEs, and inter-replicate variation. Wispack provides the function <span class = "function">attractor_simulation</span> for this purpose. Let's load wispack and run this function once to see how it works. 
 
 ```{r sim_data_function}
 # Load wispack 
@@ -105,9 +105,9 @@ test_sim <- attractor_simulation(
   )
 ```
 
-The function *attractor_simulation* assumes that the input seed is a data frame with at least the columns *gene*, *coord_x*, *coord_y*, and *count*. It assumes *coord_x* and *coord_y* are continuous variables and will bin them into a discrete grid with *n_bins* bins along each axis. The function will create *n_replicates* replicates for two conditions, called *ref* for "reference" and *trt* for "treatment". The parameter *replicate_spatial_scalar* controls the amount of inter-replicate spatial variation, while *min_effect_size* controls the minimum effect size for FSE genes. (The amount of inter-replicate *rate* variation is always set randomly.) Setting *print_plots* to TRUE will generate plots of the simulated data for visual inspection.
+The function <span class = "function">attractor_simulation</span> assumes that the input seed is a data frame with at least the columns <span class = "code_variable">gene</span>, <span class = "code_variable">coord_x</span>, <span class = "code_variable">coord_y</span>, and <span class = "code_variable">count</span>. It assumes <span class = "code_variable">coord_x</span> and <span class = "code_variable">coord_y</span> are continuous variables and will bin them into a discrete grid with <span class = "code_variable">n_bins</span> bins along each axis. The function will create <span class = "code_variable">n_replicates</span> replicates for two conditions, called <span class = "code_variable">ref</span> for "reference" and <span class = "code_variable">trt</span> for "treatment". The parameter <span class = "code_variable">replicate_spatial_scalar</span> controls the amount of inter-replicate spatial variation, while <span class = "code_variable">min_effect_size</span> controls the minimum effect size for FSE genes. (The amount of inter-replicate <span class = "code_variable">rate</span> variation is always set randomly.) Setting <span class = "code_variable">print_plots</span> to <span class = "code_variable">TRUE</span> will generate plots of the simulated data for visual inspection.
 
-A list is returned by *attractor_simulation*, with the following components: 
+A list is returned by <span class = "function">attractor_simulation</span>, with the following components: 
 
 ```{r sim_data_output}
 for (i in names(test_sim)) cat("\n", i, ": ", class(test_sim[[i]]), sep = "")
@@ -131,7 +131,7 @@ And the following genes were randomly selected from the SVGs as exhibiting a FSE
 cat(paste0(test_sim$FSEs, collapse = ", "))
 ```
 
-Spatially variable genes are simulated in a two-step process. First, the spatial distribution of all genes is smoothed by randomly shuffling the spatial coordinates. (Cell IDs are not preserved during this shuffling, so any cell-type related statistics will be lost.) Here, for example, are the plots of Vip before and after smoothing: 
+Spatially variable genes are simulated in a two-step process. First, the spatial distribution of all genes is smoothed by randomly shuffling the spatial coordinates. (Cell IDs are not preserved during this shuffling, so any cell-type related statistics will be lost.) Here, for example, are the plots of <span class = "gene">Vip</span> before and after smoothing: 
 
 ```{r plot_Vip, fig.width = 8, fig.height = 4, out.width="100%"}
 do.call(grid.arrange, c(test_sim$plots[["Vip"]], ncol = 2))
@@ -141,11 +141,11 @@ Next, at least one gene is randomly selected to be a SVG. For each SVG, a single
 \[x\mapsto x - (x - x^\prime)\eta\]
 \[y\mapsto y - (y - y^\prime)\eta\]
 The term $\eta$ is a noise variable from a beta distribution:
-\[\eta \sim \text{Beta}(1,\frac{1-D}{D})\] 
+\[\eta \sim \mathrm{Beta}(1,\frac{1-D}{D})\] 
 And the term $D$ is the normalized distance from the attractor point:
 \[d = \sqrt{(x - x^\prime)^2 + (y - y^\prime)^2}\]
-\[D = 1 - \frac{d}{\text{max}(d)}\]
-In fact, $D$ is the expected value of the beta distribution. Thus, points closer to the attractor are pulled more strongly towards it. For example, here are the plots of Slc17a7 before smoothing, after smoothing, and after inducing spatial variability:
+\[D = 1 - \frac{d}{\mathrm{max}(d)}\]
+In fact, $D$ is the expected value of the beta distribution. Thus, points closer to the attractor are pulled more strongly towards it. For example, here are the plots of <span class = "gene">Slc17a7</span> before smoothing, after smoothing, and after inducing spatial variability:
 
 ```{r plot_Slc17a7, fig.width = 8, fig.height = 8, out.width="100%"}
 do.call(grid.arrange, c(test_sim$plots[["Slc17a7"]], ncol = 2))
@@ -153,23 +153,23 @@ do.call(grid.arrange, c(test_sim$plots[["Slc17a7"]], ncol = 2))
 
 <h3>Simulating FSEs</h3>
 
-Notice that two plots are shown with spatial variability: one for the reference condition and one for the treatment condition. As Slc17a7 was not selected to be exhibit a FSE in the treatment condition, the spatial distributions are the same. For all SVGs, the treatment condition is simulated by inducing a rate change via an effect term $b$ between zero and one: 
-\[\lambda\mapsto\lambda_{\text{trt}} = 4b^2\lambda\]
-The actual count $y$ at each point is then pulled from a Poisson distribution with rate $\lambda_{\text{trt}}$. 
-\[y \sim \text{Pois}(\lambda_{\text{trt}})\]
-For genes like Slc17a7 not selected to exhibit FSEs, $b = 0.5$. For genes like Pvalb and Tac2 selected to exhibit FSEs, $b$ is randomly chosen to be a value between zero and one but such that the absolute value of $4b^2 - 1$ is greater than *min_effect_size* (by default, 0.05). In this example: 
+Notice that two plots are shown with spatial variability: one for the reference condition and one for the treatment condition. As <span class = "gene">Slc17a7</span> was not selected to be exhibit a FSE in the treatment condition, the spatial distributions are the same. For all SVGs, the treatment condition is simulated by inducing a rate change via an effect term $b$ between zero and one: 
+\[\lambda\mapsto\lambda_{\mathrm{trt}} = 4b^2\lambda\]
+The actual count $y$ at each point is then pulled from a Poisson distribution with rate $\lambda_{\mathrm{trt}}$. 
+\[y \sim \mathrm{Pois}(\lambda_{\mathrm{trt}})\]
+For genes like <span class = "gene">Slc17a7</span> not selected to exhibit FSEs, $b = 0.5$. For genes like <span class = "gene">Pvalb</span> and <span class = "gene">Tac2</span> selected to exhibit FSEs, $b$ is randomly chosen to be a value between zero and one but such that the absolute value of $4b^2 - 1$ is greater than <span class = "code_variable">min_effect_size</span> (by default, 0.05). In this example: 
 
 ```{r fetch_effects}
 for (g in c(1:4)) cat("\n", test_sim$genes[g], ": b = ", test_sim$effect[g], sep = "")
 ``` 
 
-For convenience, the *attractor_simulation* function returns $b - 0.5$ under the *effect* component of the output list. The advantage here is that genes without a FSE in the treatment condition will show an effect value of zero, a FSE that down-regulates expression will be negative, and a FSE that up-regulates expression will be positive. For example, here are the plots for Pvalb, which exhibits a slight up-regulating FSE: 
+For convenience, the <span class = "function">attractor_simulation</span> function returns $b - 0.5$ under the <span class = "code_variable">effect</span> component of the output list. The advantage here is that genes without a FSE in the treatment condition will show an effect value of zero, a FSE that down-regulates expression will be negative, and a FSE that up-regulates expression will be positive. For example, here are the plots for <span class = "gene">Pvalb</span>, which exhibits a slight up-regulating FSE: 
 
 ```{r plot_Pvalb, fig.width = 8, fig.height = 8, out.width="100%"}
 do.call(grid.arrange, c(test_sim$plots[["Pvalb"]], ncol = 2))
 ```
 
-And here are the plots for Tac2, which exhibits a large down-regulating FSE:
+And here are the plots for <span class = "gene">Tac2</span>, which exhibits a large down-regulating FSE:
 
 ```{r plot_Tac2, fig.width = 8, fig.height = 8, out.width="100%"}
 do.call(grid.arrange, c(test_sim$plots[["Tac2"]], ncol = 2))
@@ -177,7 +177,7 @@ do.call(grid.arrange, c(test_sim$plots[["Tac2"]], ncol = 2))
 
 <h3>Simulating replicates</h3>
 
-The above procedure generates a single data set, from the seed patch, consisting of counts $y$ (possibly $> 1$) for each gene at some number of spatial coordinates, for both the *ref* and *trt* conditions. This single data set is itself used as a seed (with counts $y$ becoming rates $\lambda$) to make psuedo-replicates exibhiting some amount of variation, both in spatial distribution and in counts. Variation in spatial distribution is simulated by a scaled application of a random affine transformation $A$ of shears and scalings to the spatial coordinates: 
+The above procedure generates a single data set, from the seed patch, consisting of counts $y$ (possibly $> 1$) for each gene at some number of spatial coordinates, for both the <span class = "code_variable">ref</span> and <span class = "code_variable">trt</span> conditions. This single data set is itself used as a seed (with counts $y$ becoming rates $\lambda$) to make psuedo-replicates exibhiting some amount of variation, both in spatial distribution and in counts. Variation in spatial distribution is simulated by a scaled application of a random affine transformation $A$ of shears and scalings to the spatial coordinates: 
 \[
 \begin{pmatrix}
 x^\prime \\
@@ -201,11 +201,11 @@ x \\
 y
 \end{pmatrix}
 \]
-In the above equation, the "$\circ$" is the Hadamard (element-wise) product. With $x_{\text{mid}}$ and $y_{\text{mid}}$ being the midpoints of $x$ and $y$, respectively, the scaling terms $d_x$ and $d_y$ are defined as:
-\[d_x = (x - x_{\text{mid}})^2/\text{max}((x - x_{\text{mid}})^2)\]
-\[d_y = (y - y_{\text{mid}})^2/\text{max}((y - y_{\text{mid}})^2)\]
+In the above equation, the "$\circ$" is the Hadamard (element-wise) product. With $x_{\mathrm{mid}}$ and $y_{\mathrm{mid}}$ being the midpoints of $x$ and $y$, respectively, the scaling terms $d_x$ and $d_y$ are defined as:
+\[d_x = (x - x_{\mathrm{mid}})^2/\mathrm{max}((x - x_{\mathrm{mid}})^2)\]
+\[d_y = (y - y_{\mathrm{mid}})^2/\mathrm{max}((y - y_{\mathrm{mid}})^2)\]
 Variation in counts for each replicate is simulated by scaling according to a randomly chosen replicate scalar $c$ between zero and one: 
-\[y \sim \text{Pois}(2c \lambda)\]
+\[y \sim \mathrm{Pois}(2c \lambda)\]
 
 For example, in our test simulation, the scale factors $c$ are:
 
@@ -231,13 +231,13 @@ ggplot(data, aes(x = coord_x, y = coord_y, size = log(count + 1))) +
 
 <h2>Modeling simulations</h2>
 
-Functions are needed to apply software packages to the simulations made with *attractor_simulation*. 
+Functions are needed to apply software packages to the simulations made with <span class = "function">attractor_simulation</span>. 
 
 <h3>Wispack</h3>
 
-For wisp modelling, wispack comes with a ready-made function for benchmarking attractor-based simulations, called *model_attractor_simulation_wisp*. The function takes four arguments: *sim*, *sim_num*, *bs_num*, and *max_fork*.  The *sim* argument takes the output of the *attractor_simulation* function. The *sim_num* is an integer value used to label the results of this particular simulation run for later aggregation with other simulation runs. Wispack also uses this number to set the seed for the random-number generator. The *bs_num* argument is the number of bootstrap resamples to use for estimating p-values. (The *model_attractor_simulation_wisp* function will only use bootstrapping; MCMC estimation is not an option.) Finally, the *max_fork* argument sets the maximum number of parallel processes to use during bootstrapping. The function *model_attractor_simulation_wisp* outputs a data frame with results that can be aggregated with other simulation runs for benchmark metrics, including false-positive rate, false-discovery rate, power, and correlation between estimated and true effect sizes.
+For wisp modelling, wispack comes with a ready-made function for benchmarking attractor-based simulations, called <span class = "code_variable">model_attractor_simulation_wisp</span>. The function takes four arguments: <span class = "code_variable">sim</span>, <span class = "code_variable">sim_num</span>, <span class = "code_variable">bs_num</span>, and <span class = "code_variable">max_fork</span>.  The <span class = "code_variable">sim</span> argument takes the output of the <span class = "function">attractor_simulation</span> function. The <span class = "code_variable">sim_num</span> is an integer value used to label the results of this particular simulation run for later aggregation with other simulation runs. Wispack also uses this number to set the seed for the random-number generator. The <span class = "code_variable">bs_num</span> argument is the number of bootstrap resamples to use for estimating p-values. (The <span class = "code_variable">model_attractor_simulation_wisp</span> function will only use bootstrapping; MCMC estimation is not an option.) Finally, the <span class = "code_variable">max_fork</span> argument sets the maximum number of parallel processes to use during bootstrapping. The function <span class = "code_variable">model_attractor_simulation_wisp</span> outputs a data frame with results that can be aggregated with other simulation runs for benchmark metrics, including false-positive rate, false-discovery rate, power, and correlation between estimated and true effect sizes.
 
-Let's do a demo run of the function with only 100 bootstraps, so we can see the output of the function.
+Let's do a demo run of the function with only $100$ bootstraps, so we can see the output of the function.
 
 ```{r test_model_wisp}
 wisp_results <- model_attractor_simulation_wisp(
@@ -249,9 +249,9 @@ wisp_results <- model_attractor_simulation_wisp(
 print(wisp_results)
 ```
 
-Here we see three different parameters (under the *param* column) for benchmarking: the rate effect of the *trt* condition (*rate_effect*) for each gene (under the *id* column), the random effect (*random_effect*) of each replicate (under the *id* column), and whether the *trt* condition induces a FSE (*FSE*) for each gene (under the *id* column). For each parameter, the stipulated value used in the simulation is given under the *true* column, while the estimate from wisp is given under the *est* column. Note that for *rate_effect* and *random_effect*, the parameter is a continuous value. The true, stipulated value will always be between $-0.5$ and $0.5$. (As explained above, these values are randomly choosen from between zero and one, and reported after subtracting 0.5 so that down-regulation is negative and up-regulation is positive). For *FSE*, the parameter is binary, with a *true* value of 1 indicating that the gene exhibits a FSE in the treatment condition, and a *true* value of 0 indicating no FSE. The estimated value for *FSE* is a $p$-value. The obvious idea is that a $p$-value below some threshold (e.g., 0.05) indicates the presence of a FSE, while a $p$-value above that threshold indicates no FSE.
+Here we see three different parameters (under the <span class = "code_variable">param</span> column) for benchmarking: the rate effect of the <span class = "code_variable">trt</span> condition (<span class = "code_variable">rate_effect</span>) for each gene (under the <span class = "code_variable">id</span> column), the random effect (<span class = "code_variable">random_effect</span>) of each replicate (under the <span class = "code_variable">id</span> column), and whether the <span class = "code_variable">trt</span> condition induces a FSE (<span class = "code_variable">FSE</span>) for each gene (under the <span class = "code_variable">id</span> column). For each parameter, the stipulated value used in the simulation is given under the <span class = "code_variable">true</span> column, while the estimate from wisp is given under the <span class = "code_variable">est</span> column. Note that for <span class = "code_variable">rate_effect</span> and <span class = "code_variable">random_effect</span>, the parameter is a continuous value. The true, stipulated value will always be between $-0.5$ and $0.5$. (As explained above, these values are randomly choosen from between zero and one, and reported after subtracting $0.5$ so that down-regulation is negative and up-regulation is positive). For <span class = "code_variable">FSE</span>, the parameter is binary, with a <span class = "code_variable">true</span> value of 1 indicating that the gene exhibits a FSE in the treatment condition, and a <span class = "code_variable">true</span> value of 0 indicating no FSE. The estimated value for <span class = "code_variable">FSE</span> is a $p$-value. The obvious idea is that a $p$-value below some threshold (e.g., $0.05$) indicates the presence of a FSE, while a $p$-value above that threshold indicates no FSE.
 
-Two points are worth noting. First, the *model_attractor_simulation_wisp* function does not return any results related to SVGs because wisp does not run statistical tests for SVGs. Second, wisp does not make a single rate-effect estimate or compute a single $p$-value for rate-effect estimates. It makes one estimate and computes one $p$-value per expression-rate block. The natural solution is thus to take the mean of the estimates and the mean of the $p$-values across all blocks (for each gene) to get a single rate-effect estimate and single rate-effect $p$-value. This approach is sensible for the effect estimate, but the $p$-values are computed under the assumption that rate effects are independent across blocks. To address this, after taking the mean of the $p$-values (which may be $> 1$ due to multiple-comparison correction), the *model_attractor_simulation_wisp* function divides the result by the number of blocks. Actually, *model_attractor_simulation_wisp* calls a helper function *extract_pvalue_attractor_simulation_wisp* to do this computation. Here is the code for that function:
+Two points are worth noting. First, the <span class = "code_variable">model_attractor_simulation_wisp</span> function does not return any results related to SVGs because wisp does not run statistical tests for SVGs. Second, wisp does not make a single rate-effect estimate or compute a single $p$-value for rate-effect estimates. It makes one estimate and computes one $p$-value per expression-rate block. The natural solution is thus to take the mean of the estimates and the mean of the $p$-values across all blocks (for each gene) to get a single rate-effect estimate and single rate-effect $p$-value. This approach is sensible for the effect estimate, but the $p$-values are computed under the assumption that rate effects are independent across blocks. To address this, after taking the mean of the $p$-values (which may be $> 1$ due to multiple-comparison correction), the <span class = "code_variable">model_attractor_simulation_wisp</span> function divides the result by the number of blocks. Actually, <span class = "code_variable">model_attractor_simulation_wisp</span> calls a helper function <span class = "code_variable">extract_pvalue_attractor_simulation_wisp</span> to do this computation. Here is the code for that function:
 
 ```{r wisp_pvalues, eval = FALSE}
 # Function to extract mean p-value across blocks for each gene 
@@ -268,24 +268,24 @@ extract_pvalue_attractor_simulation_wisp <- function(model) {
   }
 ```
 
-In addition to a built-in function for modeling attractor-based simulations with wisp, wispack also provides a function, called *run_attractor_sim_benchmarks*, for running multiple simulations and aggregating the results for benchmark metrics. This function takes several arguments: 
+In addition to a built-in function for modeling attractor-based simulations with wisp, wispack also provides a function, called <span class = "function">run_attractor_sim_benchmarks</span>, for running multiple simulations and aggregating the results for benchmark metrics. This function takes several arguments: 
 
-1. *seed_data*: A data frame containing the seed dataset with columns: *gene*, *coord_x*, *coord_y*, and *count*. Will be given to *attractor_simulation* to generate simulations.
-2. *n_sims*: An integer specifying the number of simulations to run. Default is 100. 
-3. *n_bins*: An integer specifying the number of spatial bins to divide the data coordinates into for each simulation. Default is 100.
-4. *n_replicates*: An integer specifying the number of replicates to generate for each treatment condition in each simulation. Default is 4.
-5. *replicate_spatial_scalar*: A numeric value controlling the amount of spatial variation introduced in each replicate for each simulation. Default is 0.05. 
-6. *min_effect_size*: A numeric value specifying the minimum effect size for functional spatial effects (FSEs) in each simulation. Default is 0.05. Max positive effect size is always 4, i.e., a 4x change in rate. There is no max to the min effect size, i.e., an effect can drop the rate to zero.
-7. *modeling_functions*: A named list of modeling functions to benchmark. Each function should take at least the arguments *sim* (the simulation object produced by *attractor_simulation*) and *sim_num* (the simulation number). Default is a list containing only the *model_attractor_simulation_wisp* function. Functions provided in this list should return a dataframe with columns *est*, *true*, *param*, *id*, *method*, and *sim*. 
-    - The *true* column should contain, for each simulation and each applicable parameter, the ground-truth value returned by the *attractor_simulation_ground_truth* function. 
-    - The *est* column should contain the corresponding estimated value from the modeling function. 
-    - The *param* column should contain the name of the parameter (one of "rate_effect", "random_effect", "FSE", or "SVG"). 
-    - The *id* column should contain the name of the gene or replicate associated with the parameter. 
-    - The *method* column should contain the name of the modeling method used. 
-    - The *sim* column should contain the simulation number.
-8. *modeling_function_args*: A named list of lists, where each sub-list contains additional arguments to pass to the corresponding modeling function in *modeling_functions*. Default is a list containing arguments for the *model_attractor_simulation_wisp* function.
+1. <span class = "code_variable">seed_data</span>: A data frame containing the seed dataset with columns: <span class = "code_variable">gene</span>, <span class = "code_variable">coord_x</span>, <span class = "code_variable">coord_y</span>, and <span class = "code_variable">count</span>. Will be given to <span class = "function">attractor_simulation</span> to generate simulations.
+2. <span class = "code_variable">n_sims</span>: An integer specifying the number of simulations to run. Default is $100$. 
+3. <span class = "code_variable">n_bins</span>: An integer specifying the number of spatial bins to divide the data coordinates into for each simulation. Default is $100$.
+4. <span class = "code_variable">n_replicates</span>: An integer specifying the number of replicates to generate for each treatment condition in each simulation. Default is $4$.
+5. <span class = "code_variable">replicate_spatial_scalar</span>: A numeric value controlling the amount of spatial variation introduced in each replicate for each simulation. Default is $0.05$. 
+6. <span class = "code_variable">min_effect_size</span>: A numeric value specifying the minimum effect size for functional spatial effects (FSEs) in each simulation. Default is $0.05$. Max positive effect size is always $4$, i.e., a $4\times$ change in rate. There is no max to the min effect size, i.e., an effect can drop the rate to zero.
+7. <span class = "code_variable">modeling_functions</span>: A named list of modeling functions to benchmark. Each function should take at least the arguments <span class = "code_variable">sim</span> (the simulation object produced by <span class = "function">attractor_simulation</span>) and <span class = "code_variable">sim_num</span> (the simulation number). Default is a list containing only the <span class = "code_variable">model_attractor_simulation_wisp</span> function. Functions provided in this list should return a dataframe with columns <span class = "code_variable">est</span>, <span class = "code_variable">true</span>, <span class = "code_variable">param</span>, <span class = "code_variable">id</span>, <span class = "code_variable">method</span>, and <span class = "code_variable">sim</span>. 
+    - The <span class = "code_variable">true</span> column should contain, for each simulation and each applicable parameter, the ground-truth value returned by the <span class = "code_variable">attractor_simulation_ground_truth</span> function. 
+    - The <span class = "code_variable">est</span> column should contain the corresponding estimated value from the modeling function. 
+    - The <span class = "code_variable">param</span> column should contain the name of the parameter (one of "rate_effect", "random_effect", "FSE", or "SVG"). 
+    - The <span class = "code_variable">id</span> column should contain the name of the gene or replicate associated with the parameter. 
+    - The <span class = "code_variable">method</span> column should contain the name of the modeling method used. 
+    - The <span class = "code_variable">sim</span> column should contain the simulation number.
+8. <span class = "code_variable">modeling_function_args</span>: A named list of lists, where each sub-list contains additional arguments to pass to the corresponding modeling function in <span class = "code_variable">modeling_functions</span>. Default is a list containing arguments for the <span class = "code_variable">model_attractor_simulation_wisp</span> function.
 
-The modeling functions given in *modeling_functions* should parallel *model_attractor_simulation_wisp* in structure. For reference, here is the code: 
+The modeling functions given in <span class = "code_variable">modeling_functions</span> should parallel <span class = "code_variable">model_attractor_simulation_wisp</span> in structure. For reference, here is the code: 
 
 ```{r model_attractor_simulation, eval = FALSE}
 model_attractor_simulation_wisp <- function(
@@ -343,13 +343,13 @@ model_attractor_simulation_wisp <- function(
   }
 ```
 
-The function *extract_wisp_attractor_simulation_results* is a helper function custom written for wisp, but the function *attractor_simulation_ground_truth* is provided by wispack and will be useful for extracting ground-truth values for benchmarking other modeling functions.
+The function <span class = "function">extract_wisp_attractor_simulation_results</span> is a helper function custom written for wisp, but the function <span class = "code_variable">attractor_simulation_ground_truth</span> is provided by wispack and will be useful for extracting ground-truth values for benchmarking other modeling functions.
 
 <h3>DESeq2</h3>
 
 [DESeq2](http://www.bioconductor.org/packages/release/bioc/html/DESeq2.html) (from [Love et al 2014](https://link.springer.com/article/10.1186/s13059-014-0550-8)) is a popular software package for testing for DE genes from bulk and single-cell RNA-seq data. It does not attempt to model spatial position, and so we cannot use it to test for SVGs. However, it is intended to be used to compare expression levels across conditions, and so we can use it to test for effects of our simulated treatment condition. Despite testing across the reference and treatment conditions, this is not a test for whether the treatment condition induces a FSE, as DESeq2 does not model spatial distribution. However, running DESeq2 on the attractor simulations will contrast wispack's FSE testing with a standard DE testing approach. It also will contrast the mathematical principles: nonlinear models with random-effects (wispack) compared to generalized linear models with shrinkage estimation, i.e., with ridge regression (DESeq2).
 
-Benchmarking DESeq2 on the attractor simulations will require writing a custom function similar to *model_attractor_simulation_wisp* for use in *run_attractor_sim_benchmarks*. 
+Benchmarking DESeq2 on the attractor simulations will require writing a custom function similar to <span class = "code_variable">model_attractor_simulation_wisp</span> for use in <span class = "function">run_attractor_sim_benchmarks</span>. 
 
 First, install and load DESeq2: 
 
@@ -400,7 +400,7 @@ make_DESeq2_data <- function(
   }
 ```
 
-Now, paralleling the structure of *model_attractor_simulation_wisp*, we can write the DESeq2 modeling function:
+Now, paralleling the structure of <span class = "code_variable">model_attractor_simulation_wisp</span>, we can write the DESeq2 modeling function:
 
 ```{r model_attractor_simulation_deseq2}
 model_attractor_simulation_DESeq2 <- function(
@@ -545,7 +545,7 @@ py_install(
   )
 ```
 
-With a virtual Python environment set up, we can now install and load ELLA. Note that we are using the original ELLA version (branch *ella1*), not the most current.
+With a virtual Python environment set up, we can now install and load ELLA. Note that we are using the original ELLA version (branch <span class = "function">ella1</span>), not the most current.
 
 ```{r ELLA_install}
 # Install ELLA, in bash (terminal):
@@ -558,11 +558,11 @@ With a virtual Python environment set up, we can now install and load ELLA. Note
 ELLA_mod <- import_from_path("ELLA", path = my_ELLA_dir)
 ```
 
-As with DESeq2, we need a function to convert our simulation data into the format expected by ELLA. First, we will limit the data to only the reference condition, as ELLA cannot test between-groups. The *fixedeffect* column will have a single unique value (*ref*) and will be renamed *type* as a stand-in for cell type. Second, ELLA is designed to model intracellular gene expression. It expects each replicate to be a single cell, so we will change the *replicate* column of the simulation data to *cell*. Third, we will rename *bin_x* and *bin_y* to *x* and *y*, respectively, as ELLA expects these names. Fourth, we rename *count* to *umi*, for the same reason. 
+As with DESeq2, we need a function to convert our simulation data into the format expected by ELLA. First, we will limit the data to only the reference condition, as ELLA cannot test between-groups. The <span class = "code_variable">fixedeffect</span> column will have a single unique value (<span class = "code_variable">ref</span>) and will be renamed <span class = "code_variable">type</span> as a stand-in for cell type. Second, ELLA is designed to model intracellular gene expression. It expects each replicate to be a single cell, so we will change the <span class = "code_variable">umi</span> column of the simulation data to <span class = "code_variable">cell</span>. Third, we will rename <span class = "code_variable">bin_x</span> and <span class = "code_variable">bin_y</span> to <span class = "code_variable">x</span> and <span class = "code_variable">y</span>, respectively, as ELLA expects these names. Fourth, we rename <span class = "code_variable">count</span> to <span class = "code_variable">umi</span>, for the same reason. 
 
-The most complex issue is that ELLA is intended to model the radial axis out from a cell's nucleus. It requires, for each cell, an center coordinate $\langle \text{centerX}, \text{centerY} \rangle$ from which the radial distance of each spatial point is computed. The attractor simulations are, of course, purpose-built to exhibit spatial variation along the $x$ and $y$ axes. This stipulated spatial variance will be lost if we simply pick a coordinate and give that coordinate to ELLA as the cell center. To preserve the stipulated spatial variance, we need to wrap the square patch around a pseudo-origin. While we could convert either the $x$ or $y$ axis into the radial axis $r$, we will use $x$, leaving $y$ as the angular axis $\theta$. Then the transformation of the original Cartesian coordinates $\langle x,y\rangle$ into new Cartesian coordinates $\langle x^\prime,y^\prime\rangle$ in which the old $x$ coordinate becomes radial distance and the old $y$ coordinate becomes angular displacement is given by: 
-\[x^\prime = x \cos((y/\text{max}(y)) 2 \pi)\]
-\[y^\prime = x \sin((y/\text{max}(y)) 2 \pi)\]
+The most complex issue is that ELLA is intended to model the radial axis out from a cell's nucleus. It requires, for each cell, an center coordinate $\langle \mathrm{centerX}, \mathrm{centerY} \rangle$ from which the radial distance of each spatial point is computed. The attractor simulations are, of course, purpose-built to exhibit spatial variation along the $x$ and $y$ axes. This stipulated spatial variance will be lost if we simply pick a coordinate and give that coordinate to ELLA as the cell center. To preserve the stipulated spatial variance, we need to wrap the square patch around a pseudo-origin. While we could convert either the $x$ or $y$ axis into the radial axis $r$, we will use $x$, leaving $y$ as the angular axis $\theta$. Then the transformation of the original Cartesian coordinates $\langle x,y\rangle$ into new Cartesian coordinates $\langle x^\prime,y^\prime\rangle$ in which the old $x$ coordinate becomes radial distance and the old $y$ coordinate becomes angular displacement is given by: 
+\[x^\prime = x \cos\left(\frac{2 \pi y}{\mathrm{max}(y)} \right)\]
+\[y^\prime = x \sin\left(\frac{2 \pi y}{\mathrm{max}(y)} \right)\]
 This transformation puts the cell center at $\langle 0,0\rangle$ for all cells. It also requires compensating for radial dilution, which we do by multiplying the count at each point by its radial distance and normalizing. 
 
 ```{r ELLA_data_conversion}
@@ -967,11 +967,11 @@ plt_ella2 <- plot_ella_fit(run_ELLA(test_sim$data, L1_lam = 0.0), test_sim$data,
 grid.arrange(plt_ella1, plt_ella2, nrow = 1)
 ```
 
-Notice that the fit is not the best with the L1 penalty, but if we set the penalty back to the default of zero, we get a much better fit. However, although this looks like a better fit, prior testing (not shown here) demonstrated that it leads to very high false discovery and false positive rates (around 0.2 to 0.5) across the benchmark simulations. Therefore, we will keep the L1 penalty at 0.2 for the benchmarking itself.
+Notice that the fit is not the best with the L1 penalty, but if we set the penalty back to the default of zero, we get a much better fit. However, although this looks like a better fit, prior testing (not shown here) demonstrated that it leads to very high false discovery and false positive rates (around $0.2$ to $0.5$) across the benchmark simulations. Therefore, we will keep the L1 penalty at $0.2$ for the benchmarking itself.
 
 <h2>Running benchmarks</h2>
 
-To begin, we need a function which will loop through the simulation and modeling functions, collecting results. The function *run_attractor_sim_benchmarks* is provided with wispack for this purpose. We will run 250 simulations and model each with wisp, DESeq2, and ELLA. As there are four genes per simulation, this will yield a thousand sample points for computing benchmark metrics. 
+To begin, we need a function which will loop through the simulation and modeling functions, collecting results. The function <span class = "function">run_attractor_sim_benchmarks</span> is provided with wispack for this purpose. We will run $250$ simulations and model each with wisp, DESeq2, and ELLA. As there are four genes per simulation, this will yield a thousand sample points for computing benchmark metrics. 
 
 ```{r benchmark_loop, eval = FALSE}
 results <- run_attractor_sim_benchmarks(
@@ -1000,19 +1000,19 @@ benchmark_results <- read.csv(
   )
 ```
 
-Wispack also includes a function, *analyze_attractor_sim_benchmarks*, for aggregating all of the benchmark metrics from the results of the *run_attractor_sim_benchmarks* function: 
+Wispack also includes a function, <span class = "function">analyze_attractor_sim_benchmarks</span>, for aggregating all of the benchmark metrics from the results of the <span class = "function">run_attractor_sim_benchmarks</span> function: 
 
 ```{r aggregate_benchmark_metrics}
 benchmark_metrics <- analyze_attractor_sim_benchmarks(benchmark_results)
 ```
 
-By default, this function computes false positive rate (FPR), false discovery rate (FDR), and power based on a significance threshold of 0.05. For methods which return estimates for FSE size or random effect size, it also computers the correlation between the estimated and true effect size. The mean run time is computed for each method as well. Here are the results for wisp, DESeq2, and ELLA:
+By default, this function computes false positive rate (FPR), false discovery rate (FDR), and power based on a significance threshold of $0.05$. For methods which return estimates for FSE size or random effect size, it also computers the correlation between the estimated and true effect size. The mean run time is computed for each method as well. Here are the results for wisp, DESeq2, and ELLA:
 
 ```{r show_benchmarks}
 print(round(benchmark_metrics, 3))
 ```
 
-As can be seen, both ELLA and wisp control for false positives very well, with FDRs well below the intended 0.05 threshold. This control is evidently bought at the price of power, however. On the other hand, DESeq2 shows higher power, but at the cost of a very high FDR. This is perhaps due to design, as DESeq2 is intended to be used for data exploration on large gene panels, while ELLA and wisp are aimed at hypothesis testing. 
+As can be seen, both ELLA and wisp control for false positives very well, with FDRs well below the intended $0.05$ threshold. This control is evidently bought at the price of power, however. On the other hand, DESeq2 shows higher power, but at the cost of a very high FDR. This is perhaps due to design, as DESeq2 is intended to be used for data exploration on large gene panels, while ELLA and wisp are aimed at hypothesis testing. 
 
 <h3>Visualizing correlations</h3>
 
@@ -1042,7 +1042,7 @@ ggplot(corr_results[corr_results$param == "rate_effect",], aes(x = true, y = est
 
 ```
 
-Notice that, for all four gene types, wisp produces a tight (but non-linear) correlation between estimated and true FSE size. Interestingly, DESeq2 produces a roughly linear correlation for PvalB and Slc17a7, but the correlation is very poor with true null effects associating with a wide range of effect estimates. For Tac2 and Vip, DESeq2 produces a result more like wisp, with a tight, non-linear correlation. It's not immediately clear why DESeq2 performs well for Tac2 and Vip, but poorly for Pvalb and Slc17a7. It's not explained by performing well on true positives, as Tac2 and Pvalb are both true positives, while Vip and Slc17a7 are both true negatives. Neither does count seem to matter; while Slc17a7 and Tac2 differ in counts, Pvalb and Vip do not. 
+Notice that, for all four gene types, wisp produces a tight (but non-linear) correlation between estimated and true FSE size. Interestingly, DESeq2 produces a roughly linear correlation for <span class = "gene">Pvalb</span> and <span class = "gene">Slc17a7</span>, but the correlation is very poor with true null effects associating with a wide range of effect estimates. For <span class = "gene">Tac2</span> and <span class = "gene">Vip</span>, DESeq2 produces a result more like wisp, with a tight, non-linear correlation. It's not immediately clear why DESeq2 performs well for <span class = "gene">Tac2</span> and <span class = "gene">Vip</span>, but poorly for <span class = "gene">Pvalb</span> and <span class = "gene">Slc17a7</span>. It's not explained by performing well on true positives, as <span class = "gene">Tac2</span> and <span class = "gene">Pvalb</span> are both true positives, while <span class = "gene">Vip</span> and <span class = "gene">Slc17a7</span> are both true negatives. Neither does count seem to matter; while <span class = "gene">Slc17a7</span> and <span class = "gene">Tac2</span> differ in counts, <span class = "gene">Pvalb</span> and <span class = "gene">Vip</span> do not. 
 
 We can also get a sense for how well wisp did estimating random effects by plot true vs estimated values: 
 
@@ -1065,4 +1065,4 @@ ggplot(corr_results[corr_results$param == "random_effect",], aes(x = true, y = e
 
 ```
 
-A final note concerns the mean run times for each method: on average, it took 2 seconds to fit DESeq2 to the data, 27 seconds to fit ELLA, and 427 seconds to fit wisp. This is, of course, an order of magnitude increase at each step. That DESeq2 would be (at least) an order of magnitude faster than ELLA or wisp makes sense: DESeq2 essentially fits a GLM to group means, while ELLA and wisp fit models to transcript counts at individual spatial points. However, the order of magnitude increase from ELLA to wisp is explained by the hypothesis testing. Wispack would also need only about 20-30 seconds to fit a single model, but estimating $p$-values through bootstrap resampling. For this benchmark, a thousand bootstraps were done per model, in parallel across a hundred cores, leading to the ten-fold increase in computation time. 
+A final note concerns the mean run times for each method: on average, it took $2$ seconds to fit DESeq2 to the data, $27$ seconds to fit ELLA, and $427$ seconds to fit wisp. This is, of course, an order of magnitude increase at each step. That DESeq2 would be (at least) an order of magnitude faster than ELLA or wisp makes sense: DESeq2 essentially fits a GLM to group means, while ELLA and wisp fit models to transcript counts at individual spatial points. However, the order of magnitude increase from ELLA to wisp is explained by the hypothesis testing. Wispack would also need only about $20$-$30$ seconds to fit a single model, but estimating $p$-values through bootstrap resampling. For this benchmark, a thousand bootstraps were done per model, in parallel across a hundred cores, leading to the ten-fold increase in computation time. 

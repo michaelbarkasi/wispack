@@ -11,26 +11,26 @@ knitr::opts_chunk$set(class.output = "scroll-output", cache = TRUE)
 
 <h2>Introduction</h2>
 
-Wisps naturally model between-group effects describable as two-valued categorical factors, e.g., comparing controls vs a treatment or male vs female. Coarse-grain comparisons over time, such as pre-hearing-onset vs post-hearing-onset or postnatal day $PX$ vs postnatal day $PY$, can be shoehorned into this framework. However, it's often desirable to model longer time series $T$. 
+Wisps naturally model between-group effects describable as two-valued categorical factors, e.g., comparing controls vs treatment or male vs female. Coarse-grain comparisons over time, such as pre-hearing-onset vs post-hearing-onset or postnatal day $X$ vs postnatal day $Y$, can be shoehorned into this framework. However, it's often desirable to model longer time series $T$. 
 
 <h2>Time series as factor series</h2>
 
-While wisps are limited to binary covariate fixed-effect factors $\xi$, i.e., $\xi\in\{0,1\}$, the number of factor levels can be increased to accommodate more time points by modeling time factors $\xi_T$ as an ordered series of factors $\xi_{T_m}$ with additive effects $\beta_{T_m}$. Given a series of time points:
+While wisps are limited to binary fixed-effect factors $\xi$, i.e., $\xi\in\{0,1\}$, the number of factor levels can be increased to accommodate more time points by modeling time factors $\xi_T$ as an ordered series of factors $\xi_{T_m}$ with additive effects $\beta_{T_m}$. Given a series of time points:
 \[T_1 < T_2 < \cdots < T_n\]
 a corresponding time-factor series $\xi_T$ is defined with $n$ ordered binary factors:
 \[\xi_{T_1} < \xi_{T_2} < \cdots < \xi_{T_n}\]
 For binary factors $\xi$ with corresponding effect term $\beta$, the effect on a model parameter $z$ is:
 \[z \mapsto z + \beta + \text{interaction terms}\]
 To achieve the cumulative effect of time, the effect of a time factor $\xi_{T_m}$, for $m\leq n$, is given by summing the series of effects $\beta_{T_l}$ from time factors $\xi_{T_l}$ for $T_l\leq T_m$:
-\[z \mapsto z + \sum_{l=1}^{m} (\beta_{T_l} + \text{interaction terms for }i)\]
+\[z \mapsto z + \sum_{l=1}^{m} (\beta_{T_l} + \text{interaction terms for }l)\]
 For a rigorous definition, suppose that in addition to the time factor $\xi_T$, there are other fixed-effect factors $\xi_F$ each with effect $\beta_F$. The effect of some time $\xi_{T_m}$ from $\xi_T$ will include not only $\beta_{T_m}$ and an interaction term $\beta_{T_m\times\xi_F}$ for all $\xi_F$, but also effects $\beta_{T_l}$ from times $\xi_{T_l}$ for all $l<m$ and their respective interaction terms $\beta_{T_l\times\xi_F}$. 
 Thus, the effect of $\xi_{T_m}$ can be defined to be:
 \[z \mapsto z + \sum_{l=1}^{n} \left(\beta_{T_l}\xi_{T_l} + \sum_{F}\beta_{T_l\times\xi_F}\xi_{T_l}\xi_F\right)\]
-with the stipulation that, if $\xi_{T_m}=1$ for some sampled data point, then for that data point $\xi_{T_l}=1$ for all $i<m$. 
+with the stipulation that, if $\xi_{T_m}=1$ for some sampled data point, then for that data point $\xi_{T_l}=1$ for all $l<m$. 
 
 <h2>Example data: postnatal age</h2>
 
-This tutorial will use MERFISH data collected from the auditory cortex of mice. The data has been preprocessed into laminar coordinates as described in [the tutorial](tutorial_corticallaminar.html) on modeling the cortical-laminar axis (see also [this preprint](https://doi.org/10.1101/2025.06.11.659209)). As with all data appropriate for wispack, and in line with well-known modeling functions in R (e.g., [lme4::lmer()](https://cran.r-project.org/web/packages/lme4/index.html), [stats::lm()](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html)), the data must be in long format. That is, each row must correspond to a single observation, which when modeling spatial transcriptomics data will typically be a count of transcripts from an RNA species in a single cell. 
+This tutorial will use MERFISH data collected from the auditory cortex of mice. The data has been preprocessed into laminar coordinates as described in [the tutorial](tutorial_corticallaminar.html) on modeling the cortical-laminar axis (see also [this preprint](https://doi.org/10.1101/2025.06.11.659209)). As with all data appropriate for wispack, and in line with well-known modeling functions in R (e.g., [<span class = "function">lme4::lmer</span>](https://cran.r-project.org/web/packages/lme4/index.html), [<span class = "function">stats::lm</span>](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html)), the data must be in long format. That is, each row must correspond to a single observation, which when modeling spatial transcriptomics data will typically be a count of transcripts from an RNA species in a single cell. 
 
 ```{r load_data}
 countdata <- read.csv(
@@ -74,20 +74,20 @@ Note that these three ages represent pre-hearing-onset (P7), hearing-onset (P12)
 
 | Abbreviation | Name | Layer |
 |:-------------|:-----|:------|
-|BCL11B, CTIP2 | B-cell CLL/lymphoma 11b | 5/6 |
-|FEZF2 | FEZ Family Zinc Finger 2 | 5 |
-|SATB2 | SATB Homeobox 2 | 2/3 |
-|NXPH3 | Neurexophilin 3 | 6 |
-|CUX2 | Cut like homeobox 2 | 2/3/4 |
-|RORB | Retinoic acid-related orphan receptor beta | 4 |
+|<span class = "gene">BCL11B</span>, <span class = "gene">CTIP2</span> | B-cell CLL/lymphoma 11b | 5/6 |
+|<span class = "gene">FEZF2</span> | FEZ Family Zinc Finger 2 | 5 |
+|<span class = "gene">SATB2</span> | SATB Homeobox 2 | 2/3 |
+|<span class = "gene">NXPH3</span> | Neurexophilin 3 | 6 |
+|<span class = "gene">CUX2</span> | Cut like homeobox 2 | 2/3/4 |
+|<span class = "gene">RORB</span> | Retinoic acid-related orphan receptor beta | 4 |
 
 Given that we have hemisphere and age data, we can thus model the time-dependent lateralization of layer-specific gene expression of the auditory cortex of developing mice. 
 
 <h2>Modeling time series in wispack</h2>
 
-The parts of a wisp model must be defined, relative to the column names of the data. Wispack expects columns for the count to be modeled (**count**), the spatial coordinate (**bin**), the context, e.g., brain region or celltype (**context**), the species being counted, e.g., gene (**species**), and the random effect factor (**ran**). 
+The parts of a wisp model must be defined, relative to the column names of the data. Wispack expects columns for the count to be modeled (<span class = "code_variable">count</span>), the spatial coordinate (<span class = "code_variable">bin</span>), the context, e.g., brain region or celltype (<span class = "code_variable">context</span>), the species being counted, e.g., gene (<span class = "code_variable">species</span>), and the random effect factor (<span class = "code_variable">ran</span>). 
 
-As the data includes explicit **count**, **bin**, and **context** columns, these columns do not need to be redefined. As the names are different, wispack does need to be told that the RNA species data is included in the **gene** column and the random effect factor is given by the **mouse** column. Wispack will assume any unrecognized and undefined columns are fixed-effect columns, so **hemisphere** and **age** do not need to be explicitly flagged as fixed-effects. However, wispack must be told if a given fixed-effect column is to be treated as a time series factor.
+As the data includes explicit <span class = "code_variable">count</span>, <span class = "code_variable">bin</span>, and <span class = "code_variable">context</span> columns, these columns do not need to be redefined. As the names are different, wispack does need to be told that the RNA species data is included in the <span class = "code_variable">gene</span> column and the random effect factor is given by the <span class = "code_variable">mouse</span> column. Wispack will assume any unrecognized and undefined columns are fixed-effect columns, so <span class = "code_variable">hemisphere</span> and <span class = "code_variable">age</span> do not need to be explicitly flagged as fixed-effects. However, wispack must be told if a given fixed-effect column is to be treated as a time series factor.
 
 ```{r define_variables}
 # Define variables in the dataframe for the model
@@ -109,7 +109,7 @@ boundary_path <- system.file(
 layer.boundary.bins <- read.csv(boundary_path)
 ```
 
-With data loaded, variables set, and boundaries grabbed, we can fit the wisp model. As it's not necessary for demonstrating time-series modeling, we'll only fit the model (**fit_only = TRUE**) without running any [statistical parameter estimation](tutorial_stats.html).
+With data loaded, variables set, and boundaries grabbed, we can fit the wisp model. As it's not necessary for demonstrating time-series modeling, we'll only fit the model (<span class = "code_variable">fit_only = TRUE</span>) without running any [statistical parameter estimation](tutorial_stats.html).
 
 ```{r fixed_effects}
 library(wispack, quietly = TRUE)
@@ -135,28 +135,28 @@ Before examining the results, let's look at the weight matrix.
 print(head(model$weight.matrix))
 ```
 
-In this matrix, both rows and columns are labeled with the treatment levels generated by the fixed-effect factors. The first, **ref**, denotes no treatment, i.e., both factors are in their reference level. For **hemisphere**, this is **left**, while for **age**, this is **P7**. The other labels give the treatment level, if any, for each factor, with the rest being in the reference level. For example, **right12** refers to the right hemisphere at age P12, which is a treatment condition in which both factors are in a treatment level. In contrast, **right** refers to the right hemisphere at age P7, which is a treatment condition in which only the **hemisphere** factor is in a treatment level.
+In this matrix, both rows and columns are labeled with the treatment levels generated by the fixed-effect factors. The first, <span class = "code_variable">ref</span>, denotes no treatment, i.e., both factors are in their reference level. For <span class = "code_variable">hemisphere</span>, this is <span class = "code_variable">left</span>, while for <span class = "code_variable">age</span>, this is <span class = "code_variable">P7</span>. The other labels give the treatment level, if any, for each factor, with the rest being in the reference level. For example, <span class = "code_variable">right12</span> refers to the right hemisphere at age P12, which is a treatment condition in which both factors are in a treatment level. In contrast, <span class = "code_variable">right</span> refers to the right hemisphere at age P7, which is a treatment condition in which only the <span class = "code_variable">hemisphere</span> factor is in a treatment level.
 
 This matrix is a *weight* matrix because the row and column labels are also labels for weights $w$. Before [warping](tutorial_warping.html), the predicted count $y$ of a sample is given by:
 \[y = \beta_{\text{ref}}w_{\text{ref}} + \beta_{\text{right}}w_{\text{right}} + \beta_{12}w_{12} + \beta_{18}w_{18} + \beta_{\text{right}12}w_{\text{right}12} + \beta_{\text{right}18}w_{\text{right}18}\]
-where $\beta$ are the effect parameters and $w$ are the weights. The rows of the weight matrix give the values of the weights $w$ corresponding to the column labels under the treatment conditions given by the row labels. For example, the **right12** row specifies that $w_{\text{ref}}=1$, $w_{\text{right}}=1$, $w_{12}=1$, $w_{18}=0$, $w_{\text{right}12}=1$, and $w_{\text{right}18}=0$ when in the treatment condition of the right hemisphere at age P12. That is, when estimating a count $y$ for a sample in the right hemisphere at age P12, the effects $\beta$ for the reference level, right hemisphere, age P12, and the interaction between right hemisphere and age P12 will all be included in the estimate, while the effects for age P18 and the interaction between right hemisphere and age P18 will not be included. What makes the time series additive is the way a treatment level like **18** or **right18** include not only effects related to the age **18**, but also effects related to all earlier ages, e.g., **12**.
+where $\beta$ are the effect parameters and $w$ are the weights. The rows of the weight matrix give the values of the weights $w$ corresponding to the column labels under the treatment conditions given by the row labels. For example, the <span class = "code_variable">right12</span> row specifies that $w_{\text{ref}}=1$, $w_{\text{right}}=1$, $w_{12}=1$, $w_{18}=0$, $w_{\text{right}12}=1$, and $w_{\text{right}18}=0$ when in the treatment condition of the right hemisphere at age P12. That is, when estimating a count $y$ for a sample in the right hemisphere at age P12, the effects $\beta$ for the reference level, right hemisphere, age P12, and the interaction between right hemisphere and age P12 will all be included in the estimate, while the effects for age P18 and the interaction between right hemisphere and age P18 will not be included. What makes the time series additive is the way a treatment level like <span class = "code_variable">18</span> or <span class = "code_variable">right18</span> include not only effects related to the age <span class = "code_variable">18</span>, but also effects related to all earlier ages, e.g., <span class = "code_variable">12</span>.
 
 <h2>Visualizing time series</h2>
 
-The [rate-count wisp plot](tutorial_wispplots.html) is made automatically with all calls of wisp() by an internal call to plot.ratecount(). This style of plot conveys the spatial distribution of a RNA species explicitly, by plotting space on the x-axis. It can only convey changes over a time series indirectly, via coloring of the levels of the **timeseries** factor. For example, consider the wisp plot for NXPH3, which shows a temporally dynamic and lateralized profile in deep layers (block 1), but almost no activity in superficial layers (block 2). 
+The [rate-count wisp plot](tutorial_wispplots.html) is made automatically with all calls of <span class = "function">wisp</span> by an internal call to <span class = "function">plot.ratecount</span>. This style of plot conveys the spatial distribution of a RNA species explicitly, by plotting space on the x-axis. It can only convey changes over a time series indirectly, via coloring of the levels of the <span class = "code_variable">timeseries</span> factor. For example, consider the wisp plot for <span class = "gene">NXPH3</span>, which shows a temporally dynamic and lateralized profile in deep layers (block 1), but almost no activity in superficial layers (block 2). 
 
 ```{r plot_wisp}
 print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Nxph3)
 ```
 
-By default, when the **timeseries** factor is present, rate-count plots use an HCL color space, plotting time series as graduated luminance and the other factors as categorical levels of hue and chroma. In this case, left-hemisphere treatment levels are in green and right-hemisphere levels are in blue, with earlier time points dull and later time points brighter. This makes the lateralization easy to see: the dull green line for the left hemisphere at P7 is much higher than any of the blue lines for the right hemisphere. However, the temporal dynamics are harder to see and only shown implicitly. If you look closely, you should be able to see that (for the deep layers) for both left (green) and right (blue), the dullest line (P7) is the highest, the medium-brightness line (P12) is the lowest, and the brightest line (P18) is in between. This suggests that NXPH3 expression in deep layers dips at P12 relative to P7, then rises again in P18.
+By default, when the <span class = "code_variable">timeseries</span> factor is present, rate-count plots use an HCL color space, plotting time series as graduated luminance and the other factors as categorical levels of hue and chroma. In this case, left-hemisphere treatment levels are in green and right-hemisphere levels are in blue, with earlier time points dull and later time points brighter. This makes the lateralization easy to see: the dull green line for the left hemisphere at P7 is much higher than any of the blue lines for the right hemisphere. However, the temporal dynamics are harder to see and only shown implicitly. If you look closely, you should be able to see that (for the deep layers) for both left (green) and right (blue), the dullest line (P7) is the highest, the medium-brightness line (P12) is the lowest, and the brightest line (P18) is in between. This suggests that <span class = "gene">NXPH3</span> expression in deep layers dips at P12 relative to P7, then rises again in P18.
 
-While this trend can be discerned from the spatial wisp plot, wispack offers another kind of plot for plotting time-series data which makes the trend obvious at a glance while also clarifying it. These time-series plots are made automatically by the wisp() function when a time series is provided or detected, through an internal call to the plot.timeseries() function. 
+While this trend can be discerned from the spatial wisp plot, wispack offers another kind of plot for plotting time-series data which makes the trend obvious at a glance while also clarifying it. These time-series plots are made automatically by the <span class = "function">wisp</span> function when a time series is provided or detected, through an internal call to the <span class = "function">plot.timeseries</span> function. 
 
 ```{r plot_timeseries}
 print(model$plots$timeseries$plot_pred_context_cortex_timeseries_Nxph3)
 ```
 
-Wisp time-series plots keep the y-axis a representation of rate, but switch the x-axis to a representation of the time-series points. However, the spatial aspect of the data is not completely lost. Instead of plotting the predicted rate on the y-axis, which would include not only the rate parameter but also the effects of transition-point location and transition-point slope, the time-series plot instead plots just the rate parameter itself. This parameter is a vector, each element of which is the rate for a block of space defined by transition points. In the NXPH3 time-series plot above, the dip in expression at P12 in the deep layers (block 1) can be seen more clearly. 
+Wisp time-series plots keep the y-axis a representation of rate, but switch the x-axis to a representation of the time-series points. However, the spatial aspect of the data is not completely lost. Instead of plotting the predicted rate on the y-axis, which would include not only the rate parameter but also the effects of transition-point location and transition-point slope, the time-series plot instead plots just the rate parameter itself. This parameter is a vector, each element of which is the rate for a block of space defined by transition points. In the <span class = "gene">NXPH3</span> time-series plot above, the dip in expression at P12 in the deep layers (block 1) can be seen more clearly. 
 
 We could plot and discuss the rest of the layer-specific genes in this data set, but the plots (as produced by these function calls) are messy. This is because this analysis of the data does not account for how gene expression depends on cell type. To properly analyze this data, we need to include cell type in the model as well. This is explained in the [cell type tutorial](tutorial_multicontext.html), which also includes all plots. 

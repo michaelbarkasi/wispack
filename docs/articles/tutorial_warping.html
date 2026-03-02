@@ -87,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-03-01</h4>
+            <h4 data-toc-skip class="date">2026-03-23</h4>
       
 
       <div class="d-none name"><code>tutorial_warping.Rmd</code></div>
@@ -103,17 +103,16 @@ Observations of a variable reflect both the true expected population
 value and random variation. The lower the sample size, the more random
 variation will influence the observed values.</p>
 <p>A common method for dealing with random variation is to normalize
-observations. For example, with our <a href="tutorial_corticallaminar">somatosensory cortex data</a>, we could
-have tested the effect (if any) of hemisphere on transcript spatial
-distribution by making the point of highest expression rate equal across
-the hemispheres (e.g., both set to one), then rescaled the other values
-accordingly. These rescaled, i.e., <em>normalized</em>, values would
-then be used in our statistical tests or regression modeling.
-Alternatively, instead of normalizing, we could model the raw data, but
-use a regularization technique to prevent overfitting to the random
-variation. For example, <a href="tutorial_benchmarks.html">ELLA</a> uses
-L1 regression to good effect to control false-positive and
-false-discovery rates.</p>
+observations. For example, with our <a href="tutorial_corticallaminar.html">somatosensory cortex data</a>, we
+could have tested the effect (if any) of hemisphere on transcript
+spatial distribution by making the point of highest expression rate
+equal across the hemispheres (e.g., both set to one), then rescaled the
+other values accordingly. These rescaled, i.e., <em>normalized</em>,
+values would then be used in our statistical tests or regression
+modeling. Alternatively, instead of normalizing, we could model the raw
+data, but use a regularization technique to prevent overfitting to the
+random variation. For example, <a href="tutorial_benchmarks.html">ELLA</a> uses L1 regression to good
+effect to control false-positive and false-discovery rates.</p>
 <p>In the context of spatially variable genes, regularization is a
 better option than normalization, as normalization can wash out
 differences in spatial distribution (<a href="https://doi.org/10.1186/s13059-025-03565-y" class="external-link">Salim et al 2025</a>,
@@ -126,6 +125,7 @@ of hemisphere on expression rate) and random-effect terms (e.g., the
 random variation in expression rate due to sample-specific factors).
 Wisp models are mixed-effects models. They employ a random-effect term
 to factor out individual variation.</p>
+<p>Although we won’t use it right away, let’s load wispack awhile:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Set random seed for reproducibility</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
@@ -136,7 +136,7 @@ Random-effect structure
 </h2>
 <p>In a traditional <em>linear</em> mixed-effects model, the
 observations <span class="math inline">y</span> are modeled as a
-function of some fixed effects <span class="math inline">\mathbf{X}\beta</span> plus random effects <span class="math inline">\mathbf{Z}\rho</span> plus noise <span class="math inline">\epsilon</span>, for covariate design matrices <span class="math inline">\mathbf{X}</span> and <span class="math inline">\mathbf{Z}</span>, fixed-effect coefficients <span class="math inline">\beta</span>, random-effect coefficients <span class="math inline">\rho</span>, and noise <span class="math inline">\epsilon</span>: <span class="math display">y =
+function of some fixed effects <span class="math inline">\mathbf{X}\beta</span> plus random effects <span class="math inline">\mathbf{Z}\rho</span> plus noise <span class="math inline">\epsilon</span>, for covariate design matrices <span class="math inline">\mathbf{X}</span> and <span class="math inline">\mathbf{Z}</span>, fixed-effect coefficients <span class="math inline">\beta</span>, and random-effect coefficients <span class="math inline">\rho</span>: <span class="math display">y =
 \mathbf{X}\beta + \mathbf{Z}\rho + \epsilon</span> <a href="tutorial_Poisson.html">Recall</a> the logistic function: <span class="math display">\psi(x,r,s) = \frac{r}{1 + \exp({sx})}</span> Also
 recall that a wisp models the log transform (plus one) of expression
 rate <span class="math inline">\lambda</span> as a function of the
@@ -304,10 +304,10 @@ poly-sigmoid <span class="math inline">\Phi</span>.</p>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p>The function <span class="function">demo.warp.plot</span> creates two
 plots. The first shows <span class="math inline">\omega</span> itself
-for a specified warping factors <span class="math inline">\rho=\langle-w,0,w\rangle</span>.</p>
+for specified warping factors <span class="math inline">\rho=\langle-w,0,w\rangle</span>.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">warp_plots</span><span class="op">$</span><span class="va">demo_plot_warpfunction</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_warping_files/figure-html/warp_demo_plot1-1.png" class="r-plt" alt="" width="672"></p>
+<p><img src="tutorial_warping_files/figure-html/warp_demo_plot1-1.png" class="r-plt" alt="" width="864"></p>
 <p>As can be seen clearly in this plot, <span class="math inline">\omega</span> is referred to as a “warping function”
 because it warps the input <span class="math inline">z</span> towards
 the upper and lower bounds. Indeed; the “w” in “wisp” refers to this
@@ -316,11 +316,11 @@ models.</p>
 <p>The second plot created by <span class="function">demo.warp.plot</span> shows the effect of <span class="math inline">\omega</span> on <span class="math inline">\Phi</span>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">warp_plots</span><span class="op">$</span><span class="va">demo_plot_warpedsigmoid</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tutorial_warping_files/figure-html/warp_demo_plot2-1.png" class="r-plt" alt="" width="672"></p>
-<p>Notice that to make this plot, three warping factors <span class="math inline">\rho</span> were provided: <span class="math inline">\langle 0.6, -0.9, and 0.5\rangle</span>. The first
-is the warping factor for the rate parameter, the second is for the
-slope parameter, and the third is for the transition point parameter. As
-can be seen in the plot, the warping function <span class="math inline">\omega</span> has the effect of increasing the rate,
+<p><img src="tutorial_warping_files/figure-html/warp_demo_plot2-1.png" class="r-plt" alt="" width="1152"></p>
+<p>Notice that to make this plot, three warping factors <span class="math inline">\rho</span> were provided: <span class="math inline">\langle 0.6, -0.9, 0.5\rangle</span>. The first is
+the warping factor for the rate parameter, the second is for the slope
+parameter, and the third is for the transition point parameter. As can
+be seen in the plot, the warping function <span class="math inline">\omega</span> has the effect of increasing the rate,
 decreasing the slope, and increasing the transition point location.</p>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

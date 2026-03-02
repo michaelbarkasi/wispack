@@ -25,7 +25,7 @@ NULL
 #' @param converged.resamples.only Logical, if TRUE, only resamples with a converged fit are used for statistical analysis; if FALSE, all resamples are used. Applies only to bootstraps. 
 #' @param max.fork Integer, maximum number of parallel processes to use for bootstrapping.
 #' @param verbose Logical, if TRUE, prints information during the fitting process.
-#' @param model.settings List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, \code{warp_precision}, and \code{round_none}. Default values are provided.
+#' @param model.settings List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, \code{warp_precision}, \code{round_none}, and \code{trtKO}. Default values are provided.
 #' @param MCMC.settings List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.
 #' @param plot.settings List, settings for plots to make, including \code{print.plots}, \code{dim.bounds}, \code{log.scale}, \code{splitting_factor}, \code{CI_style}, \code{label_size}, \code{title_size}, \code{axis_size}, \code{legend_size}, \code{count_size}, \code{count_jitter}, \code{count.alpha.ran}, \code{count.alpha.none}, \code{pred.alpha.ran}, and \code{pred.alpha.none}. Default values are provided.
 #' @param ran.seed Integer, random seed for reproducibility. If NULL, no seed is set. Default is 1234.
@@ -184,7 +184,7 @@ wisp <- function(
       rng_seed = 42,                              # seed for random number generator
       warp_precision = 1e-7,                      # decimal precision to retain when selecting really big number as pseudo infinity for unbound warping
       round_none = TRUE,                          # round extrapoloted counts for "none" (no random effect) to nearest integer? 
-      trtKO = c("none")
+      trtKO = c("none")                           # list of effect names to remove from the model, e.g., model without the Factor1 x Factor2 interaction.
     )
     # ... check that provided model.settings is a list with valid names
     model.settings.names <- check_list(model.settings, model.settings.internal)
@@ -212,7 +212,7 @@ wisp <- function(
       }
       if (s == "trtKO") {
         if (class(ms) != "character") {
-          stop("model.settings$trtKO must be a character vector of treatment names to knock out for the 'none' model fit")
+          stop("model.settings$trtKO must be a character vector of treatment names to knock out for the model fit")
         }
       }
       # ... load value 
@@ -1226,22 +1226,15 @@ plot.ratecount <- function(
       if (sum(fe_lengths > 2) > 1) {
         stop("Error: More than one fixed effect has > 2 levels, cannot structure treatment colors by fixed effects")
       }
-      n_hues <- 2
-      if (is.null(fe_lengths)) {
-        n_lum <- 1
-      } else {
-        n_lum <- max(fe_lengths)
+      n_base <- 1
+      if (!is.null(fe_lengths)) {
+        n_base <- max(fe_lengths)
       }
-      n_chroma <- n_lum 
-      n_colors <- n_hues * n_lum
-      colors_hues <- seq(0,360,length.out = n_hues + 2)[2:(n_hues+1)]        # scale of 0:360
-      colors_lum <- seq(0,100,length.out = n_lum + 2)[2:(n_lum+1)]           # scale of 0:100
-      colors_chroma <- seq(0,100,length.out = n_chroma + 2)[2:(n_chroma+1)]  # scale of 0:100
       fe1_colors <- colorspace::sequential_hcl(
-        n = n_lum,
-        h = colors_hues[1],
-        c = colors_chroma,
-        l = colors_lum[n_lum],
+        n = n_base,
+        h = 120,       # green, scale of 0:360
+        c = c(25, 75), # scale of 0:100
+        l = c(75, 40), # scale of 0:100
         fixup = TRUE,
         alpha = 1,
         palette = NULL,
@@ -1249,10 +1242,10 @@ plot.ratecount <- function(
         register = ""
       )
       fe2_colors <- colorspace::sequential_hcl(
-        n = n_lum,
-        h = colors_hues[n_hues],
-        c = colors_chroma,
-        l = colors_lum[n_lum],
+        n = n_base,
+        h = 240,       # blue, scale of 0:360
+        c = c(25, 75), # scale of 0:100
+        l = c(75, 40), # scale of 0:100
         fixup = TRUE,
         alpha = 1,
         palette = NULL,
@@ -1261,11 +1254,11 @@ plot.ratecount <- function(
       )
       treatment_colors <- c(
         c(fe1_colors[1], fe2_colors[1]),
-        fe1_colors[2:n_lum], fe2_colors[2:n_lum]
+        fe1_colors[2:n_base], fe2_colors[2:n_base]
       )
       names(treatment_colors) <- treatment_levels
       names(treatment_components) <- treatment_levels
-      new_order <- c(1, c(3:(n_lum + 1)), 2, c((n_lum + 2):(2 * n_lum)))
+      new_order <- c(1, c(3:(n_base + 1)), 2, c((n_base + 2):(2 * n_base)))
       treatment_colors <- treatment_colors[new_order]
       treatment_components <- treatment_components[new_order]
       treatment_levels <- treatment_levels[new_order]
@@ -1578,11 +1571,13 @@ plot.ratecount <- function(
       }
       
     }
-    plot_list[["plot_all"]] <- plot_context_fixEff(df) + theme(
-      strip.text = element_text(size = wisp.results$plot.settings$title_size/1.5)
-    )
-    if (print.plots & length(species) != 1) {
-      print(plot_list[["plot_all"]])
+    if (length(species) != 1) {
+      plot_list[["plot_all"]] <- plot_context_fixEff(df) + theme(
+        strip.text = element_text(size = wisp.results$plot.settings$title_size/1.5)
+      )
+      if (print.plots) {
+        print(plot_list[["plot_all"]])
+      }
     }
     
     return(plot_list)
@@ -1874,18 +1869,12 @@ plot.timeseries <- function(
           color_name <- paste0("block by ", splitting_name)
           color_lvl <- paste0(InterX[[1]], ", ", InterX[[2]])
           
-          n_hues <- length(splitting_lvl)                                   # Must be 2
-          n_lum <- length(blks)
-          n_chroma <- n_lum 
-          n_colors <- n_hues * n_lum
-          colors_hues <- seq(0,360,length.out = n_hues + 2)[2:(n_hues+1)]        # scale of 0:360
-          colors_lum <- seq(0,100,length.out = n_lum + 2)[2:(n_lum+1)]           # scale of 0:100
-          colors_chroma <- seq(0,100,length.out = n_chroma + 2)[2:(n_chroma+1)]  # scale of 0:100
+          n_base <- length(blks)
           splt1_colors <- colorspace::sequential_hcl(
-            n = n_lum,
-            h = colors_hues[1],
-            c = colors_chroma,
-            l = colors_lum[n_lum],
+            n = n_base,
+            h = 120,       # green, scale of 0:360
+            c = c(25, 75), # scale of 0:100
+            l = c(75, 40), # scale of 0:100
             fixup = TRUE,
             alpha = 1,
             palette = NULL,
@@ -1893,10 +1882,10 @@ plot.timeseries <- function(
             register = ""
           )
           splt2_colors <- colorspace::sequential_hcl(
-            n = n_lum,
-            h = colors_hues[n_hues],
-            c = colors_chroma,
-            l = colors_lum[n_lum],
+            n = n_base,
+            h = 240,       # blue, scale of 0:360
+            c = c(25, 75), # scale of 0:100
+            l = c(75, 40), # scale of 0:100
             fixup = TRUE,
             alpha = 1,
             palette = NULL,
@@ -1972,43 +1961,45 @@ plot.timeseries <- function(
     }
     
     # Make faceted plot of all
-    if (splitting_name != "none") {
-      plt <- ggplot(
-        df, 
-        aes(x = timeseries, y = rate, color = interaction(block, splitting_factor, sep = ", "))
-      ) 
-    } else {
-      plt <- ggplot(
-        df, 
-        aes(x = timeseries, y = rate, color = block)
-      ) 
+    if (length(species) != 1) {
+      if (splitting_name != "none") {
+        plt <- ggplot(
+          df, 
+          aes(x = timeseries, y = rate, color = interaction(block, splitting_factor, sep = ", "))
+        ) 
+      } else {
+        plt <- ggplot(
+          df, 
+          aes(x = timeseries, y = rate, color = block)
+        ) 
+      }
+      plt <- plt  + 
+        geom_line(linewidth = 1.5) +
+        geom_point(aes(y = count), position = position_jitter(width = 0.2)) +
+        facet_wrap(~ species + context, scales = "free_y") +
+        theme_minimal() +
+        theme(
+          plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
+          axis.title = element_text(size = wisp.results$plot.settings$axis_size),
+          axis.text = element_text(size = wisp.results$plot.settings$axis_size),
+          legend.title = element_text(size = wisp.results$plot.settings$legend_size),
+          legend.text = element_text(size = wisp.results$plot.settings$legend_size),
+          panel.background = element_rect(fill = "white", colour = NA),
+          plot.background  = element_rect(fill = "white", colour = NA),
+          strip.text = element_text(size = wisp.results$plot.settings$title_size/1.5)
+        ) +
+        labs(y = y_lab, x = "Time point", color = color_name) +
+        scale_color_manual(
+          labels = color_lvl,
+          values = color_values
+        ) + 
+        scale_x_continuous(
+          labels = ts,
+          breaks = as.numeric(ts)
+        )
+      out[["plot_all"]] <- plt
+      if (print.plots) print(plt)
     }
-    plt <- plt  + 
-      geom_line(linewidth = 1.5) +
-      geom_point(aes(y = count), position = position_jitter(width = 0.2)) +
-      facet_wrap(~ species + context, scales = "free_y") +
-      theme_minimal() +
-      theme(
-        plot.title = element_text(hjust = 0.5, size = wisp.results$plot.settings$title_size),
-        axis.title = element_text(size = wisp.results$plot.settings$axis_size),
-        axis.text = element_text(size = wisp.results$plot.settings$axis_size),
-        legend.title = element_text(size = wisp.results$plot.settings$legend_size),
-        legend.text = element_text(size = wisp.results$plot.settings$legend_size),
-        panel.background = element_rect(fill = "white", colour = NA),
-        plot.background  = element_rect(fill = "white", colour = NA),
-        strip.text = element_text(size = wisp.results$plot.settings$title_size/1.5)
-      ) +
-      labs(y = y_lab, x = "Time point", color = color_name) +
-      scale_color_manual(
-        labels = color_lvl,
-        values = color_values
-      ) + 
-      scale_x_continuous(
-        labels = ts,
-        breaks = as.numeric(ts)
-      )
-    out[["plot_all"]] <- plt
-    if (print.plots & length(species) != 1) print(plt)
     
     return(out)
     
@@ -3878,7 +3869,7 @@ demo.warp.plots <- function(
       geom_vline(xintercept = tpoint, linetype = "dashed", color = "red4", linewidth = 1) +
       geom_vline(xintercept = tpointw, linetype = "dashed", color = "red", linewidth = 1) +
       ylim(ylower, yupper) +
-      coord_fixed()  +
+      coord_fixed() +
       geom_segment(
         data = def_segments_rates,
         aes(x = x0, xend = x1, y = y0, yend = y1),

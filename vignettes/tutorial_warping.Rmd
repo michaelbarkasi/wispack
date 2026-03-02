@@ -13,9 +13,11 @@ knitr::opts_chunk$set(class.output = "scroll-output", cache = TRUE)
 
 Separating signal from noise is a central issue in science. Observations of a variable reflect both the true expected population value and random variation. The lower the sample size, the more random variation will influence the observed values. 
 
-A common method for dealing with random variation is to normalize observations. For example, with our [somatosensory cortex data](tutorial_corticallaminar), we could have tested the effect (if any) of hemisphere on transcript spatial distribution by making the point of highest expression rate equal across the hemispheres (e.g., both set to one), then rescaled the other values accordingly. These rescaled, i.e., _normalized_, values would then be used in our statistical tests or regression modeling. Alternatively, instead of normalizing, we could model the raw data, but use a regularization technique to prevent overfitting to the random variation. For example, [ELLA](tutorial_benchmarks.html) uses L1 regression to good effect to control false-positive and false-discovery rates. 
+A common method for dealing with random variation is to normalize observations. For example, with our [somatosensory cortex data](tutorial_corticallaminar.html), we could have tested the effect (if any) of hemisphere on transcript spatial distribution by making the point of highest expression rate equal across the hemispheres (e.g., both set to one), then rescaled the other values accordingly. These rescaled, i.e., _normalized_, values would then be used in our statistical tests or regression modeling. Alternatively, instead of normalizing, we could model the raw data, but use a regularization technique to prevent overfitting to the random variation. For example, [ELLA](tutorial_benchmarks.html) uses L1 regression to good effect to control false-positive and false-discovery rates. 
 
 In the context of spatially variable genes, regularization is a better option than normalization, as normalization can wash out differences in spatial distribution ([Salim et al 2025](https://doi.org/10.1186/s13059-025-03565-y), [Bhuva et al 2024](https://doi.org/10.1186/s13059-024-03241-7)). However, there is a third approach to handling sample noise: explicitly modeling the random variation as a _random effect_. Models with random-effect terms are often called _mixed-effects models_, as they contain both fixed-effect terms (e.g., the effect of hemisphere on expression rate) and random-effect terms (e.g., the random variation in expression rate due to sample-specific factors). Wisp models are mixed-effects models. They employ a random-effect term to factor out individual variation.
+
+Although we won't use it right away, let's load wispack awhile: 
 
 ```{r load_modal}
 # Set random seed for reproducibility
@@ -26,7 +28,7 @@ library(wispack, quietly = TRUE)
 
 <h2>Random-effect structure</h2>
 
-In a traditional _linear_ mixed-effects model, the observations $y$ are modeled as a function of some fixed effects $\mathbf{X}\beta$ plus random effects $\mathbf{Z}\rho$ plus noise $\epsilon$, for covariate design matrices $\mathbf{X}$ and $\mathbf{Z}$, fixed-effect coefficients $\beta$, random-effect coefficients $\rho$, and noise $\epsilon$:
+In a traditional _linear_ mixed-effects model, the observations $y$ are modeled as a function of some fixed effects $\mathbf{X}\beta$ plus random effects $\mathbf{Z}\rho$ plus noise $\epsilon$, for covariate design matrices $\mathbf{X}$ and $\mathbf{Z}$, fixed-effect coefficients $\beta$, and random-effect coefficients $\rho$:
 \[y = \mathbf{X}\beta + \mathbf{Z}\rho + \epsilon\]
 [Recall](tutorial_Poisson.html) the logistic function:
 \[\psi(x,r,s) = \frac{r}{1 + \exp({sx})}\]
@@ -139,7 +141,7 @@ A positive benefit of this approach is that when there is no upper bound, i.e., 
 
 Wispack provides a function <span class = "function">demo.warp.plots</span> for visualizing the function $\omega$ and its effect on the poly-sigmoid $\Phi$. 
 
-```{r, warp_demo_functions}
+```{r warp_demo_functions}
 warp_plots <- demo.warp.plots(
     w = 2,                       # warping factor
     point_pos = 60,
@@ -152,9 +154,9 @@ warp_plots <- demo.warp.plots(
   )
 ```
 
-The function <span class = "function">demo.warp.plot</span> creates two plots. The first shows $\omega$ itself for a specified warping factors $\rho=\langle-w,0,w\rangle$.
+The function <span class = "function">demo.warp.plot</span> creates two plots. The first shows $\omega$ itself for specified warping factors $\rho=\langle-w,0,w\rangle$.
 
-```{r warp_demo_plot1, fig.width=7, fig.height=5}
+```{r warp_demo_plot1, fig.width=9, fig.height=7}
 print(warp_plots$demo_plot_warpfunction)
 ```
 
@@ -162,8 +164,8 @@ As can be seen clearly in this plot, $\omega$ is referred to as a "warping funct
 
 The second plot created by <span class = "function">demo.warp.plot</span> shows the effect of $\omega$ on $\Phi$.
 
-```{r warp_demo_plot2, fig.width=7, fig.height=5}
+```{r warp_demo_plot2, fig.width=12, fig.height=6}
 print(warp_plots$demo_plot_warpedsigmoid)
 ```
 
-Notice that to make this plot, three warping factors $\rho$ were provided: $\langle 0.6, -0.9, and 0.5\rangle$. The first is the warping factor for the rate parameter, the second is for the slope parameter, and the third is for the transition point parameter. As can be seen in the plot, the warping function $\omega$ has the effect of increasing the rate, decreasing the slope, and increasing the transition point location.
+Notice that to make this plot, three warping factors $\rho$ were provided: $\langle 0.6, -0.9, 0.5\rangle$. The first is the warping factor for the rate parameter, the second is for the slope parameter, and the third is for the transition point parameter. As can be seen in the plot, the warping function $\omega$ has the effect of increasing the rate, decreasing the slope, and increasing the transition point location.

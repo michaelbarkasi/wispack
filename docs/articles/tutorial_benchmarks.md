@@ -50,7 +50,7 @@ we will also analyze the simulations with
 
 ## Benchmark simulations
 
-Wispack comes with a function, *attractor_simulation*, for generating
+Wispack comes with a function, attractor_simulation, for generating
 simulations with stipulated DE genes, SVGs, FSEs, and inter-replicate
 variation. This function uses seed data, either from real spatial
 transcriptomics runs or itself simulated.
@@ -145,7 +145,7 @@ ggplot(seed_patch, aes(x = coord_x, y = coord_y, color = gene)) +
 With a patch of seed data in hand, we need functions which will
 transform this data into simulations with known (stipulated) DE genes,
 SVGs, FSEs, and inter-replicate variation. Wispack provides the function
-*attractor_simulation* for this purpose. Let’s load wispack and run this
+attractor_simulation for this purpose. Let’s load wispack and run this
 function once to see how it works.
 
 ``` r
@@ -164,19 +164,19 @@ test_sim <- attractor_simulation(
   )
 ```
 
-The function *attractor_simulation* assumes that the input seed is a
-data frame with at least the columns *gene*, *coord_x*, *coord_y*, and
-*count*. It assumes *coord_x* and *coord_y* are continuous variables and
-will bin them into a discrete grid with *n_bins* bins along each axis.
-The function will create *n_replicates* replicates for two conditions,
-called *ref* for “reference” and *trt* for “treatment”. The parameter
-*replicate_spatial_scalar* controls the amount of inter-replicate
-spatial variation, while *min_effect_size* controls the minimum effect
-size for FSE genes. (The amount of inter-replicate *rate* variation is
-always set randomly.) Setting *print_plots* to TRUE will generate plots
-of the simulated data for visual inspection.
+The function attractor_simulation assumes that the input seed is a data
+frame with at least the columns gene, coord_x, coord_y, and count. It
+assumes coord_x and coord_y are continuous variables and will bin them
+into a discrete grid with n_bins bins along each axis. The function will
+create n_replicates replicates for two conditions, called ref for
+“reference” and trt for “treatment”. The parameter
+replicate_spatial_scalar controls the amount of inter-replicate spatial
+variation, while min_effect_size controls the minimum effect size for
+FSE genes. (The amount of inter-replicate rate variation is always set
+randomly.) Setting print_plots to TRUE will generate plots of the
+simulated data for visual inspection.
 
-A list is returned by *attractor_simulation*, with the following
+A list is returned by attractor_simulation, with the following
 components:
 
 ``` r
@@ -246,13 +246,13 @@ randomly selected from the data set to serve as an attractor point.
 Spatial points \langle x, y\rangle are pulled towards the attractor
 point according to the transformation: x\mapsto x - (x - x^\prime)\eta
 y\mapsto y - (y - y^\prime)\eta The term \eta is a noise variable from a
-beta distribution: \eta \sim \text{Beta}(1,\frac{1-D}{D}) And the term D
-is the normalized distance from the attractor point: d = \sqrt{(x -
-x^\prime)^2 + (y - y^\prime)^2} D = 1 - \frac{d}{\text{max}(d)} In fact,
-D is the expected value of the beta distribution. Thus, points closer to
-the attractor are pulled more strongly towards it. For example, here are
-the plots of Slc17a7 before smoothing, after smoothing, and after
-inducing spatial variability:
+beta distribution: \eta \sim \mathrm{Beta}(1,\frac{1-D}{D}) And the term
+D is the normalized distance from the attractor point: d = \sqrt{(x -
+x^\prime)^2 + (y - y^\prime)^2} D = 1 - \frac{d}{\mathrm{max}(d)} In
+fact, D is the expected value of the beta distribution. Thus, points
+closer to the attractor are pulled more strongly towards it. For
+example, here are the plots of Slc17a7 before smoothing, after
+smoothing, and after inducing spatial variability:
 
 ``` r
 do.call(grid.arrange, c(test_sim$plots[["Slc17a7"]], ncol = 2))
@@ -267,13 +267,14 @@ reference condition and one for the treatment condition. As Slc17a7 was
 not selected to be exhibit a FSE in the treatment condition, the spatial
 distributions are the same. For all SVGs, the treatment condition is
 simulated by inducing a rate change via an effect term b between zero
-and one: \lambda\mapsto\lambda\_{\text{trt}} = 4b^2\lambda The actual
+and one: \lambda\mapsto\lambda\_{\mathrm{trt}} = 4b^2\lambda The actual
 count y at each point is then pulled from a Poisson distribution with
-rate \lambda\_{\text{trt}}. y \sim \text{Pois}(\lambda\_{\text{trt}})
-For genes like Slc17a7 not selected to exhibit FSEs, b = 0.5. For genes
-like Pvalb and Tac2 selected to exhibit FSEs, b is randomly chosen to be
-a value between zero and one but such that the absolute value of 4b^2 -
-1 is greater than *min_effect_size* (by default, 0.05). In this example:
+rate \lambda\_{\mathrm{trt}}. y \sim
+\mathrm{Pois}(\lambda\_{\mathrm{trt}}) For genes like Slc17a7 not
+selected to exhibit FSEs, b = 0.5. For genes like Pvalb and Tac2
+selected to exhibit FSEs, b is randomly chosen to be a value between
+zero and one but such that the absolute value of 4b^2 - 1 is greater
+than min_effect_size (by default, 0.05). In this example:
 
 ``` r
 for (g in c(1:4)) cat("\n", test_sim$genes[g], ": b = ", test_sim$effect[g], sep = "")
@@ -287,12 +288,12 @@ for (g in c(1:4)) cat("\n", test_sim$genes[g], ": b = ", test_sim$effect[g], sep
 ## Vip: b = 0
 ```
 
-For convenience, the *attractor_simulation* function returns b - 0.5
-under the *effect* component of the output list. The advantage here is
-that genes without a FSE in the treatment condition will show an effect
-value of zero, a FSE that down-regulates expression will be negative,
-and a FSE that up-regulates expression will be positive. For example,
-here are the plots for Pvalb, which exhibits a slight up-regulating FSE:
+For convenience, the attractor_simulation function returns b - 0.5 under
+the effect component of the output list. The advantage here is that
+genes without a FSE in the treatment condition will show an effect value
+of zero, a FSE that down-regulates expression will be negative, and a
+FSE that up-regulates expression will be positive. For example, here are
+the plots for Pvalb, which exhibits a slight up-regulating FSE:
 
 ``` r
 do.call(grid.arrange, c(test_sim$plots[["Pvalb"]], ncol = 2))
@@ -313,23 +314,23 @@ do.call(grid.arrange, c(test_sim$plots[["Tac2"]], ncol = 2))
 
 The above procedure generates a single data set, from the seed patch,
 consisting of counts y (possibly \> 1) for each gene at some number of
-spatial coordinates, for both the *ref* and *trt* conditions. This
-single data set is itself used as a seed (with counts y becoming rates
-\lambda) to make psuedo-replicates exibhiting some amount of variation,
-both in spatial distribution and in counts. Variation in spatial
-distribution is simulated by a scaled application of a random affine
-transformation A of shears and scalings to the spatial coordinates:
-\begin{pmatrix} x^\prime \\ y^\prime \end{pmatrix} = \begin{pmatrix} d_x
-\\ d_y \end{pmatrix} \circ \begin{pmatrix} x \\ y \end{pmatrix} +
-\begin{pmatrix} 1 - d_x \\ 1 - d_y \end{pmatrix} \circ A \begin{pmatrix}
-x \\ y \end{pmatrix} In the above equation, the “\circ” is the Hadamard
-(element-wise) product. With x\_{\text{mid}} and y\_{\text{mid}} being
-the midpoints of x and y, respectively, the scaling terms d_x and d_y
-are defined as: d_x = (x - x\_{\text{mid}})^2/\text{max}((x -
-x\_{\text{mid}})^2) d_y = (y - y\_{\text{mid}})^2/\text{max}((y -
-y\_{\text{mid}})^2) Variation in counts for each replicate is simulated
-by scaling according to a randomly chosen replicate scalar c between
-zero and one: y \sim \text{Pois}(2c \lambda)
+spatial coordinates, for both the ref and trt conditions. This single
+data set is itself used as a seed (with counts y becoming rates \lambda)
+to make psuedo-replicates exibhiting some amount of variation, both in
+spatial distribution and in counts. Variation in spatial distribution is
+simulated by a scaled application of a random affine transformation A of
+shears and scalings to the spatial coordinates: \begin{pmatrix} x^\prime
+\\ y^\prime \end{pmatrix} = \begin{pmatrix} d_x \\ d_y \end{pmatrix}
+\circ \begin{pmatrix} x \\ y \end{pmatrix} + \begin{pmatrix} 1 - d_x \\
+1 - d_y \end{pmatrix} \circ A \begin{pmatrix} x \\ y \end{pmatrix} In
+the above equation, the “\circ” is the Hadamard (element-wise) product.
+With x\_{\mathrm{mid}} and y\_{\mathrm{mid}} being the midpoints of x
+and y, respectively, the scaling terms d_x and d_y are defined as: d_x =
+(x - x\_{\mathrm{mid}})^2/\mathrm{max}((x - x\_{\mathrm{mid}})^2) d_y =
+(y - y\_{\mathrm{mid}})^2/\mathrm{max}((y - y\_{\mathrm{mid}})^2)
+Variation in counts for each replicate is simulated by scaling according
+to a randomly chosen replicate scalar c between zero and one: y \sim
+\mathrm{Pois}(2c \lambda)
 
 For example, in our test simulation, the scale factors c are:
 
@@ -367,27 +368,26 @@ ggplot(data, aes(x = coord_x, y = coord_y, size = log(count + 1))) +
 ## Modeling simulations
 
 Functions are needed to apply software packages to the simulations made
-with *attractor_simulation*.
+with attractor_simulation.
 
 ### Wispack
 
 For wisp modelling, wispack comes with a ready-made function for
 benchmarking attractor-based simulations, called
-*model_attractor_simulation_wisp*. The function takes four arguments:
-*sim*, *sim_num*, *bs_num*, and *max_fork*. The *sim* argument takes the
-output of the *attractor_simulation* function. The *sim_num* is an
-integer value used to label the results of this particular simulation
-run for later aggregation with other simulation runs. Wispack also uses
-this number to set the seed for the random-number generator. The
-*bs_num* argument is the number of bootstrap resamples to use for
-estimating p-values. (The *model_attractor_simulation_wisp* function
-will only use bootstrapping; MCMC estimation is not an option.) Finally,
-the *max_fork* argument sets the maximum number of parallel processes to
-use during bootstrapping. The function *model_attractor_simulation_wisp*
-outputs a data frame with results that can be aggregated with other
-simulation runs for benchmark metrics, including false-positive rate,
-false-discovery rate, power, and correlation between estimated and true
-effect sizes.
+model_attractor_simulation_wisp. The function takes four arguments: sim,
+sim_num, bs_num, and max_fork. The sim argument takes the output of the
+attractor_simulation function. The sim_num is an integer value used to
+label the results of this particular simulation run for later
+aggregation with other simulation runs. Wispack also uses this number to
+set the seed for the random-number generator. The bs_num argument is the
+number of bootstrap resamples to use for estimating p-values. (The
+model_attractor_simulation_wisp function will only use bootstrapping;
+MCMC estimation is not an option.) Finally, the max_fork argument sets
+the maximum number of parallel processes to use during bootstrapping.
+The function model_attractor_simulation_wisp outputs a data frame with
+results that can be aggregated with other simulation runs for benchmark
+metrics, including false-positive rate, false-discovery rate, power, and
+correlation between estimated and true effect sizes.
 
 Let’s do a demo run of the function with only 100 bootstraps, so we can
 see the output of the function.
@@ -399,416 +399,6 @@ wisp_results <- model_attractor_simulation_wisp(
     bs_num = 100,
     max_fork = 10
   )
-```
-
-``` scroll-output
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Pvalb
-## Context: context, Species: Tac2
-## Context: context, Species: Slc17a7
-## Context: context, Species: Pvalb
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Slc17a7
-## Context: Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Tac2
-## context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Vip
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Slc17a7
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: Context: Context: contextcontext, Species: Pvalb
-## , Species: Pvalb
-## context, Species: Pvalb
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: Context: contextcontext, Species: Slc17a7Context: Context: contextcontext
-## , Species: , Species: PvalbContext: 
-## contextSlc17a7, Species: Context: context
-## , Species: Slc17a7
-## , Species: Pvalb
-## Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Slc17a7
-## Context: context, Species: Pvalb
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: Context: Context: Context: Context: Context: contextContext: context, Species: , Species: contextcontext, Species: contextSlc17a7, Species: Context: Context: contextTac2
-## , Species: context
-## contextTac2, Species: 
-## context, Species: , Species: PvalbTac2, Species: Tac2
-## Tac2Context: Tac2context
-## Tac2
-## , Species: Context: 
-## Context: 
-## contextContext: context
-## context, Species: , Species: Context: VipContext: Context: contextVipTac2, Species: context, Species: Context: Slc17a7
-## Context: 
-## Context: contextcontextcontext
-## , Species: context
-## , Species: , Species: Vip, Species: , Species: VipContext: 
-## VipVip
-## 
-## VipVip
-## 
-## Context: context, Species: Tac2
-## context, Species: Vip
-## 
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Pvalb
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Vip
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Vip
-## Context: contextContext: , Species: contextPvalb, Species: Pvalbcontext
-## 
-## Context: context, Species: Slc17a7
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Vip
-## , Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Vip
-## Context: Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Pvalb
-## Context: context, Species: Tac2
-## Context: context, Species: Tac2
-## Context: context, Species: Slc17a7
-## Context: Context: context, Species: Vip
-## context, Species: Pvalb
-## Context: contextContext: context, Species: Tac2
-## , Species: Vip
-## Context: Context: context, Species: Vip
-## context, Species: Vip
-## Context: context, Species: Slc17a7
-## Context: context, Species: Pvalb
-## Context: context, Species: Tac2
-## Context: context, Species: Slc17a7
-## Context: context, Species: Vip
-## Context: context, Species: Tac2
-## Context: context, Species: Pvalb
-## Context: context, Species: Vip
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Slc17a7
-## Context: context, Species: Pvalb
-## Context: context, Species: Tac2
-## Context: context, Species: Tac2
-## Context: context, Species: Slc17a7
-## Context: Context: context, Species: contextVip
-## , Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Vip
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: Context: context, Species: Pvalb
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Slc17a7
-## Context: context, Species: contextTac2
-## , Species: Pvalb
-## Context: context, Species: Vip
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Tac2
-## Context: context, Species: Pvalb
-## Context: context, Species: Vip
-## Context: context, Species: Slc17a7
-## Context: context, Species: Pvalb
-## Context: context, Species: Tac2
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Vip
-## Context: context, Species: Tac2
-## Context: context, Species: Slc17a7
-## Context: context, Species: Vip
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Pvalb
-## Context: context, Species: Tac2
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Vip
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: Context: contextcontext, Species: , Species: Pvalb
-## VipContext: 
-## Context: contextcontext, Species: Pvalb
-## , Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Slc17a7
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Tac2
-## Context: context, Species: Tac2
-## Context: Context: Context: contextcontextcontext, Species: Pvalb
-## , Species: Vip
-## Context: context, Species: Vip
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## , Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## context, Species: Pvalb
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Pvalb
-## Context: context, Species: Tac2
-## Context: context, Species: Slc17a7
-## Context: context, Species: Vip
-## Context: context, Species: Tac2
-## Context: context, Species: Pvalb
-## Context: context, Species: Vip
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: Context: context, Species: Vip
-## context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: Context: Context: contextcontext, Species: Context: , Species: contextPvalb
-## , Species: Pvalb
-## context, Species: Pvalb
-## Context: context, Species: Slc17a7Context: contextPvalb
-## 
-## , Species: Slc17a7
-## Context: context, Species: Tac2Context: contextContext: , Species: Slc17a7Context: context, Species: Tac2context, Species: 
-## Slc17a7
-## 
-## Context: context, Species: Vip
-## Context: context, Species: Vip
-## 
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Pvalb
-## Context: context, Species: Vip
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-## Context: context, Species: Pvalb
-## Context: context, Species: Slc17a7
-## Context: context, Species: Tac2
-## Context: context, Species: Vip
-```
-
-``` r
 print(wisp_results)
 ```
 
@@ -828,42 +418,41 @@ print(wisp_results)
 ## 12  1.295841584  0.00000000           FSE        Vip   wisp   1
 ```
 
-Here we see three different parameters (under the *param* column) for
-benchmarking: the rate effect of the *trt* condition (*rate_effect*) for
-each gene (under the *id* column), the random effect (*random_effect*)
-of each replicate (under the *id* column), and whether the *trt*
-condition induces a FSE (*FSE*) for each gene (under the *id* column).
-For each parameter, the stipulated value used in the simulation is given
-under the *true* column, while the estimate from wisp is given under the
-*est* column. Note that for *rate_effect* and *random_effect*, the
-parameter is a continuous value. The true, stipulated value will always
-be between -0.5 and 0.5. (As explained above, these values are randomly
-choosen from between zero and one, and reported after subtracting 0.5 so
-that down-regulation is negative and up-regulation is positive). For
-*FSE*, the parameter is binary, with a *true* value of 1 indicating that
-the gene exhibits a FSE in the treatment condition, and a *true* value
-of 0 indicating no FSE. The estimated value for *FSE* is a p-value. The
-obvious idea is that a p-value below some threshold (e.g., 0.05)
-indicates the presence of a FSE, while a p-value above that threshold
-indicates no FSE.
+Here we see three different parameters (under the param column) for
+benchmarking: the rate effect of the trt condition (rate_effect) for
+each gene (under the id column), the random effect (random_effect) of
+each replicate (under the id column), and whether the trt condition
+induces a FSE (FSE) for each gene (under the id column). For each
+parameter, the stipulated value used in the simulation is given under
+the true column, while the estimate from wisp is given under the est
+column. Note that for rate_effect and random_effect, the parameter is a
+continuous value. The true, stipulated value will always be between -0.5
+and 0.5. (As explained above, these values are randomly choosen from
+between zero and one, and reported after subtracting 0.5 so that
+down-regulation is negative and up-regulation is positive). For FSE, the
+parameter is binary, with a true value of 1 indicating that the gene
+exhibits a FSE in the treatment condition, and a true value of 0
+indicating no FSE. The estimated value for FSE is a p-value. The obvious
+idea is that a p-value below some threshold (e.g., 0.05) indicates the
+presence of a FSE, while a p-value above that threshold indicates no
+FSE.
 
-Two points are worth noting. First, the
-*model_attractor_simulation_wisp* function does not return any results
-related to SVGs because wisp does not run statistical tests for SVGs.
-Second, wisp does not make a single rate-effect estimate or compute a
-single p-value for rate-effect estimates. It makes one estimate and
-computes one p-value per expression-rate block. The natural solution is
-thus to take the mean of the estimates and the mean of the p-values
-across all blocks (for each gene) to get a single rate-effect estimate
-and single rate-effect p-value. This approach is sensible for the effect
-estimate, but the p-values are computed under the assumption that rate
-effects are independent across blocks. To address this, after taking the
-mean of the p-values (which may be \> 1 due to multiple-comparison
-correction), the *model_attractor_simulation_wisp* function divides the
-result by the number of blocks. Actually,
-*model_attractor_simulation_wisp* calls a helper function
-*extract_pvalue_attractor_simulation_wisp* to do this computation. Here
-is the code for that function:
+Two points are worth noting. First, the model_attractor_simulation_wisp
+function does not return any results related to SVGs because wisp does
+not run statistical tests for SVGs. Second, wisp does not make a single
+rate-effect estimate or compute a single p-value for rate-effect
+estimates. It makes one estimate and computes one p-value per
+expression-rate block. The natural solution is thus to take the mean of
+the estimates and the mean of the p-values across all blocks (for each
+gene) to get a single rate-effect estimate and single rate-effect
+p-value. This approach is sensible for the effect estimate, but the
+p-values are computed under the assumption that rate effects are
+independent across blocks. To address this, after taking the mean of the
+p-values (which may be \> 1 due to multiple-comparison correction), the
+model_attractor_simulation_wisp function divides the result by the
+number of blocks. Actually, model_attractor_simulation_wisp calls a
+helper function extract_pvalue_attractor_simulation_wisp to do this
+computation. Here is the code for that function:
 
 ``` r
 # Function to extract mean p-value across blocks for each gene 
@@ -882,55 +471,55 @@ extract_pvalue_attractor_simulation_wisp <- function(model) {
 
 In addition to a built-in function for modeling attractor-based
 simulations with wisp, wispack also provides a function, called
-*run_attractor_sim_benchmarks*, for running multiple simulations and
+run_attractor_sim_benchmarks, for running multiple simulations and
 aggregating the results for benchmark metrics. This function takes
 several arguments:
 
-1.  *seed_data*: A data frame containing the seed dataset with columns:
-    *gene*, *coord_x*, *coord_y*, and *count*. Will be given to
-    *attractor_simulation* to generate simulations.
-2.  *n_sims*: An integer specifying the number of simulations to run.
+1.  seed_data: A data frame containing the seed dataset with columns:
+    gene, coord_x, coord_y, and count. Will be given to
+    attractor_simulation to generate simulations.
+2.  n_sims: An integer specifying the number of simulations to run.
     Default is 100.
-3.  *n_bins*: An integer specifying the number of spatial bins to divide
+3.  n_bins: An integer specifying the number of spatial bins to divide
     the data coordinates into for each simulation. Default is 100.
-4.  *n_replicates*: An integer specifying the number of replicates to
+4.  n_replicates: An integer specifying the number of replicates to
     generate for each treatment condition in each simulation. Default is
     4.
-5.  *replicate_spatial_scalar*: A numeric value controlling the amount
-    of spatial variation introduced in each replicate for each
-    simulation. Default is 0.05.
-6.  *min_effect_size*: A numeric value specifying the minimum effect
-    size for functional spatial effects (FSEs) in each simulation.
-    Default is 0.05. Max positive effect size is always 4, i.e., a 4x
-    change in rate. There is no max to the min effect size, i.e., an
-    effect can drop the rate to zero.
-7.  *modeling_functions*: A named list of modeling functions to
-    benchmark. Each function should take at least the arguments *sim*
-    (the simulation object produced by *attractor_simulation*) and
-    *sim_num* (the simulation number). Default is a list containing only
-    the *model_attractor_simulation_wisp* function. Functions provided
-    in this list should return a dataframe with columns *est*, *true*,
-    *param*, *id*, *method*, and *sim*.
-    - The *true* column should contain, for each simulation and each
+5.  replicate_spatial_scalar: A numeric value controlling the amount of
+    spatial variation introduced in each replicate for each simulation.
+    Default is 0.05.
+6.  min_effect_size: A numeric value specifying the minimum effect size
+    for functional spatial effects (FSEs) in each simulation. Default is
+    0.05. Max positive effect size is always 4, i.e., a 4\times change
+    in rate. There is no max to the min effect size, i.e., an effect can
+    drop the rate to zero.
+7.  modeling_functions: A named list of modeling functions to benchmark.
+    Each function should take at least the arguments sim (the simulation
+    object produced by attractor_simulation) and sim_num (the simulation
+    number). Default is a list containing only the
+    model_attractor_simulation_wisp function. Functions provided in this
+    list should return a dataframe with columns est, true, param, id,
+    method, and sim.
+    - The true column should contain, for each simulation and each
       applicable parameter, the ground-truth value returned by the
-      *attractor_simulation_ground_truth* function.
-    - The *est* column should contain the corresponding estimated value
+      attractor_simulation_ground_truth function.
+    - The est column should contain the corresponding estimated value
       from the modeling function.
-    - The *param* column should contain the name of the parameter (one
-      of “rate_effect”, “random_effect”, “FSE”, or “SVG”).
-    - The *id* column should contain the name of the gene or replicate
+    - The param column should contain the name of the parameter (one of
+      “rate_effect”, “random_effect”, “FSE”, or “SVG”).
+    - The id column should contain the name of the gene or replicate
       associated with the parameter.
-    - The *method* column should contain the name of the modeling method
+    - The method column should contain the name of the modeling method
       used.
-    - The *sim* column should contain the simulation number.
-8.  *modeling_function_args*: A named list of lists, where each sub-list
+    - The sim column should contain the simulation number.
+8.  modeling_function_args: A named list of lists, where each sub-list
     contains additional arguments to pass to the corresponding modeling
-    function in *modeling_functions*. Default is a list containing
-    arguments for the *model_attractor_simulation_wisp* function.
+    function in modeling_functions. Default is a list containing
+    arguments for the model_attractor_simulation_wisp function.
 
-The modeling functions given in *modeling_functions* should parallel
-*model_attractor_simulation_wisp* in structure. For reference, here is
-the code:
+The modeling functions given in modeling_functions should parallel
+model_attractor_simulation_wisp in structure. For reference, here is the
+code:
 
 ``` r
 model_attractor_simulation_wisp <- function(
@@ -988,9 +577,9 @@ model_attractor_simulation_wisp <- function(
   }
 ```
 
-The function *extract_wisp_attractor_simulation_results* is a helper
+The function extract_wisp_attractor_simulation_results is a helper
 function custom written for wisp, but the function
-*attractor_simulation_ground_truth* is provided by wispack and will be
+attractor_simulation_ground_truth is provided by wispack and will be
 useful for extracting ground-truth values for benchmarking other
 modeling functions.
 
@@ -1014,8 +603,8 @@ linear models with shrinkage estimation, i.e., with ridge regression
 (DESeq2).
 
 Benchmarking DESeq2 on the attractor simulations will require writing a
-custom function similar to *model_attractor_simulation_wisp* for use in
-*run_attractor_sim_benchmarks*.
+custom function similar to model_attractor_simulation_wisp for use in
+run_attractor_sim_benchmarks.
 
 First, install and load DESeq2:
 
@@ -1067,7 +656,7 @@ make_DESeq2_data <- function(
   }
 ```
 
-Now, paralleling the structure of *model_attractor_simulation_wisp*, we
+Now, paralleling the structure of model_attractor_simulation_wisp, we
 can write the DESeq2 modeling function:
 
 ``` r
@@ -1218,7 +807,7 @@ py_install(
 ```
 
 With a virtual Python environment set up, we can now install and load
-ELLA. Note that we are using the original ELLA version (branch *ella1*),
+ELLA. Note that we are using the original ELLA version (branch ella1),
 not the most current.
 
 ``` r
@@ -1234,19 +823,19 @@ ELLA_mod <- import_from_path("ELLA", path = my_ELLA_dir)
 
 As with DESeq2, we need a function to convert our simulation data into
 the format expected by ELLA. First, we will limit the data to only the
-reference condition, as ELLA cannot test between-groups. The
-*fixedeffect* column will have a single unique value (*ref*) and will be
-renamed *type* as a stand-in for cell type. Second, ELLA is designed to
-model intracellular gene expression. It expects each replicate to be a
-single cell, so we will change the *replicate* column of the simulation
-data to *cell*. Third, we will rename *bin_x* and *bin_y* to *x* and
-*y*, respectively, as ELLA expects these names. Fourth, we rename
-*count* to *umi*, for the same reason.
+reference condition, as ELLA cannot test between-groups. The fixedeffect
+column will have a single unique value (ref) and will be renamed type as
+a stand-in for cell type. Second, ELLA is designed to model
+intracellular gene expression. It expects each replicate to be a single
+cell, so we will change the umi column of the simulation data to cell.
+Third, we will rename bin_x and bin_y to x and y, respectively, as ELLA
+expects these names. Fourth, we rename count to umi, for the same
+reason.
 
 The most complex issue is that ELLA is intended to model the radial axis
 out from a cell’s nucleus. It requires, for each cell, an center
-coordinate \langle \text{centerX}, \text{centerY} \rangle from which the
-radial distance of each spatial point is computed. The attractor
+coordinate \langle \mathrm{centerX}, \mathrm{centerY} \rangle from which
+the radial distance of each spatial point is computed. The attractor
 simulations are, of course, purpose-built to exhibit spatial variation
 along the x and y axes. This stipulated spatial variance will be lost if
 we simply pick a coordinate and give that coordinate to ELLA as the cell
@@ -1257,11 +846,12 @@ angular axis \theta. Then the transformation of the original Cartesian
 coordinates \langle x,y\rangle into new Cartesian coordinates \langle
 x^\prime,y^\prime\rangle in which the old x coordinate becomes radial
 distance and the old y coordinate becomes angular displacement is given
-by: x^\prime = x \cos((y/\text{max}(y)) 2 \pi) y^\prime = x
-\sin((y/\text{max}(y)) 2 \pi) This transformation puts the cell center
-at \langle 0,0\rangle for all cells. It also requires compensating for
-radial dilution, which we do by multiplying the count at each point by
-its radial distance and normalizing.
+by: x^\prime = x \cos\left(\frac{2 \pi y}{\mathrm{max}(y)} \right)
+y^\prime = x \sin\left(\frac{2 \pi y}{\mathrm{max}(y)} \right) This
+transformation puts the cell center at \langle 0,0\rangle for all cells.
+It also requires compensating for radial dilution, which we do by
+multiplying the count at each point by its radial distance and
+normalizing.
 
 ``` r
 make_ELLA_data <- function(
@@ -1695,10 +1285,10 @@ itself.
 
 To begin, we need a function which will loop through the simulation and
 modeling functions, collecting results. The function
-*run_attractor_sim_benchmarks* is provided with wispack for this
-purpose. We will run 250 simulations and model each with wisp, DESeq2,
-and ELLA. As there are four genes per simulation, this will yield a
-thousand sample points for computing benchmark metrics.
+run_attractor_sim_benchmarks is provided with wispack for this purpose.
+We will run 250 simulations and model each with wisp, DESeq2, and ELLA.
+As there are four genes per simulation, this will yield a thousand
+sample points for computing benchmark metrics.
 
 ``` r
 results <- run_attractor_sim_benchmarks(
@@ -1727,9 +1317,9 @@ benchmark_results <- read.csv(
   )
 ```
 
-Wispack also includes a function, *analyze_attractor_sim_benchmarks*,
-for aggregating all of the benchmark metrics from the results of the
-*run_attractor_sim_benchmarks* function:
+Wispack also includes a function, analyze_attractor_sim_benchmarks, for
+aggregating all of the benchmark metrics from the results of the
+run_attractor_sim_benchmarks function:
 
 ``` r
 benchmark_metrics <- analyze_attractor_sim_benchmarks(benchmark_results)
@@ -1799,7 +1389,7 @@ ggplot(corr_results[corr_results$param == "rate_effect",], aes(x = true, y = est
 
 Notice that, for all four gene types, wisp produces a tight (but
 non-linear) correlation between estimated and true FSE size.
-Interestingly, DESeq2 produces a roughly linear correlation for PvalB
+Interestingly, DESeq2 produces a roughly linear correlation for Pvalb
 and Slc17a7, but the correlation is very poor with true null effects
 associating with a wide range of effect estimates. For Tac2 and Vip,
 DESeq2 produces a result more like wisp, with a tight, non-linear

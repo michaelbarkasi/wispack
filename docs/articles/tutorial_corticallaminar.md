@@ -4,13 +4,13 @@
 
 The gene RORB plays a key role in the development of somatosensory
 cortex in rodents. RORB expression leads axons from thalamic neurons to
-innervate cortical layer 4. These thalamocortical projections organize
-into discrete “barrel” formations, each barrel containing the inputs
-from a single whisker.
+innervate cortical layer 4 (L4). These thalamocortical projections
+organize into discrete “barrel” formations, each barrel containing the
+inputs from a single whisker.
 
 While it’s sometimes assumed that there are no major differences in
 barrel formations between the left and right hemispheres (i.e., no
-“laterality”), over the years there have been several histological
+*laterality*), over the years there have been several histological
 studies suggesting age-dependent hemispheric differences. Given the
 established role of RORB in barrel formation, one might want to test for
 age-dependent laterality in RORB expression.
@@ -40,17 +40,16 @@ columnar axes labeled.
 
 ### Coordinate transform
 
-As wisp can only model one dimension of spatial variation (at least,
-as-of the writing of this demo for v1.1), this axis must be identified
-and the RORB molecule coordinates must be transformed into it. As the
-primary concern is with how RORB is distributed across cortical layers,
-the laminar axis is the obvious candidate. Coordinate transformation
-into an axis of interest must be done outside of wispack. For this case,
-a custom coordinate transformation, described in this
+As wisp can only model one dimension of spatial variation (at least, as
+of v2.1), this axis must be identified and the RORB molecule coordinates
+must be transformed into it. As the primary concern is with how RORB is
+distributed across cortical layers, the laminar axis is the obvious
+candidate. Coordinate transformation into an axis of interest must be
+done outside of wispack. For this case, a custom coordinate
+transformation, described in this
 [preprint](https://doi.org/10.1101/2025.06.11.659209) (and available as
-code via the function
-[cortical_coordinate_transform()](https://michaelbarkasi.github.io/wispack/reference/cortical_coordinate_transform.md)),
-was written.
+code via the wispack function cortical_coordinate_transform\<\>), was
+written.
 
 ![Image showing the steps to transform coordinates from the CCFv3
 registration to laminar and columnar axes](fig_coordtrans.png)
@@ -96,8 +95,9 @@ print(head(countdata))
 ```
 
 As can be seen, the imported data has the columns: count, bin, context,
-gene, mouse, hemisphere, age. Although the focus is on RORB, these first
-few rows show that there are other genes in the data as well. How many?
+gene, mouse, hemisphere, and age. Although the focus is on RORB, these
+first few rows show that there are other genes in the data as well. How
+many?
 
 ``` r
 num_genes <- length(unique(countdata$gene))
@@ -211,20 +211,20 @@ formula to specify in wispack. Instead of using a syntactic description
 by specifying which variables in the data frame correspond to which
 roles in the model. The roles are:
 
-1.  **count:** either a non-negative integer giving the number of RNA
+1.  count: either a non-negative integer giving the number of RNA
     molecules of a given species in a given cell, or a non-negative real
     number giving normalized or log-transformed expression values.
-2.  **bin:** the position of the cell along the axis of interest
-    (whether or not the actual unit is “bin”).
-3.  **context:** the biological context of the cell, typically a
-    celltype label.
-4.  **species:** the RNA species (gene) being modeled.
-5.  **ran:** the random-effect grouping factor, typically a sample or
-    animal ID.
-6.  **timeseries:** a fixed-effects factor to treat as a time series (if
+2.  bin: the position of the cell along the axis of interest (whether or
+    not the actual unit is “bin”).
+3.  context: the biological context of the cell, typically a cell-type
+    label.
+4.  species: the RNA species (gene) being modeled.
+5.  ran: the random-effect grouping factor, typically a sample or animal
+    ID.
+6.  timeseries: a fixed-effects factor to treat as a time series (if
     any), typically developmental or experimental time points.
-7.  **fixedeffects:** a vector of fixed-effect factors, typically
-    biological or experimental conditions.
+7.  fixedeffects: a vector of fixed-effect factors, typically biological
+    or experimental conditions.
 
 Note that wisps are intended to model [Poisson
 processes](https://michaelbarkasi.github.io/wispack/articles/tutorial_Poisson.md),
@@ -232,9 +232,8 @@ and so both the underlying optimization and [statistical parameter
 estimation](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md)
 assume the count variable is a Poisson-distributed integer. However, the
 code will accept and attempt to fit normalized and log-transformed
-real-valued expression data as well (as shown
-[here](https://michaelbarkasi.github.io/wispack/articles/tutorial_liverradial.md)),
-albeit with care needed in interpreting the results.
+real-valued expression data as well, albeit with care needed in
+interpreting the results.
 
 The timeseries variable is optional. If none is provided, wisp will not
 treat any fixed effects as time series. However, if a variable is
@@ -293,7 +292,10 @@ parameterization](https://michaelbarkasi.github.io/wispack/articles/tutorial_Poi
 fixed effects from fixed-effect factors or their interactions are simple
 linear effects, being multiplicative on rates and additive on transition
 points and slopes. The multiplicative effects on rate are log-fold
-changes, and so mesh nicely with standard practice.
+changes, and so mesh nicely with standard practice. (Note that while all
+interactions of fixed-effect factors are included by default,
+interactions can be removed from the model using the trtKO argument in
+model.settings.)
 
 ![Demo plots of functions involved in wisp, the logistic
 function](fig_logisticpolysig.png)
@@ -329,12 +331,10 @@ is to estimate, for each gene:
 
 Although wispack includes many settings for fine-tuning the modeling
 process, fitting a wisp model and estimating its parameters is done with
-a single R function,
-[wisp()](https://michaelbarkasi.github.io/wispack/reference/wisp.md).
-This function only needs one argument, the data to be modeled
-(count.data). If, as above, the variable roles are filled by data
-columns with with different names, then the variables (data.variables)
-must be provided via another argument.
+a single R function, wisp. This function only needs one argument, the
+data to be modeled (count.data). If, as above, the variable roles are
+filled by data columns with with different names, then the variables
+must be provided via another argument (variables).
 
 The following code fits a wisp model to the data loaded above, with
 verbose output. Plots are suppressed, as by default many are generated
@@ -473,12 +473,6 @@ model <- wisp(
 ## Estimated gamma dispersion of raw counts
 ## Estimated change points
 ## Found average log counts for each context-species combination
-## Context: cortex, Species: Bcl11b
-## Context: cortex, Species: Cux2
-## Context: cortex, Species: Fezf2
-## Context: cortex, Species: Nxph3
-## Context: cortex, Species: Rorb
-## Context: cortex, Species: Satb2
 ## Estimated initial parameters for fixed-effect treatments
 ## Built initial beta (ref and fixed-effects) matrices
 ## Initialized random-effect warping factors
@@ -513,9 +507,9 @@ model <- wisp(
 ## Acceptance rate (aim for 0.2-0.3): 0.283432
 ## 
 ## MCMC simulation complete... 
-## MCMC run time (total), minutes: 0.852
-## MCMC run time (per retained step), seconds: 0.046
-## MCMC run time (per step), seconds: 0.046
+## MCMC run time (total), minutes: 0.806
+## MCMC run time (per retained step), seconds: 0.044
+## MCMC run time (per step), seconds: 0.044
 ## 
 ## Setting full-data fit as parameters... 
 ## Checking feasibility of provided parameters
@@ -595,7 +589,7 @@ packages for linear models.
 ### Extracting results
 
 The most flat-footed way to extract desired results is to hunt through
-the output. The output of wisp() is a list with the following named
+the output. The output of wisp is a list with the following named
 components:
 
 ``` r
@@ -625,7 +619,7 @@ for (n in names(model)) cat(n, ": ", paste0(class(model[[n]]), collapse = ", "),
 ## plots: list
 ```
 
-Within the “stats” object (another list itself), the following is found:
+Within the stats object (another list itself), the following is found:
 
 ``` r
 for (n in names(model$stats)) cat(n, ": ", paste0(class(model$stats[[n]]), collapse = ", "), "\n", sep = "")
@@ -639,10 +633,9 @@ for (n in names(model$stats)) cat(n, ": ", paste0(class(model$stats[[n]]), colla
 ## variance: data.frame
 ```
 
-The parameter object (stats\$parameter) is a data frame the rows of
-which are the model parameters, the columns of which are various
-statistical results of interest, e.g., confidence intervals and
-p-values:
+The parameter object stats\$parameter is a data frame the rows of which
+are the model parameters, the columns of which are various statistical
+results of interest, e.g., confidence intervals and p-values:
 
 ``` r
 print(head(model$stats$parameter))
@@ -661,7 +654,7 @@ print(head(model$stats$parameter))
 All fixed-effects of hemisphere (i.e., laterality) on the expression
 rate of RORB can be extracted by masking with the treatment variable
 name for the factor hemisphere (which is “right”, with “left” as the
-reference level), the name of the gene of interest (“Rorb”), and the
+reference level), the name of the gene of interest (“RORB”), and the
 type of parameter (fixed effect on rate, which is “beta” on “Rt”):
 
 ``` r
@@ -686,15 +679,15 @@ print(model$stats$parameter[mask, ])
 
 Notice that all of the parameter names end in “Tns/Blk1”, “Tns/Blk2”,
 “Tns/Blk3”, or “Tns/Blk4”. This is because the model fit found three
-transition points, thus dividing the laminar axis into four “blocks” of
+transition points, thus dividing the laminar axis into four blocks of
 roughly constant expression rate. The estimated effect of hemisphere on
 rate is given for each of the four blocks. Each block lists two
-estimates, one for the effect of laterality at the reference age (P12),
-and one for the interaction of laterality with age (the effect of
-laterality at P18). As can be seen, RORB expression is up-regulated in
-the right hemisphere (compared to left) across all blocks, but the
-interaction of age and hemisphere decreases that up-regulation, i.e.,
-the laterality effect is less pronounced at P18 than at P12.
+estimates, one for the effect at the reference age (P12), and one for
+the interaction of hemisphere with age (the effect of laterality at
+P18). As can be seen, RORB expression is up-regulated in the right
+hemisphere (compared to left) across all blocks, but the interaction of
+hemisphere with age decreases that up-regulation, i.e., the laterality
+effect is less pronounced at P18 than at P12.
 
 ### Plotting results
 
@@ -708,7 +701,7 @@ parameters.
 The standard way to visualize a fitted wisp model, for an individual
 gene, is to plot gene expression level (e.g., total count per bin) on
 the y-axis and spatial position (bin) on the x-axis, with effects
-conditions represented by different colors. The wisp() function
+conditions represented by different colors. The wisp function
 automatically generates these plots and stores them in plots\$ratecount.
 Here, for example, is the plot for RORB:
 
@@ -720,7 +713,7 @@ print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Rorb)
 
 The shading shows 95% confidence intervals for the rate estimates. Note
 that while the p-values and confidence intervals for the model
-*parameters* are corrected for multiple-comparisons (by default, using
+parameters are corrected for multiple-comparisons (by default, using
 Holm-Bonferroni), the confidence intervals shown in these plots are not
 corrected for multiple comparisons. This is because the confidence
 intervals on this plot are for predicted rate, not for model parameters.
@@ -741,7 +734,7 @@ at P18 there is up-regulation in the left hemisphere (dark green)
 compared to the right (dark blue).
 
 This swap is easy to see on a time-series plot. When a time series is
-provided (via the variables argument), the wisp() function automatically
+provided (via the variables argument), the wisp function automatically
 generates time-series plots for each gene.
 
 ``` r
@@ -755,14 +748,13 @@ before) on the y-axis. However, the rate value is not the expected value
 at a given bin, but rather the rate parameter itself. As each block has
 a different rate parameter, the time-series plot shows the rate for each
 block. If the data also includes a single additional covariate (fixed
-effect) besides the time series, that variable is used as a “splitting
-factor” to generate separate lines for each level of that variable.
-Here, the splitting factor is hemisphere, and so we see separate lines
-for left (green) and right (blue) hemispheres. Notice how the rate
-counts are relatively low and bunched at the bottom for all but one
-block. This exception is block 3, the block overlapping L4. Here we see
-the swap clearly: right (blue) higher at P12, left (green) higher at
-P18.
+effect) besides the time series, that variable is used as a splitting
+factor to generate separate lines for each level of that variable. Here,
+the splitting factor is hemisphere, and so we see separate lines for
+left (green) and right (blue) hemispheres. Notice how the rate counts
+are relatively low and bunched at the bottom for all but one block. This
+exception is block 3, the block overlapping L4. Here we see the swap
+clearly: right (blue) higher at P12, left (green) higher at P18.
 
 Along with the lines representing block rate, the (jittered) dots at
 each age represent the mean observed count per bin within that block.

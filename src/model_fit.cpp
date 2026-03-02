@@ -1061,8 +1061,6 @@ List estimate_initial_parameters(
         int deg = degMat(s, c);
         int n_blocks = deg + 1;
         
-        Rcpp::Rcout << "Context: " << context_lvls[c] << ", Species: " << species_lvls[s] << "\n";
-        
         // Extract found_cp, found_cp_trt, and count_log_avg_mat for this context-species pair
         IntegerMatrix found_cp = found_cp_list_c[(String)species_lvls[s]];
         NumericMatrix found_cp_trt = found_cp_trt_list_c[(String)species_lvls[s]];

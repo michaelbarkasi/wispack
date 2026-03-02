@@ -3,16 +3,16 @@
 ## Introduction
 
 Wisps naturally model between-group effects describable as two-valued
-categorical factors, e.g., comparing controls vs a treatment or male vs
+categorical factors, e.g., comparing controls vs treatment or male vs
 female. Coarse-grain comparisons over time, such as pre-hearing-onset vs
-post-hearing-onset or postnatal day PX vs postnatal day PY, can be
+post-hearing-onset or postnatal day X vs postnatal day Y, can be
 shoehorned into this framework. However, it’s often desirable to model
 longer time series T.
 
 ## Time series as factor series
 
-While wisps are limited to binary covariate fixed-effect factors \xi,
-i.e., \xi\in\\0,1\\, the number of factor levels can be increased to
+While wisps are limited to binary fixed-effect factors \xi, i.e.,
+\xi\in\\0,1\\, the number of factor levels can be increased to
 accommodate more time points by modeling time factors \xi_T as an
 ordered series of factors \xi\_{T_m} with additive effects \beta\_{T_m}.
 Given a series of time points: T_1 \< T_2 \< \cdots \< T_n a
@@ -23,7 +23,7 @@ parameter z is: z \mapsto z + \beta + \text{interaction terms} To
 achieve the cumulative effect of time, the effect of a time factor
 \xi\_{T_m}, for m\leq n, is given by summing the series of effects
 \beta\_{T_l} from time factors \xi\_{T_l} for T_l\leq T_m: z \mapsto z +
-\sum\_{l=1}^{m} (\beta\_{T_l} + \text{interaction terms for }i) For a
+\sum\_{l=1}^{m} (\beta\_{T_l} + \text{interaction terms for }l) For a
 rigorous definition, suppose that in addition to the time factor \xi_T,
 there are other fixed-effect factors \xi_F each with effect \beta_F. The
 effect of some time \xi\_{T_m} from \xi_T will include not only
@@ -34,7 +34,7 @@ the effect of \xi\_{T_m} can be defined to be: z \mapsto z +
 \sum\_{l=1}^{n} \left(\beta\_{T_l}\xi\_{T_l} +
 \sum\_{F}\beta\_{T_l\times\xi_F}\xi\_{T_l}\xi_F\right) with the
 stipulation that, if \xi\_{T_m}=1 for some sampled data point, then for
-that data point \xi\_{T_l}=1 for all i\<m.
+that data point \xi\_{T_l}=1 for all l\<m.
 
 ## Example data: postnatal age
 
@@ -46,8 +46,8 @@ on modeling the cortical-laminar axis (see also [this
 preprint](https://doi.org/10.1101/2025.06.11.659209)). As with all data
 appropriate for wispack, and in line with well-known modeling functions
 in R (e.g.,
-[lme4::lmer()](https://cran.r-project.org/web/packages/lme4/index.html),
-[stats::lm()](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html)),
+[lme4::lmer](https://cran.r-project.org/web/packages/lme4/index.html),
+[stats::lm](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html)),
 the data must be in long format. That is, each row must correspond to a
 single observation, which when modeling spatial transcriptomics data
 will typically be a count of transcripts from an RNA species in a single
@@ -144,19 +144,18 @@ auditory cortex of developing mice.
 
 The parts of a wisp model must be defined, relative to the column names
 of the data. Wispack expects columns for the count to be modeled
-(**count**), the spatial coordinate (**bin**), the context, e.g., brain
-region or celltype (**context**), the species being counted, e.g., gene
-(**species**), and the random effect factor (**ran**).
+(count), the spatial coordinate (bin), the context, e.g., brain region
+or celltype (context), the species being counted, e.g., gene (species),
+and the random effect factor (ran).
 
-As the data includes explicit **count**, **bin**, and **context**
-columns, these columns do not need to be redefined. As the names are
-different, wispack does need to be told that the RNA species data is
-included in the **gene** column and the random effect factor is given by
-the **mouse** column. Wispack will assume any unrecognized and undefined
-columns are fixed-effect columns, so **hemisphere** and **age** do not
-need to be explicitly flagged as fixed-effects. However, wispack must be
-told if a given fixed-effect column is to be treated as a time series
-factor.
+As the data includes explicit count, bin, and context columns, these
+columns do not need to be redefined. As the names are different, wispack
+does need to be told that the RNA species data is included in the gene
+column and the random effect factor is given by the mouse column.
+Wispack will assume any unrecognized and undefined columns are
+fixed-effect columns, so hemisphere and age do not need to be explicitly
+flagged as fixed-effects. However, wispack must be told if a given
+fixed-effect column is to be treated as a time series factor.
 
 ``` r
 # Define variables in the dataframe for the model
@@ -183,8 +182,8 @@ layer.boundary.bins <- read.csv(boundary_path)
 
 With data loaded, variables set, and boundaries grabbed, we can fit the
 wisp model. As it’s not necessary for demonstrating time-series
-modeling, we’ll only fit the model (**fit_only = TRUE**) without running
-any [statistical parameter
+modeling, we’ll only fit the model (fit_only = TRUE) without running any
+[statistical parameter
 estimation](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md).
 
 ``` r
@@ -310,12 +309,6 @@ model <- wisp(
 ## Estimated gamma dispersion of raw counts
 ## Estimated change points
 ## Found average log counts for each context-species combination
-## Context: cortex, Species: Bcl11b
-## Context: cortex, Species: Cux2
-## Context: cortex, Species: Fezf2
-## Context: cortex, Species: Nxph3
-## Context: cortex, Species: Rorb
-## Context: cortex, Species: Satb2
 ## Estimated initial parameters for fixed-effect treatments
 ## Built initial beta (ref and fixed-effects) matrices
 ## Initialized random-effect warping factors
@@ -365,15 +358,15 @@ print(head(model$weight.matrix))
 ```
 
 In this matrix, both rows and columns are labeled with the treatment
-levels generated by the fixed-effect factors. The first, **ref**,
-denotes no treatment, i.e., both factors are in their reference level.
-For **hemisphere**, this is **left**, while for **age**, this is **P7**.
-The other labels give the treatment level, if any, for each factor, with
-the rest being in the reference level. For example, **right12** refers
-to the right hemisphere at age P12, which is a treatment condition in
-which both factors are in a treatment level. In contrast, **right**
-refers to the right hemisphere at age P7, which is a treatment condition
-in which only the **hemisphere** factor is in a treatment level.
+levels generated by the fixed-effect factors. The first, ref, denotes no
+treatment, i.e., both factors are in their reference level. For
+hemisphere, this is left, while for age, this is P7. The other labels
+give the treatment level, if any, for each factor, with the rest being
+in the reference level. For example, right12 refers to the right
+hemisphere at age P12, which is a treatment condition in which both
+factors are in a treatment level. In contrast, right refers to the right
+hemisphere at age P7, which is a treatment condition in which only the
+hemisphere factor is in a treatment level.
 
 This matrix is a *weight* matrix because the row and column labels are
 also labels for weights w. Before
@@ -385,31 +378,30 @@ the predicted count y of a sample is given by: y =
 \beta\_{\text{right}18}w\_{\text{right}18} where \beta are the effect
 parameters and w are the weights. The rows of the weight matrix give the
 values of the weights w corresponding to the column labels under the
-treatment conditions given by the row labels. For example, the
-**right12** row specifies that w\_{\text{ref}}=1, w\_{\text{right}}=1,
-w\_{12}=1, w\_{18}=0, w\_{\text{right}12}=1, and w\_{\text{right}18}=0
-when in the treatment condition of the right hemisphere at age P12. That
-is, when estimating a count y for a sample in the right hemisphere at
-age P12, the effects \beta for the reference level, right hemisphere,
-age P12, and the interaction between right hemisphere and age P12 will
-all be included in the estimate, while the effects for age P18 and the
+treatment conditions given by the row labels. For example, the right12
+row specifies that w\_{\text{ref}}=1, w\_{\text{right}}=1, w\_{12}=1,
+w\_{18}=0, w\_{\text{right}12}=1, and w\_{\text{right}18}=0 when in the
+treatment condition of the right hemisphere at age P12. That is, when
+estimating a count y for a sample in the right hemisphere at age P12,
+the effects \beta for the reference level, right hemisphere, age P12,
+and the interaction between right hemisphere and age P12 will all be
+included in the estimate, while the effects for age P18 and the
 interaction between right hemisphere and age P18 will not be included.
-What makes the time series additive is the way a treatment level like
-**18** or **right18** include not only effects related to the age
-**18**, but also effects related to all earlier ages, e.g., **12**.
+What makes the time series additive is the way a treatment level like 18
+or right18 include not only effects related to the age 18, but also
+effects related to all earlier ages, e.g., 12.
 
 ## Visualizing time series
 
 The [rate-count wisp
 plot](https://michaelbarkasi.github.io/wispack/articles/tutorial_wispplots.md)
-is made automatically with all calls of wisp() by an internal call to
-plot.ratecount(). This style of plot conveys the spatial distribution of
-a RNA species explicitly, by plotting space on the x-axis. It can only
+is made automatically with all calls of wisp by an internal call to
+plot.ratecount. This style of plot conveys the spatial distribution of a
+RNA species explicitly, by plotting space on the x-axis. It can only
 convey changes over a time series indirectly, via coloring of the levels
-of the **timeseries** factor. For example, consider the wisp plot for
-NXPH3, which shows a temporally dynamic and lateralized profile in deep
-layers (block 1), but almost no activity in superficial layers (block
-2).
+of the timeseries factor. For example, consider the wisp plot for NXPH3,
+which shows a temporally dynamic and lateralized profile in deep layers
+(block 1), but almost no activity in superficial layers (block 2).
 
 ``` r
 print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Nxph3)
@@ -417,9 +409,9 @@ print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Nxph3)
 
 ![](tutorial_timeseries_files/figure-html/plot_wisp-1.png)
 
-By default, when the **timeseries** factor is present, rate-count plots
-use an HCL color space, plotting time series as graduated luminance and
-the other factors as categorical levels of hue and chroma. In this case,
+By default, when the timeseries factor is present, rate-count plots use
+an HCL color space, plotting time series as graduated luminance and the
+other factors as categorical levels of hue and chroma. In this case,
 left-hemisphere treatment levels are in green and right-hemisphere
 levels are in blue, with earlier time points dull and later time points
 brighter. This makes the lateralization easy to see: the dull green line
@@ -435,9 +427,9 @@ P7, then rises again in P18.
 While this trend can be discerned from the spatial wisp plot, wispack
 offers another kind of plot for plotting time-series data which makes
 the trend obvious at a glance while also clarifying it. These
-time-series plots are made automatically by the wisp() function when a
+time-series plots are made automatically by the wisp function when a
 time series is provided or detected, through an internal call to the
-plot.timeseries() function.
+plot.timeseries function.
 
 ``` r
 print(model$plots$timeseries$plot_pred_context_cortex_timeseries_Nxph3)

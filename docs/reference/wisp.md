@@ -75,7 +75,7 @@ wisp(
   List, settings for the C++ model, including `buffer_factor`, `ctol`,
   `max_penalty_at_distance_factor`, `LROcutoff`, `LROwindow_factor`,
   `rise_threshold_factor`, `max_evals`, `rng_seed`, `warp_precision`,
-  and `round_none`. Default values are provided.
+  `round_none`, and `trtKO`. Default values are provided.
 
 - MCMC.settings:
 

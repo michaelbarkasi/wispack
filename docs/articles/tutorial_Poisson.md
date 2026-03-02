@@ -8,7 +8,7 @@ RNA molecules through gene transcription and rabbits in a forest
 generate offspring through reproduction. If every instance of the
 process (e.g., every cell, or every rabbit) in the same place x produces
 tokens at the same rate \lambda, then the number y of tokens generated
-in a given region will follow a Poisson distribution y\sim
+in a given region will follow a Poisson distribution: y\sim
 \text{Pois}(n\lambda) with rate parameter equal to n\lambda, for n the
 number of process instances in the region.
 
@@ -18,7 +18,7 @@ depending on factors like age, and cells will transcribe genes at
 different rates depending on their type and state. This variation is
 often gamma-distributed, such that if \lambda is the mean process rate
 at x, then individual process instances will have rate \Lambda drawn
-from a gamma distribution \Lambda\sim \text{Gam}(\lambda,
+from a gamma distribution: \Lambda\sim \text{Gam}(\lambda,
 \sigma\_\gamma^2) with expected value \lambda and variance
 \sigma\_\gamma^2.
 
@@ -35,7 +35,7 @@ x <- seq(1, n_bins)
 
 We will randomly distribute 10,000 process instances across the space,
 for an average of 100 instances per bin. The variable holding these
-positions will be called “bin”:
+positions will be called bin:
 
 ``` r
 set.seed(123) # for reproducibility
@@ -65,7 +65,7 @@ count <- rpois(n_instances, process_lambda)
 
 The variable count is a vector of length 10,000 holding the observed
 count for each process instance. These simulated process counts can be
-combined into a dataframe called “countdata”:
+combined into a dataframe called countdata:
 
 ``` r
 countdata <- data.frame(bin, count)
@@ -125,20 +125,20 @@ ggplot2::ggplot(summed_counts, ggplot2::aes(x = bin, y = count)) +
 ## Modeling with sigmoids
 
 Wisps are mathematical models for describing gamma-distributed Poisson
-processes. The parameters used to create countdata can be recovered
-using a wisp. A wisp model is fit in two steps.
+processes. The parameters used to create the dataframe countdata can be
+recovered using a wisp. A wisp model is fit in two steps.
 
-The first is to find transition points p in count rate by looking for
-outliers in the ratio between the likelihood of the neighborhood around
-x having a constant rate and the likelihood of each side of the
+The first step is to find transition points p in count rate by looking
+for outliers in the ratio between the likelihood of the neighborhood
+around x having a constant rate and the likelihood of each side of the
 neighborhood around x having different rates. If there are n such
 transition points p=\langle p_1,\ldots,p_n\rangle, then a specific
 variety of sigmoid, the logistic function: \psi(x,r,s) = \frac{r}{1 +
 \exp({sx})} can be used to model the rate \lambda across space by
 combining n such sigmoids into a wisp function: \Psi(x,r,s,p) = r_1 +
 \sum\_{i=1}^n \psi(x - p_i, r\_{i+1} - r\_{i}, -s_i) with rate
-parameters r=\langle r_1,\ldots,r\_{n+1}\rangle and slope parameters
-s=\langle s_1,\ldots,s\_{n}\rangle.
+parameters r=\langle r_1,\ldots,r\_{n+1}\rangle and slope-scale
+parameters s=\langle s_1,\ldots,s\_{n}\rangle.
 
 ![Demo plots of functions involved in wisp](fig_logisticpolysig.png)
 
@@ -148,7 +148,7 @@ logistic components, representing three change points.
 
 The second is to use gradient-based optimization or MCMC to find the
 parameters r, s and p which maximize the likelihood of the log transform
-f(y)=\log(y+1) of countdata\$count.
+\log(y+1) of countdata\$count.
 
 For this demonstration, the data in countdata has been explicitly
 constructed with the statistical structure captured by wisp using known
@@ -257,7 +257,6 @@ model <- wisp(
 ## Estimated gamma dispersion of raw counts
 ## Estimated change points
 ## Found average log counts for each context-species combination
-## Context: context, Species: species
 ## Estimated initial parameters for fixed-effect treatments
 ## Built initial beta (ref and fixed-effects) matrices
 ## Initialized random-effect warping factors
@@ -290,11 +289,10 @@ model <- wisp(
 ![](tutorial_Poisson_files/figure-html/model-1.png)
 
 The above plot makes visually clear that the wisp is a good fit for the
-data. The
-[wisp()](https://michaelbarkasi.github.io/wispack/reference/wisp.md)
-function has identified the three rate-transition points dividing the
-data into four equal-sized blocks and, within each block, has identified
-a rate parameter which visually seems to land in the middle of the data.
+data. The wisp function has identified the three rate-transition points
+dividing the data into four equal-sized blocks and, within each block,
+has identified a rate parameter which visually seems to land in the
+middle of the data.
 
 The recovered parameters can also be extracted as numerical values:
 
