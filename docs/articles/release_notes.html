@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.01</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
 
       <h1>Release Notes</h1>
             
-            <h4 data-toc-skip class="date">2026-02-20</h4>
+            <h4 data-toc-skip class="date">2026-03-01</h4>
       
 
       <div class="d-none name"><code>release_notes.Rmd</code></div>
@@ -97,7 +97,10 @@
 <h2 id="planned-changes-for-future-releases">Planned changes for future releases<a class="anchor" aria-label="anchor" href="#planned-changes-for-future-releases"></a>
 </h2>
 <ul>
-<li>Autodetect fixed-effect type? E.g., fixed-effect columns of R type
+<li>Experiment with extending the treatment knock-out (trtKO)
+functionality into a likelihood-ratio test for hypothesis testing.
+Update the tutorial on customizing statistical analyses, if needed.</li>
+<li>Autodetect fixed-effect type, e.g., fixed-effect columns of R type
 “character” or “factor” are treated as two-level categorical factors,
 and numeric columns are treated as discrete additive effects (e.g., like
 a time series). Will need to update the <span class="gene">RORB</span>
@@ -115,27 +118,40 @@ update the tutorial on customizing statistical analyses.</li>
 </ul>
 </div>
 <div class="section level2">
+<h2 id="version-2-1-march-1-2026">Version 2.1 (March 1, 2026)<a class="anchor" aria-label="anchor" href="#version-2-1-march-1-2026"></a>
+</h2>
+<ul>
+<li>Added <span class="code_variable">model.settings</span> argument
+<span class="code_variable">trtKO</span> to <span class="function">wisp</span> which enables excluding treatments to run
+reduced models.</li>
+<li>Replaced corrupted data file “corticallaminar_model.rds” with
+working version.</li>
+</ul>
+</div>
+<div class="section level2">
 <h2 id="version-2-0-feb-19-2026">Version 2.0 (Feb 19, 2026)<a class="anchor" aria-label="anchor" href="#version-2-0-feb-19-2026"></a>
 </h2>
 <ul>
 <li>Release attached to NAR resubmission.</li>
 <li>Redesigned plots.</li>
 <li>Added attractor simulation functionality and benchmarking.</li>
+<li>Includes first-draft versions of package tutorials.</li>
+<li>Note that the package data file “corticallaminar_model.rds” was
+corrupted and should be pulled from the latest version or latest commit
+on the main branch.</li>
 </ul>
 </div>
 <div class="section level2">
 <h2 id="version-1-1">Version 1.1<a class="anchor" aria-label="anchor" href="#version-1-1"></a>
 </h2>
 <ul>
-<li>Added discrete time-series modeling functionality (the
-<strong>timeseries</strong> variable option) and plotting (the function
-plot.timeseries()).</li>
+<li>Added discrete time-series modeling functionality (the <span class="code_variable">timeseries</span> variable option) and plotting
+(the function <span class="function">plot.timeseries</span>).</li>
 <li>Ensured code would robustly run for any data including at least
-<strong>count</strong> and <strong>bin</strong> columns, without need
-for <strong>context</strong>, <strong>species</strong>,
-<strong>ran</strong>, or fixed-effect variables.</li>
-<li>Added explicit <strong>fit_only</strong> option to wisp() to avoid
-running any parameter estimation (MCMC or bootstrapping).</li>
+<span class="code_variable">count</span> and <span class="code_variable">bin</span> columns, without need for <span class="code_variable">context</span>, <span class="code_variable">species</span>, <span class="code_variable">ran</span>, or fixed-effect variables.</li>
+<li>Added explicit <span class="code_variable">fit_only</span> option to
+<span class="function">wisp</span> to avoid running any parameter
+estimation (MCMC or bootstrapping).</li>
 </ul>
 </div>
 <div class="section level2">
@@ -143,7 +159,8 @@ running any parameter estimation (MCMC or bootstrapping).</li>
 </h2>
 <ul>
 <li>Initial public release of wispack, as used in <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">this preprint</a>.</li>
-<li>Defines the wisp() function for implementing wisps.</li>
+<li>Defines the <span class="function">wisp</span> function for
+implementing wisps.</li>
 <li>Introduces one-dimensional warped sigmoidal Poisson-process
 mixed-effect modeling (one-dimensional wisps) for testing for functional
 spatial effects in spatial transcriptomics data.</li>

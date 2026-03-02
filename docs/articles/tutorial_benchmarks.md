@@ -399,6 +399,416 @@ wisp_results <- model_attractor_simulation_wisp(
     bs_num = 100,
     max_fork = 10
   )
+```
+
+``` scroll-output
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Pvalb
+## Context: context, Species: Tac2
+## Context: context, Species: Slc17a7
+## Context: context, Species: Pvalb
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Slc17a7
+## Context: Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Tac2
+## context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Vip
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Slc17a7
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: Context: Context: contextcontext, Species: Pvalb
+## , Species: Pvalb
+## context, Species: Pvalb
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: Context: contextcontext, Species: Slc17a7Context: Context: contextcontext
+## , Species: , Species: PvalbContext: 
+## contextSlc17a7, Species: Context: context
+## , Species: Slc17a7
+## , Species: Pvalb
+## Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Slc17a7
+## Context: context, Species: Pvalb
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: Context: Context: Context: Context: Context: contextContext: context, Species: , Species: contextcontext, Species: contextSlc17a7, Species: Context: Context: contextTac2
+## , Species: context
+## contextTac2, Species: 
+## context, Species: , Species: PvalbTac2, Species: Tac2
+## Tac2Context: Tac2context
+## Tac2
+## , Species: Context: 
+## Context: 
+## contextContext: context
+## context, Species: , Species: Context: VipContext: Context: contextVipTac2, Species: context, Species: Context: Slc17a7
+## Context: 
+## Context: contextcontextcontext
+## , Species: context
+## , Species: , Species: Vip, Species: , Species: VipContext: 
+## VipVip
+## 
+## VipVip
+## 
+## Context: context, Species: Tac2
+## context, Species: Vip
+## 
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Pvalb
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Vip
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Vip
+## Context: contextContext: , Species: contextPvalb, Species: Pvalbcontext
+## 
+## Context: context, Species: Slc17a7
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Vip
+## , Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Vip
+## Context: Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Pvalb
+## Context: context, Species: Tac2
+## Context: context, Species: Tac2
+## Context: context, Species: Slc17a7
+## Context: Context: context, Species: Vip
+## context, Species: Pvalb
+## Context: contextContext: context, Species: Tac2
+## , Species: Vip
+## Context: Context: context, Species: Vip
+## context, Species: Vip
+## Context: context, Species: Slc17a7
+## Context: context, Species: Pvalb
+## Context: context, Species: Tac2
+## Context: context, Species: Slc17a7
+## Context: context, Species: Vip
+## Context: context, Species: Tac2
+## Context: context, Species: Pvalb
+## Context: context, Species: Vip
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Slc17a7
+## Context: context, Species: Pvalb
+## Context: context, Species: Tac2
+## Context: context, Species: Tac2
+## Context: context, Species: Slc17a7
+## Context: Context: context, Species: contextVip
+## , Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Vip
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: Context: context, Species: Pvalb
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Slc17a7
+## Context: context, Species: contextTac2
+## , Species: Pvalb
+## Context: context, Species: Vip
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Tac2
+## Context: context, Species: Pvalb
+## Context: context, Species: Vip
+## Context: context, Species: Slc17a7
+## Context: context, Species: Pvalb
+## Context: context, Species: Tac2
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Vip
+## Context: context, Species: Tac2
+## Context: context, Species: Slc17a7
+## Context: context, Species: Vip
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Pvalb
+## Context: context, Species: Tac2
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Vip
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: Context: contextcontext, Species: , Species: Pvalb
+## VipContext: 
+## Context: contextcontext, Species: Pvalb
+## , Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Slc17a7
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Tac2
+## Context: context, Species: Tac2
+## Context: Context: Context: contextcontextcontext, Species: Pvalb
+## , Species: Vip
+## Context: context, Species: Vip
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## , Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## context, Species: Pvalb
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Pvalb
+## Context: context, Species: Tac2
+## Context: context, Species: Slc17a7
+## Context: context, Species: Vip
+## Context: context, Species: Tac2
+## Context: context, Species: Pvalb
+## Context: context, Species: Vip
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: Context: context, Species: Vip
+## context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: Context: Context: contextcontext, Species: Context: , Species: contextPvalb
+## , Species: Pvalb
+## context, Species: Pvalb
+## Context: context, Species: Slc17a7Context: contextPvalb
+## 
+## , Species: Slc17a7
+## Context: context, Species: Tac2Context: contextContext: , Species: Slc17a7Context: context, Species: Tac2context, Species: 
+## Slc17a7
+## 
+## Context: context, Species: Vip
+## Context: context, Species: Vip
+## 
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Pvalb
+## Context: context, Species: Vip
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+## Context: context, Species: Pvalb
+## Context: context, Species: Slc17a7
+## Context: context, Species: Tac2
+## Context: context, Species: Vip
+```
+
+``` r
 print(wisp_results)
 ```
 
@@ -1192,19 +1602,12 @@ plot_ella_fit <- function(
   ) {
     
     # Convert spatial coordinate to radial distance
-    n_r <- length(ella_sim$df_registered$d_c_s)
     df_ella_sim <- data.frame(
-      d_c_s = numeric(n_r),
-      cell = character(n_r),
-      gene = character(n_r),
-      umi = integer(n_r)
+      d_c_s = as.numeric(ella_sim$df_registered$d_c_s),
+      cell = as.character(ella_sim$df_registered$cell),
+      gene = as.character(ella_sim$df_registered$gene),
+      umi = as.integer(ella_sim$df_registered$umi)
     )
-    for (i in c(1:n_r)) {
-      df_ella_sim$d_c_s[i] <- ella_sim$df_registered$d_c_s[i - 1]
-      df_ella_sim$cell[i] <- ella_sim$df_registered$cell[i - 1]
-      df_ella_sim$gene[i] <- ella_sim$df_registered$gene[i - 1]
-      df_ella_sim$umi[i] <- ella_sim$df_registered$umi[i - 1]  
-    }
     rad <- round(df_ella_sim$d_c_s,2)*100
     rads <- sort(unique(rad))
     

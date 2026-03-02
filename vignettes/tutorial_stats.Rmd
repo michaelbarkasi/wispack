@@ -43,6 +43,42 @@ with $|\cdot|_{\text{abs}}$ being absolute value. Wispack uses either Holm-Bonfe
 
 Suppose we have the results from a run of <span class = "function">wisp</span>, such as this one which matches the example from the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html), except that in addition to the default thousand-step MCMC walk with a hundred-step burn-in, it also performs a thousand bootstrap resamples:
 
+```{r wisp_model_rebuild, eval = FALSE, echo = FALSE}
+library(wispack, quietly = TRUE)
+layer.boundary.bins <- read.csv(
+  system.file(
+      "extdata", 
+      "S1_layer_boundary_bins.csv", 
+      package = "wispack"
+    )
+  )
+countdata <- read.csv(
+  system.file(
+      "extdata", 
+      "S1_laminar_countdata_demo.csv", 
+      package = "wispack"
+    )
+  )
+data.variables <- list(
+    species = "gene",
+    ran = "mouse",
+    timeseries = "age"
+  )
+model <- wisp(
+    count.data = countdata,
+    variables = data.variables,
+    plot.settings = list(
+        print.plots = FALSE, 
+        dim.bounds = colMeans(layer.boundary.bins)
+      ),
+    bootstraps.num = 1000, 
+    max.fork = 5,
+    verbose = TRUE
+  )
+model$plots <- NULL
+saveRDS(model, "corticallaminar_model.rds")
+```
+
 ```{r wisp_model_fit, eval = FALSE}
 model <- wisp(
     count.data = countdata,

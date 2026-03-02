@@ -206,6 +206,7 @@ model <- wisp(
 ##  rng_seed: 42
 ##  warp_precision: 1e-07
 ##  round_none: TRUE
+##  trtKO: none
 ##  inf_warp: 450359962.73705
 ## 
 ## Plot settings:
@@ -264,6 +265,7 @@ model <- wisp(
 ## "7" "12" "18"
 ## Created treatment levels:
 ## "ref" "right" "12" "18" "right12" "right18"
+## Constructed weight_row matrix
 ## Context grouping levels:
 ## "GABA" "Glut"
 ## Species grouping levels:
@@ -294,6 +296,18 @@ model <- wisp(
 ## Estimated gamma dispersion of raw counts
 ## Estimated change points
 ## Found average log counts for each context-species combination
+## Context: GABA, Species: Bcl11b
+## Context: GABA, Species: Cux2
+## Context: GABA, Species: Fezf2
+## Context: GABA, Species: Nxph3
+## Context: GABA, Species: Rorb
+## Context: GABA, Species: Satb2
+## Context: Glut, Species: Bcl11b
+## Context: Glut, Species: Cux2
+## Context: Glut, Species: Fezf2
+## Context: Glut, Species: Nxph3
+## Context: Glut, Species: Rorb
+## Context: Glut, Species: Satb2
 ## Estimated initial parameters for fixed-effect treatments
 ## Built initial beta (ref and fixed-effects) matrices
 ## Initialized random-effect warping factors

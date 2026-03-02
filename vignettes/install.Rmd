@@ -68,6 +68,7 @@ sudo apt install \
 In R, run:  
 
 ```{r, eval = FALSE}
+devtools::document()
 pkgdown::build_site()
 pkgdown::build_article("<article name>")
 ```

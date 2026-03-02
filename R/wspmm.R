@@ -1581,7 +1581,7 @@ plot.ratecount <- function(
     plot_list[["plot_all"]] <- plot_context_fixEff(df) + theme(
       strip.text = element_text(size = wisp.results$plot.settings$title_size/1.5)
     )
-    if (print.plots) {
+    if (print.plots & length(species) != 1) {
       print(plot_list[["plot_all"]])
     }
     
@@ -1960,7 +1960,11 @@ plot.timeseries <- function(
           scale_color_manual(
             labels = color_lvl,
             values = color_values
-          ) 
+          ) + 
+          scale_x_continuous(
+            labels = ts,
+            breaks = as.numeric(ts)
+          )
         
         out[[paste0("plot_",pred.type,"_context_",cxt,"_timeseries_",sps)]] <- plt
         if (print.plots) print(plt)
@@ -1998,9 +2002,13 @@ plot.timeseries <- function(
       scale_color_manual(
         labels = color_lvl,
         values = color_values
-      ) 
+      ) + 
+      scale_x_continuous(
+        labels = ts,
+        breaks = as.numeric(ts)
+      )
     out[["plot_all"]] <- plt
-    if (print.plots) print(plt)
+    if (print.plots & length(species) != 1) print(plt)
     
     return(out)
     
@@ -3591,6 +3599,7 @@ project_cp <- function(
 #' @param b Numeric, warping bound (must be a single value).
 #' @param w Numeric, warping factor (must be a single value).
 #' @return Numeric vector or matrix, warped values. Returned object will have the same dimensions as input z.
+#' @export
 wisp.warp <- function( 
     z, # value to warp, either a scalar, vector, or 2D array/matrix
     b, # warping bound
@@ -3630,6 +3639,7 @@ wisp.warp <- function(
 #' @param tslope Numeric vector, slope scalars for the wisp function. Must be one less than the length of Rt.
 #' @param tpoint Numeric vector, transition points for the wisp function. Must be one less than the length of Rt.
 #' @return Numeric vector or matrix, wisp sigmoid values for given input. Returned object will have the same dimensions as input x.
+#' @export
 wisp.sigmoid <- function(
     x, 
     Rt,

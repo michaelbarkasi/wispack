@@ -184,6 +184,7 @@ model <- wisp(
 ##  rng_seed: 42
 ##  warp_precision: 1e-07
 ##  round_none: TRUE
+##  trtKO: none
 ##  inf_warp: 450359962.73705
 ## 
 ## Plot settings:
@@ -238,6 +239,7 @@ model <- wisp(
 ## No time series detected.
 ## Created treatment levels:
 ## "ref"
+## Constructed weight_row matrix
 ## Context grouping levels:
 ## "context"
 ## Species grouping levels:
@@ -255,6 +257,7 @@ model <- wisp(
 ## Estimated gamma dispersion of raw counts
 ## Estimated change points
 ## Found average log counts for each context-species combination
+## Context: context, Species: species
 ## Estimated initial parameters for fixed-effect treatments
 ## Built initial beta (ref and fixed-effects) matrices
 ## Initialized random-effect warping factors
@@ -284,7 +287,7 @@ model <- wisp(
 ## Making rate-count plots...
 ```
 
-![](tutorial_Poisson_files/figure-html/model-1.png)![](tutorial_Poisson_files/figure-html/model-2.png)
+![](tutorial_Poisson_files/figure-html/model-1.png)
 
 The above plot makes visually clear that the wisp is a good fit for the
 data. The

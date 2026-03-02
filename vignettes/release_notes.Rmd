@@ -5,21 +5,25 @@ date: "`r Sys.Date()`"
 
 ## Planned changes for future releases
 
-- Autodetect fixed-effect type? E.g., fixed-effect columns of R type "character" or "factor" are treated as two-level categorical factors, and numeric columns are treated as discrete additive effects (e.g., like a time series). Will need to update the <span class = "gene">RORB</span> tutorial and any other tutorials which discuss time-series modeling. 
+- Experiment with extending the treatment knock-out (trtKO) functionality into a likelihood-ratio test for hypothesis testing. Update the tutorial on customizing statistical analyses, if needed. 
+- Autodetect fixed-effect type, e.g., fixed-effect columns of R type "character" or "factor" are treated as two-level categorical factors, and numeric columns are treated as discrete additive effects (e.g., like a time series). Will need to update the <span class = "gene">RORB</span> tutorial and any other tutorials which discuss time-series modeling. 
 - Ensure any columns flagged as a time series are also treated as fixed-effects. 
 - Add a check during the fit to see if any transition points can be replaced with a slope.
 - Add variable check to the loading of <span class = "code_variable">plot.settings</span> in <span class = "function">wisp</span>. Currently only runs <span class = "function">check_list</span> without doing a more substantive check. Compare with the more detailed checks of <span class = "code_variable">MCMC.settings</span>.
 - Allow <span class = "code_variable">MCMC.prior</span> to be a vector of different prior distributions for each parameter. When completed, update the tutorial on customizing statistical analyses.
 
-## Version 2.1 (Feb 26, 2026)
+## Version 2.1 (March 1, 2026)
 
 - Added <span class = "code_variable">model.settings</span> argument <span class = "code_variable">trtKO</span> to <span class = "function">wisp</span> which enables excluding treatments to run reduced models. 
+- Replaced corrupted data file "corticallaminar_model.rds" with working version. 
 
 ## Version 2.0 (Feb 19, 2026)
 
 - Release attached to NAR resubmission.
 - Redesigned plots.
 - Added attractor simulation functionality and benchmarking.
+- Includes first-draft versions of package tutorials.
+- Note that the package data file "corticallaminar_model.rds" was corrupted and should be pulled from the latest version or latest commit on the main branch. 
 
 ## Version 1.1
 

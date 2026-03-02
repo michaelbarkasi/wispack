@@ -888,19 +888,12 @@ plot_ella_fit <- function(
   ) {
     
     # Convert spatial coordinate to radial distance
-    n_r <- length(ella_sim$df_registered$d_c_s)
     df_ella_sim <- data.frame(
-      d_c_s = numeric(n_r),
-      cell = character(n_r),
-      gene = character(n_r),
-      umi = integer(n_r)
+      d_c_s = as.numeric(ella_sim$df_registered$d_c_s),
+      cell = as.character(ella_sim$df_registered$cell),
+      gene = as.character(ella_sim$df_registered$gene),
+      umi = as.integer(ella_sim$df_registered$umi)
     )
-    for (i in c(1:n_r)) {
-      df_ella_sim$d_c_s[i] <- ella_sim$df_registered$d_c_s[i - 1]
-      df_ella_sim$cell[i] <- ella_sim$df_registered$cell[i - 1]
-      df_ella_sim$gene[i] <- ella_sim$df_registered$gene[i - 1]
-      df_ella_sim$umi[i] <- ella_sim$df_registered$umi[i - 1]  
-    }
     rad <- round(df_ella_sim$d_c_s,2)*100
     rads <- sort(unique(rad))
     

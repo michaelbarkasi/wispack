@@ -366,6 +366,7 @@ extract_wisp_attractor_simulation_results <- function(model) {
 #' @param sim A list object returned by the \code{attractor_simulation} function, containing the simulation data and parameters.
 #' @param sim_num An integer specifying the simulation number for setting the random seed and labeling results.
 #' @return A data frame containing the estimated values (\code{est}), ground-truth values (\code{true}), parameter types (\code{param}), parameter-associated gene or replicate (\code{id}), modeling method used (\code{method}), and simulation number (\code{sim}). 
+#' @export
 model_attractor_simulation_wisp <- function(
     sim, 
     sim_num,
