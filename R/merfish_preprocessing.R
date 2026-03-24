@@ -491,7 +491,7 @@ make_count_data <- function(
 #' 
 #' Loads MERFISH data from a csv file, or multiple files in a directory, and combines them into a single data frame. This function was written for "in house" use by Michael Barkasi, and was not intended for general use. You can try it, but it may not work for your data and isn't documented in a user-friendly way.
 #' 
-#' @param data_path Path to the directory containing the HDF5 files@aliases 
+#' @param data_path Path to the directory containing the HDF5 files
 #' @param remove_L1 Logical, whether to exclude cells in layer 1 (default is TRUE)
 #' @param initialize_zeros Logical, whether to initialize new coordinate columns to zero (default is FALSE)
 #' @param load_first_file_only Logical, whether to load only the first file found (default is FALSE)
@@ -1071,7 +1071,7 @@ coordinate_binning <- function(
 #' 
 #' This function transforms the raw x,y coordinates of cells into laminar (y) and columnar (x) coordinates, bins the data, and estimates layer boundaries for each mouse in the dataset. It generates plots to visualize the transformation process and can optionally save these plots. This function was written for "in house" use by Michael Barkasi, and was not intended for general use. You can try it, but it may not work for your data and isn't documented in a user-friendly way.
 #' 
-#' @param count_data A list containing the count data and slice plots for each mouse, as produced by the `make_count_data` or `make_count_data_csv` functions
+#' @param count_data A list containing the count data and slice plots for each mouse, as produced by the \code{make_count_data} or \code{make_count_data_csv} functions
 #' @param total_bins Number of bins into which to divide the spatial axes, e.g., 100
 #' @param keep_plots Logical, whether to keep the generated plots in the output (default is FALSE)
 #' @param L1_removed Logical, whether the data in count_data has L1 removed (default is TRUE)

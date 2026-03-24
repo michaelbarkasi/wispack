@@ -19,7 +19,7 @@ In the context of spatially variable genes, regularization is a better option th
 
 Although we won't use it right away, let's load wispack awhile: 
 
-```{r load_modal}
+```{r load_model}
 # Set random seed for reproducibility
 set.seed(123)
 # Load wispack

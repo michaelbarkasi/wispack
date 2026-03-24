@@ -11,6 +11,7 @@ date: "`r Sys.Date()`"
 - Add a check during the fit to see if any transition points can be replaced with a slope.
 - Add variable check to the loading of <span class = "code_variable">plot.settings</span> in <span class = "function">wisp</span>. Currently only runs <span class = "function">check_list</span> without doing a more substantive check. Compare with the more detailed checks of <span class = "code_variable">MCMC.settings</span>.
 - Allow <span class = "code_variable">MCMC.prior</span> to be a vector of different prior distributions for each parameter. When completed, update the tutorial on customizing statistical analyses.
+- Ensure nested loops for matrix operations have the major axis (column) on outside. 
 
 ## Version 2.1 (March 1, 2026)
 

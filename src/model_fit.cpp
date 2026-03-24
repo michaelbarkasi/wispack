@@ -1006,8 +1006,8 @@ List estimate_initial_parameters(
     // ... build reduced matrix
     const int treatment_num_reduced = reduced_trts.size();
     sMat weight_rows_reduced(treatment_num_reduced, treatment_num_reduced);
-    for (int i = 0; i < treatment_num_reduced; ++i) {
-      for (int j = 0; j < treatment_num_reduced; ++j) {
+    for (int j = 0; j < treatment_num_reduced; ++j) {
+      for (int i = 0; i < treatment_num_reduced; ++i) {
         weight_rows_reduced(i,j) = weight_rows(reduced_trts[i], reduced_trts[j]);
       }
     }

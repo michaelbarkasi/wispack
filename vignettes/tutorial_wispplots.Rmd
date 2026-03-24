@@ -21,7 +21,7 @@ The backbone of wisp visualization is the rate-count plot, as in "predicted rate
 
 The CI rate-count plot is a simplified line plot showing predicted rate as a function of spatial position, along with a 95\% confidence interval for the rate at each spatial location. As a demonstration, let's grab the model of the laminar axis of somatosensory cortex from the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html): 
 
-```{r load_modal}
+```{r load_model}
 # Set random seed for reproducibility
 set.seed(123)
 # Load wispack

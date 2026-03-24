@@ -89,8 +89,8 @@ NumericMatrix to_NumMat(
     const sMat& mat
   ) {
     NumericMatrix num_mat(mat.rows(), mat.cols());
-    for (int i = 0; i < mat.rows(); i++) {
-      for (int j = 0; j < mat.cols(); j++) {
+    for (int j = 0; j < mat.cols(); j++) {
+      for (int i = 0; i < mat.rows(); i++) {
         if (std::isnan(mat(i, j))) {
           num_mat(i, j) = NA_REAL;
         } else {
@@ -146,8 +146,8 @@ sMat to_sMat(
     const IntegerMatrix& mat
   ) {
     sMat stan_mat(mat.nrow(), mat.ncol());
-    for (int i = 0; i < mat.nrow(); i++) {
-      for (int j = 0; j < mat.ncol(); j++) {
+    for (int j = 0; j < mat.ncol(); j++) {
+      for (int i = 0; i < mat.nrow(); i++) {
         stan_mat(i, j) = sdouble(static_cast<double>(mat(i, j)));
       }
     }
@@ -159,8 +159,8 @@ sMat to_sMat(
     const NumericMatrix& mat
   ) {
     sMat stan_mat(mat.nrow(), mat.ncol());
-    for (int i = 0; i < mat.nrow(); i++) {
-      for (int j = 0; j < mat.ncol(); j++) {
+    for (int j = 0; j < mat.ncol(); j++) {
+      for (int i = 0; i < mat.nrow(); i++) {
         stan_mat(i, j) = sdouble(mat(i, j));
       }
     }

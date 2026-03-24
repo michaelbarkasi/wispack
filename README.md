@@ -112,5 +112,5 @@ The tutorials provide more detailed walkthroughs of the package and its options:
   <p class="caption">Artistic rendering of a wisp model. See [this tutorial](articles/tutorial_wispplots.html) for an explanation.</p>
 </div>
 
-Copyright (C) 2025, Michael Barkasi
+Copyright (C) 2026, Michael Barkasi
 barkasi@wustl.edu
