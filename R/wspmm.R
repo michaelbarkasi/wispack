@@ -3141,17 +3141,16 @@ plot.decomposition <- function(
     y.lim = NULL
   ) {
     
-    # Check number of context levels
-    if (length(wisp.results$grouping.variables$context.lvls) > 1) {
-      stop("plot.decomposition currently only supports one context level.")
-    }
+    # Check length of species and get number of contexts
+    if (length(species) != 1) stop("plot.decomposition can only be given one species at a time.")
+    n_contexts <- length(wisp.results$grouping.variables$context.lvls)
     
     # Set y limits
     if (is.null(y.lim)) {
       ymax <- max(
-          wisp.results$count.data.summed[wisp.results$count.data.summed$species == species, c("count", "pred")],
-          na.rm = TRUE
-        ) * 1.05
+        wisp.results$count.data.summed[wisp.results$count.data.summed$species == species, c("count", "pred")],
+        na.rm = TRUE
+      ) * 1.05
       if (log.scale) {
         ymax <- max(
           wisp.results$count.data.summed[wisp.results$count.data.summed$species == species, c("count.log", "pred.log")],
@@ -3217,13 +3216,17 @@ plot.decomposition <- function(
     saved_input <<- input
     
     plots.decomp <- list()
-    length(plots.decomp) <- input_rows
-    names(plots.decomp) <- rownames(input)
+    length(plots.decomp) <- input_rows * n_contexts
+    name_vec <- c()
+    for (c in c(1:n_contexts)) {
+      name_vec <- c(name_vec, paste0(rownames(input), "_", wisp.results$grouping.variables$context.lvls[c]))
+    }
+    names(plots.decomp) <- name_vec
     for (r in 1:input_rows) {
       
       rans.to.print <- input$rans.to.print[r]
       if (r == 1 | r == 2 | r == 4) rans.to.print <- ran_lvls
-      plots.decomp[[r]] <- plot.ratecount(
+      plots.all <- plot.ratecount(
         wisp.results = wisp.results,
         log.scale = log.scale,
         CI_style = FALSE,
@@ -3235,9 +3238,16 @@ plot.decomposition <- function(
         pred.alpha.ran = input$pred.alpha.ran[r],
         rans.to.print = rans.to.print,
         species = c(species)
-      )[[1]] + 
-        ggtitle(rownames(input)[r]) + 
-        theme(legend.position = "bottom")
+      )
+      for (c in c(1:n_contexts)) {
+        c_name <- wisp.results$grouping.variables$context.lvls[c]
+        r_name <- rownames(input)[r]
+        plot_title <- r_name 
+        if (n_contexts > 1) plot_title <- paste0(r_name, ", ", c_name)
+        plots.decomp[[paste0(r_name, "_", c_name)]] <- plots.all[[c]] + 
+          ggtitle(plot_title) + 
+          theme(legend.position = "bottom")
+      }
       
     }
     
