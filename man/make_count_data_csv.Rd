@@ -13,7 +13,7 @@ make_count_data_csv(
 )
 }
 \arguments{
-\item{data_path}{Path to the directory containing the HDF5 files@aliases}
+\item{data_path}{Path to the directory containing the HDF5 files}
 
 \item{remove_L1}{Logical, whether to exclude cells in layer 1 (default is TRUE)}
 

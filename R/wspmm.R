@@ -1733,8 +1733,12 @@ plot.timeseries <- function(
         
         # Find tpoints
         tpoints <- wm %*% tpoint_em # row i of wm (= trt level) dot column j of em (= block level) gives rate for trt i in block j
-        colnames(tpoints) <- paste0("T", seq_len(ncol(tpoints)))
-        rownames(tpoints) <- rownames(wm)
+        multi_block <- TRUE
+        if (ncol(tpoints) == 0) multi_block <- FALSE
+        if (multi_block) {
+          colnames(tpoints) <- paste0("T", seq_len(ncol(tpoints)))
+          rownames(tpoints) <- rownames(wm)
+        }
         
         split_lvl_ref_rates <- rates[!split_mask, ]
         split_lvl_trt_rates <- rates[split_mask, ]
@@ -1754,16 +1758,20 @@ plot.timeseries <- function(
               } else {
                 these_rates <- split_lvl_ref_rates[tsi]
               }
-              if (b == 1) {
-                if (length(dim(split_lvl_ref_tpoints)) > 0) {tp <- split_lvl_ref_tpoints[tsi, b]} 
-                else {tp <- split_lvl_ref_tpoints[tsi]}
-                these_bins <- seq(1, floor(tp))
-              } else if (b == n_b) {
-                if (n_b == 2) {these_bins <- seq(ceiling(split_lvl_trt_tpoints[tsi]), max_bin)}
-                else {these_bins <- seq(ceiling(split_lvl_trt_tpoints[tsi, b-1]), max_bin)}
+              if (multi_block) {
+                if (b == 1) {
+                  if (length(dim(split_lvl_ref_tpoints)) > 0) {tp <- split_lvl_ref_tpoints[tsi, b]} 
+                  else {tp <- split_lvl_ref_tpoints[tsi]}
+                  these_bins <- seq(1, floor(tp))
+                } else if (b == n_b) {
+                  if (n_b == 2) {these_bins <- seq(ceiling(split_lvl_trt_tpoints[tsi]), max_bin)}
+                  else {these_bins <- seq(ceiling(split_lvl_trt_tpoints[tsi, b-1]), max_bin)}
+                } else {
+                  these_bins <- seq(ceiling(split_lvl_ref_tpoints[tsi, b-1]), floor(split_lvl_ref_tpoints[tsi, b]))
+                } 
               } else {
-                these_bins <- seq(ceiling(split_lvl_ref_tpoints[tsi, b-1]), floor(split_lvl_ref_tpoints[tsi, b]))
-              } 
+                these_bins <- df_count$bin
+              }
               bin_mask_ref <- df_count$bin %in% these_bins & split_mask_ref & ts_trt_mask
               for (rl in df_count_ran) {
                 bin_mask_ref_ran <- bin_mask_ref & df_count$ran == rl
@@ -1791,16 +1799,20 @@ plot.timeseries <- function(
               } else {
                 these_rates <- split_lvl_trt_rates[tsi]
               }
-              if (b == 1) {
-                if (length(dim(split_lvl_trt_tpoints)) > 0) {tp <- split_lvl_trt_tpoints[tsi, b]} 
-                else {tp <- split_lvl_trt_tpoints[tsi]}
-                these_bins <- seq(1, floor(tp))
-              } else if (b == n_b) {
-                if (n_b == 2) {these_bins <- seq(ceiling(split_lvl_trt_tpoints[tsi]), max_bin)}
-                else {these_bins <- seq(ceiling(split_lvl_trt_tpoints[tsi, b-1]), max_bin)}
+              if (multi_block) {
+                if (b == 1) {
+                  if (length(dim(split_lvl_trt_tpoints)) > 0) {tp <- split_lvl_trt_tpoints[tsi, b]} 
+                  else {tp <- split_lvl_trt_tpoints[tsi]}
+                  these_bins <- seq(1, floor(tp))
+                } else if (b == n_b) {
+                  if (n_b == 2) {these_bins <- seq(ceiling(split_lvl_trt_tpoints[tsi]), max_bin)}
+                  else {these_bins <- seq(ceiling(split_lvl_trt_tpoints[tsi, b-1]), max_bin)}
+                } else {
+                  these_bins <- seq(ceiling(split_lvl_trt_tpoints[tsi, b-1]), floor(split_lvl_trt_tpoints[tsi, b]))
+                } 
               } else {
-                these_bins <- seq(ceiling(split_lvl_trt_tpoints[tsi, b-1]), floor(split_lvl_trt_tpoints[tsi, b]))
-              } 
+                these_bins <- df_count$bin
+              }
               bin_mask_trt <- df_count$bin %in% these_bins & split_mask_trt & ts_trt_mask
               for (rl in df_count_ran) {
                 bin_mask_trt_ran <- bin_mask_trt & df_count$ran == rl
