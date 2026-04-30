@@ -8,7 +8,9 @@ make_count_data(
   data_path,
   remove_L1 = TRUE,
   ROIname = "Primary auditory area",
+  ROI_only = TRUE,
   raw = TRUE,
+  drop_blanks = TRUE,
   load_first_file_only = FALSE,
   verbose = TRUE
 )
@@ -20,7 +22,11 @@ make_count_data(
 
 \item{ROIname}{Name of the region of interest (default is "Primary auditory area")}
 
+\item{ROI_only}{Logical, whether to include only cells in the specified ROI (default is TRUE)}
+
 \item{raw}{Logical, whether to use raw transcript counts vs normalized ones (default is TRUE)}
+
+\item{drop_blanks}{Logical, whether to drop blank barcodes (default is TRUE)}
 
 \item{load_first_file_only}{Logical, whether to load only the first file found (default is FALSE)}
 

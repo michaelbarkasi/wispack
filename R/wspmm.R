@@ -311,16 +311,17 @@ wisp <- function(
     )
     
     if (verbose) {
-      snk.report("Running LRO change-point detection and setting initial parameters")
+      snk.report("Running LRO change-point detection and setting initial parameters", initial_breaks = 1)
       snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 1)
     }
     
-    # Are we searching for best LRO parameters, else proceed with defaults or user-provided values
+    # Search for best LRO parameters, else proceed with defaults or user-provided values
     if (LRO.grid.search) {
       LRO_grid <- as.data.frame(cpp_model$LRO_grid_search(verbose))
       LRO_grid <- LRO_grid[LRO_grid$success_code == 3, ]
       return(LRO_grid)
     } else {
+      # Run LRO change-point detection and find initial parameter values
       cpp_model$LRO_initial_param_ests(verbose, 0.0, 0.0)
     }
     

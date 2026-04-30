@@ -53,7 +53,8 @@ parse_hdf5 <- function(
     raw = TRUE,             # Grab normalized transcript counts, or raw ones?
     ROI_only = TRUE,        # Grab all transcripts, or just those in ROI?
     remove_L1 = TRUE,       # Exclude transcripts in layer 1?
-    ROIname = "Primary auditory area"
+    ROIname = "Primary auditory area",
+    drop_blanks = TRUE
   ) {
     
     # Load data
@@ -76,13 +77,18 @@ parse_hdf5 <- function(
     
     # Gene names
     nonblanks <- file[["/var/Genes"]][]
-    gene_names <- file[["/var/_index"]][nonblanks]
+    barcode_names <- file[["/var/_index"]][]
+    gene_names <- barcode_names[nonblanks]
     
     # Raw transcript counts, rows are cells, columns genes
     if (raw) transcript_counts_raw <- t(file[["/raw/X"]][,])     # should have integer elements, not normalized
     else transcript_counts_raw <- t(file[["/X"]][,])             # should have integer elements, normalized for MapMyCells
-    transcript_counts_raw <- transcript_counts_raw[, nonblanks]  # drop blanks
-    colnames(transcript_counts_raw) <- gene_names               
+    if (drop_blanks) {
+      transcript_counts_raw <- transcript_counts_raw[, nonblanks]  # drop blanks
+      colnames(transcript_counts_raw) <- gene_names  
+    } else {
+      colnames(transcript_counts_raw) <- barcode_names
+    }
     n_cells <- nrow(transcript_counts_raw)
     
     # Grab rows for cortical layers
@@ -218,17 +224,6 @@ parse_hdf5 <- function(
     transcript_counts$cellsubclass_MMC <- cellsubclass_names[transcript_counts$cellsubclass_MMC]
     transcript_counts$cellsupertype_MMC <- cellsupertype_names[transcript_counts$cellsupertype_MMC]
     transcript_counts$celltype_MMC <- celltype_names[transcript_counts$celltype_MMC]
-    
-    # Simple clean 
-    #transcript_counts$celltype_MMC[grepl("Glut", transcript_counts$celltype_MMC)] <- "Glutamatergic"
-    #transcript_counts$celltype_MMC[grepl("GABA", transcript_counts$celltype_MMC)] <- "GABAergic"
-    #transcript_counts$celltype_MMC[grepl("Sero", transcript_counts$celltype_MMC)] <- "Serotonergic"
-    #transcript_counts$celltype_MMC[grepl("Dopa", transcript_counts$celltype_MMC)] <- "Dopaminergic"
-    #transcript_counts$celltype_MMC[grepl("filtered", transcript_counts$celltype_MMC)] <- "filtered"
-    
-    # Collapse GABA cell types together 
-    #GABA_mask <- which(transcript_counts$celltype_MMC == "CTX-CGE GABA" | transcript_counts$celltype_MMC == "CTX-MGE GABA")
-    #transcript_counts$celltype_MMC[GABA_mask] <- "CTX-CGE/MGE GABA"
     
     # Convert to factor 
     transcript_counts$celltype_MMC <- as.factor(transcript_counts$celltype_MMC)
@@ -388,7 +383,9 @@ parse_csv <- function(
 #' @param data_path Path to the directory containing the HDF5 files
 #' @param remove_L1 Logical, whether to exclude cells in layer 1 (default is TRUE)
 #' @param ROIname Name of the region of interest (default is "Primary auditory area")
+#' @param ROI_only Logical, whether to include only cells in the specified ROI (default is TRUE)
 #' @param raw Logical, whether to use raw transcript counts vs normalized ones (default is TRUE)
+#' @param drop_blanks Logical, whether to drop blank barcodes (default is TRUE)
 #' @param load_first_file_only Logical, whether to load only the first file found (default is FALSE)
 #' @param verbose Logical, whether to print progress messages (default is TRUE)
 #' @return A list containing the combined count data and a list of slice plots for each mouse
@@ -397,7 +394,9 @@ make_count_data <- function(
     data_path, 
     remove_L1 = TRUE,
     ROIname = "Primary auditory area",
+    ROI_only = TRUE,
     raw = TRUE,
+    drop_blanks = TRUE,
     load_first_file_only = FALSE,
     verbose = TRUE
   ) {
@@ -430,7 +429,18 @@ make_count_data <- function(
     for (f in seq_along(files)) {
       if (f < length(files)) cat(f, ", ", sep="")
       else cat(f, "\n")
-      assign(paste0("mouse", f), parse_hdf5(file_path = files[f], mouse_num = f, raw = raw, remove_L1 = remove_L1, ROIname = ROIname))
+      assign(
+        paste0("mouse", f), 
+        parse_hdf5(
+          file_path = files[f], 
+          mouse_num = f, 
+          raw = raw, 
+          ROI_only = ROI_only, 
+          remove_L1 = remove_L1, 
+          ROIname = ROIname, 
+          drop_blanks = drop_blanks
+          )
+        )
       slice_plots[[paste0("slice_plot", f)]] <- get(paste0("mouse", f))$slice_plot
       assign(paste0("mouse", f), get(paste0("mouse", f))$transcript_counts)
       ind_var_fields <- which(colnames(get(paste0("mouse", f))) %in% c(
