@@ -163,9 +163,9 @@ class wspc {
     IntegerVector gv_fix_idx;  
     
     // Variables for initial degree estimation
-    double LROcutoff = 2.0;                 // cutoff (x sd) for likelihood ratio outlier detection
-    double LROwindow_factor = 2.0;          // factor for window size in likelihood ratio outlier detection (bigger is bigger window)
-    double rise_threshold_factor = 0.8;     // amount of detected rise as fraction of total required to end run
+    double LROcutoff;                       // cutoff (x sd) for likelihood ratio outlier detection
+    double LROwindow_factor;                // factor for window size in likelihood ratio outlier detection (bigger is bigger window)
+    double rise_threshold_factor;           // amount of detected rise as fraction of total required to end run
     double min_initialization_slope = 0.25; // minimum slope for initialization of transition slopes
     int ws;                                 // running window size for likelihood ratio outlier detection (high-pass filter)
     
@@ -174,17 +174,17 @@ class wspc {
     List optim_results; 
     
     // Variables for optimization
-    int max_evals = 1000;                       // max number of evaluations
-    double ctol = 5e-6;                         // convergence tolerance
-    unsigned int rng_seed = 42u;                // seed for random number generator
+    int max_evals;                              // max number of evaluations
+    double ctol;                                // convergence tolerance
+    unsigned int rng_seed;                      // seed for random number generator
     sMat gamma_dispersion;                      // dispersion terms for "kernel" of gamma-Poisson model
     IntegerVector gd_species_idx;               // indexes of species levels in gamma_dispersion
     IntegerVector gd_context_idx;               // indexes of context levels in gamma_dispersion
     
     // Boundary penalty variables
-    int boundary_vec_size = 0;                           // number of boundary components
+    int boundary_vec_size;                               // number of boundary components
     sVec bp_coefs;                                       // coefficients used to scale boundary penality so it's negligible when far from boundary, and infinity at boundary
-    sdouble max_penalty_at_distance_factor = 0.01;       // the max penalty when far from the boundary, as fraction of initial neg_loglik
+    sdouble max_penalty_at_distance_factor;              // the max penalty when far from the boundary, as fraction of initial neg_loglik
     
     /*
      * Basic idea of boundary penalty: there will be a number of relevant distances to a boundary. Want to transform
@@ -203,6 +203,18 @@ class wspc {
     
     // Clear Stan
     void clear_stan_mem();
+    
+    // ***** Initial setup
+    
+    // Estimate change points and initial parameters for model fitting
+    void LRO_initial_param_ests(
+      bool verbose = false,
+      double LROwf = 0.0,
+      double LROco = 0.0
+    );
+    
+    // Search for best LRO change-point detection settings
+    NumericMatrix LRO_grid_search(bool verbose);
     
     // ***** computing predicted values from parameters 
     

@@ -357,8 +357,10 @@ wspc::wspc(
     extrapolation_pool.resize(count.size());
     extrapolation_pool = make_extrapolation_pool(bin, count, context, species, ran, treatment, verbose); 
     
+    // Wrap up initialization
+    vprint_header("Wrapping up initialization", verbose);
+    
     // Extrapolate "none" rows
-    vprint_header("Making initial parameter estimates", verbose);
     if (ran_lvls.size() > 1) {
       count = extrapolate_none(count, ran, extrapolation_pool, true, round_none);
       vprint("Extrapolated 'none' rows", verbose);
@@ -368,11 +370,8 @@ wspc::wspc(
     count_log.resize(n_count_rows); 
     for (int r = 0; r < n_count_rows; r++) {
       count_log(r) = slog(count(r) + 1.0);
-    }
+    } 
     vprint("Took log of observed counts", verbose);
-    
-    // Compute running and filter window sizes for LRO change-point detection
-    ws = static_cast<int>(std::round(LROwindow_factor * (double)bin_num_i * buffer_factor.val()));
     
     // Compute tpoint buffer
     tpoint_buffer = bin_num * buffer_factor;
@@ -395,30 +394,6 @@ wspc::wspc(
     gd_context_idx = Rcpp::as<IntegerVector>(gamma_ests["gd_context_idx"]);
     vprint("Estimated gamma dispersion of raw counts", verbose);
     
-    // Estimate degree of each context-species combination at baseline using LRO change-point detection 
-    List cp_ests = estimate_change_points(
-      bin,
-      count_log,
-      count_not_na_mask, 
-      tpoint_buffer.val(),
-      ws,
-      bin_num_i,
-      LROcutoff,
-      context,
-      species,
-      ran,
-      treatment,
-      context_lvls,
-      species_lvls,
-      ran_lvls,  
-      treatment_lvls,
-      treatment_components
-    );
-    degMat = Rcpp::as<IntegerMatrix>(cp_ests["degMat"]);                              // matrix of degrees of each context-species combination
-    found_cp_list = Rcpp::as<List>(cp_ests["found_cp_list"]);                         // list of found change points for each context-species combination
-    found_cp_trt_list = Rcpp::as<List>(cp_ests["found_cp_trt_list"]);                 // list of found change points for each context-species combination, averaged across treatments
-    vprint("Estimated change points", verbose);
-    
     // Find average log counts for each context-species combination
     count_log_avg_mat_list = find_count_log_means(
       bin,
@@ -434,6 +409,122 @@ wspc::wspc(
       treatment_components
     );
     vprint("Found average log counts for each context-species combination", verbose);
+    
+    // Construct grouping variable ids as indexes for warping factor matrices, by count row
+    gv_ran_idx = IntegerVector(n_count_rows);
+    gv_fix_idx = IntegerVector(n_count_rows);
+    for (int r = 0; r < n_count_rows; r++) {
+      CharacterVector::iterator it_ran = std::find(ran_lvls.begin(), ran_lvls.end(), ran[r]);
+      CharacterVector::iterator it_fix = std::find(species_lvls.begin(), species_lvls.end(), species[r]);
+      gv_ran_idx[r] = std::distance(ran_lvls.begin(), it_ran);
+      gv_fix_idx[r] = std::distance(species_lvls.begin(), it_fix);
+    }
+    vprint("Constructed grouping variable IDs", verbose);
+    
+    // Initialize list to hold results from model fit
+    optim_results = List::create(
+      _["fitted_parameters"] = NumericVector(), 
+      _["penalized_neg_loglik"] = NA_REAL,
+      _["neg_loglik"] = NA_REAL, 
+      _["success_code"] = NA_INTEGER,
+      _["num_evals"] = NA_INTEGER,
+      _["bs_times"] = NumericVector()
+    ); 
+    
+  }
+
+// Destructor
+wspc::~wspc() {}
+
+// R copy 
+wspc wspc::clone() const {
+  wspc this_copy = wspc(*this);
+  return this_copy;
+}
+
+// Clear stan
+void wspc::clear_stan_mem() {
+    
+    // Temporarily save stan variable values 
+    double dbin_num = bin_num.val();
+    double dbuffer_factor = buffer_factor.val();
+    double dtpoint_buffer = tpoint_buffer.val();
+    double dwarp_precision = warp_precision.val();
+    double dinf_warp = inf_warp.val();
+    double dmax_penalty_at_distance_factor = max_penalty_at_distance_factor.val();
+    dVec dbin = to_dVec(bin);
+    dVec dcount = to_dVec(count);
+    dVec dcount_log = to_dVec(count_log);
+    dVec dcount_tokenized = to_dVec(count_tokenized);
+    dVec dbp_coefs = to_dVec(bp_coefs);
+    dVec dwarp_bounds = to_dVec(warp_bounds);
+    NumericMatrix Numweights = to_NumMat(weights);
+    NumericMatrix Numweight_rows = to_NumMat(weight_rows);
+    NumericMatrix Numgamma_dispersion = to_NumMat(gamma_dispersion);
+    
+    // Recover memory from stan
+    stan::math::recover_memory();
+    
+    // Re-assign stan variables
+    bin_num = (sdouble)dbin_num;
+    buffer_factor = (sdouble)dbuffer_factor;
+    tpoint_buffer = (sdouble)dtpoint_buffer;
+    warp_precision = (sdouble)dwarp_precision;
+    inf_warp = (sdouble)dinf_warp;
+    max_penalty_at_distance_factor = (sdouble)dmax_penalty_at_distance_factor;
+    bin = to_sVec(dbin);
+    count = to_sVec(dcount);
+    count_log = to_sVec(dcount_log);
+    count_tokenized = to_sVec(dcount_tokenized);
+    bp_coefs = to_sVec(dbp_coefs);
+    warp_bounds = to_sVec(dwarp_bounds);
+    weights = to_sMat(Numweights);
+    weight_rows = to_sMat(Numweight_rows);
+    gamma_dispersion = to_sMat(Numgamma_dispersion);
+    
+  }
+
+/*
+ * *************************************************************************
+ * Initial setup
+ */
+
+// Estimate change points and initial parameters for model fitting
+void wspc::LRO_initial_param_ests(
+    bool verbose,
+    double LROwf,
+    double LROco
+  ) {
+   
+    if (LROwf == 0.0) {LROwf = LROwindow_factor;}
+    if (LROco == 0.0) {LROco = LROcutoff;}
+    
+    // Compute running and filter window sizes for LRO change-point detection
+    ws = static_cast<int>(std::round(LROwf * bin_num.val() * buffer_factor.val()));
+    
+    // Estimate degree of each context-species combination at baseline using LRO change-point detection 
+    List cp_ests = estimate_change_points(
+      bin,
+      count_log,
+      count_not_na_mask, 
+      tpoint_buffer.val(),
+      ws,
+      (int)bin_num.val(),
+      LROco,
+      context,
+      species,
+      ran,
+      treatment,
+      context_lvls,
+      species_lvls,
+      ran_lvls,  
+      treatment_lvls,
+      treatment_components
+    );
+    degMat = Rcpp::as<IntegerMatrix>(cp_ests["degMat"]);                              // matrix of degrees of each context-species combination
+    found_cp_list = Rcpp::as<List>(cp_ests["found_cp_list"]);                         // list of found change points for each context-species combination
+    found_cp_trt_list = Rcpp::as<List>(cp_ests["found_cp_trt_list"]);                 // list of found change points for each context-species combination, averaged across treatments
+    vprint("Estimated change points", verbose);
     
     // Find initial parameter estimates for fixed-effect treatments 
     List init_params = estimate_initial_parameters(
@@ -495,18 +586,8 @@ wspc::wspc(
     wfactor_idx = params["wfactor_idx"];
     if (verbose) {vprint("Number of parameters: ", (int)fitted_parameters.size());}
     
-    // Construct grouping variable ids as indexes for warping factor matrices, by count row
-    gv_ran_idx = IntegerVector(n_count_rows);
-    gv_fix_idx = IntegerVector(n_count_rows);
-    for (int r = 0; r < n_count_rows; r++) {
-      CharacterVector::iterator it_ran = std::find(ran_lvls.begin(), ran_lvls.end(), ran[r]);
-      CharacterVector::iterator it_fix = std::find(species_lvls.begin(), species_lvls.end(), species[r]);
-      gv_ran_idx[r] = std::distance(ran_lvls.begin(), it_ran);
-      gv_fix_idx[r] = std::distance(species_lvls.begin(), it_fix);
-    }
-    vprint("Constructed grouping variable IDs", verbose);
-    
     // Compute size of the parameter boundary vector 
+    boundary_vec_size = 0;
     for (int r : idx_mc_unique) {
       // Grab degree for this row
       int c_num = Rwhich(eq_left_broadcast(species_lvls, species[r]))[0];
@@ -526,68 +607,56 @@ wspc::wspc(
     }
     vprint("Size of boundary vector: " + std::to_string(boundary_vec_size), verbose);
     
-    // Initialize list to hold results from model fit
-    optim_results = List::create(
-      _["fitted_parameters"] = NumericVector(), 
-      _["penalized_neg_loglik"] = NA_REAL,
-      _["neg_loglik"] = NA_REAL, 
-      _["success_code"] = NA_INTEGER,
-      _["num_evals"] = NA_INTEGER,
-      _["bs_times"] = NumericVector()
-    );
-    
   }
 
-// Destructor
-wspc::~wspc() {}
-
-// R copy 
-wspc wspc::clone() const {
-  wspc this_copy = wspc(*this);
-  return this_copy;
-}
-
-// Clear stan
-void wspc::clear_stan_mem() {
+// Search for best LRO change-point detection settings
+NumericMatrix wspc::LRO_grid_search(bool verbose) {
     
-    // Temporarily save stan variable values 
-    double dbin_num = bin_num.val();
-    double dbuffer_factor = buffer_factor.val();
-    double dtpoint_buffer = tpoint_buffer.val();
-    double dwarp_precision = warp_precision.val();
-    double dinf_warp = inf_warp.val();
-    double dmax_penalty_at_distance_factor = max_penalty_at_distance_factor.val();
-    dVec dbin = to_dVec(bin);
-    dVec dcount = to_dVec(count);
-    dVec dcount_log = to_dVec(count_log);
-    dVec dcount_tokenized = to_dVec(count_tokenized);
-    dVec dbp_coefs = to_dVec(bp_coefs);
-    dVec dwarp_bounds = to_dVec(warp_bounds);
-    NumericMatrix Numweights = to_NumMat(weights);
-    NumericMatrix Numweight_rows = to_NumMat(weight_rows);
-    NumericMatrix Numgamma_dispersion = to_NumMat(gamma_dispersion);
+    if (verbose) {
+      vprint_header("Performing grid search to find optimal LRO parameters");
+    }
+    dVec LROwf_range = {1.00, 1.25, 1.50, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00};
+    dVec LROco_range = LROwf_range;
+    NumericMatrix results(LROwf_range.size() * LROco_range.size(), 8);
+    int n = count_not_na_idx.size();
     
-    // Recover memory from stan
-    stan::math::recover_memory();
+    for (int i = 0; i < LROwf_range.size(); ++i) {
+      for (int j = 0; j < LROco_range.size(); ++j) {
+        if (verbose) {
+          vprint("LRO window factor: " + std::to_string(LROwf_range[i]) + ", LRO cutoff: " + std::to_string(LROco_range[j]));
+        }
+        LRO_initial_param_ests(false, LROwf_range[i], LROco_range[j]);
+        fit(false, false);
+        int k = fitted_parameters.size();
+        int idx = i * LROco_range.size() + j;
+        double nll = optim_results["neg_loglik"];
+        double bnll = optim_results["penalized_neg_loglik"];
+        results(idx, 0) = LROwf_range[i];
+        results(idx, 1) = LROco_range[j];
+        results(idx, 2) = nll;
+        results(idx, 3) = bnll;
+        results(idx, 4) = (double)optim_results["success_code"];
+        results(idx, 5) = (double)k;
+        results(idx, 6) = 2.0 * ((double)k + nll);
+        results(idx, 7) = 2.0 * (std::log((double)n) * (double)k + nll);
+        clear_stan_mem();
+      }
+    }
     
-    // Re-assign stan variables
-    bin_num = (sdouble)dbin_num;
-    buffer_factor = (sdouble)dbuffer_factor;
-    tpoint_buffer = (sdouble)dtpoint_buffer;
-    warp_precision = (sdouble)dwarp_precision;
-    inf_warp = (sdouble)dinf_warp;
-    max_penalty_at_distance_factor = (sdouble)dmax_penalty_at_distance_factor;
-    bin = to_sVec(dbin);
-    count = to_sVec(dcount);
-    count_log = to_sVec(dcount_log);
-    count_tokenized = to_sVec(dcount_tokenized);
-    bp_coefs = to_sVec(dbp_coefs);
-    warp_bounds = to_sVec(dwarp_bounds);
-    weights = to_sMat(Numweights);
-    weight_rows = to_sMat(Numweight_rows);
-    gamma_dispersion = to_sMat(Numgamma_dispersion);
+    colnames(results) = CharacterVector::create(
+      "LROwindow_factor", 
+      "LROcutoff", 
+      "neg_loglik", 
+      "penalized_neg_loglik",
+      "success_code", 
+      "n_params",
+      "AIC", 
+      "BIC"
+      );
     
-  }
+    return results;
+    
+  }   
 
 /*
  * *************************************************************************
@@ -2219,6 +2288,8 @@ RCPP_MODULE(wspc) {
     .constructor<DataFrame, List, bool>()  
     .field("optim_results", &wspc::optim_results)
     .field("fitted_parameters", &wspc::fitted_parameters)
+    .method("LRO_initial_param_ests", &wspc::LRO_initial_param_ests)
+    .method("LRO_grid_search", &wspc::LRO_grid_search)
     .method("set_parameters", &wspc::set_parameters)
     .method("neg_loglik_debug", &wspc::neg_loglik_debug)
     .method("bounded_nll_debug", &wspc::bounded_nll_debug)

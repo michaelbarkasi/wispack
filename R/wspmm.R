@@ -28,6 +28,7 @@ NULL
 #' @param model.settings List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, \code{warp_precision}, \code{round_none}, and \code{trtKO}. Default values are provided.
 #' @param MCMC.settings List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.
 #' @param plot.settings List, settings for plots to make, including \code{print.plots}, \code{dim.bounds}, \code{log.scale}, \code{splitting_factor}, \code{CI_style}, \code{label_size}, \code{title_size}, \code{axis_size}, \code{legend_size}, \code{count_size}, \code{count_jitter}, \code{count.alpha.ran}, \code{count.alpha.none}, \code{pred.alpha.ran}, and \code{pred.alpha.none}. Default values are provided.
+#' @param LRO.grid.search Logical, if TRUE, runs a grid search to find the optimal parameters for the LRO change-point detection algorithm and returns the results.
 #' @param ran.seed Integer, random seed for reproducibility. If NULL, no seed is set. Default is 1234.
 #' @return List giving the results of the fitted model, including: \code{model.component.list}, \code{count.data.summed}, \code{fitted.parameters}, \code{gamma.disperson}, \code{param.names}, \code{fix}, \code{treatment}, \code{grouping.variables}, \code{param.idx0}, \code{settings}, \code{sample.params}, \code{sample.params.bs}, \code{sample.params.MCMC}, \code{diagnostics.bs}, \code{diagnostics.MCMC}, \code{stats}, and \code{plots}
 #' @export
@@ -43,6 +44,7 @@ wisp <- function(
     model.settings = list(),
     MCMC.settings = list(),
     plot.settings = list(),
+    LRO.grid.search = FALSE,
     ran.seed = 1234
   ) {
    
@@ -307,6 +309,20 @@ wisp <- function(
       model.settings.internal,
       verbose
     )
+    
+    if (verbose) {
+      snk.report("Running LRO change-point detection and setting initial parameters")
+      snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 1)
+    }
+    
+    # Are we searching for best LRO parameters, else proceed with defaults or user-provided values
+    if (LRO.grid.search) {
+      LRO_grid <- as.data.frame(cpp_model$LRO_grid_search(verbose))
+      LRO_grid <- LRO_grid[LRO_grid$success_code == 3, ]
+      return(LRO_grid)
+    } else {
+      cpp_model$LRO_initial_param_ests(verbose, 0.0, 0.0)
+    }
     
     # Fit model to data ####
     
