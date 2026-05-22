@@ -1536,7 +1536,7 @@ Rcpp::NumericMatrix wspc::bs_batch(
     
     // Perform bootstrap fits in batches
     if (max_fork < 1) {max_fork = 1;} 
-    const int batch_num = std::round(bs_num_max / max_fork);
+    const int batch_num = std::round((double)bs_num_max / (double)max_fork);
     int tracker_steps = 10;
     IntegerVector tracker = iseq(batch_num/tracker_steps, batch_num, tracker_steps);
     for (int b = 0; b < batch_num; b++) {
@@ -1547,19 +1547,20 @@ Rcpp::NumericMatrix wspc::bs_batch(
       
       if (max_fork > 1) {
         // Run in parallel with forking
+        int batch_size = std::min(max_fork, bs_num_max - b * max_fork);
         
         // Pipes for inter-process communication
-        iVec pids(bs_num_max);
-        std::vector<std::array<int, 2>> pipes(bs_num_max); 
+        iVec pids(batch_size);
+        std::vector<std::array<int, 2>> pipes(batch_size); 
         
         // Initialize pipes and fork processes
-        for (int i = 0; i < max_fork; i++) {
+        for (int i = 0; i < batch_size; i++) {
           
           int this_row = b * max_fork + i;
           pipe(pipes[i].data()); // Create a pipe
           pid_t pid = fork();
           
-          if (pid == 0) { // species process
+          if (pid == 0) { // child process
             
             // Close read end
             close(pipes[i][0]); 
@@ -1573,14 +1574,12 @@ Rcpp::NumericMatrix wspc::bs_batch(
             // Close write end
             close(pipes[i][1]); 
             
-            // Exit species process
+            // Exit child process
             _exit(0); 
             
-            // implicitly recovers stan memory by killing the process which initiated it
+          } else if (pid > 0) { // parent process
             
-          } else if (pid > 0) { // context process
-            
-            // Grab species pid
+            // Grab child pid
             pids[i] = pid;
             
             // Close write end
@@ -1593,9 +1592,10 @@ Rcpp::NumericMatrix wspc::bs_batch(
         }
         
         // Fetch results from pipes
-        for (int i = 0; i < max_fork; i++) {
+        int batch_size = std::min(max_fork, bs_num_max - b * max_fork);
+        for (int i = 0; i < batch_size; i++) {
           
-          // Wait for species process
+          // Wait for child process
           waitpid(pids[i], NULL, 0); 
           
           // Create a temporary buffer to hold the row data
