@@ -74,6 +74,7 @@ except that in addition to the default thousand-step MCMC walk with a
 hundred-step burn-in, it also performs a thousand bootstrap resamples:
 
 ``` r
+
 model <- wisp(
     count.data = countdata,
     variables = data.variables,
@@ -90,6 +91,7 @@ model <- wisp(
 The result of this run comes with wispack and can be loaded as follows:
 
 ``` r
+
 # Set random seed for reproducibility
 set.seed(123)
 # Load wispack
@@ -113,6 +115,7 @@ This default analysis can be accessed from the output of wisp via its
 object stats and sub-object parameters:
 
 ``` r
+
 print(head(model$stats$parameters))
 ```
 
@@ -135,6 +138,7 @@ switching between Holm-Bonferroni and Bonferroni corrections. It returns
 the data frame which populates model\$stats\$parameters:
 
 ``` r
+
 model$stats$parameters <- sample.stats(
     model,
     alpha = 0.01,
@@ -194,6 +198,7 @@ The settings for the MCMC walk can be adjusted with the MCMC.settings
 argument of the wisp function:
 
 ``` r
+
 # Set new MCMC values 
 MCMC.settings.new <- list(
       MCMC.burnin = 1e2,
@@ -251,6 +256,7 @@ Wispack includes the function plot.MCMC.walks for visualizing MCMC
 walks.
 
 ``` r
+
 MCMC_walk_plots <- plot.MCMC.walks(
  model, 
  print.plots = FALSE, 
@@ -269,6 +275,7 @@ low-value parameters to plot. Parameters are chosen at random, as a
 sampling to see how the MCMC walk behaves.
 
 ``` r
+
 print(MCMC_walk_plots$plot.walks.parameters_low)
 ```
 
@@ -284,6 +291,7 @@ Now, for the walks from the high-value parameters (which will generally
 include only the baseline values for transition points):
 
 ``` r
+
 print(MCMC_walk_plots$plot.walks.parameters_high)
 ```
 
@@ -295,6 +303,7 @@ Finally, we can inspect the neglative log-likelihood (NLL) across the
 MCMC steps:
 
 ``` r
+
 print(MCMC_walk_plots$plot.walks.nll)
 ```
 
@@ -324,6 +333,7 @@ from L-BFGS. To see why, first note that the wisp function returns three
 matrices of parameter resamples:
 
 ``` r
+
 paste0(names(model)[grep("sample.params", names(model))], collapse = ", ")
 ```
 
@@ -343,6 +353,7 @@ Let’s make a copy of our model that uses the MCMC walks and re-run the
 statistical analysis on it:
 
 ``` r
+
 model_MCMC <- model
 model_MCMC$sample.params <- model_MCMC$sample.params.MCMC
 model_MCMC$stats$parameters <- sample.stats(model_MCMC)
@@ -380,6 +391,7 @@ with a large yellow asterisk. Here are the distributions from the
 bootstrap resamples:
 
 ``` r
+
 plots.param <- plot.parameters(model, species = "Rorb", verbose = FALSE) 
 print(
   plots.param$plot_treatment_18_cortex_Rorb + 
@@ -403,6 +415,7 @@ outside the range of MCMC walk values. Within the MCMC walk results, the
 L-BFGS fit is often an outlier.
 
 ``` r
+
 plots.param_MCMC <- plot.parameters(model_MCMC, species = "Rorb", verbose = FALSE)
 print(
   plots.param_MCMC$plot_treatment_18_cortex_Rorb + 
@@ -448,6 +461,7 @@ median of the MCMC walk is used as the estimate of each effect \beta,
 rather than the L-BFGS fit. As an example, we can re-run the model:
 
 ``` r
+
 # Grab data 
 countdata <- read.csv(
   system.file(
@@ -493,6 +507,7 @@ model_median <- wisp(
 ##  warp_precision: 1e-07
 ##  round_none: TRUE
 ##  trtKO: none
+##  max_bin: 0
 ##  inf_warp: 450359962.73705
 ## 
 ## Plot settings:
@@ -549,7 +564,7 @@ model_median <- wisp(
 ## implied pseudo-infinity for unbounded warp (inf_warp): 4.5036e+08
 ## 
 ## Extracting variables and data information:
-## Found max bin: 100.000000
+## Max bin: 100.000000
 ## Fixed effects:
 ## "hemisphere" "timeseries"
 ## Ref levels:
@@ -582,18 +597,21 @@ model_median <- wisp(
 ## row: 1920/2400
 ## row: 2400/2400
 ## 
-## Making initial parameter estimates:
+## Wrapping up initialization:
 ## Extrapolated 'none' rows
 ## Took log of observed counts
 ## Estimated gamma dispersion of raw counts
-## Estimated change points
 ## Found average log counts for each context-species combination
+## Constructed grouping variable IDs
+## 
+## Running LRO change-point detection and setting initial parameters
+## ----------------------------------------
+## Estimated change points
 ## Estimated initial parameters for fixed-effect treatments
 ## Built initial beta (ref and fixed-effects) matrices
 ## Initialized random-effect warping factors
 ## Made and mapped parameter vector
 ## Number of parameters: 300
-## Constructed grouping variable IDs
 ## Size of boundary vector: 1260
 ## 
 ## Estimating model parameters
@@ -622,9 +640,9 @@ model_median <- wisp(
 ## Acceptance rate (aim for 0.2-0.3): 0.283432
 ## 
 ## MCMC simulation complete... 
-## MCMC run time (total), minutes: 0.835
-## MCMC run time (per retained step), seconds: 0.046
-## MCMC run time (per step), seconds: 0.046
+## MCMC run time (total), minutes: 1.208
+## MCMC run time (per retained step), seconds: 0.066
+## MCMC run time (per step), seconds: 0.066
 ## Setting median parameter samples as final parameters... 
 ## Checking feasibility of provided parameters
 ## ... no tpoints below buffer
@@ -697,6 +715,7 @@ Now, let’s plot the age-effect parameters again, this time with the
 median estimate from the MCMC walk highlighted:
 
 ``` r
+
 print(
   model_median$plots$parameters$plot_treatment_18_cortex_Rorb + 
     scale_y_continuous(expand = expansion(mult = 0.1)) +
@@ -759,6 +778,7 @@ plot.MCMC.bs.comparison for visualizing autocorrelation and normality in
 the resampled parameters.
 
 ``` r
+
 bs_comp_plots <- plot.MCMC.bs.comparison(
   model, 
   verbose = FALSE
@@ -775,6 +795,7 @@ number of parameters with autocorrelation \>0.5. In contrast, the
 bootstrap resamples show essentially zero autocorrelation.
 
 ``` r
+
 print(
   bs_comp_plots$plot_sample_correlations + 
     theme(plot.title = element_text(hjust = 0.5, size = model$plot.settings$title_size*0.75))
@@ -797,6 +818,7 @@ distributions), while bootstrap resamples produce many parameter
 distributions with high p-values (i.e., normal distributions).
 
 ``` r
+
 print(
   bs_comp_plots$plot_comparison_Shaprio +
     theme(plot.title = element_text(hjust = 0.5, size = model$plot.settings$title_size*0.75))
@@ -810,6 +832,7 @@ another look at the parameter distributions produced by each method by
 plotting a few randomly chosen distributions:
 
 ``` r
+
 print(
   bs_comp_plots$plot_comparison_density +
     theme(plot.title = element_text(hjust = 0.5, size = model$plot.settings$title_size*0.75))

@@ -28,6 +28,7 @@ will typically be a count of transcripts from an RNA species in a single
 cell, holding all covariates constant.
 
 ``` r
+
 countdata <- read.csv(
   system.file(
       "extdata", 
@@ -56,6 +57,7 @@ cortex, there is a celltype_MMC column filled with the following cell
 type annotations:
 
 ``` r
+
 unique_celltypes <- unique(countdata$celltype_MMC)
 cat(
   "\nNumber of unique cell types:", length(unique_celltypes), "\n", 
@@ -78,6 +80,7 @@ As thirty-one cell types is too many for demonstration purposes, let’s
 simplify to just two: Glut and GABA.
 
 ``` r
+
 # Make masks
 Glut_mask <- grepl("Glut", countdata$celltype_MMC)
 GABA_mask <- grepl("GABA", countdata$celltype_MMC)
@@ -140,6 +143,7 @@ boundary estimates will only be used for plotting and visualization
 after fitting the model, not for fitting the model itself.
 
 ``` r
+
 boundary_path <- system.file(
     "extdata", 
     "ACx_layer_boundary_bins.csv", 
@@ -155,6 +159,7 @@ class = “code_variable”\>context column needs to be specified along with
 the names for the species, ran, and timeseries variables.
 
 ``` r
+
 # Define variables in the dataframe for the model
 data.variables <- list(
     context = "celltype_MMC",
@@ -170,6 +175,7 @@ model (fit_only = TRUE) without running any [statistical parameter
 estimation](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md).
 
 ``` r
+
 library(wispack, quietly = TRUE)
 
 model <- wisp(
@@ -207,6 +213,7 @@ model <- wisp(
 ##  warp_precision: 1e-07
 ##  round_none: TRUE
 ##  trtKO: none
+##  max_bin: 0
 ##  inf_warp: 450359962.73705
 ## 
 ## Plot settings:
@@ -290,18 +297,21 @@ model <- wisp(
 ## row: 5760/7200
 ## row: 7200/7200
 ## 
-## Making initial parameter estimates:
+## Wrapping up initialization:
 ## Extrapolated 'none' rows
 ## Took log of observed counts
 ## Estimated gamma dispersion of raw counts
-## Estimated change points
 ## Found average log counts for each context-species combination
+## Constructed grouping variable IDs
+## 
+## Running LRO change-point detection and setting initial parameters
+## ----------------------------------------
+## Estimated change points
 ## Estimated initial parameters for fixed-effect treatments
 ## Built initial beta (ref and fixed-effects) matrices
 ## Initialized random-effect warping factors
 ## Made and mapped parameter vector
 ## Number of parameters: 720
-## Constructed grouping variable IDs
 ## Size of boundary vector: 4212
 ## 
 ## Fitting model to data
@@ -334,6 +344,7 @@ let’s compare the reference levels for all gene between glutamatergic
 and GABAergic neurons.
 
 ``` r
+
 plt_Glut <- model[["plots"]][["ratecount"]][["plot_pred.log_context_Glut"]] + theme(legend.position = "bottom")
 plt_GABA <- model[["plots"]][["ratecount"]][["plot_pred.log_context_GABA"]] + theme(legend.position = "bottom")
 ylims <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
@@ -371,6 +382,7 @@ individual genes showing predicted expression rates at all treatment
 levels.
 
 ``` r
+
 plt_Glut1 <- model[["plots"]][["ratecount"]][["plot_pred.log_context_Glut_fixEff_Bcl11b"]] + theme(legend.position = "bottom") 
 plt_GABA1 <- model[["plots"]][["ratecount"]][["plot_pred.log_context_GABA_fixEff_Bcl11b"]] + theme(legend.position = "bottom") 
 plt_Glut2 <- model[["plots"]][["ratecount"]][["plot_pred.log_context_Glut_fixEff_Fezf2"]] + theme(legend.position = "bottom") 
@@ -404,6 +416,7 @@ just as closely, albeit with higher overall expression and, perhaps,
 with retained up-regulation in L5 after P7.
 
 ``` r
+
 plt_Glut <- model[["plots"]][["ratecount"]][["plot_pred.log_context_Glut_fixEff_Cux2"]] + theme(legend.position = "bottom")
 plt_GABA <- model[["plots"]][["ratecount"]][["plot_pred.log_context_GABA_fixEff_Cux2"]] + theme(legend.position = "bottom") 
 ylims <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
@@ -422,6 +435,7 @@ while expression is constant across layers in glutamatergic neurons at
 P7, it only drops selectively, in deep layers (L5 and L6) after P7.
 
 ``` r
+
 plt_Glut <- model[["plots"]][["ratecount"]][["plot_pred.log_context_Glut_fixEff_Rorb"]] + theme(legend.position = "bottom") 
 plt_GABA <- model[["plots"]][["ratecount"]][["plot_pred.log_context_GABA_fixEff_Rorb"]] + theme(legend.position = "bottom") 
 ylims <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
@@ -443,6 +457,7 @@ interesting up-regulation in GABAergic neurons, except perhaps a small
 bump in L6 in the right hemisphere at P7.
 
 ``` r
+
 plt_Glut1 <- model[["plots"]][["ratecount"]][["plot_pred.log_context_Glut_fixEff_Nxph3"]] + theme(legend.position = "bottom") 
 plt_GABA1 <- model[["plots"]][["ratecount"]][["plot_pred.log_context_GABA_fixEff_Nxph3"]] + theme(legend.position = "bottom") 
 plt_Glut2 <- model[["plots"]][["ratecount"]][["plot_pred.log_context_Glut_fixEff_Satb2"]] + theme(legend.position = "bottom") 
@@ -476,6 +491,7 @@ BCL11B shares spatial pattern with FEZF2, its temporal pattern is more
 similar to that of SATB2.
 
 ``` r
+
 plt_Glut1 <- model[["plots"]][["timeseries"]][["plot_pred.log_context_Glut_timeseries_Bcl11b"]] + theme(plot.title = element_text(hjust = 0.0))
 plt_GABA1 <- model[["plots"]][["timeseries"]][["plot_pred.log_context_GABA_timeseries_Bcl11b"]] + theme(plot.title = element_text(hjust = 0.0))
 plt_Glut2 <- model[["plots"]][["timeseries"]][["plot_pred.log_context_Glut_timeseries_Satb2"]] + theme(plot.title = element_text(hjust = 0.0))
@@ -504,6 +520,7 @@ the deeper layers, block 1), it is constant across cortical layers in
 GABAergic neurons.
 
 ``` r
+
 plt_Glut <- model[["plots"]][["timeseries"]][["plot_pred.log_context_Glut_timeseries_Cux2"]] + theme(plot.title = element_text(hjust = 0.0))
 plt_GABA <- model[["plots"]][["timeseries"]][["plot_pred.log_context_GABA_timeseries_Cux2"]] + theme(plot.title = element_text(hjust = 0.0))
 ylims <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
@@ -525,6 +542,7 @@ GABAergic neurons, with expression levels dipping at P12 before
 recovering at P18.
 
 ``` r
+
 plt_Glut <- model[["plots"]][["timeseries"]][["plot_pred.log_context_Glut_timeseries_Fezf2"]] + theme(plot.title = element_text(hjust = 0.0))
 plt_GABA <- model[["plots"]][["timeseries"]][["plot_pred.log_context_GABA_timeseries_Fezf2"]] + theme(plot.title = element_text(hjust = 0.0))
 ylims <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
@@ -543,6 +561,7 @@ glutamatergic neurons show variation across cortical layers (blocks),
 but no real lateralization in temporal trajectory.
 
 ``` r
+
 plt_Glut <- model[["plots"]][["timeseries"]][["plot_pred.log_context_Glut_timeseries_Nxph3"]] + theme(plot.title = element_text(hjust = 0.0))
 plt_GABA <- model[["plots"]][["timeseries"]][["plot_pred.log_context_GABA_timeseries_Nxph3"]] + theme(plot.title = element_text(hjust = 0.0))
 ylims <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
@@ -562,6 +581,7 @@ clear pattern in the glutamatergic neurons, with a dip in expression at
 P12 with recovery at P18, in the left but not the right hemisphere.
 
 ``` r
+
 plt_Glut <- model[["plots"]][["timeseries"]][["plot_pred.log_context_Glut_timeseries_Rorb"]] + theme(plot.title = element_text(hjust = 0.0))
 plt_GABA <- model[["plots"]][["timeseries"]][["plot_pred.log_context_GABA_timeseries_Rorb"]] + theme(plot.title = element_text(hjust = 0.0))
 ylims <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range

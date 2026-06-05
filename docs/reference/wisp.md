@@ -19,6 +19,7 @@ wisp(
   model.settings = list(),
   MCMC.settings = list(),
   plot.settings = list(),
+  LRO.grid.search = FALSE,
   ran.seed = 1234
 )
 ```
@@ -75,7 +76,7 @@ wisp(
   List, settings for the C++ model, including `buffer_factor`, `ctol`,
   `max_penalty_at_distance_factor`, `LROcutoff`, `LROwindow_factor`,
   `rise_threshold_factor`, `max_evals`, `rng_seed`, `warp_precision`,
-  `round_none`, and `trtKO`. Default values are provided.
+  `round_none`, `trtKO`, and `max_bin`. Default values are provided.
 
 - MCMC.settings:
 
@@ -90,6 +91,11 @@ wisp(
   `label_size`, `title_size`, `axis_size`, `legend_size`, `count_size`,
   `count_jitter`, `count.alpha.ran`, `count.alpha.none`,
   `pred.alpha.ran`, and `pred.alpha.none`. Default values are provided.
+
+- LRO.grid.search:
+
+  Logical, if TRUE, runs a grid search to find the optimal parameters
+  for the LRO change-point detection algorithm and returns the results.
 
 - ran.seed:
 

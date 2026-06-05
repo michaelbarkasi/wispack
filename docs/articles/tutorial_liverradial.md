@@ -122,6 +122,7 @@ zone i, a cell is added to the data with count y_ib_i.
 For the actual execution, we first load the MatLab files:
 
 ``` r
+
 library(R.matlab)
 files <- list.files(
     path = "Droin_data", 
@@ -147,6 +148,7 @@ we will model just a few with known zonation and temporal rhythm:
 We can subset the data as follows:
 
 ``` r
+
 # List of genes to keep
 genes_to_keep <- c("glul", "ass1", "arntl", "dbp", "elovl3", "pck1")
 
@@ -184,6 +186,7 @@ coordinate (bin), RNA species (gene), random variable (mouse), and any
 fixed-effects (in this case, ZT).
 
 ``` r
+
 # Create count_data frame for use with wisp()
 count_data <- data.frame()
 
@@ -253,6 +256,7 @@ run. Instead, the simulated data is saved to a CSV file available with
 this package. We will load it directly.
 
 ``` r
+
 count_data <- read.csv(
   system.file(
       "extdata", 
@@ -265,6 +269,7 @@ count_data <- read.csv(
 The first step is to set the variables to be modelled:
 
 ``` r
+
 data.variables <- list(
   count = "count",
   bin = "bin", 
@@ -286,6 +291,7 @@ Previous testing (not shown here) suggests that all that’s necessary is
 lowering the LROcutoff from the default 2.0 to 1.5.
 
 ``` r
+
 model.settings <- list(
   LROcutoff = 1.5
 )
@@ -299,6 +305,7 @@ number of spatial coordinates. Finally, we adjust the alpha
 than the random-effect predictions.
 
 ``` r
+
 plot.settings <- list(
   print.plots = FALSE,
   title_size = 14,
@@ -316,6 +323,7 @@ parameters, we will use bootstraps instead of MCMC sampling. So, we set
 the number of MCMC steps to zero and the number of bootstraps to 1000.
 
 ``` r
+
 # Load wispack
 library(wispack, quietly = TRUE)
 
@@ -353,6 +361,7 @@ radial.model <- wisp(
 ##  warp_precision: 1e-07
 ##  round_none: TRUE
 ##  trtKO: none
+##  max_bin: 0
 ##  inf_warp: 450359962.73705
 ## 
 ## Plot settings:
@@ -448,18 +457,21 @@ radial.model <- wisp(
 ## row: 152/192
 ## row: 190/192
 ## 
-## Making initial parameter estimates:
+## Wrapping up initialization:
 ## Extrapolated 'none' rows
 ## Took log of observed counts
 ## Estimated gamma dispersion of raw counts
-## Estimated change points
 ## Found average log counts for each context-species combination
+## Constructed grouping variable IDs
+## 
+## Running LRO change-point detection and setting initial parameters
+## ----------------------------------------
+## Estimated change points
 ## Estimated initial parameters for fixed-effect treatments
 ## Built initial beta (ref and fixed-effects) matrices
 ## Initialized random-effect warping factors
 ## Made and mapped parameter vector
 ## Number of parameters: 324
-## Constructed grouping variable IDs
 ## Size of boundary vector: 1848
 ## 
 ## Estimating model parameters
@@ -474,22 +486,22 @@ radial.model <- wisp(
 ## Initial boundary distance (want > 0): 0.206765
 ## Performing initial fit of full data
 ## Penalized neg_loglik: 1044.51
-## Batch: 1/100, 0.162773 sec/bs
-## Batch: 10/100, 0.158804 sec/bs
-## Batch: 20/100, 0.15897 sec/bs
-## Batch: 30/100, 0.150676 sec/bs
-## Batch: 40/100, 0.156892 sec/bs
-## Batch: 50/100, 0.166217 sec/bs
-## Batch: 60/100, 0.157727 sec/bs
-## Batch: 70/100, 0.158966 sec/bs
-## Batch: 80/100, 0.177346 sec/bs
-## Batch: 90/100, 0.149993 sec/bs
+## Batch: 1/100, 0.163617 sec/bs
+## Batch: 10/100, 0.143809 sec/bs
+## Batch: 20/100, 0.142762 sec/bs
+## Batch: 30/100, 0.137459 sec/bs
+## Batch: 40/100, 0.145736 sec/bs
+## Batch: 50/100, 0.158752 sec/bs
+## Batch: 60/100, 0.152185 sec/bs
+## Batch: 70/100, 0.152147 sec/bs
+## Batch: 80/100, 0.190855 sec/bs
+## Batch: 90/100, 0.156028 sec/bs
 ## All complete!
 ## 
 ## Bootstrap simulation complete... 
-## Bootstrap run time (total), minutes: 2.709
-## Bootstrap run time (per sample), seconds: 0.163
-## Bootstrap run time (per sample, per thread), seconds: 1.625
+## Bootstrap run time (total), minutes: 2.63
+## Bootstrap run time (per sample), seconds: 0.158
+## Bootstrap run time (per sample, per thread), seconds: 1.578
 ## 
 ## Setting full-data fit as parameters... 
 ## Checking feasibility of provided parameters
@@ -581,6 +593,7 @@ higher in the portal region. Their respective spatial gradients are easy
 to see in the rate-count plot:
 
 ``` r
+
 plt_glul <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_glul"]]
 plt_ass1 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_ass1"]]
 g <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
@@ -599,6 +612,7 @@ These temporal patterns can be seen more clearly by looking at the
 time-series plots.
 
 ``` r
+
 plt_glul <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_glul"]]
 plt_ass1 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_ass1"]]
 g <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
@@ -625,6 +639,7 @@ are elevated (yellow and purple), while for DBP it’s ZT6 and ZT12 (green
 and blue) that are elevated.
 
 ``` r
+
 plt_arntl <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_arntl"]]
 plt_dbp <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_dbp"]]
 g <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
@@ -637,6 +652,7 @@ These temporal dynamics are made more clear in the time-series plots,
 which clearly show the mid-ZT dip in ARNTL and the mid-ZT bump in DBP.
 
 ``` r
+
 plt_arntl <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_arntl"]]
 plt_dbp <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_dbp"]]
 g <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
@@ -653,6 +669,7 @@ Both are expressed more in the central region. PCK1, on the other hand,
 is expressed more in the portal region, just like ASS1.
 
 ``` r
+
 plt_elovl3 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_elovl3"]]
 plt_pck1 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_pck1"]]
 g <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
@@ -666,6 +683,7 @@ rhythm. ELOVL3 is similar to ARNTL, with a mid-ZT dip. PCK1 is similar
 to DBP, with a mid-ZT bump.
 
 ``` r
+
 plt_elovl3 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_elovl3"]]
 plt_pck1 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_pck1"]]
 g <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  

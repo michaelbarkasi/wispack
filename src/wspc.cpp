@@ -64,13 +64,14 @@ wspc::wspc(
     
     // Find max bins and set warp bounds
     vprint_header("Extracting variables and data information", verbose);
-    bin_num = smax(to_sVec(Rcpp::as<NumericVector>(count_data["bin"])));
+    bin_num = (sdouble)settings["max_bin"];
+    if (bin_num == 0.0) {bin_num = smax(to_sVec(Rcpp::as<NumericVector>(count_data["bin"])));}
     warp_bounds.resize(3); 
     for (int i = 0; i < 3; i++) {warp_bounds[i] = inf_warp;}  // initialize to infinity (no bounds)
     warp_bounds_idx.names() = CharacterVector::create("Rt", "tslope", "tpoint");
     int warp_bound_tpoint_idx = warp_bounds_idx["tpoint"]; 
     warp_bounds[warp_bound_tpoint_idx] = bin_num;  // set tpoint bound to max bin
-    vprint("Found max bin: " + std::to_string(bin_num.val()), verbose);
+    vprint("Max bin: " + std::to_string(bin_num.val()), verbose);
     
     // Extract fixed effects 
     int n_fix = n_cols - r_cols;                                        // number of fixed effect variables, assume all non-required columns are fixed effects
@@ -1592,7 +1593,6 @@ Rcpp::NumericMatrix wspc::bs_batch(
         }
         
         // Fetch results from pipes
-        int batch_size = std::min(max_fork, bs_num_max - b * max_fork);
         for (int i = 0; i < batch_size; i++) {
           
           // Wait for child process

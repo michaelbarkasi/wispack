@@ -83,6 +83,7 @@ formula, wisp merely needs the data. For example, the quick-start demo
 the primary somatosensory cortex) runs the following code:
 
 ``` r
+
 # Set random seed for reproducibility
 ran.seed <- 123
 set.seed(ran.seed)
@@ -113,6 +114,7 @@ associated with model variables using the variables argument. For
 example:
 
 ``` r
+
 # Define variables in the dataframe for the model
 data.variables <- list(
     count = "count",
@@ -141,6 +143,7 @@ Both the quick-start demo and another demo showing all model options can
 be run using the demo() command:
 
 ``` r
+
 demo("quick_start", package = "wispack")  
 demo("full_options", package = "wispack")
 ```
@@ -194,7 +197,7 @@ Artistic rendering of a wisp model. See [this
 tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_wispplots.md)
 for an explanation.
 
-Copyright (C) 2025, Michael Barkasi <barkasi@wustl.edu>
+Copyright (C) 2026, Michael Barkasi <barkasi@wustl.edu>
 
 # Package index
 

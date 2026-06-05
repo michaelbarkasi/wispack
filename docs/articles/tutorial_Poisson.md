@@ -29,6 +29,7 @@ instances spread over a one-dimensional space x. The space will be
 divided into 100 bins:
 
 ``` r
+
 n_bins <- 100
 x <- seq(1, n_bins)
 ```
@@ -38,6 +39,7 @@ for an average of 100 instances per bin. The variable holding these
 positions will be called bin:
 
 ``` r
+
 set.seed(123) # for reproducibility
 n_instances <- 10000
 bin <- sample(x, n_instances, replace = TRUE)
@@ -53,6 +55,7 @@ individual process rates from a gamma distribution and then drawing
 counts from a Poisson distribution with those rates:
 
 ``` r
+
 lambda <- rep(c(1, 5, 2, 7), each = length(x)/4)
 var_gamma <- 2
 process_lambda <- rgamma(
@@ -68,6 +71,7 @@ count for each process instance. These simulated process counts can be
 combined into a dataframe called countdata:
 
 ``` r
+
 countdata <- data.frame(bin, count)
 print(head(countdata))
 ```
@@ -85,6 +89,7 @@ print(head(countdata))
 This data frame can be used to plot the counts as a function of space:
 
 ``` r
+
 ggplot2::ggplot(countdata, ggplot2::aes(x = bin, y = count)) +
   ggplot2::geom_jitter(height = 0, width = 0.5, alpha = 0.1) +
   ggplot2::labs(
@@ -105,6 +110,7 @@ As Poisson distributions are preserved under addition, the counts for
 each bin can be summed while maintaining a Poisson distribution.
 
 ``` r
+
 summed_counts <- aggregate(count ~ bin, data = countdata, sum)
 ggplot2::ggplot(summed_counts, ggplot2::aes(x = bin, y = count)) +
   ggplot2::geom_point() +
@@ -159,6 +165,7 @@ ran, timeseries, and fixedeffects; while not used here, these columns
 are used in more complex modeling scenarios.)
 
 ``` r
+
 library(wispack, quietly = TRUE)
 model <- wisp(
     countdata, 
@@ -185,6 +192,7 @@ model <- wisp(
 ##  warp_precision: 1e-07
 ##  round_none: TRUE
 ##  trtKO: none
+##  max_bin: 0
 ##  inf_warp: 450359962.73705
 ## 
 ## Plot settings:
@@ -252,17 +260,20 @@ model <- wisp(
 ## Creating summed-count data columns and weight matrix:
 ## Random level 0, 1/1 complete
 ## 
-## Making initial parameter estimates:
+## Wrapping up initialization:
 ## Took log of observed counts
 ## Estimated gamma dispersion of raw counts
-## Estimated change points
 ## Found average log counts for each context-species combination
+## Constructed grouping variable IDs
+## 
+## Running LRO change-point detection and setting initial parameters
+## ----------------------------------------
+## Estimated change points
 ## Estimated initial parameters for fixed-effect treatments
 ## Built initial beta (ref and fixed-effects) matrices
 ## Initialized random-effect warping factors
 ## Made and mapped parameter vector
 ## Number of parameters: 10
-## Constructed grouping variable IDs
 ## Size of boundary vector: 11
 ## 
 ## Fitting model to data
@@ -297,6 +308,7 @@ middle of the data.
 The recovered parameters can also be extracted as numerical values:
 
 ``` r
+
 param_names <- names(model$fitted.parameters)
 est_param <- round(model$fitted.parameters, 3)
 for (param_type in c("Rt", "tslope", "tpoint")) {
@@ -326,6 +338,7 @@ rates, subtract 1, and divide by the mean number of tokens per bin
 within the block.
 
 ``` r
+
 tokens_per_bin <- rep(NA, n_bins)
 for (b in 1:n_bins) tokens_per_bin[b] <- sum(countdata$bin == b)
 for (block in 1:4) {

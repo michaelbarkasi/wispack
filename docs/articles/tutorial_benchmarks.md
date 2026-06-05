@@ -69,6 +69,7 @@ neurons), Slc17a7 (glutamatergic neurons), Tac2 (somatostatin neurons),
 and Vip (vasoactive intestinal peptide neurons).
 
 ``` r
+
 countdata <- read.csv(
   system.file(
       "extdata", 
@@ -81,6 +82,7 @@ countdata <- read.csv(
 Here is the head of the imported seed data:
 
 ``` r
+
 print(head(countdata))
 ```
 
@@ -97,6 +99,7 @@ print(head(countdata))
 Let’s visualize the seed data:
 
 ``` r
+
 ggplot(countdata, aes(x = coord_x, y = coord_y, color = gene)) +
   geom_point(size = 0.1) + 
   facet_wrap(~ slice_num * gene) +
@@ -117,6 +120,7 @@ will seed the simulations with data from a 2\times 2 mm region of slice
 33.
 
 ``` r
+
 seed_patch <- countdata[
   countdata$slice_num == 33 &
     countdata$coord_y >= 2 & countdata$coord_y <= 4 &
@@ -129,6 +133,7 @@ one transcript from each gene. Some dots represent multiple transcripts
 from the same gene in the same cell.
 
 ``` r
+
 ggplot(seed_patch, aes(x = coord_x, y = coord_y, color = gene)) +
   geom_point(size = 0.5) + 
   ggtitle("Seed patch: 2x2 mm region from slice 33") +
@@ -149,6 +154,7 @@ attractor_simulation for this purpose. Let’s load wispack and run this
 function once to see how it works.
 
 ``` r
+
 # Load wispack 
 library(wispack, quietly = TRUE)
 # Ensure reproducibility
@@ -180,6 +186,7 @@ A list is returned by attractor_simulation, with the following
 components:
 
 ``` r
+
 for (i in names(test_sim)) cat("\n", i, ": ", class(test_sim[[i]]), sep = "")
 ```
 
@@ -200,6 +207,7 @@ for (i in names(test_sim)) cat("\n", i, ": ", class(test_sim[[i]]), sep = "")
 For example, in this case, the genes are:
 
 ``` r
+
 cat(paste0(test_sim$genes, collapse = ", "))
 ```
 
@@ -210,6 +218,7 @@ cat(paste0(test_sim$genes, collapse = ", "))
 Of these genes, the following were randomly selected as SVGs:
 
 ``` r
+
 cat(paste0(test_sim$SVGs, collapse = ", "))
 ```
 
@@ -221,6 +230,7 @@ And the following genes were randomly selected from the SVGs as
 exhibiting a FSE under the simulated treatment condition:
 
 ``` r
+
 cat(paste0(test_sim$FSEs, collapse = ", "))
 ```
 
@@ -235,6 +245,7 @@ so any cell-type related statistics will be lost.) Here, for example,
 are the plots of Vip before and after smoothing:
 
 ``` r
+
 do.call(grid.arrange, c(test_sim$plots[["Vip"]], ncol = 2))
 ```
 
@@ -255,6 +266,7 @@ example, here are the plots of Slc17a7 before smoothing, after
 smoothing, and after inducing spatial variability:
 
 ``` r
+
 do.call(grid.arrange, c(test_sim$plots[["Slc17a7"]], ncol = 2))
 ```
 
@@ -277,6 +289,7 @@ zero and one but such that the absolute value of 4b^2 - 1 is greater
 than min_effect_size (by default, 0.05). In this example:
 
 ``` r
+
 for (g in c(1:4)) cat("\n", test_sim$genes[g], ": b = ", test_sim$effect[g], sep = "")
 ```
 
@@ -296,6 +309,7 @@ FSE that up-regulates expression will be positive. For example, here are
 the plots for Pvalb, which exhibits a slight up-regulating FSE:
 
 ``` r
+
 do.call(grid.arrange, c(test_sim$plots[["Pvalb"]], ncol = 2))
 ```
 
@@ -305,6 +319,7 @@ And here are the plots for Tac2, which exhibits a large down-regulating
 FSE:
 
 ``` r
+
 do.call(grid.arrange, c(test_sim$plots[["Tac2"]], ncol = 2))
 ```
 
@@ -335,6 +350,7 @@ to a randomly chosen replicate scalar c between zero and one: y \sim
 For example, in our test simulation, the scale factors c are:
 
 ``` r
+
 for (r in 1:4) cat("\nReplicate ", r, ": c = ", test_sim$replicate_rate_scalars[r], sep = "")
 ```
 
@@ -350,6 +366,7 @@ The effects of these scalars can be seen by plotting one of the genes in
 the reference condition across all replicates:
 
 ``` r
+
 mask <- test_sim$data$gene == "Tac2" & test_sim$data$fixedeffect == "ref"
 data <- test_sim$data[mask,]
 ggplot(data, aes(x = coord_x, y = coord_y, size = log(count + 1))) +
@@ -393,6 +410,7 @@ Let’s do a demo run of the function with only 100 bootstraps, so we can
 see the output of the function.
 
 ``` r
+
 wisp_results <- model_attractor_simulation_wisp(
     sim = test_sim,
     sim_num = 1,
@@ -455,6 +473,7 @@ helper function extract_pvalue_attractor_simulation_wisp to do this
 computation. Here is the code for that function:
 
 ``` r
+
 # Function to extract mean p-value across blocks for each gene 
 extract_pvalue_attractor_simulation_wisp <- function(model) {
     genes <- model[["grouping.variables"]][["species.lvls"]]
@@ -522,6 +541,7 @@ model_attractor_simulation_wisp in structure. For reference, here is the
 code:
 
 ``` r
+
 model_attractor_simulation_wisp <- function(
     sim, 
     sim_num,
@@ -609,6 +629,7 @@ run_attractor_sim_benchmarks.
 First, install and load DESeq2:
 
 ``` r
+
 if (!require("BiocManager", quietly = TRUE)) {install.packages("BiocManager")}
 if (!require("DESeq2", quietly = TRUE)) {BiocManager::install("DESeq2")}
 if (!require("apeglm", quietly = TRUE)) {BiocManager::install("apeglm")}
@@ -619,6 +640,7 @@ Next, we need a helper function to convert our simulation data into the
 format expected by DESeq2:
 
 ``` r
+
 make_DESeq2_data <- function(
     sim_data
   ) {
@@ -660,6 +682,7 @@ Now, paralleling the structure of model_attractor_simulation_wisp, we
 can write the DESeq2 modeling function:
 
 ``` r
+
 model_attractor_simulation_DESeq2 <- function(
     sim,
     sim_num
@@ -707,6 +730,7 @@ the aggregate counts per gene per replicate per condition (as points),
 along with the DESeq2-fitted values (as lines):
 
 ``` r
+
 # Make data for DESeq2
 ddata <- make_DESeq2_data(test_sim$data)
 dds <- DESeqDataSetFromMatrix(countData = ddata$cts, colData = ddata$coldata, design = ~ fixedeffect)
@@ -778,6 +802,7 @@ As ELLA is a Python package, we need to integrate it into our R-based
 benchmarking pipeline with the reticulate package:
 
 ``` r
+
 # Set up virtual python environment for reticulate, in bash (terminal): 
 #   python3 -m venv ~/.virtualenvs/r-reticulate
 #   source ~/.virtualenvs/r-reticulate/bin/activate
@@ -811,6 +836,7 @@ ELLA. Note that we are using the original ELLA version (branch ella1),
 not the most current.
 
 ``` r
+
 # Install ELLA, in bash (terminal):
 # git clone --branch ella1 https://github.com/jadexq/ELLA.git
 # cd ELLA
@@ -854,6 +880,7 @@ multiplying the count at each point by its radial distance and
 normalizing.
 
 ``` r
+
 make_ELLA_data <- function(
     sim_data,
     radial_dim = "bin_x",
@@ -963,6 +990,7 @@ Let’s plot one replicate from this simulation data to see the
 transformation:
 
 ``` r
+
 ella_sim <- make_ELLA_data(test_sim$data)
 plt1 <- ggplot(test_sim$data[test_sim$data$replicate == "replicate1" & test_sim$data$fixedeffect == "ref",], aes(x = bin_x, y = bin_y, color = gene, size = count)) +
   geom_point(alpha = 0.5) +
@@ -994,6 +1022,7 @@ the transform by plotting the count density along the original x axis
 and the transformed radial axis:
 
 ``` r
+
 plot_count_density <- function(
     df_rad, 
     df_car, 
@@ -1100,6 +1129,7 @@ poor performance (high false discovery and false positive rates) without
 the L1 penalty.
 
 ``` r
+
 # Run ELLA on simulated data
 run_ELLA <- function(
     sim_data,
@@ -1142,6 +1172,7 @@ extract_svg <- function(ella_sim) {
 Finally, we can write the full ELLA modeling function for benchmarking:
 
 ``` r
+
 # Full model pipeline 
 model_attractor_simulation_ELLA <- function(
     sim,
@@ -1184,6 +1215,7 @@ ELLA fits the simulated data. Here is a function for producing a plot of
 the fit:
 
 ``` r
+
 # Show how ELLA fits the simulated data
 plot_ella_fit <- function(
     ella_sim,
@@ -1266,6 +1298,7 @@ plot_ella_fit <- function(
 And here are the results:
 
 ``` r
+
 plt_ella1 <- plot_ella_fit(run_ELLA(test_sim$data), test_sim$data, title_extra = " (L1 penalty = 0.2)")
 plt_ella2 <- plot_ella_fit(run_ELLA(test_sim$data, L1_lam = 0.0), test_sim$data, title_extra = " (L1 penalty = 0.0)")
 grid.arrange(plt_ella1, plt_ella2, nrow = 1)
@@ -1291,6 +1324,7 @@ As there are four genes per simulation, this will yield a thousand
 sample points for computing benchmark metrics.
 
 ``` r
+
 results <- run_attractor_sim_benchmarks(
   seed_data = count_data_neurons_patch,
   n_sims = 250,
@@ -1308,6 +1342,7 @@ results <- run_attractor_sim_benchmarks(
 The results of this run are provided with wispack:
 
 ``` r
+
 benchmark_results <- read.csv(
   system.file(
       "extdata", 
@@ -1322,6 +1357,7 @@ aggregating all of the benchmark metrics from the results of the
 run_attractor_sim_benchmarks function:
 
 ``` r
+
 benchmark_metrics <- analyze_attractor_sim_benchmarks(benchmark_results)
 ```
 
@@ -1333,6 +1369,7 @@ effect size. The mean run time is computed for each method as well. Here
 are the results for wisp, DESeq2, and ELLA:
 
 ``` r
+
 print(round(benchmark_metrics, 3))
 ```
 
@@ -1363,6 +1400,7 @@ We can also visualize the correlation between estimated and true effect
 sizes for wisp and DESeq2. Here are the results for FSE size estimation:
 
 ``` r
+
 corr_results <- benchmark_results[
   grepl("_effect", benchmark_results$results.param),
   grepl("est|true|param|method|id", colnames(benchmark_results))
@@ -1404,6 +1442,7 @@ We can also get a sense for how well wisp did estimating random effects
 by plot true vs estimated values:
 
 ``` r
+
 ggplot(corr_results[corr_results$param == "random_effect",], aes(x = true, y = est, color = id)) +
   geom_point(alpha = 0.5) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed") +

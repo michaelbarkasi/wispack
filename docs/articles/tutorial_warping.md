@@ -38,6 +38,7 @@ employ a random-effect term to factor out individual variation.
 Although we won’t use it right away, let’s load wispack awhile:
 
 ``` r
+
 # Set random seed for reproducibility
 set.seed(123)
 # Load wispack
@@ -132,6 +133,7 @@ be positive? Let’s first examine a plot of the warp-ratio function
 \varphi:
 
 ``` r
+
 # Code the ratio function
 warp_ratio <- function(X,rho,b) 1 - exp(rho^2)^(-X / b)
 
@@ -211,6 +213,7 @@ Wispack provides a function demo.warp.plots for visualizing the function
 \omega and its effect on the poly-sigmoid \Phi.
 
 ``` r
+
 warp_plots <- demo.warp.plots(
     w = 2,                       # warping factor
     point_pos = 60,
@@ -227,6 +230,7 @@ The function demo.warp.plot creates two plots. The first shows \omega
 itself for specified warping factors \rho=\langle-w,0,w\rangle.
 
 ``` r
+
 print(warp_plots$demo_plot_warpfunction)
 ```
 
@@ -241,6 +245,7 @@ The second plot created by demo.warp.plot shows the effect of \omega on
 \Phi.
 
 ``` r
+
 print(warp_plots$demo_plot_warpedsigmoid)
 ```
 

@@ -73,6 +73,7 @@ it.
 To start, load this data and print its first few rows:
 
 ``` r
+
 countdata <- read.csv(
   system.file(
       "extdata", 
@@ -100,6 +101,7 @@ first few rows show that there are other genes in the data as well. How
 many?
 
 ``` r
+
 num_genes <- length(unique(countdata$gene))
 cat("Number of genes:", num_genes, "\n")
 ```
@@ -111,6 +113,7 @@ cat("Number of genes:", num_genes, "\n")
 Which genes?
 
 ``` r
+
 cat("Gene names:", paste0(unique(countdata$gene), collapse = ", "))
 ```
 
@@ -136,6 +139,7 @@ from the CCFv3 registration for use later. Note that these boundaries
 are only used for this comparison, not to fit the model.
 
 ``` r
+
 layer.boundary.bins <- read.csv(
   system.file(
       "extdata", 
@@ -151,6 +155,7 @@ rows, one row per gene. Hence, the number of cells can be found by
 dividing the number of rows by the number of genes.
 
 ``` r
+
 num_cells <- nrow(countdata)/num_genes
 cat("Number of cells:", num_cells, "\n")
 ```
@@ -188,6 +193,7 @@ well-known R package lme4 with the appropriate effects structure could
 be gotten with the following call:
 
 ``` r
+
 model <- lme4::lmer(
     count ~ age * hemisphere + (age * hemisphere|mouse), 
     data = countdata
@@ -251,6 +257,7 @@ Unless flagged as a time series, all fixed effects must have at most two
 levels.
 
 ``` r
+
 # Specify variables for wisp
 data.variables <- list(
     species = "gene",
@@ -266,6 +273,7 @@ wisp function to make plots showing rate changes over time.
 It would be redundant, but all roles would be specified as follows:
 
 ``` r
+
 # Specify all variables for wisp
 data.variables <- list(
     count = "count",
@@ -344,6 +352,7 @@ parameter estimates can be compared to the laminar boundaries estimated
 by the CCFv3 registration.
 
 ``` r
+
 # Set random seed for reproducibility
 set.seed(123)
 # Load wispack
@@ -378,6 +387,7 @@ model <- wisp(
 ##  warp_precision: 1e-07
 ##  round_none: TRUE
 ##  trtKO: none
+##  max_bin: 0
 ##  inf_warp: 450359962.73705
 ## 
 ## Plot settings:
@@ -467,18 +477,21 @@ model <- wisp(
 ## row: 1920/2400
 ## row: 2400/2400
 ## 
-## Making initial parameter estimates:
+## Wrapping up initialization:
 ## Extrapolated 'none' rows
 ## Took log of observed counts
 ## Estimated gamma dispersion of raw counts
-## Estimated change points
 ## Found average log counts for each context-species combination
+## Constructed grouping variable IDs
+## 
+## Running LRO change-point detection and setting initial parameters
+## ----------------------------------------
+## Estimated change points
 ## Estimated initial parameters for fixed-effect treatments
 ## Built initial beta (ref and fixed-effects) matrices
 ## Initialized random-effect warping factors
 ## Made and mapped parameter vector
 ## Number of parameters: 300
-## Constructed grouping variable IDs
 ## Size of boundary vector: 1260
 ## 
 ## Estimating model parameters
@@ -507,9 +520,9 @@ model <- wisp(
 ## Acceptance rate (aim for 0.2-0.3): 0.283432
 ## 
 ## MCMC simulation complete... 
-## MCMC run time (total), minutes: 0.806
-## MCMC run time (per retained step), seconds: 0.044
-## MCMC run time (per step), seconds: 0.044
+## MCMC run time (total), minutes: 1.178
+## MCMC run time (per retained step), seconds: 0.064
+## MCMC run time (per step), seconds: 0.064
 ## 
 ## Setting full-data fit as parameters... 
 ## Checking feasibility of provided parameters
@@ -593,6 +606,7 @@ the output. The output of wisp is a list with the following named
 components:
 
 ``` r
+
 for (n in names(model)) cat(n, ": ", paste0(class(model[[n]]), collapse = ", "), "\n", sep = "")
 ```
 
@@ -622,6 +636,7 @@ for (n in names(model)) cat(n, ": ", paste0(class(model[[n]]), collapse = ", "),
 Within the stats object (another list itself), the following is found:
 
 ``` r
+
 for (n in names(model$stats)) cat(n, ": ", paste0(class(model$stats[[n]]), collapse = ", "), "\n", sep = "")
 ```
 
@@ -638,6 +653,7 @@ are the model parameters, the columns of which are various statistical
 results of interest, e.g., confidence intervals and p-values:
 
 ``` r
+
 print(head(model$stats$parameter))
 ```
 
@@ -658,6 +674,7 @@ reference level), the name of the gene of interest (“RORB”), and the
 type of parameter (fixed effect on rate, which is “beta” on “Rt”):
 
 ``` r
+
 mask <- grepl("Rorb", model$stats$parameters$parameter) &    # just this gene
   grepl("right", model$stats$parameters$parameter) &         # just the effect of hemisphere
   grepl("beta", model$stats$parameters$parameter) &          # just the fixed effects of the above factor
@@ -706,6 +723,7 @@ automatically generates these plots and stores them in plots\$ratecount.
 Here, for example, is the plot for RORB:
 
 ``` r
+
 print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Rorb)
 ```
 
@@ -738,6 +756,7 @@ provided (via the variables argument), the wisp function automatically
 generates time-series plots for each gene.
 
 ``` r
+
 print(model$plots$timeseries$plot_pred_context_cortex_timeseries_Rorb)
 ```
 

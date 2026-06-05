@@ -20,13 +20,32 @@
 - Allow MCMC.prior to be a vector of different prior distributions for
   each parameter. When completed, update the tutorial on customizing
   statistical analyses.
+- Ensure nested loops for matrix operations have the major axis (column)
+  on outside.
+- Extracellular (out-of-soma) transcripts do not follow a Poisson
+  distribution, and so any attempt to model them with wisp needs to
+  account for this.
+
+## Version 2.2 (June 5, 2026)
+
+- Added model.settings argument max_bin to wisp which allows users to
+  specify the largest bin number. If left at zero, the function will
+  infer the maximum bin number from the count data.
+- Aligned matrix nested loops to major axis (column) to improve
+  computational efficiency.
+- Updated plot.decomposition to allow for multiple contexts.
+- Fixed plot.timeseries to plot single-block species.
+- Added LRO parameter grid search option. (Very effective!)
+- Updated preprocessing functions for making count data.
+- Fixed batch size for forking.
 
 ## Version 2.1 (March 1, 2026)
 
 - Added model.settings argument trtKO to wisp which enables excluding
   treatments to run reduced models.
 - Replaced corrupted data file “corticallaminar_model.rds” with working
-  version.
+  version (hopefully for the last time!).
+- Fixed memory leak related to CI computation.
 
 ## Version 2.0 (Feb 19, 2026)
 

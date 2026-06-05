@@ -72,7 +72,7 @@ model <- wisp(
         dim.bounds = colMeans(layer.boundary.bins)
       ),
     bootstraps.num = 1000, 
-    max.fork = 5,
+    max.fork = 20,
     verbose = TRUE
   )
 model$plots <- NULL

@@ -514,7 +514,7 @@ py_install(c(
   "ipdb",
   "rpy2"
 ), pip = TRUE)
-my_ELLA_dir <- "/Users/michaelbarkasi/Library/CloudStorage/OneDrive-WashingtonUniversityinSt.Louis/projects_Oviedo_lab/_molecular_mechanisms_of_ACx_lateralization/paper_WSPmm_method/wspmm_methods/ELLA/ELLA"
+my_ELLA_dir <- "/Users/michaelbarkasi/projects_Oviedo_lab/_molecular_mechanisms_of_ACx_lateralization/paper_WSPmm_method/wspmm_methods/ELLA/ELLA"
 ```
 ```{r Python_setup_demo, eval = FALSE}
 # Set up virtual python environment for reticulate, in bash (terminal): 

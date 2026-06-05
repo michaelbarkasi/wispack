@@ -37,7 +37,7 @@ wisp(
 
 \item{verbose}{Logical, if TRUE, prints information during the fitting process.}
 
-\item{model.settings}{List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, \code{warp_precision}, \code{round_none}, and \code{trtKO}. Default values are provided.}
+\item{model.settings}{List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, \code{warp_precision}, \code{round_none}, \code{trtKO}, and \code{max_bin}. Default values are provided.}
 
 \item{MCMC.settings}{List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.}
 

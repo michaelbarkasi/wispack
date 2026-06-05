@@ -25,7 +25,7 @@ NULL
 #' @param converged.resamples.only Logical, if TRUE, only resamples with a converged fit are used for statistical analysis; if FALSE, all resamples are used. Applies only to bootstraps. 
 #' @param max.fork Integer, maximum number of parallel processes to use for bootstrapping.
 #' @param verbose Logical, if TRUE, prints information during the fitting process.
-#' @param model.settings List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, \code{warp_precision}, \code{round_none}, and \code{trtKO}. Default values are provided.
+#' @param model.settings List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, \code{warp_precision}, \code{round_none}, \code{trtKO}, and \code{max_bin}. Default values are provided.
 #' @param MCMC.settings List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.
 #' @param plot.settings List, settings for plots to make, including \code{print.plots}, \code{dim.bounds}, \code{log.scale}, \code{splitting_factor}, \code{CI_style}, \code{label_size}, \code{title_size}, \code{axis_size}, \code{legend_size}, \code{count_size}, \code{count_jitter}, \code{count.alpha.ran}, \code{count.alpha.none}, \code{pred.alpha.ran}, and \code{pred.alpha.none}. Default values are provided.
 #' @param LRO.grid.search Logical, if TRUE, runs a grid search to find the optimal parameters for the LRO change-point detection algorithm and returns the results.
@@ -178,7 +178,7 @@ wisp <- function(
     model.settings.internal <- list(
       buffer_factor = 0.05,                       # buffer factor for minimum distance between t-points
       ctol = 1e-6,                                # convergence tolerance
-      max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from structural parameter values
+      max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from parameter bounds
       LROcutoff = 2.0,                            # cutoff for LROcp, a multiple of standard deviation
       LROwindow_factor = 1.25,                    # controls size of window used in LROcp algorithm (window = LROwindow_factor * bin_num * buffer_factor)
       rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
@@ -186,16 +186,17 @@ wisp <- function(
       rng_seed = 42,                              # seed for random number generator
       warp_precision = 1e-7,                      # decimal precision to retain when selecting really big number as pseudo infinity for unbound warping
       round_none = TRUE,                          # round extrapoloted counts for "none" (no random effect) to nearest integer? 
-      trtKO = c("none")                           # list of effect names to remove from the model, e.g., model without the Factor1 x Factor2 interaction.
+      trtKO = c("none"),                          # list of effect names to remove from the model, e.g., model without the Factor1 x Factor2 interaction.
+      max_bin = 0.0                               # Largest bin number; if left zero, will infer from count data
     )
     # ... check that provided model.settings is a list with valid names
     model.settings.names <- check_list(model.settings, model.settings.internal)
     # ... check and load values
     for (s in names(model.settings)) {
       ms <- model.settings[[s]]
-      if (!(ms > 0)) {
-        if (s != "round_none") {
-          stop("All model.settings values must be positive numbers, except for 'round_none'")
+      if (!(s == "round_none" || s == "trtKO" || s == "max_bin")) {
+        if (!(ms > 0)) {
+          stop("All model.settings values must be positive numbers, except for 'round_none', 'trtKO', and 'max_bin'")
         }
       } else if (s == "buffer_factor" && !(ms < 1)) {
         stop("model.settings$buffer_factor must be a number between 0 and 1")

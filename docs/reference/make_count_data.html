@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,7 +70,9 @@
 <span>  <span class="va">data_path</span>,</span>
 <span>  remove_L1 <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ROIname <span class="op">=</span> <span class="st">"Primary auditory area"</span>,</span>
+<span>  ROI_only <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  raw <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  drop_blanks <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  load_first_file_only <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -92,8 +94,16 @@
 <dd><p>Name of the region of interest (default is "Primary auditory area")</p></dd>
 
 
+<dt id="arg-roi-only">ROI_only<a class="anchor" aria-label="anchor" href="#arg-roi-only"></a></dt>
+<dd><p>Logical, whether to include only cells in the specified ROI (default is TRUE)</p></dd>
+
+
 <dt id="arg-raw">raw<a class="anchor" aria-label="anchor" href="#arg-raw"></a></dt>
 <dd><p>Logical, whether to use raw transcript counts vs normalized ones (default is TRUE)</p></dd>
+
+
+<dt id="arg-drop-blanks">drop_blanks<a class="anchor" aria-label="anchor" href="#arg-drop-blanks"></a></dt>
+<dd><p>Logical, whether to drop blank barcodes (default is TRUE)</p></dd>
 
 
 <dt id="arg-load-first-file-only">load_first_file_only<a class="anchor" aria-label="anchor" href="#arg-load-first-file-only"></a></dt>

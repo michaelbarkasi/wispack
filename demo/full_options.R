@@ -65,7 +65,7 @@ data.variables <- list(
 model.settings <- list(
     buffer_factor = 0.05,                       # buffer factor for minimum distance between t-points
     ctol = 1e-6,                                # convergence tolerance
-    max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from structural parameter values
+    max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from parameter bounds
     LROcutoff = 2.0,                            # cutoff for LROcp, a multiple of standard deviation
     LROwindow_factor = 1.25,                    # controls size of window used in LROcp algorithm (window = LROwindow_factor * bin_num * buffer_factor)
     rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
@@ -73,7 +73,8 @@ model.settings <- list(
     rng_seed = 42,                              # seed for random number generator
     warp_precision = 1e-7,                      # decimal precision to retain when selecting really big number as pseudo infinity for unbound warping
     round_none = TRUE,                          # round extrapoloted counts for "none" (no random effect) to nearest integer? 
-    trtKO = c("none")                           # list of effect names to remove from the model, e.g., model without the Factor1 x Factor2 interaction
+    trtKO = c("none"),                          # list of effect names to remove from the model, e.g., model without the Factor1 x Factor2 interaction
+    max_bin = 0.0                               # Largest bin number; if left zero, will infer from count data
   )
 
 # Setting suggestions: 

@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
 
       <h1>Release Notes</h1>
             
-            <h4 data-toc-skip class="date">2026-03-23</h4>
+            <h4 data-toc-skip class="date">2026-06-05</h4>
       
 
       <div class="d-none name"><code>release_notes.Rmd</code></div>
@@ -115,6 +115,30 @@ check. Compare with the more detailed checks of <span class="code_variable">MCMC
 <li>Allow <span class="code_variable">MCMC.prior</span> to be a vector
 of different prior distributions for each parameter. When completed,
 update the tutorial on customizing statistical analyses.</li>
+<li>Ensure nested loops for matrix operations have the major axis
+(column) on outside.</li>
+<li>Extracellular (out-of-soma) transcripts do not follow a Poisson
+distribution, and so any attempt to model them with wisp needs to
+account for this.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="version-2-2-june-5-2026">Version 2.2 (June 5, 2026)<a class="anchor" aria-label="anchor" href="#version-2-2-june-5-2026"></a>
+</h2>
+<ul>
+<li>Added <span class="code_variable">model.settings</span> argument
+<span class="code_variable">max_bin</span> to <span class="function">wisp</span> which allows users to specify the largest
+bin number. If left at zero, the function will infer the maximum bin
+number from the count data.</li>
+<li>Aligned matrix nested loops to major axis (column) to improve
+computational efficiency.</li>
+<li>Updated <span class="function">plot.decomposition</span> to allow
+for multiple contexts.</li>
+<li>Fixed <span class="function">plot.timeseries</span> to plot
+single-block species.</li>
+<li>Added LRO parameter grid search option. (Very effective!)</li>
+<li>Updated preprocessing functions for making count data.</li>
+<li>Fixed batch size for forking.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -125,7 +149,8 @@ update the tutorial on customizing statistical analyses.</li>
 <span class="code_variable">trtKO</span> to <span class="function">wisp</span> which enables excluding treatments to run
 reduced models.</li>
 <li>Replaced corrupted data file “corticallaminar_model.rds” with
-working version.</li>
+working version (hopefully for the last time!).</li>
+<li>Fixed memory leak related to CI computation.</li>
 </ul>
 </div>
 <div class="section level2">

@@ -36,6 +36,7 @@ the model of the laminar axis of somatosensory cortex from the RORB
 [tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.md):
 
 ``` r
+
 # Set random seed for reproducibility
 set.seed(123)
 # Load wispack
@@ -61,6 +62,7 @@ estimates](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md)
 than the MCMC walk.
 
 ``` r
+
 model <- wisp(
     count.data = countdata,
     variables = data.variables,
@@ -79,6 +81,7 @@ from the [CCFv3](https://doi.org/10.1016/j.cell.2020.04.007)
 registration for comparison:
 
 ``` r
+
 layer.boundary.bins <- read.csv(
   system.file(
       "extdata", 
@@ -92,6 +95,7 @@ Let’s use the plot.ratecount function to reproduce the RORB plot that
 was made and shown in the previous tutorial:
 
 ``` r
+
 plot.ratecount(
   model,
   dim.boundaries = colMeans(layer.boundary.bins),
@@ -125,6 +129,7 @@ By default, both kinds of rate-count plots show rate as a raw value.
 However, it’s possible to rescale the vertical axis into log form:
 
 ``` r
+
 plot.ratecount(
   model,
   dim.boundaries = colMeans(layer.boundary.bins),
@@ -144,6 +149,7 @@ counts as scatter points. It’s accessed via the CI_style argument in
 plot.ratecount:
 
 ``` r
+
 plot.ratecount(
   model,
   dim.boundaries = colMeans(layer.boundary.bins),
@@ -164,6 +170,7 @@ individual replicates. Still, they can be visually crowded, so wispack
 provides a function to decompose them into their components.
 
 ``` r
+
 plots.decomp <- plot.decomposition(
   model,
   dim.boundaries = colMeans(layer.boundary.bins),
@@ -176,6 +183,7 @@ without random effets) and predicted rates (fit of observed counts vs
 predicted rates without random effects):
 
 ``` r
+
 grid.arrange(grobs = plots.decomp[2:5], ncol = 2)
 ```
 
@@ -196,6 +204,7 @@ Next, let’s look at observed counts (points) and their fits (dashed
 lines) on the same plot, but broken out by sample:
 
 ``` r
+
 grid.arrange(grobs = plots.decomp[7:length(plots.decomp)], ncol = 2)
 ```
 
@@ -222,6 +231,7 @@ function to visualize how predicted rates change with age. Let’s look at
 the time-series plot for RORB again:
 
 ``` r
+
 plot.timeseries(
   model, 
   species = "Rorb"
@@ -253,6 +263,7 @@ show the underlying rate, transition point, and slope parameters – or
 the corresponding random-effect scalars – that define a wisp model.
 
 ``` r
+
 plots.param <- plot.parameters(
   model,
   species = "Rorb"
@@ -265,6 +276,7 @@ and the random-effect scalars. Let’s look at the baseline parameters
 first:
 
 ``` r
+
 plots.param$plot_baseline_cortex_Rorb
 ```
 
@@ -292,6 +304,7 @@ switching hemispheres in the reference condition, i.e., the shift from
 left to right hemisphere at P12:
 
 ``` r
+
 plots.param$plot_treatment_right_cortex_Rorb
 ```
 
@@ -312,6 +325,7 @@ of these tests are shown above the parameter in the typical notation:
 “\*\*\*” is p \< 0.001.
 
 ``` r
+
 plots.param$plot_treatment_18_cortex_Rorb
 ```
 
@@ -322,6 +336,7 @@ from P12 to P18) in the reference condition (left hemisphere). The next
 plot shows the interaction effect of age in the right hemisphere:
 
 ``` r
+
 plots.param$plot_treatment_right18_cortex_Rorb
 ```
 
@@ -330,6 +345,7 @@ plots.param$plot_treatment_right18_cortex_Rorb
 Finally, we can look at the random-effect scalars for each parameter:
 
 ``` r
+
 plots.param$plot_ranEff_cortex_Rorb
 ```
 

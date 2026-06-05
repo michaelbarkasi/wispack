@@ -2,8 +2,8 @@ Package: wispack
 Type: Package
 Encoding: UTF-8
 Title: Warped-sigmoid Poisson-process mixed-effects models (WSPmm)
-Version: 2.1
-Date: 2025-03-17
+Version: 2.2
+Date: 2025-06-05
 Author: Michael Barkasi
 Maintainer: Michael Barkasi <barkasi@wustl.edu>
 Description: WSPmm are intended for hypothesis testing of spatially or temporally variable count data. They parameterize data in terms of blocks separated by transition points, each block having a process rate and each transition point having both a position and slope.

@@ -22,7 +22,7 @@ make_count_data_csv(
 
 - data_path:
 
-  Path to the directory containing the HDF5 files@aliases
+  Path to the directory containing the HDF5 files
 
 - remove_L1:
 

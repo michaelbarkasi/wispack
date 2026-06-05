@@ -1,4 +1,4 @@
-pandoc: 3.6.3
+pandoc: 3.8.3
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
@@ -14,7 +14,7 @@ articles:
   tutorial_timeseries: tutorial_timeseries.html
   tutorial_warping: tutorial_warping.html
   tutorial_wispplots: tutorial_wispplots.html
-last_built: 2026-03-23T19:31Z
+last_built: 2026-06-05T20:28Z
 urls:
   reference: https://michaelbarkasi.github.io/wispack/reference
   article: https://michaelbarkasi.github.io/wispack/articles

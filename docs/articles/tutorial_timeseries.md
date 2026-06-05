@@ -54,6 +54,7 @@ will typically be a count of transcripts from an RNA species in a single
 cell.
 
 ``` r
+
 countdata <- read.csv(
   system.file(
       "extdata", 
@@ -81,6 +82,7 @@ filled with “cortex”, a variable giving the hemisphere of each
 observation:
 
 ``` r
+
 print(unique(countdata$hemisphere))
 ```
 
@@ -92,6 +94,7 @@ A variable giving counts (by cell) for the following six layer specific
 genes:
 
 ``` r
+
 print(unique(countdata$gene))
 ```
 
@@ -103,6 +106,7 @@ A variable giving the age (in postnatal days) of the mouse from which
 each cell was collected:
 
 ``` r
+
 for (m in unique(countdata$mouse)) {
   cat(
     paste0(
@@ -158,6 +162,7 @@ flagged as fixed-effects. However, wispack must be told if a given
 fixed-effect column is to be treated as a time series factor.
 
 ``` r
+
 # Define variables in the dataframe for the model
 data.variables <- list(
     species = "gene",
@@ -172,6 +177,7 @@ manual CCFv3 registration). These will only be used for plotting and
 visualization after fitting the model, not for fitting the model itself.
 
 ``` r
+
 boundary_path <- system.file(
     "extdata", 
     "ACx_layer_boundary_bins.csv", 
@@ -187,6 +193,7 @@ modeling, we’ll only fit the model (fit_only = TRUE) without running any
 estimation](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md).
 
 ``` r
+
 library(wispack, quietly = TRUE)
 
 model <- wisp(
@@ -220,6 +227,7 @@ model <- wisp(
 ##  warp_precision: 1e-07
 ##  round_none: TRUE
 ##  trtKO: none
+##  max_bin: 0
 ##  inf_warp: 450359962.73705
 ## 
 ## Plot settings:
@@ -269,7 +277,7 @@ model <- wisp(
 ## implied pseudo-infinity for unbounded warp (inf_warp): 4.5036e+08
 ## 
 ## Extracting variables and data information:
-## Found max bin: 100.000000
+## Max bin: 100.000000
 ## Fixed effects:
 ## "hemisphere" "timeseries"
 ## Ref levels:
@@ -303,18 +311,21 @@ model <- wisp(
 ## row: 2880/3600
 ## row: 3600/3600
 ## 
-## Making initial parameter estimates:
+## Wrapping up initialization:
 ## Extrapolated 'none' rows
 ## Took log of observed counts
 ## Estimated gamma dispersion of raw counts
-## Estimated change points
 ## Found average log counts for each context-species combination
+## Constructed grouping variable IDs
+## 
+## Running LRO change-point detection and setting initial parameters
+## ----------------------------------------
+## Estimated change points
 ## Estimated initial parameters for fixed-effect treatments
 ## Built initial beta (ref and fixed-effects) matrices
 ## Initialized random-effect warping factors
 ## Made and mapped parameter vector
 ## Number of parameters: 414
-## Constructed grouping variable IDs
 ## Size of boundary vector: 2160
 ## 
 ## Fitting model to data
@@ -344,6 +355,7 @@ model <- wisp(
 Before examining the results, let’s look at the weight matrix.
 
 ``` r
+
 print(head(model$weight.matrix))
 ```
 
@@ -404,6 +416,7 @@ which shows a temporally dynamic and lateralized profile in deep layers
 (block 1), but almost no activity in superficial layers (block 2).
 
 ``` r
+
 print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Nxph3)
 ```
 
@@ -432,6 +445,7 @@ time series is provided or detected, through an internal call to the
 plot.timeseries function.
 
 ``` r
+
 print(model$plots$timeseries$plot_pred_context_cortex_timeseries_Nxph3)
 ```
 

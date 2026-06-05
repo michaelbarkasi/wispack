@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,6 +78,7 @@
 <span>  model.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  MCMC.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  plot.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  LRO.grid.search <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  ran.seed <span class="op">=</span> <span class="fl">1234</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -119,7 +120,7 @@
 
 
 <dt id="arg-model-settings">model.settings<a class="anchor" aria-label="anchor" href="#arg-model-settings"></a></dt>
-<dd><p>List, settings for the C++ model, including <code>buffer_factor</code>, <code>ctol</code>, <code>max_penalty_at_distance_factor</code>, <code>LROcutoff</code>, <code>LROwindow_factor</code>, <code>rise_threshold_factor</code>, <code>max_evals</code>, <code>rng_seed</code>, <code>warp_precision</code>, <code>round_none</code>, and <code>trtKO</code>. Default values are provided.</p></dd>
+<dd><p>List, settings for the C++ model, including <code>buffer_factor</code>, <code>ctol</code>, <code>max_penalty_at_distance_factor</code>, <code>LROcutoff</code>, <code>LROwindow_factor</code>, <code>rise_threshold_factor</code>, <code>max_evals</code>, <code>rng_seed</code>, <code>warp_precision</code>, <code>round_none</code>, <code>trtKO</code>, and <code>max_bin</code>. Default values are provided.</p></dd>
 
 
 <dt id="arg-mcmc-settings">MCMC.settings<a class="anchor" aria-label="anchor" href="#arg-mcmc-settings"></a></dt>
@@ -128,6 +129,10 @@
 
 <dt id="arg-plot-settings">plot.settings<a class="anchor" aria-label="anchor" href="#arg-plot-settings"></a></dt>
 <dd><p>List, settings for plots to make, including <code>print.plots</code>, <code>dim.bounds</code>, <code>log.scale</code>, <code>splitting_factor</code>, <code>CI_style</code>, <code>label_size</code>, <code>title_size</code>, <code>axis_size</code>, <code>legend_size</code>, <code>count_size</code>, <code>count_jitter</code>, <code>count.alpha.ran</code>, <code>count.alpha.none</code>, <code>pred.alpha.ran</code>, and <code>pred.alpha.none</code>. Default values are provided.</p></dd>
+
+
+<dt id="arg-lro-grid-search">LRO.grid.search<a class="anchor" aria-label="anchor" href="#arg-lro-grid-search"></a></dt>
+<dd><p>Logical, if TRUE, runs a grid search to find the optimal parameters for the LRO change-point detection algorithm and returns the results.</p></dd>
 
 
 <dt id="arg-ran-seed">ran.seed<a class="anchor" aria-label="anchor" href="#arg-ran-seed"></a></dt>
