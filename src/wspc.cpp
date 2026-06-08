@@ -582,6 +582,9 @@ void wspc::LRO_initial_param_ests(
     param_beta_Rt_idx = params["param_beta_Rt_idx"];
     param_beta_tslope_idx = params["param_beta_tslope_idx"];
     param_beta_tpoint_idx = params["param_beta_tpoint_idx"];
+    param_baseline_Rt_idx = params["param_baseline_Rt_idx"];
+    param_baseline_tslope_idx = params["param_baseline_tslope_idx"];
+    param_baseline_tpoint_idx = params["param_baseline_tpoint_idx"];
     param_baseline_idx = params["param_baseline_idx"];
     beta_idx = params["beta_idx"];
     wfactor_idx = params["wfactor_idx"];
@@ -1067,21 +1070,16 @@ bool wspc::test_tpoints(
           }
           // Transition points must be in increasing order 
           // ... and can't be closer than the buffer
-          // ... and first point must be > buffer, 
-          // ... and last point must be < bin_num - buffer
+          // ... and first point must be >= buffer, 
+          // ... and last point must be <= bin_num - buffer
           for (int d = 0; d < deg + 1; d++) {
             sdouble buffer_dist = (tpoint_ext(d + 1) - tpoint_ext(d)) - tpoint_buffer;
             if (buffer_dist < 0.0) {
               if (verbose) {
-                vprint(
-                  "Found tpoint below buffer, dist: " + std::to_string(buffer_dist.val()),
-                    true);
-                vprint(
-                  "   deg: " + std::to_string(d) + ", row: " + std::to_string(r),
-                    true);
-                vprint(
-                  "   tpoint_ext(d + 1): " + std::to_string(tpoint_ext(d + 1).val()) + ", tpoint_ext(d): " + std::to_string(tpoint_ext(d).val()),
-                    true);
+                vprint("Found tpoint below buffer, distance: " + std::to_string(buffer_dist.val()), true);
+                vprint("   deg: " + std::to_string(d) + ", row: " + std::to_string(r), true);
+                vprint("   tpoint_ext(d + 1): " + std::to_string(tpoint_ext(d + 1).val()) + ", tpoint_ext(d): " + std::to_string(tpoint_ext(d).val()), true);
+                vprint("   species: " + std::string(species[r]) + ", context: " + std::string(context[r]) + ", ran level: " + std::string(ran[r]) + ", treatment: " + std::string(treatment[r]), true);
               }
               return false;
             }
@@ -1463,6 +1461,9 @@ dVec wspc::bs_fit(
     param_beta_Rt_idx = params["param_beta_Rt_idx"];
     param_beta_tslope_idx = params["param_beta_tslope_idx"];
     param_beta_tpoint_idx = params["param_beta_tpoint_idx"];
+    param_baseline_Rt_idx = params["param_baseline_Rt_idx"];
+    param_baseline_tslope_idx = params["param_baseline_tslope_idx"];
+    param_baseline_tpoint_idx = params["param_baseline_tpoint_idx"];
     param_baseline_idx = params["param_baseline_idx"];
     beta_idx = params["beta_idx"];
     wfactor_idx = params["wfactor_idx"];
@@ -2025,13 +2026,8 @@ Rcpp::List wspc::check_parameter_feasibility(
     if (!feasible) {
       
       // Variables for optimization
-      dVec x = to_dVec(to_NumVec(parameters_var));
+      dVec x = to_dVec(parameters_var);
       size_t n = x.size();
-      
-      // Manually reduce t-point effects 
-      for (int i : param_beta_tpoint_idx) {
-        x[i] *= 0.5;
-      }
       
       // Set up NLopt optimizer
       nlopt::opt opt(nlopt::LD_LBFGS, n);
@@ -2043,27 +2039,44 @@ Rcpp::List wspc::check_parameter_feasibility(
       int success_code = 0;
       
       // Optimize
-      try {
-        nlopt::result sc = opt.optimize(x, max_fx);
-        success_code = static_cast<int>(sc);
-      } catch (std::exception& e) {
-        if (verbose) {
-          Rcpp::Rcout << "Optimization failed: " << e.what() << std::endl;
+      int n_tries = 0;
+      int max_tries = 6;
+      while (n_tries < max_tries && success_code == 0) {
+        // Manually reduce t-point effects 
+        for (int i : param_beta_tpoint_idx) {x[i] *= 0.5;}
+        for (int i : param_wfactor_point_idx) {x[i] *= 0.5;}
+        // Manually check baseline t-points 
+        for (int i = 1; i < param_baseline_tpoint_idx.size(); i++) {
+          int idx0 = param_baseline_tpoint_idx[i-1];
+          int idx1 = param_baseline_tpoint_idx[i];
+          if (x[idx1] - x[idx0] < tpoint_buffer) {
+            x[idx0] -= tpoint_buffer.val()/4.0;
+            x[idx1] += tpoint_buffer.val()/4.0;
+          }
         }
-        success_code = 0;
+        // Run nlopt 
+        try {
+          nlopt::result sc = opt.optimize(x, max_fx);
+          success_code = static_cast<int>(sc);
+        } catch (std::exception& e) {
+          if (verbose && n_tries == max_tries - 1) {
+            Rcpp::Rcout << "Optimization failed: " << e.what() << std::endl;
+          }
+          success_code = 0;
+        }
+        n_tries++;
       }
       
       // Find and report final distance to boundary
       if (verbose) {
-        vprint("Number of evals: ", (int)opt.get_numevals());
-        vprint("Success code: ", (int)success_code);
-        vprint("Final boundary distance: ", (double)max_fx);
+        vprint("Number of tries: ", n_tries);
+        vprint("Number of evals (last try): ", (int)opt.get_numevals());
+        vprint("Success code (last try): ", (int)success_code);
+        vprint("Final boundary distance (last try): ", (double)max_fx);
       }
       
       // Final check of boundary distance
-      if (max_fx <= 0) {
-        success_code = 0;
-      }
+      if (max_fx <= 0) {success_code = 0;}
       
       // Check for success
       if (success_code == 0) {

@@ -198,6 +198,9 @@ List make_parameter_vector(
     iVec param_beta_Rt_idx;        // ... Excluding ref level (same below)
     iVec param_beta_tslope_idx;
     iVec param_beta_tpoint_idx;
+    iVec param_baseline_Rt_idx;
+    iVec param_baseline_tslope_idx;
+    iVec param_baseline_tpoint_idx;
     iVec param_baseline_idx;
     List beta_idx = clone(beta);
     List wfactor_idx = clone(wfactor); 
@@ -240,6 +243,7 @@ List make_parameter_vector(
             NumericMatrix beta_mc_cxt_sps = beta_mc_cxt[sps];
             
             // Unroll the effects matrices
+            // ... for each block/transition point t
             for (int t = 0; t < beta_mc_cxt_sps.ncol(); t++) {
               
               // For map
@@ -249,11 +253,8 @@ List make_parameter_vector(
                 
                 // Map
                 CharacterVector param_name;
-                if (i == 0) {
-                  param_name = CharacterVector::create("baseline", cxt, mc, sps, t_name);
-                } else {
-                  param_name = CharacterVector::create("beta", mc, cxt, sps, treatment_lvls[i], "X", t_name);
-                }
+                if (i == 0) {param_name = CharacterVector::create("baseline", cxt, mc, sps, t_name);} 
+                else {param_name = CharacterVector::create("beta", mc, cxt, sps, treatment_lvls[i], "X", t_name);}
                 
                 // Add name
                 param_names.push_back(param_name);
@@ -269,6 +270,13 @@ List make_parameter_vector(
                   }   
                 } else {
                   param_baseline_idx.push_back(idx);
+                  if (mc == "Rt") {
+                    param_baseline_Rt_idx.push_back(idx);
+                  } else if (mc == "tslope") {   
+                    param_baseline_tslope_idx.push_back(idx);
+                  } else if (mc == "tpoint") {   
+                    param_baseline_tpoint_idx.push_back(idx);
+                  }
                 }
                 beta_idx_mc_cxt_sps.push_back(idx);
                 idx++;  
@@ -367,6 +375,9 @@ List make_parameter_vector(
       _["param_beta_Rt_idx"] = wrap(param_beta_Rt_idx),
       _["param_beta_tslope_idx"] = wrap(param_beta_tslope_idx),
       _["param_beta_tpoint_idx"] = wrap(param_beta_tpoint_idx),
+      _["param_baseline_Rt_idx"] = wrap(param_baseline_Rt_idx),
+      _["param_baseline_tslope_idx"] = wrap(param_baseline_tslope_idx),
+      _["param_baseline_tpoint_idx"] = wrap(param_baseline_tpoint_idx),
       _["param_baseline_idx"] = wrap(param_baseline_idx),
       _["beta_idx"] = beta_idx,
       _["wfactor_idx"] = wfactor_idx

@@ -156,6 +156,9 @@ class wspc {
     IntegerVector param_beta_Rt_idx;
     IntegerVector param_beta_tslope_idx;
     IntegerVector param_beta_tpoint_idx;
+    IntegerVector param_baseline_Rt_idx;
+    IntegerVector param_baseline_tslope_idx;
+    IntegerVector param_baseline_tpoint_idx;
     IntegerVector param_baseline_idx;
     List beta_idx;                          // ... lists giving the structured array indices for named parameters
     List wfactor_idx; 

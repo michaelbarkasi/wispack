@@ -893,23 +893,23 @@ List estimate_change_points(
     }
     
     return List::create(
-      _["degMat"] = degMat,                                 // matrix of degrees of each context-species combination
-      _["found_cp_list"] = found_cp_list,                   // list of found change points for each context-species combination
-      _["found_cp_trt_list"] = found_cp_trt_list            // list of found change points for each context-species combination, averaged across treatments
+      _["degMat"] = degMat,                          // matrix of degrees of each context-species combination
+      _["found_cp_list"] = found_cp_list,            // list of found change points for each context-species combination
+      _["found_cp_trt_list"] = found_cp_trt_list     // list of found change points for each context-species combination, averaged across treatments
     );
     
   }
 
 // Function to take means of count_log 
 List find_count_log_means(
-    const sVec& bin,                               // bin data vector 
-    const sVec& count_log,                         // log of count data vector
-    const LogicalVector& count_not_na_mask,        // mask for non-NA counts
-    const int& bin_num_i,                          // number of bins in the count data
-    const CharacterVector& context,                 // context column of summed data
+    const sVec& bin,                                 // bin data vector 
+    const sVec& count_log,                           // log of count data vector
+    const LogicalVector& count_not_na_mask,          // mask for non-NA counts
+    const int& bin_num_i,                            // number of bins in the count data
+    const CharacterVector& context,                  // context column of summed data
     const CharacterVector& species,                  // species column of summed data
-    const CharacterVector& treatment,              // treatment column of summed data
-    const CharacterVector& context_lvls,            // levels of context grouping variable (fixed-effects)
+    const CharacterVector& treatment,                // treatment column of summed data
+    const CharacterVector& context_lvls,             // levels of context grouping variable (fixed-effects)
     const CharacterVector& species_lvls,             // levels of species grouping variable (fixed-effects)
     const CharacterVector& treatment_lvls,                      // all possible treatment combinations, levels as single-string name
     const std::vector<CharacterVector>& treatment_components    // all possible treatment combinations, level components
