@@ -611,6 +611,13 @@ void wspc::LRO_initial_param_ests(
     }
     vprint("Size of boundary vector: " + std::to_string(boundary_vec_size), verbose);
     
+    // Check for any treatment-level knockouts and set effects to zero in param vector
+    for (String this_trtKO : trtKO) {fitted_parameters[grep_cpp(param_names, "_" + ((std::string)this_trtKO) + "_")] = 0.0;}
+    
+    // Check feasibility 
+    List feasibility_results = check_parameter_feasibility(to_sVec(fitted_parameters), false); 
+    fitted_parameters = Rcpp::as<NumericVector>(feasibility_results["parameters"]);
+    
   }
 
 // Search for best LRO change-point detection settings
@@ -1469,9 +1476,7 @@ dVec wspc::bs_fit(
     wfactor_idx = params["wfactor_idx"];
     
     // Check for any treatment-level knockouts and set effects to zero in param vector
-    for (String this_trtKO : trtKO) {
-      fitted_parameters[grep_cpp(param_names, "_" + ((std::string)this_trtKO) + "_")] = 0.0;
-    }
+    for (String this_trtKO : trtKO) {fitted_parameters[grep_cpp(param_names, "_" + ((std::string)this_trtKO) + "_")] = 0.0;}
     
     // Check feasibility 
     List feasibility_results = check_parameter_feasibility(to_sVec(fitted_parameters), false); 

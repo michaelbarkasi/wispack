@@ -997,11 +997,11 @@ List estimate_initial_parameters(
     std::vector<int> reduced_trts;
     // ... identify nonzero columns
     for (int j = 0; j < weight_rows.cols(); ++j) {
-        if (weight_rows.col(j).array().abs().sum().val() > 0) {
-          reduced_trts.push_back(j);
-        } else {
-          reduced_rank = true;
-        }
+      if (weight_rows.col(j).array().abs().sum().val() > 0) {
+        reduced_trts.push_back(j);
+      } else {
+        reduced_rank = true;
+      }
     }
     // ... build reduced matrix
     const int treatment_num_reduced = reduced_trts.size();
