@@ -209,6 +209,18 @@ class wspc {
     
     // ***** Initial setup
     
+    // Computes gamma_dispersion matrix and related vectors
+    void compute_gamma_dispersion();
+    
+    // Find row numbers ("pool") of observed counts to use for extrapolation of "none's"
+    void make_extrapolation_pool(bool verbose);
+    
+    // Function to take means of count_log 
+    void find_count_log_means();
+    
+    // Function to estimate change points
+    void estimate_change_points();
+    
     // Estimate change points and initial parameters for model fitting
     void LRO_initial_param_ests(
       bool verbose = false,
@@ -335,6 +347,23 @@ class wspc {
     
     // ***** Setting parameters
     
+    // Build default fixed-effects matrices in shell
+    List build_beta_shell(
+        const List& ref_values,
+        const List& RtEffs,
+        const List& tpointEffs,
+        const List& tslopeEffs
+    );
+    
+    // Estimate initial parameters for model fitting
+    List estimate_initial_parameters();
+    
+    // Function for converting structured encoding of parameters into a vector
+    void make_parameter_vector(
+        const List& beta, 
+        const List& wfactor
+    );
+    
     // Set the model with the given parameters
     void set_parameters(
         const NumericVector& parameters,
@@ -366,8 +395,8 @@ class wspc {
     Rcpp::NumericVector grad_bounded_nll_debug(
         const dVec& x 
     ) const;
-  
-};
+   
+  };
 
 // Helper functions, printing ******************************************************************************************
 
@@ -614,47 +643,8 @@ std::vector<CharacterVector> make_treatments(
   std::vector<CharacterVector> fix_trt
   );
 
-// Model parameter management
-// --------------------------
-
-// Build default fixed-effects matrices in shell
-List build_beta_shell(
-  const CharacterVector& mc_names,
-  const CharacterVector& treatment_lvls,
-  const CharacterVector& context_lvls,
-  const CharacterVector& species_lvls,
-  const List& ref_values,
-  const List& RtEffs,
-  const List& tpointEffs,
-  const List& tslopeEffs,
-  const IntegerMatrix& degs
-  );
-
-// Function for converting structured encoding of parameters into a vector
-List make_parameter_vector(
-  const List& beta, 
-  const List& wfactor, 
-  const CharacterVector& prt_lvls, 
-  const CharacterVector& cld_lvls, 
-  const CharacterVector& rn_lvls, 
-  const CharacterVector& mc_list, 
-  const CharacterVector& treatment_lvls,
-  const IntegerMatrix& degs
-  );
-
 // Extrapolating random-effect free counts
 // ---------------------------------------
-
-// Find row numbers ("pool") of observed counts to use for extrapolation of "none's"
- std::vector<IntegerVector> make_extrapolation_pool(
-  const sVec& bin,
-  const sVec& count, 
-  const CharacterVector& context,
-  const CharacterVector& species,
-  const CharacterVector& ran, 
-  const CharacterVector& treatment,
-  bool verbose
-  );
 
 // Use extrapolation pool to extrapolate counts
 sVec extrapolate_none(
@@ -754,16 +744,6 @@ sdouble gamma_dispersion_formula(
     const sdouble& count_cs_var   // variance of counts for context-species combination
   );
 
-// Recomputes gamma_dispersion matrix, but not gd_species_idx and gd_context_idx
-List compute_gamma_dispersion(
-    const sVec& count,                             // count data vector (raw, not log)
-    const LogicalVector& count_not_na_mask,        // mask for non-NA counts
-    const CharacterVector& context,                // context column of summed data
-    const CharacterVector& species,                // species column of summed data
-    const CharacterVector& context_lvls,           // levels of context grouping variable (fixed-effects)
-    const CharacterVector& species_lvls            // levels of species grouping variable (fixed-effects)
-  );
-
 // Function to set warping ratios 
 sdouble warp_ratio(
     const sdouble& basis,    // parameterizing coordinate to set the warp
@@ -839,60 +819,6 @@ std::vector<dVec> est_bkRates_tRuns(
     const NumericVector& count_series,  // count series
     const IntegerVector& cp_series,     // found change points
     const double& rise_threshold_factor // amount of detected rise as fraction of total required to end run
-  );
-
-// Function to estimate change points
-List estimate_change_points(
-    const sVec& bin,                               // bin data vector 
-    const sVec& count_log,                         // log of count data vector
-    const LogicalVector& count_not_na_mask,        // mask for non-NA counts
-    const double& cp_buffer,                       // minimum distance between two change points
-    const int& ws,                                 // running window size
-    const int& bin_num_i,                          // number of bins in the count data
-    const double& LROcutoff,                       // cutoff for outlier detection in change-point detection
-    const CharacterVector& context,                // context column of summed data
-    const CharacterVector& species,                // species column of summed data
-    const CharacterVector& ran,                    // random effect column of summed data
-    const CharacterVector& treatment,              // treatment column of summed data
-    const CharacterVector& context_lvls,           // levels of context grouping variable (fixed-effects)
-    const CharacterVector& species_lvls,           // levels of species grouping variable (fixed-effects)
-    const CharacterVector& ran_lvls,               // levels of random effect grouping variable (random-effects)
-    const CharacterVector& treatment_lvls,                      // all possible treatment combinations, levels as single-string name
-    const std::vector<CharacterVector>& treatment_components    // all possible treatment combinations, level components
-  );
-
-// Function to take means of count_log 
-List find_count_log_means(
-    const sVec& bin,                               // bin data vector 
-    const sVec& count_log,                         // log of count data vector
-    const LogicalVector& count_not_na_mask,        // mask for non-NA counts
-    const int& bin_num_i,                          // number of bins in the count data
-    const CharacterVector& context,                // context column of summed data
-    const CharacterVector& species,                // species column of summed data
-    const CharacterVector& treatment,              // treatment column of summed data
-    const CharacterVector& context_lvls,           // levels of context grouping variable (fixed-effects)
-    const CharacterVector& species_lvls,           // levels of species grouping variable (fixed-effects)
-    const CharacterVector& treatment_lvls,                      // all possible treatment combinations, levels as single-string name
-    const std::vector<CharacterVector>& treatment_components    // all possible treatment combinations, level components
-  );
-
-// Function to estimate change points
-List estimate_initial_parameters(
-    const sVec& count,                             // count data vector (raw, not log)
-    const LogicalVector& count_not_na_mask,        // mask for non-NA counts
-    const int& treatment_num,                      // number of treatments
-    const double& rise_threshold_factor,           // amount of detected rise as fraction of total required to end run
-    const double& min_initialization_slope,        // minimum slope for initial parameterization
-    const sMat& weight_rows,                       // ... for making weights matrix and initial effects estimates
-    const CharacterVector& mc_list,                // list of model component types to estimate initial parameters for
-    const CharacterVector& context,                // context column of summed data
-    const CharacterVector& species,                // species column of summed data
-    const CharacterVector& context_lvls,           // levels of context grouping variable (fixed-effects)
-    const CharacterVector& species_lvls,           // levels of species grouping variable (fixed-effects)
-    const IntegerMatrix& degMat,                   // matrix of degrees of each context-species combination
-    const List& found_cp_list,                     // list of found change points (IntegerMatrix) for each context-species combination
-    const List& found_cp_trt_list,                 // list of found change points (NumericMatrix) for each context-species combination, averaged across treatments
-    const List& count_log_avg_mat_list             // list of average log counts (NumericMatrix) for each context-species combination
   );
 
 // Function to initialize random effect warping factors 
