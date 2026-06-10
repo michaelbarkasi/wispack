@@ -73,6 +73,16 @@ plot.ratecount(
   species = "Rorb" 
   )
 ```
+```{r check1, echo = FALSE}
+gb <- plot.ratecount(
+  model,
+  dim.boundaries = colMeans(layer.boundary.bins),
+  species = "Rorb" 
+  )
+test_val <- ggplot_build(gb$plot_pred_context_cortex_fixEff_Rorb)$data[[1]][4,2]
+test_val
+if (test_val < 9.374682 || test_val > 9.374684) stop("failed check 1")
+```
 
 CI rate-count plots are straightforward to interpret: The horizontal ($x$) axis shows spatial position along the modeled spatial dimension, the vertical ($y$) axis shows predicated rate. The solid line represents predicated rate, after random effects have been filtered out. The shaded ribbons show the 95\% confidence interval around the predicated rate. As explained in the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html), this confidence interval is computed without any multiple comparison correction (unlike $p$-values, which are corrected for multiple comparisons). Note that the different ribbon sizes in this plot compared to the plot from the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html) are due to using bootstraps instead of MCMC samples.
 
@@ -113,6 +123,13 @@ plots.decomp <- plot.decomposition(
   species = "Rorb"
   )
 ```
+```{r check2, echo = FALSE}
+layer_data <- ggplot_build(plots.decomp[[3]])$data[[1]]
+layer_data[, c("x", "y")]
+test_val <- layer_data[, c("x", "y")][4,2]
+test_val
+if (test_val < 9.374682 || test_val > 9.374684) stop("failed check 2")
+```
 
 First, let's look at separate plots of counts (observed vs extrapolated without random effets) and predicted rates (fit of observed counts vs predicted rates without random effects):
 
@@ -139,6 +156,14 @@ plot.timeseries(
   model, 
   species = "Rorb"
   )
+```
+```{r check3, echo = FALSE}
+gb <- plot.timeseries(
+  model, 
+  species = "Rorb"
+  )
+test_val <- gb$plot_pred_context_cortex_timeseries_Rorb$data[2,3]
+if (test_val < 11.11764 || test_val > 11.11766) stop("failed check 3")
 ```
 
 As explained in the [time series tutorial](tutorial_timeseries.html), the rate represented by the height of the solid lines is the rate parameter itself (for each block), not the actual predicted rate. The actual predicated rate at a given bin (or the mean predicated rate across an entire block) can be lower than the rate parameter, depending on the slope parameters of the transitions. In time series plots, the points represent the mean observed rate across an entire block (with random effects filtered out). Thus, as is the case in this example, the distance between the observed points and the predicted rates is not necessarily a sign of a bad fit. As can be seen in the rate-count plots above, the fit is quite good. 
@@ -186,6 +211,11 @@ Finally, we can look at the random-effect scalars for each parameter:
 
 ```{r RORB_parameters_random}
 plots.param$plot_ranEff_cortex_Rorb
+```
+```{r check4, echo = FALSE}
+test_val <- plots.param$plot_ranEff_cortex_Rorb$data[2,2]
+test_val
+if (test_val < 0.218858 || test_val > 0.218860) stop("failed check 4")
 ```
 
 There is one scalar for each parameter type (rate, transition point, transition slope), with each sample (i.e., replicate) having its own set of scalars. For example, in the above plot we can see at a glance that samples 1 and 2 have rates that are higher than expected while samples 3 and 4 have rates that are lower than expected. The exact interpretation of the random-effect parameters is discussed in the [warping tutorial](tutorial_warping.html).

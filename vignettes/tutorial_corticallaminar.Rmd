@@ -65,11 +65,17 @@ As can be seen, the imported data has the columns: <span class = "code_variable"
 num_genes <- length(unique(countdata$gene))
 cat("Number of genes:", num_genes, "\n")
 ```
+```{r check1, echo = FALSE}
+if (num_genes != 6) stop("failed check 1")
+```
 
 Which genes? 
 
 ```{r name_genes}
 cat("Gene names:", paste0(unique(countdata$gene), collapse = ", "))
+```
+```{r check2, echo = FALSE}
+if (unique(countdata$gene)[2] != "Fezf2") stop("failed check 2")
 ```
 
 Just as <span class = "gene">RORB</span> is known to be localized to L4, the other genes are also known to be localized to specific layers. 
@@ -100,6 +106,9 @@ Each row in the data frame represents a cell from the left or right S1 region of
 ```{r n_cells}
 num_cells <- nrow(countdata)/num_genes
 cat("Number of cells:", num_cells, "\n")
+```
+```{r check3, echo = FALSE}
+if (num_cells != 54116) stop("failed check 3")
 ```
 
 The count column thus gives the number of molecules of the RNA species listed in the gene column, found in the cell represented by a given row. Each cell, of course, comes from a specific mouse and brain hemisphere, information given in the correspondingly named columns. The age column gives the age of the mouse. 
@@ -232,6 +241,9 @@ The parameter object <span class = "code_variable">stats$parameter</span> is a d
 ```{r parameter_components}
 print(head(model$stats$parameter))
 ```
+```{r check4, echo = FALSE}
+if (model$stats$parameter[1,2] != 3.3874762662) stop("failed check 4")
+```
 
 All fixed-effects of hemisphere (i.e., laterality) on the expression rate of <span class = "gene">RORB</span> can be extracted by masking with the treatment variable name for the factor <span class = "code_variable">hemisphere</span> (which is "right", with "left" as the reference level), the name of the gene of interest ("<span class = "gene">RORB</span>"), and the type of parameter (fixed effect on rate, which is "beta" on "Rt"):
 
@@ -241,6 +253,9 @@ mask <- grepl("Rorb", model$stats$parameters$parameter) &    # just this gene
   grepl("beta", model$stats$parameters$parameter) &          # just the fixed effects of the above factor
   grepl("Rt", model$stats$parameters$parameter)              # just the effects on rate
 print(model$stats$parameter[mask, ])
+```
+```{r check5, echo = FALSE}
+if (model$stats$parameter[mask, ][2,3] != 0.0226205964) stop("failed check 5")
 ```
 
 Notice that all of the parameter names end in "Tns/Blk1", "Tns/Blk2", "Tns/Blk3", or "Tns/Blk4". This is because the model fit found three transition points, thus dividing the laminar axis into four blocks of roughly constant expression rate. The estimated effect of <span class = "code_variable">hemisphere</span> on rate is given for each of the four blocks. Each block lists two estimates, one for the effect at the reference age (P12), and one for the interaction of <span class = "code_variable">hemisphere</span> with <span class = "code_variable">age</span> (the effect of laterality at P18). As can be seen, <span class = "gene">RORB</span> expression is up-regulated in the right hemisphere (compared to left) across all blocks, but the interaction of <span class = "code_variable">hemisphere</span> with <span class = "code_variable">age</span> decreases that up-regulation, i.e., the laterality effect is less pronounced at P18 than at P12.

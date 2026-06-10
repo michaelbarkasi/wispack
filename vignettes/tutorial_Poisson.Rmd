@@ -55,6 +55,10 @@ The variable <span class = "code_variable">count</span> is a vector of length $1
 countdata <- data.frame(bin, count)
 print(head(countdata))
 ```
+```{r check1, echo = FALSE}
+if (countdata[1,1] != 31) stop("failed check 1")
+if (countdata[2,2] != 8) stop("failed check 1")
+```
 
 This data frame can be used to plot the counts as a function of space:
 
@@ -136,6 +140,10 @@ for (param_type in c("Rt", "tslope", "tpoint")) {
   )
 }
 ```
+```{r check2, echo = FALSE}
+if (est_param[grepl("Rt", param_names)][1] != 4.675) stop("failed check 2")
+if (est_param[grepl("tslope", param_names)][2] != 32.061) stop("failed check 2")
+```
 
 It is immediately clear from the three tpoint parameters (i.e., $p$) that wisp has recovered the transition points at bins $25$, $50$, and $75$. However, at first glance, the rates (Rt) look off. This is because wisp has predicted the log transform of the sum of the rates. To recover the original rates of $1$, $5$, $2$, and $7$, we need to exponentiate the recovered rates, subtract $1$, and divide by the mean number of tokens per bin within the block. 
 
@@ -155,6 +163,9 @@ for (block in 1:4) {
       )
     )
 }
+```
+```{r check3, echo = FALSE}
+if (round(recovered_rate, 3) != 7.405) stop("failed check 3")
 ```
 
 Thus, wisp indeed works well for modeling gamma-distributed Poisson processes!

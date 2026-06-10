@@ -148,6 +148,13 @@ The [rate-count wisp plot](tutorial_wispplots.html) is made automatically with a
 ```{r plot_wisp}
 print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Nxph3)
 ```
+```{r check, echo = FALSE}
+gb <- ggplot2::ggplot_build(model$plots$ratecount$plot_pred_context_cortex_fixEff_Nxph3)
+layer_data <- gb$data[[1]]
+layer_data[, c("x", "y")]
+test_val <- layer_data[, c("x", "y")][4,2]
+if (test_val < 203.18266 || test_val > 203.18268) stop("failed end check")
+```
 
 By default, when the <span class = "code_variable">timeseries</span> factor is present, rate-count plots use an HCL color space, plotting time series as graduated luminance and the other factors as categorical levels of hue and chroma. In this case, left-hemisphere treatment levels are in green and right-hemisphere levels are in blue, with earlier time points dull and later time points brighter. This makes the lateralization easy to see: the dull green line for the left hemisphere at P7 is much higher than any of the blue lines for the right hemisphere. However, the temporal dynamics are harder to see and only shown implicitly. If you look closely, you should be able to see that (for the deep layers) for both left (green) and right (blue), the dullest line (P7) is the highest, the medium-brightness line (P12) is the lowest, and the brightest line (P18) is in between. This suggests that <span class = "gene">NXPH3</span> expression in deep layers dips at P12 relative to P7, then rises again in P18.
 

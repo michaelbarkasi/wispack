@@ -239,6 +239,9 @@ radial.model <- wisp(
   plot.settings = plot.settings
 )
 ```
+```{r check, echo = FALSE}
+if (radial.model$stats$parameters[4,2] == 0.13107595) stop("failed end check")
+```
 
 <h2>Examining results</h2>
 
