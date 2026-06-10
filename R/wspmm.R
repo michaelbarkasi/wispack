@@ -707,14 +707,12 @@ prune_samples_by_convergence <- function(
     n_conv <- sum(wisp.results$diagnostics.bs$success.code == 3)
     n_total <- nrow(wisp.results$diagnostics.bs)
     if (n_conv / n_total < 0.9) {
-      warning_message <- paste0("Warning: Only ", n_conv, " out of ", n_total, " resamples converged to fit. Results may be unreliable. Using all resamples.")
+      warning_message <- paste0("Warning: Only ", n_conv, " out of ", n_total, " resamples converged to fit. Results may be unreliable.")
       if (verbose) snk.report...(warning_message)
       warning(warning_message)
-      sample_results <- wisp.results$sample.params
-    } else {
-      if (verbose) snk.report...("Grabbing sample results, only resamples with converged fit")
-      sample_results <- wisp.results$sample.params[wisp.results$diagnostics.bs$success.code == 3,]
-    }
+    } 
+    if (verbose) snk.report...("Grabbing sample results, only resamples with converged fit")
+    sample_results <- wisp.results$sample.params[wisp.results$diagnostics.bs$success.code == 3,]
     return(sample_results)
   }
 

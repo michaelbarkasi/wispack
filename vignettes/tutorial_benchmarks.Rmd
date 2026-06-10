@@ -48,6 +48,9 @@ Here is the head of the imported seed data:
 ```{r print_data_head}
 print(head(countdata))
 ```
+```{r check1}
+if (countdata[1,5] < 3.485959 || countdata[1,5] > 3.485961) stop("failed check 1")
+```
 
 Let's visualize the seed data: 
 
@@ -136,6 +139,10 @@ Spatially variable genes are simulated in a two-step process. First, the spatial
 ```{r plot_Vip, fig.width = 8, fig.height = 4, out.width="100%"}
 do.call(grid.arrange, c(test_sim$plots[["Vip"]], ncol = 2))
 ```
+```{r check2, echo = FALSE}
+test_val <- ggplot_build(test_sim$plots[["Vip"]][[1]])$data[[1]][4,2]
+if (test_val < 2.116861 || test_val > 2.116863) stop("failed check 2")
+```
 
 Next, at least one gene is randomly selected to be a SVG. For each SVG, a single spatial coordinate $\langle x^\prime, y^\prime\rangle$ is randomly selected from the data set to serve as an attractor point. Spatial points $\langle x, y\rangle$ are pulled towards the attractor point according to the transformation: 
 \[x\mapsto x - (x - x^\prime)\eta\]
@@ -150,6 +157,10 @@ In fact, $D$ is the expected value of the beta distribution. Thus, points closer
 ```{r plot_Slc17a7, fig.width = 8, fig.height = 8, out.width="100%"}
 do.call(grid.arrange, c(test_sim$plots[["Slc17a7"]], ncol = 2))
 ```
+```{r check3, echo = FALSE}
+test_val <- ggplot_build(test_sim$plots[["Slc17a7"]][[1]])$data[[1]][7,2]
+if (test_val < 2.063262 || test_val > 2.063264) stop("failed check 3")
+```
 
 <h3>Simulating FSEs</h3>
 
@@ -162,6 +173,10 @@ For genes like <span class = "gene">Slc17a7</span> not selected to exhibit FSEs,
 ```{r fetch_effects}
 for (g in c(1:4)) cat("\n", test_sim$genes[g], ": b = ", test_sim$effect[g], sep = "")
 ``` 
+```{r check4, echo = FALSE}
+test_val <- test_sim$effect[3]
+if (test_val < -0.4785649 || test_val > -0.4785647) stop("failed check 4")
+```
 
 For convenience, the <span class = "function">attractor_simulation</span> function returns $b - 0.5$ under the <span class = "code_variable">effect</span> component of the output list. The advantage here is that genes without a FSE in the treatment condition will show an effect value of zero, a FSE that down-regulates expression will be negative, and a FSE that up-regulates expression will be positive. For example, here are the plots for <span class = "gene">Pvalb</span>, which exhibits a slight up-regulating FSE: 
 
@@ -173,6 +188,10 @@ And here are the plots for <span class = "gene">Tac2</span>, which exhibits a la
 
 ```{r plot_Tac2, fig.width = 8, fig.height = 8, out.width="100%"}
 do.call(grid.arrange, c(test_sim$plots[["Tac2"]], ncol = 2))
+```
+```{r check5, echo = FALSE}
+test_val <- ggplot_build(test_sim$plots[["Tac2"]][[1]])$data[[1]][7,2]
+if (test_val < 3.691496 || test_val > 3.691498) stop("failed check 5")
 ```
 
 <h3>Simulating replicates</h3>
@@ -212,6 +231,10 @@ For example, in our test simulation, the scale factors $c$ are:
 ```{r replicate_scale_factors}
 for (r in 1:4) cat("\nReplicate ", r, ": c = ", test_sim$replicate_rate_scalars[r], sep = "")
 ```
+```{r check6, echo = FALSE}
+test_val <- test_sim$replicate_rate_scalars[1]
+if (test_val < -0.3201774 || test_val > -0.3201772) stop("failed check 6")
+```
 
 The effects of these scalars can be seen by plotting one of the genes in the reference condition across all replicates: 
 
@@ -247,6 +270,10 @@ wisp_results <- model_attractor_simulation_wisp(
     max_fork = 10
   )
 print(wisp_results)
+```
+```{r check7, echo = FALSE}
+test_val <- wisp_results[12,1]
+if (test_val < 1.295841583 || test_val > 1.295841585) stop("failed check 7")
 ```
 
 Here we see three different parameters (under the <span class = "code_variable">param</span> column) for benchmarking: the rate effect of the <span class = "code_variable">trt</span> condition (<span class = "code_variable">rate_effect</span>) for each gene (under the <span class = "code_variable">id</span> column), the random effect (<span class = "code_variable">random_effect</span>) of each replicate (under the <span class = "code_variable">id</span> column), and whether the <span class = "code_variable">trt</span> condition induces a FSE (<span class = "code_variable">FSE</span>) for each gene (under the <span class = "code_variable">id</span> column). For each parameter, the stipulated value used in the simulation is given under the <span class = "code_variable">true</span> column, while the estimate from wisp is given under the <span class = "code_variable">est</span> column. Note that for <span class = "code_variable">rate_effect</span> and <span class = "code_variable">random_effect</span>, the parameter is a continuous value. The true, stipulated value will always be between $-0.5$ and $0.5$. (As explained above, these values are randomly choosen from between zero and one, and reported after subtracting $0.5$ so that down-regulation is negative and up-regulation is positive). For <span class = "code_variable">FSE</span>, the parameter is binary, with a <span class = "code_variable">true</span> value of 1 indicating that the gene exhibits a FSE in the treatment condition, and a <span class = "code_variable">true</span> value of 0 indicating no FSE. The estimated value for <span class = "code_variable">FSE</span> is a $p$-value. The obvious idea is that a $p$-value below some threshold (e.g., $0.05$) indicates the presence of a FSE, while a $p$-value above that threshold indicates no FSE.
@@ -1010,6 +1037,20 @@ By default, this function computes false positive rate (FPR), false discovery ra
 
 ```{r show_benchmarks}
 print(round(benchmark_metrics, 3))
+```
+```{r check8, echo = FALSE}
+test_val <- benchmark_metrics[1,1]
+if (test_val < 0.227 || test_val > 0.229) stop("failed check 8")
+test_val <- benchmark_metrics[3,2]
+if (test_val < 0.017 || test_val > 0.019) stop("failed check 8")
+test_val <- benchmark_metrics[8,3]
+if (test_val < 0.427 || test_val > 0.429) stop("failed check 8")
+test_val <- benchmark_metrics[9,1]
+if (test_val < 1 || test_val > 3) stop("failed check 8")
+test_val <- benchmark_metrics[9,2]
+if (test_val < 26 || test_val > 28) stop("failed check 8")
+test_val <- benchmark_metrics[9,3]
+if (test_val < 426 || test_val > 428) stop("failed check 8")
 ```
 
 As can be seen, both ELLA and wisp control for false positives very well, with FDRs well below the intended $0.05$ threshold. This control is evidently bought at the price of power, however. On the other hand, DESeq2 shows higher power, but at the cost of a very high FDR. This is perhaps due to design, as DESeq2 is intended to be used for data exploration on large gene panels, while ELLA and wisp are aimed at hypothesis testing. 

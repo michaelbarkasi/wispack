@@ -168,11 +168,13 @@ The second plot created by <span class = "function">demo.warp.plot</span> shows 
 print(warp_plots$demo_plot_warpedsigmoid)
 ```
 ```{r check, echo = FALSE}
-if (demo_data[214,4] != 0.2702111) stop("failed end check")
+test_val <- demo_data[214,4]
+if (test_val < 0.2702110 || test_val > 0.2702112) stop("failed end check")
 gb <- ggplot2::ggplot_build(warp_plots[["demo_plot_warpedsigmoid"]])
 layer_data <- gb$data[[1]]
 layer_data[, c("x", "y")]
-if (layer_data[, c("x", "y")][5,2] != 27.8595329) stop("failed end check")
+test_val <- layer_data[, c("x", "y")][5,2]
+if (test_val < 27.8595328 || test_val > 27.8595330) stop("failed end check")
 ```
 
 Notice that to make this plot, three warping factors $\rho$ were provided: $\langle 0.6, -0.9, 0.5\rangle$. The first is the warping factor for the rate parameter, the second is for the slope parameter, and the third is for the transition point parameter. As can be seen in the plot, the warping function $\omega$ has the effect of increasing the rate, decreasing the slope, and increasing the transition point location.

@@ -95,6 +95,8 @@ class wspc {
     CharacterVector species;                // species column of summed data (i.e., species tokens of which are counted)
     CharacterVector ran;                    // random effect column of summed data
     CharacterVector treatment;              // treatment column of summed data
+    std::vector<int> context_num;           // numeric encoding of context factor
+    std::vector<int> species_num;           // numeric encoding of species factor
     
     // Model predictions, Rcpp 
     NumericVector predicted_rates_log;      // log of values predicted by model
@@ -147,23 +149,22 @@ class wspc {
     sdouble warp_precision;                 // precision surviving in calculations of warping
     sdouble inf_warp;                       // pseudo-infinity value for warping (representing no warp boundary)
     sVec warp_bounds;                       // warping bounds for each model component
-    IntegerVector warp_bounds_idx = IntegerVector::create(0, 1, 2);
     
     // Indices for managing parameters vector
-    IntegerVector param_wfactor_point_idx;  // ... indexes of parameter vector for quick access of different kinds of model parameters
-    IntegerVector param_wfactor_rate_idx;
-    IntegerVector param_wfactor_slope_idx;
-    IntegerVector param_beta_Rt_idx;
-    IntegerVector param_beta_tslope_idx;
-    IntegerVector param_beta_tpoint_idx;
-    IntegerVector param_baseline_Rt_idx;
-    IntegerVector param_baseline_tslope_idx;
-    IntegerVector param_baseline_tpoint_idx;
-    IntegerVector param_baseline_idx;
-    List beta_idx;                          // ... lists giving the structured array indices for named parameters
-    List wfactor_idx; 
-    IntegerVector gv_ran_idx;               // ... indices (row and column) for random effect arrays 
-    IntegerVector gv_fix_idx;  
+    std::vector<int> param_wfactor_point_idx;  // ... indexes of parameter vector for quick access of different kinds of model parameters
+    std::vector<int> param_wfactor_rate_idx;
+    std::vector<int> param_wfactor_slope_idx;
+    std::vector<int> param_beta_Rt_idx;
+    std::vector<int> param_beta_tslope_idx;
+    std::vector<int> param_beta_tpoint_idx;
+    std::vector<int> param_baseline_Rt_idx;
+    std::vector<int> param_baseline_tslope_idx;
+    std::vector<int> param_baseline_tpoint_idx;
+    std::vector<int> param_baseline_idx;
+    std::vector<std::vector<std::vector<std::vector<int>>>> beta_idx;
+    std::vector<std::vector<int>> wfactor_idx; 
+    std::vector<int> gv_ran_idx;
+    std::vector<int> gv_sps_idx;  
     
     // Variables for initial degree estimation
     double LROcutoff;                       // cutoff (x sd) for likelihood ratio outlier detection
@@ -235,8 +236,8 @@ class wspc {
     
     // Compute model component values for rows of summed count data
     sVec compute_warped_mc(
-        const String& mc,          // Model component for which to compute values
-        const int& r,              // Row of summed count data for which to compute model component 
+        int mc,                    // Model component for which to compute values
+        int r,                     // Row of summed count data for which to compute model component 
         const sVec& parameters,    // Parameters to use in computation
         const sdouble& wf          // Warping factor to apply 
     ) const;
@@ -338,11 +339,6 @@ class wspc {
         double prior_sd,                    // Standard deviation of prior distribution
         bool start_from_fit,                // Start from parameters found with gradient descent?
         bool verbose
-    );
-    
-    // Resample (demo)
-    Rcpp::NumericMatrix resample(
-        int n_resample                      // total number of resamples to draw
     );
     
     // ***** Setting parameters

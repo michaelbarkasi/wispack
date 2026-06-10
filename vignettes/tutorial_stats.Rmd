@@ -117,7 +117,7 @@ This default analysis can be accessed from the output of <span class = "function
 ```{r view_default_stats}
 print(head(model$stats$parameters))
 ```
-```{r check1}
+```{r check1, echo = FALSE}
 if (model$stats$parameters[4,2] < 0.0476934491 || model$stats$parameters[4,2] > 0.0476934493) stop("failed check 1")
 ```
 
@@ -131,8 +131,8 @@ model$stats$parameters <- sample.stats(
     verbose = TRUE
   )
 ```
-```{r check1}
-if (model$stats$parameters[4,3] < -0.1029797 || model$stats$parameters[4,3] > -0.1029795) stop("failed check 1")
+```{r check2, echo = FALSE}
+if (model$stats$parameters[4,3] < -0.1029797 || model$stats$parameters[4,3] > -0.1029795) stop("failed check 2")
 ```
 
 Above we switched from $\alpha = 0.05$ to $\alpha = 0.01$ and from a Holm-Bonferroni to a Bonferroni correction. As can be seen in the print out, if <span class = "code_variable">verbose</span> is set to <span class = "code_variable">TRUE</span>, <span class = "function">sample.stats</span> will print out both the head of <span class = "code_variable">model\$stats\$parameters</span> and also information about the threshold $\alpha$ and the number of hypothesis tests run. In this case, $\alpha = 0.01$ and 171 tests are fun. In addition, the function <span class = "function">summary.stats</span> estimates the number of resamples needed for threshold $\alpha$ and outputs both this number and the actual number of resamples used. In this case, it's recommended that 17,100 resamples are used, but only 1,001 are given (the thousand bootstraps, plus the original fit of the model to the data). Hence, if this were a real analysis, either $\alpha$ should be increased (e.g., back up to 0.05), or the number of bootstraps increased. 
@@ -196,9 +196,9 @@ This function returns three plots: one showing the walks taken by high-valued pa
 ```{r plot_MCMC_walks_low}
 print(MCMC_walk_plots$plot.walks.parameters_low)
 ```
-```{r check2, echo = FALSE}
+```{r check3, echo = FALSE}
 test_val <- ggplot_build(MCMC_walk_plots$plot.walks.parameters_low)$data[[1]][4,2]
-if (test_val < -0.9426827 || test_val > -0.9426825) stop("failed check 2")
+if (test_val < -0.9426827 || test_val > -0.9426825) stop("failed check 3")
 ```
 
 As can be seen, there is high autocorrelation between steps, i.e., the value at a given point is much closer to the values of its neighbors than to the values of more distant points. This is undesirable, as it means that many of the samples are not independent. A higher value for <span class = "code_variable">MCMC.neighbor.filter</span> may help, as it essentially skips nearby samples. 
@@ -235,6 +235,10 @@ Let's make a copy of our model that uses the MCMC walks and re-run the statistic
 model_MCMC <- model
 model_MCMC$sample.params <- model_MCMC$sample.params.MCMC
 model_MCMC$stats$parameters <- sample.stats(model_MCMC)
+```
+```{r check4, echo = FALSE}
+test_val <- model_MCMC$stats$parameters[4,4]
+if (test_val > 0.05630499 || test_val < 0.05630497) stop("failed check 4")
 ```
 
 Now, let's plot the values $\beta$ for <span class = "gene">RORB</span> for the effect of age in the left hemisphere. We will highlight the value found by the L-BFGS fit with a large yellow asterisk. Here are the distributions from the bootstrap resamples:
@@ -302,6 +306,10 @@ model_median <- wisp(
     verbose = TRUE
   )
 ```
+```{r check5, echo = FALSE}
+test_val <- model_median$stats$parameters[1,2]
+if (test_val > 3.4171645317 || test_val < 3.4171645315) stop("failed check 5")
+```
 
 Now, let's plot the age-effect parameters again, this time with the median estimate from the MCMC walk highlighted:
 
@@ -349,6 +357,10 @@ print(
     theme(plot.title = element_text(hjust = 0.5, size = model$plot.settings$title_size*0.75))
 )
 ```
+```{r check6, echo = FALSE}
+test_val <- ggplot_build(bs_comp_plots$plot_sample_correlations)$data[[1]][4,2]
+if (test_val < 0.003856667 || test_val > 0.003856669) stop("failed check 6")
+```
 
 Another important consideration is the distribution of the resampled parameter values. The plots of the age effect show this distribution (for each parameter separately) as a violin plot. From these it's clear that the bootstrap resamples are more normal than the MCMC walk resamples. We can get a more complete picture by looking at the distribution of Shapiro-Wilk normality test $p$-values across all parameters, which is the second plot provided by the <span class = "function">plot.MCMC.bs.comparison</span> function. As seen in the plot, the two resampling methods produce mirror results: MCMC walks produce many parameter distributions with low $p$-values (i.e., non-normal distributions), while bootstrap resamples produce many parameter distributions with high $p$-values (i.e., normal distributions).
 
@@ -358,6 +370,10 @@ print(
     theme(plot.title = element_text(hjust = 0.5, size = model$plot.settings$title_size*0.75))
 )
 ```
+```{r check7, echo = FALSE}
+test_val <- ggplot_build(bs_comp_plots$plot_comparison_Shaprio)$data[[1]][4,2]
+if (test_val < 0.9714236 || test_val > 0.9714238) stop("failed check 7")
+```
 
 Finally, the third plot of the <span class = "function">plot.MCMC.bs.comparison</span> function provides another look at the parameter distributions produced by each method by plotting a few randomly chosen distributions: 
 
@@ -366,6 +382,10 @@ print(
   bs_comp_plots$plot_comparison_density +
     theme(plot.title = element_text(hjust = 0.5, size = model$plot.settings$title_size*0.75))
 )
+```
+```{r check8, echo = FALSE}
+test_val <- ggplot_build(bs_comp_plots$plot_comparison_density)$data[[1]][4,2]
+if (test_val < 6.193577e-05 || test_val > 6.193579e-05) stop("failed check 8")
 ```
 
 A natural question to ask concerns the false-positive rate, false-discovery rate, and power of the bootstrap-based hypothesis testing. This question is addressed in the [benchmarking tutorial](tutorial_benchmarks.html). 

@@ -48,9 +48,19 @@ wspc::wspc(
       vprint("implied pseudo-infinity for unbounded warp (inf_warp): ", inf_warp);
     }
     
-    // Check structure of input data
+    // Remove any KO columns 
     CharacterVector col_names = count_data.names();
+    for (String this_trtKO : trtKO) {
+      IntegerVector trkKO_idx = grep_cpp(col_names, this_trtKO);
+      int cnt = 0;
+      for (int idx : trkKO_idx) {
+        col_names.erase(col_names.begin() + (idx - cnt));  // ... remove from col_names, adjusting for previous removals
+      }
+    }
+    
+    // Check structure of input data
     CharacterVector required_cols = CharacterVector::create("count", "bin", "context", "species", "ran");
+    col_names = col_names[!col_names.isin(trtKO)];
     int n_cols = col_names.size();
     int r_cols = required_cols.size();
     for (int i = 0; i < r_cols; i++) {
@@ -67,10 +77,8 @@ wspc::wspc(
     bin_num = (sdouble)settings["max_bin"];
     if (bin_num == 0.0) {bin_num = smax(to_sVec(Rcpp::as<NumericVector>(count_data["bin"])));}
     warp_bounds.resize(3); 
-    for (int i = 0; i < 3; i++) {warp_bounds[i] = inf_warp;}  // initialize to infinity (no bounds)
-    warp_bounds_idx.names() = CharacterVector::create("Rt", "tslope", "tpoint");
-    int warp_bound_tpoint_idx = warp_bounds_idx["tpoint"]; 
-    warp_bounds[warp_bound_tpoint_idx] = bin_num;  // set tpoint bound to max bin
+    for (int i = 0; i < 3; i++) {warp_bounds[i] = inf_warp;}            // initialize to infinity (no bounds)
+    warp_bounds[2] = bin_num;                                           // set tpoint bound to max bin
     vprint("Max bin: " + std::to_string(bin_num.val()), verbose);
     
     // Extract fixed effects 
@@ -85,9 +93,11 @@ wspc::wspc(
     for (int i = 0; i < n_fix; i++) {
       fix_names[i] = col_names[i + r_cols];
       
-      SEXP col = count_data[i + r_cols];
+      // Grab column of fixed-effect variable
+      SEXP col = count_data[fix_names[i]];
       CharacterVector lvls;
       
+      // Sort levels
       if (Rf_isNumeric(col)) {
         // Sort numerically, then convert to character
         NumericVector tmp = Rcpp::sort_unique(Rcpp::as<NumericVector>(col));
@@ -97,6 +107,7 @@ wspc::wspc(
         lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(col));
       }
       
+      // Check number of levels
       if (lvls.size() < 2) {
         Rcpp::stop("Fixed effect " + fix_names[i] + " has less than 2 levels.");
       } else if (lvls.size() > 2 && fix_names[i] != "timeseries") {
@@ -105,6 +116,8 @@ wspc::wspc(
       fix_lvls[i] = lvls;
       fix_ref[i] = lvls[0];                                             // assume first level is reference
       fix_trt[i] = lvls[Rcpp::Range(1, lvls.size() - 1)];               // assume all other levels are treatment levels
+      
+      // Check for time series
       if (fix_names[i] == "timeseries") {                               // make it easy to access time-series element rank from the element name
         timeseries_rank = seq(1, lvls.size());
         timeseries_rank.names() = lvls;
@@ -121,6 +134,8 @@ wspc::wspc(
       }
     }
     is_time.names() = is_time_name;
+    
+    // Report
     if (fix_names.size() == 0) {
       vprint("No fixed effects detected.", verbose);
     } else {
@@ -141,6 +156,17 @@ wspc::wspc(
     treatment_lvls = CharacterVector(treatment_num);                    // resize variable to hold treatment level names
     for (int t = 0; t < treatment_num; t++) {                           // collapse components into level names
       treatment_lvls[t] = Rcpp::collapse(treatment_components[t]);
+    }
+    
+    // Check for any treatment-level knockouts and remove
+    for (String this_trtKO : trtKO) {
+      IntegerVector trkKO_idx = grep_cpp(treatment_lvls, this_trtKO);
+      int cnt = 0;
+      for (int idx : trkKO_idx) {
+        treatment_lvls.erase(treatment_lvls.begin() + (idx - cnt));  // ... remove from treatment_lvls
+        treatment_components.erase(treatment_components.begin() + (idx - cnt++));  // ... remove from treatment_components, adjusting for previous removals
+        treatment_num--;  // ... decrease
+      }
     }
     vprint("Created treatment levels:", verbose);
     vprintV(treatment_lvls, verbose);
@@ -222,17 +248,6 @@ wspc::wspc(
     }
     vprint("Constructed weight_row matrix", verbose);
     
-    
-    // Check for any treatment-level knockouts and set to zero in weight matrix
-    for (String this_trtKO : trtKO) {
-      LogicalVector trtKO_mask = eq_left_broadcast(treatment_lvls, this_trtKO);
-      if (any_true(trtKO_mask)) {
-        int idx = Rwhich(trtKO_mask)[0];
-        weight_rows.col(idx).setZero();
-        vprint("Knocked out treatment level with zeros in weight_row matrix: " + (std::string)this_trtKO, verbose);
-      }
-    }
-   
     // Extract grouping variables 
     context_lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["context"]));
     species_lvls = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["species"]));
@@ -268,6 +283,8 @@ wspc::wspc(
     bin.resize(n_count_rows);
     context = CharacterVector(n_count_rows);
     species = CharacterVector(n_count_rows);
+    context_num.reserve(n_count_rows);
+    species_num.reserve(n_count_rows);
     ran = CharacterVector(n_count_rows);
     treatment = CharacterVector(n_count_rows);
     weights.resize(n_count_rows, treatment_num);
@@ -301,7 +318,7 @@ wspc::wspc(
           for (int t = 0; t < treatment_num; t++) {
             LogicalVector treatment_mask = Rcpp::clone(species_mask);
             for (int f = 0; f < n_fix; f++) {
-              treatment_mask = treatment_mask & eq_left_broadcast(Rcpp::as<CharacterVector>(count_data[f + r_cols]), effects_rows(t, f));
+              treatment_mask = treatment_mask & eq_left_broadcast(Rcpp::as<CharacterVector>(count_data[fix_names[f]]), effects_rows(t, f));
             }
             
             // Save mc-unique index
@@ -315,6 +332,8 @@ wspc::wspc(
               bin(idx) = static_cast<sdouble>(b + 1.0);
               context(idx) = context_lvls[c];
               species(idx) = species_lvls[s];
+              context_num.push_back(c);
+              species_num.push_back(s);
               ran(idx) = ran_lvls[r];
               treatment(idx) = treatment_lvls[t];
               weights.row(idx) = weight_rows.row(t);
@@ -389,13 +408,13 @@ wspc::wspc(
     vprint("Found average log counts for each context-species combination", verbose);
     
     // Construct grouping variable ids as indexes for warping factor matrices, by count row
-    gv_ran_idx = IntegerVector(n_count_rows);
-    gv_fix_idx = IntegerVector(n_count_rows);
+    gv_ran_idx.reserve(n_count_rows);
+    gv_sps_idx.reserve(n_count_rows);
     for (int r = 0; r < n_count_rows; r++) {
       CharacterVector::iterator it_ran = std::find(ran_lvls.begin(), ran_lvls.end(), ran[r]);
       CharacterVector::iterator it_fix = std::find(species_lvls.begin(), species_lvls.end(), species[r]);
       gv_ran_idx[r] = std::distance(ran_lvls.begin(), it_ran);
-      gv_fix_idx[r] = std::distance(species_lvls.begin(), it_fix);
+      gv_sps_idx[r] = std::distance(species_lvls.begin(), it_fix);
     }
     vprint("Constructed grouping variable IDs", verbose);
     
@@ -777,39 +796,16 @@ void wspc::LRO_initial_param_ests(
     estimate_change_points();
     vprint("Estimated change points", verbose);
     
-    // Find initial parameter estimates for fixed-effect treatments 
-    List init_params = estimate_initial_parameters();
-    vprint("Estimated initial parameters for fixed-effect treatments", verbose);
-    
-    // Build default fixed-effects matrices in shell
-    List beta = build_beta_shell(
-      Rcpp::as<List>(init_params["ref_values"]),       // reference values for each context-species combination
-      Rcpp::as<List>(init_params["RtEffs"]),           // rate effects for each context-species combination
-      Rcpp::as<List>(init_params["tpointEffs"]),       // tpoint effects for each context-species combination
-      Rcpp::as<List>(init_params["tslopeEffs"])        // tslope effects for each context-species combination
-      );
-    vprint("Built initial beta (ref and fixed-effects) matrices", verbose); 
-    
-    // Initialize random effect warping factors 
-    List wfactors = make_initial_random_effects(
-      wfactors_names,
-      ran_lvls.size(),
-      species_lvls.size()
-    );
-    vprint("Initialized random-effect warping factors", verbose);
-    
-    // Make and map parameter vector
-    make_parameter_vector(beta, wfactors);
-    vprint("Made and mapped parameter vector", verbose);
+    // Find initial parameter estimates
+    estimate_initial_parameters();
+    vprint("Estimated initial parameters", verbose);
     vprint("Number of parameters: " + std::to_string((int)fitted_parameters.size()), verbose);
     
     // Compute size of the parameter boundary vector 
     boundary_vec_size = 0;
     for (int r : idx_mc_unique) {
       // Grab degree for this row
-      int c_num = Rwhich(eq_left_broadcast(species_lvls, species[r]))[0];
-      int p_num = Rwhich(eq_left_broadcast(context_lvls, context[r]))[0];
-      int deg = degMat(c_num, p_num);
+      int deg = degMat(species_num[r], context_num[r]);
       if (deg > 0){
         // Add slots for the boundary distance at each tpoint
         boundary_vec_size += deg + 1;
@@ -889,54 +885,28 @@ NumericMatrix wspc::LRO_grid_search(bool verbose) {
 
 // Compute model component values for rows of summed count data
 sVec wspc::compute_warped_mc(
-    const String& mc,          // Model component for which to compute values
-    const int& r,              // Row of summed count data for which to compute model component 
+    int mc,                    // Model component number for which to compute values, 0 = Rt, 1 = tslope, 2 = tpoint
+    int r,                     // Row of summed count data for which to compute model component 
     const sVec& parameters,    // Parameters to use in computation
     const sdouble& wf          // Warping factor to apply 
   ) const {
     
-    // Extract the parameter vector indexes for the current rate row, beta matrices
-    List beta_idx_mc = Rcpp::as<List>(beta_idx[mc]);
-    List beta_idx_mc_context = Rcpp::as<List>(beta_idx_mc[(String)context[r]]);
-    IntegerVector betas_mc_idx = beta_idx_mc_context[Rcpp::as<std::string>(species[r])];
-    
     // Grab degree
-    int c_num = Rwhich(eq_left_broadcast(species_lvls, species[r]))[0];
-    int p_num = Rwhich(eq_left_broadcast(context_lvls, context[r]))[0];
-    int deg = degMat(c_num, p_num);
-    int block_num = deg; 
-    if (mc == "Rt") {block_num++;}
-    
-    // Re-roll beta matrices
-    int idx_r = 0;
-    sMat betas_mc_r(treatment_num, block_num);
-    if (block_num > 0) {
-      for (int t = 0; t < block_num; t++) {
-        for (int i = 0; i < treatment_num; i++) {
-          betas_mc_r(i, t) = parameters(betas_mc_idx[idx_r]);
-          idx_r++;
-        }
-      } 
-    }
+    int bktp = degMat(species_num[r], context_num[r]);
+    if (mc == 0) {bktp++;} // ... 0 is Rt
     
     // Extract weight matrix row
     sVec weight_row = weights.row(r).transpose();
     
-    // Compute unwarped model component value 
-    sVec mc_vec(block_num);
+    // Compute unwarped model component value  
+    sVec mc_vec(bktp);
     mc_vec.setZero();
-    for (int t = 0; t < treatment_num; t++) {
-      sdouble wi = weight_row(t);
-      sVec betai = betas_mc_r.row(t);
-      for (int bt = 0; bt < block_num; bt++) {
-        mc_vec(bt) += wi*betai(bt);
+    for (int bt = 0; bt < bktp; bt++) {
+      for (int t = 0; t < treatment_num; t++) {
+        mc_vec(bt) += weight_row(t) * parameters(beta_idx[mc][context_num[r]][species_num[r]][bt*treatment_num + t]);
       }
-    }
-    
-    // Apply warping factor 
-    int warp_bound_idx = warp_bounds_idx[mc];
-    for (int bt = 0; bt < block_num; bt++) {
-      mc_vec(bt) = warp_mc(mc_vec(bt), warp_bounds[warp_bound_idx], wf);
+      // ... and apply warping factor
+      mc_vec(bt) = warp_mc(mc_vec(bt), warp_bounds[mc], wf);
     }
     
     // Send out
@@ -972,12 +942,6 @@ sVec wspc::predict_rates(
     sVec tpoint;
     
     // Grab warping indices and initiate variables to hold them
-    NumericMatrix wfactor_idx_point = wfactor_idx["point"];
-    NumericMatrix wfactor_idx_rate = wfactor_idx["rate"];
-    NumericMatrix wfactor_idx_slope = wfactor_idx["slope"];
-    int f_pw_idx;
-    int f_rw_idx;
-    int f_sw_idx;
     sdouble f_pw;
     sdouble f_rw;
     sdouble f_sw;
@@ -992,17 +956,15 @@ sVec wspc::predict_rates(
       if (count_not_na_mask[r] || cnt > 0 || all_rows) {
         
         // Grab warping factors
+        int wfi = gv_sps_idx[r] * (ran_lvls.size() - 1) + gv_ran_idx[r];
         if (gv_ran_idx[r] == 0) {
           f_pw = 0.0;
           f_rw = 0.0; 
           f_sw = 0.0;
         } else {
-          f_pw_idx = wfactor_idx_point(gv_ran_idx[r], gv_fix_idx[r]);
-          f_rw_idx = wfactor_idx_rate(gv_ran_idx[r], gv_fix_idx[r]);
-          f_sw_idx = wfactor_idx_slope(gv_ran_idx[r], gv_fix_idx[r]);
-          f_pw = parameters(f_pw_idx);
-          f_rw = parameters(f_rw_idx); 
-          f_sw = parameters(f_sw_idx);
+          f_pw = parameters(wfactor_idx[0][wfi]);
+          f_rw = parameters(wfactor_idx[1][wfi]); 
+          f_sw = parameters(wfactor_idx[2][wfi]);
         } 
         
         // Only update predicted model components if r begins a new batch of unique values 
@@ -1016,14 +978,10 @@ sVec wspc::predict_rates(
           
         } 
         
-        // Compute the predicted rate
-        int c_num = Rwhich(eq_left_broadcast(species_lvls, species[r]))[0];
-        int p_num = Rwhich(eq_left_broadcast(context_lvls, context[r]))[0];
-        
         // Compute the actual poly-sigmoid!! 
         predicted_rates(r) = poly_sigmoid(
           bin(r),
-          degMat(c_num, p_num),
+          degMat(species_num[r], context_num[r]);,
           Rt,
           tslope,
           tpoint
@@ -1136,12 +1094,6 @@ sVec wspc::boundary_dist(
     int ctr = 0;
     
     // Grab warping indices and initiate variables to hold them
-    NumericMatrix wfactor_idx_point = wfactor_idx["point"];
-    NumericMatrix wfactor_idx_rate = wfactor_idx["rate"];
-    NumericMatrix wfactor_idx_slope = wfactor_idx["slope"];
-    int f_pw_idx;
-    int f_rw_idx;
-    int f_sw_idx;
     sdouble f_pw;
     sdouble f_rw;
     sdouble f_sw;
@@ -1153,17 +1105,15 @@ sVec wspc::boundary_dist(
     for (int r : idx_mc_unique) {
       
       // Grab warping factors
+      int wfi = gv_sps_idx[r] * (ran_lvls.size() - 1) + gv_ran_idx[r];
       if (gv_ran_idx[r] == 0) {
         f_pw = 0.0;
         f_rw = 0.0; 
         f_sw = 0.0;
       } else {
-        f_pw_idx = wfactor_idx_point(gv_ran_idx[r], gv_fix_idx[r]);
-        f_rw_idx = wfactor_idx_rate(gv_ran_idx[r], gv_fix_idx[r]);
-        f_sw_idx = wfactor_idx_slope(gv_ran_idx[r], gv_fix_idx[r]);
-        f_pw = parameters(f_pw_idx);
-        f_rw = parameters(f_rw_idx); 
-        f_sw = parameters(f_sw_idx);
+        f_pw = parameters(wfactor_idx[0][wfi]);
+        f_rw = parameters(wfactor_idx[1][wfi]); 
+        f_sw = parameters(wfactor_idx[2][wfi]);
       } 
       
       // Compute Rt for this row r
@@ -1248,8 +1198,6 @@ bool wspc::test_tpoints(
     iVec mc_unique_rows = Rcpp::as<iVec>(idx_mc_unique);
     
     // Grab point-warping indices and initiate variables to hold them
-    NumericMatrix wfactor_idx_point = wfactor_idx["point"];
-    int f_pw_idx;
     sdouble f_pw;
     
     // Compute predicted rate for rows of the summed count data
@@ -1263,14 +1211,12 @@ bool wspc::test_tpoints(
         if (gv_ran_idx[r] == 0) {
           f_pw = 0.0;
         } else {
-          f_pw_idx = wfactor_idx_point(gv_ran_idx[r], gv_fix_idx[r]);
-          f_pw = parameters(f_pw_idx);
+          int wfi = gv_sps_idx[r] * (ran_lvls.size() - 1) + gv_ran_idx[r];
+          f_pw = parameters(wfactor_idx_point[wfi]);
         }
         
         // Find degree
-        int c_num = Rwhich(eq_left_broadcast(species_lvls, species[r]))[0];
-        int p_num = Rwhich(eq_left_broadcast(context_lvls, context[r]))[0];
-        int deg = degMat(c_num, p_num);
+        int deg = degMat(species_num[r], context_num[r]);
         if (deg > 0) {
           
           // Compute tpoints for this row r
@@ -1558,22 +1504,18 @@ void wspc::fit(
     
   } 
 
-// Fit model to bootstrap resample
-dVec wspc::bs_fit(
-    int bs_num,               // A unique number for this resample
-    bool clear_stan           // Recover stan memory at end?
+// Resample count for bootstrapping
+void wspc::resample(
+    unsigned int seed
   ) {
-    
-    // Set random number generator with unique seed based on resample ID
-    unsigned int seed = rng_seed + bs_num;
+   
+    // Initialize random number generator
     pcg32 rng(seed);
     
     // Resample (with replacement), re-sum token pool, take logs, recompute gamma_dispersion
     for (int r : count_not_na_idx) {
-      
       // ... but only for actual observations of random grouping variable
       if (ran[r] != "none") {
-        
         // ... redraw randomly (with replacement) from the token pool of r and re-sum into r's count 
         IntegerVector token_pool_r = token_pool[r];
         int resample_sz = token_pool_r.size();
@@ -1582,7 +1524,7 @@ dVec wspc::bs_fit(
           Rcpp::Rcout << "Error: resample size < 1, for row " << r << std::endl;
           Rcpp::stop("Error: resample size < 1");
         }
-        
+        // ... re-sum into r's count
         count(r) = 0.0;
         for (int i = 0; i < resample_sz; i++) {
           // ... randomly select integer between 0 and resample_sz
@@ -1590,7 +1532,6 @@ dVec wspc::bs_fit(
           count(r) += count_tokenized[token_pool_r[resample_idx]];
         }
         count_log(r) = slog(count(r) + 1.0);
-        
       }
     }
     
@@ -1599,6 +1540,17 @@ dVec wspc::bs_fit(
     iVec r_rows = Rcpp::as<iVec>(count_row_nums[eq_left_broadcast(ran,"none")]);
     for (int r : r_rows) {count_log(r) = slog(count(r) + 1.0);}
     
+  }
+
+// Fit model to bootstrap resample
+dVec wspc::bs_fit(
+    int bs_num,               // A unique number for this resample
+    bool clear_stan           // Recover stan memory at end?
+  ) {
+    
+    // Resample counts 
+    resample(rng_seed + bs_num);
+    
     // Estimate gamma dispersion of these new raw re-sampled counts
     compute_gamma_dispersion();
     
@@ -1606,28 +1558,7 @@ dVec wspc::bs_fit(
     find_count_log_means();
     
     // Find initial parameter estimates for fixed-effect treatments, for new re-sampled data
-    List init_params = estimate_initial_parameters();
-    
-    // Build default fixed-effects matrices in shell
-    List beta = build_beta_shell(
-      Rcpp::as<List>(init_params["ref_values"]),       // reference values for each context-species combination
-      Rcpp::as<List>(init_params["RtEffs"]),           // rate effects for each context-species combination
-      Rcpp::as<List>(init_params["tpointEffs"]),       // tpoint effects for each context-species combination
-      Rcpp::as<List>(init_params["tslopeEffs"])        // tslope effects for each context-species combination
-    );
-    
-    // Initialize new random effect warping factors 
-    List wfactors = make_initial_random_effects(
-      wfactors_names,
-      ran_lvls.size(),
-      species_lvls.size()
-    );
-    
-    // Make and map parameter vector
-    make_parameter_vector(beta, wfactors);
-    
-    // Check for any treatment-level knockouts and set effects to zero in param vector
-    for (String this_trtKO : trtKO) {fitted_parameters[grep_cpp(param_names, "_" + ((std::string)this_trtKO) + "_")] = 0.0;}
+    estimate_initial_parameters();
     
     // Check feasibility 
     List feasibility_results = check_parameter_feasibility(to_sVec(fitted_parameters), false); 
@@ -2020,370 +1951,13 @@ Rcpp::NumericMatrix wspc::MCMC(
     
   }
 
-// Resample (demo, not used in package)
-NumericMatrix wspc::resample(
-    int n_resample            // total number of resamples to draw
-  ) {
-    
-    NumericMatrix resamples(n_count_rows, n_resample);
-    IntegerVector NA_idx = Rwhich(!count_not_na_mask);
-    
-    for (int j = 0; j < n_resample; j++) {
-      
-      // Set random number generator with unique seed based on resample ID
-      unsigned int seed = rng_seed + j;
-      pcg32 rng(seed);
-      
-      sVec count_new(n_count_rows);
-      count_new.setZero();
-      
-      // Resample (with replacement), re-sum token pool, and take logs
-      for (int r : count_not_na_idx) {
-        if (ran[r] != "none") {
-          count_new(r) = 0.0;
-          IntegerVector token_pool_r = token_pool[r];
-          int resample_sz = token_pool_r.size();
-          for (int i = 0; i < resample_sz; i++) {
-            int resample_idx = rng(resample_sz); // randomly select integer between 0 and resample_sz
-            count_new(r) += count_tokenized[token_pool_r[resample_idx]];
-          }
-        }
-      }
-      
-      // Extrapolate none's 
-      count_new = extrapolate_none(count_new, ran, extrapolation_pool, true, round_none);
-      
-      for (int r : NA_idx) {
-        count_new(r) = stan::math::NOT_A_NUMBER;
-      }
-      resamples.column(j) = to_NumVec(count_new);
-      
-    }
-    
-    return resamples;
-    
-  }
-
 /*
  * *************************************************************************
  * Setting parameters
  */
 
-// Build default fixed-effects matrices in shell
-List wspc::build_beta_shell(
-    const List& ref_values,
-    const List& RtEffs,
-    const List& tpointEffs,
-    const List& tslopeEffs
-  ) {
-    
-    List beta(mc_list.size());
-    beta.names() = mc_list;
-    
-    int treat_num = treatment_lvls.size(); 
-    int context_num = context_lvls.size();
-    int species_num = species_lvls.size();
-    
-    // Loop through model components 
-    for (String mc : mc_list) {
-      List beta_mc(context_num);
-      beta_mc.names() = context_lvls;
-     
-      // Loop through context values
-      for (int c = 0; c < context_num; c++) {
-        List beta_mc_cxt(species_num);
-        beta_mc_cxt.names() = species_lvls;
-       
-        // Loop through species values
-        for (int s = 0; s < species_num; s++) {
-          
-          int deg = degMat(s, c);
-          int col_num = deg; 
-          if (mc == "Rt") {col_num++;}
-          NumericMatrix bta(treat_num, col_num);
-          rownames(bta) = treatment_lvls;
-          
-          if (deg > 0 || mc == "Rt") {
-         
-            List RtEffs_cxt = RtEffs[c];
-            NumericMatrix RtEffs_Mat = RtEffs_cxt[s];
-            
-            List tpointEffs_cxt = tpointEffs[c];
-            NumericMatrix tpointEffs_Mat = tpointEffs_cxt[s];
-            
-            List tslopeEffs_cxt = tslopeEffs[c];
-            NumericMatrix tslopeEffs_Mat = tslopeEffs_cxt[s];
-           
-            for (int t = 0; t < treat_num; t++) {
-              for (int i = 0; i < col_num; i++) {
-                if (t == 0) {
-                  List ref_values_cxt = ref_values[c];
-                  List ref_values_sps = ref_values_cxt[s];
-                  List ref_values_mc = ref_values_sps[mc];
-                  bta(t,i) = ref_values_mc(i);  // set ref level
-                } else {
-                  if (mc == "Rt") {
-                    // use estimated rate effect for non-ref treatment levels
-                    bta(t, i) = RtEffs_Mat(t, i);
-                  } else if (mc =="tpoint") {
-                    // use estimated tpoint effect for non-ref treatment levels 
-                    bta(t, i) = tpointEffs_Mat(t, i);
-                  } else if (mc == "tslope") {
-                    // Seed with zero effect for tslope
-                    bta(t, i) = tslopeEffs_Mat(t, i); 
-                  }
-                }
-              }
-            }
-          }
-          beta_mc_cxt[s] = bta;
-        } 
-        beta_mc[c] = beta_mc_cxt;
-      } 
-      beta[mc] = beta_mc;
-    } 
-    
-    return beta;
-    
-  }
-
-// Estimate initial parameters for model fitting
-List wspc::estimate_initial_parameters() {
-    
-    // Check which (if any) treatments are being skipped
-    bool reduced_rank = false;
-    std::vector<int> reduced_trts;
-    // ... identify nonzero columns
-    for (int j = 0; j < weight_rows.cols(); ++j) {
-      if (weight_rows.col(j).array().abs().sum().val() > 0) {
-        reduced_trts.push_back(j);
-      } else {
-        reduced_rank = true;
-      }
-    }
-    // ... build reduced matrix
-    const int treatment_num_reduced = reduced_trts.size();
-    sMat weight_rows_reduced(treatment_num_reduced, treatment_num_reduced);
-    for (int j = 0; j < treatment_num_reduced; ++j) {
-      for (int i = 0; i < treatment_num_reduced; ++i) {
-        weight_rows_reduced(i,j) = weight_rows(reduced_trts[i], reduced_trts[j]);
-      }
-    }
-    
-    // Grab number of context and species levels
-    int n_species = species_lvls.size();
-    int n_context = context_lvls.size();
-    
-    // Create lists to store parameters
-    // ... store ref values in list
-    List ref_values(n_context);
-    ref_values.names() = context_lvls;
-    // ... store rate effects in list
-    List RtEffs(n_context);
-    RtEffs.names() = context_lvls;
-    // ... store tpoint effects in list
-    List tpointEffs(n_context);
-    tpointEffs.names() = context_lvls;
-    // ... store tslope effects in list 
-    List tslopeEffs(n_context);
-    tslopeEffs.names() = context_lvls;
-    
-    // Loop through context levels
-    for (int c = 0; c < n_context; c++) {
-      
-      // Make context mask
-      LogicalVector context_mask = eq_left_broadcast(context, context_lvls[c]);
-      
-      // Set up list for ref values
-      ref_values[(String)context_lvls[c]] = List(n_species);
-      name_proxylist(ref_values[(String)context_lvls[c]], species_lvls);
-      // ... for rate effect values
-      RtEffs[(String)context_lvls[c]] = List(n_species);
-      name_proxylist(RtEffs[(String)context_lvls[c]], species_lvls);
-      // ... for tpoint effect values 
-      tpointEffs[(String)context_lvls[c]] = List(n_species);
-      name_proxylist(tpointEffs[(String)context_lvls[c]], species_lvls);
-      // ... for tslope effect values 
-      tslopeEffs[(String)context_lvls[c]] = List(n_species);
-      name_proxylist(tslopeEffs[(String)context_lvls[c]], species_lvls);
-      
-      // Extract found_cp, found_cp_trt, and count_log_avg_mat for this context-species pair
-      List found_cp_list_c = found_cp_list[(String)context_lvls[c]];
-      List found_cp_trt_list_c = found_cp_trt_list[(String)context_lvls[c]];
-      List count_log_avg_mat_list_c = count_log_avg_mat_list[(String)context_lvls[c]];
-      
-      // Loop through species levels
-      for (int s = 0; s < n_species; s++) { 
-        
-        // Extract deg and block num 
-        int deg = degMat(s, c);
-        int n_blocks = deg + 1;
-        
-        // Extract found_cp, found_cp_trt, and count_log_avg_mat for this context-species pair
-        IntegerMatrix found_cp = found_cp_list_c[(String)species_lvls[s]];
-        NumericMatrix found_cp_trt = found_cp_trt_list_c[(String)species_lvls[s]];
-        NumericMatrix count_log_avg_mat = count_log_avg_mat_list_c[(String)species_lvls[s]];
-        
-        // Make species mask and context-species mask
-        LogicalVector species_mask = eq_left_broadcast(species, species_lvls[s]);
-        LogicalVector cs_mask = context_mask & species_mask & count_not_na_mask;
-        
-        // Set initial parameters for fixed-effect treatments
-        List placeholder_ref_values(mc_list.size());
-        placeholder_ref_values.names() = mc_list;
-        NumericMatrix placeholder_RtEffs(treatment_num, n_blocks);
-        NumericMatrix placeholder_tpointEffs(treatment_num, deg);
-        NumericMatrix placeholder_tslopeEffs(treatment_num, deg);
-        NumericMatrix run_estimates(treatment_num, deg);
-        
-        // Loop through model components (Rt, tslope, tpoint)
-        for (String mc : mc_list) {
-          
-          // Mean rate per block
-          if (mc == "Rt") {
-            
-            // Loop through treatments
-            sMat RtVals(treatment_num, n_blocks);
-            sMat RtVals_reduced(treatment_num_reduced, n_blocks);
-            for (int t = 0; t < treatment_num; t++) {
-              
-              NumericVector count_log_avg = count_log_avg_mat.column(t);
-              NumericVector found_cp_trt_t_num = found_cp_trt.column(t);
-              IntegerVector found_cp_trt_t(deg);
-              for (int d = 0; d < deg; d++) {
-                found_cp_trt_t[d] = std::round(found_cp_trt_t_num[d]);
-              }
-              
-              dVec Rt_est(n_blocks); 
-              if (n_blocks == 1) { // case when deg = 0
-                Rt_est[0] = vmean(count_log_avg);
-                RtVals(t, 0) = (sdouble)Rt_est[0];
-              } else {
-                
-                // Estimate rate values as mean of count values in each block 
-                std::vector<dVec> est_rate_runs = est_bkRates_tRuns(n_blocks, count_log_avg, found_cp_trt_t, rise_threshold_factor);
-                Rt_est = est_rate_runs[0];
-                run_estimates.row(t) = to_NumVec(est_rate_runs[1]);
-                RtVals.row(t) = to_sVec(Rt_est); 
-                
-              }
-              if (t == 0) {placeholder_ref_values[mc] = to_NumVec(Rt_est);}
-              
-            }
-            
-            // Make reduced-rank RtVals, if needed
-            if (reduced_rank) {
-              for (int i = 0; i < treatment_num_reduced; ++i) {
-                RtVals_reduced.row(i) = RtVals.row(reduced_trts[i]);
-              }
-            } 
-            
-            // Estimate fixed effects from treatments for each block, rate
-            for (int bk = 0; bk < n_blocks; bk++) {
-              sVec beta_bk_Rt = sVec::Zero(treatment_num);
-              if (reduced_rank) {
-                sVec beta_bk_Rt_reduced = weight_rows_reduced.fullPivLu().solve(RtVals_reduced.col(bk));
-                for (int i = 0; i < treatment_num_reduced; ++i) {beta_bk_Rt[reduced_trts[i]] = beta_bk_Rt_reduced[i];}
-              } else {
-                beta_bk_Rt = weight_rows.fullPivLu().solve(RtVals.col(bk));
-              }
-              placeholder_RtEffs.column(bk) = to_NumVec(beta_bk_Rt);
-            }
-            
-          } else if (deg > 0) { 
-            
-            // Handle tpoint and tslope
-            if (mc == "tpoint") {
-              
-              // Grab reference values 
-              placeholder_ref_values[mc] = found_cp_trt.column(0);
-              
-              // Estimate fixed effects from treatments for each tpoint, point value
-              // ... put into Eigen for solving and make rows trts, cols tpoints
-              sMat found_cp_trt_transposed = to_sMat(found_cp_trt).transpose(); 
-              sMat found_cp_trt_transposed_reduced(treatment_num_reduced, deg);
-              if (reduced_rank) { 
-                for (int i = 0; i < treatment_num_reduced; ++i) {
-                  found_cp_trt_transposed_reduced.row(i) = found_cp_trt_transposed.row(reduced_trts[i]);
-                }
-              }
-              
-              for (int d = 0; d < deg; d++) {
-                sVec beta_d_tpoint = sVec::Zero(treatment_num);
-                if (reduced_rank) {
-                  Eigen::MatrixXd W = value_of(weight_rows_reduced);
-                  Eigen::VectorXd p = value_of(found_cp_trt_transposed_reduced.col(d));
-                  Eigen::VectorXd beta = W.colPivHouseholderQr().solve(p);
-                  sVec beta_d_tpoint_reduced = beta.cast<stan::math::var>();
-                  for (int i = 0; i < treatment_num_reduced; ++i) {beta_d_tpoint[reduced_trts[i]] = beta_d_tpoint_reduced[i];}
-                } else {
-                  beta_d_tpoint = weight_rows.fullPivLu().solve(found_cp_trt_transposed.col(d));
-                }
-                placeholder_tpointEffs.column(d) = to_NumVec(beta_d_tpoint);
-              }
-              
-            } else if (mc == "tslope") {
-              
-              // Estimate tslopes for each treatment
-              NumericMatrix found_slope_trt(deg, treatment_num);
-              for (int t = 0; t < treatment_num; t++) {
-                for (int d = 0; d < deg; d++) {
-                  found_slope_trt(d, t) = 4.0/run_estimates(t, d); 
-                  if (found_slope_trt(d, t) < min_initialization_slope) {found_slope_trt(d, t) = min_initialization_slope;}
-                  // ^ ... keep from initializing too close to zero
-                }
-              }
-              
-              // Grab reference values 
-              placeholder_ref_values[mc] = found_slope_trt.column(0);
-              
-              // Estimate fixed effects from treatments for each tslope, point slope
-              // ... put into Eigen for solving and make rows trts, cols tslopes
-              sMat found_slope_trt_transposed = to_sMat(found_slope_trt).transpose();
-              sMat found_slope_trt_transposed_reduced(treatment_num_reduced, deg);
-              if (reduced_rank) {
-                for (int i = 0; i < treatment_num_reduced; ++i) {
-                  found_slope_trt_transposed_reduced.row(i) = found_slope_trt_transposed.row(reduced_trts[i]);
-                }
-              }
-              for (int d = 0; d < deg; d++) {
-                sVec beta_d_tslope = sVec::Zero(treatment_num);
-                if (reduced_rank) {
-                  sVec beta_d_tslope_reduced = weight_rows_reduced.fullPivLu().solve(found_slope_trt_transposed_reduced.col(d));
-                  for (int i = 0; i < treatment_num_reduced; ++i) {beta_d_tslope[reduced_trts[i]] = beta_d_tslope_reduced[i];}
-                } else {
-                  beta_d_tslope = weight_rows.fullPivLu().solve(found_slope_trt_transposed.col(d));
-                }
-                placeholder_tslopeEffs.column(d) = to_NumVec(beta_d_tslope);
-              }
-              
-            }
-          }
-          
-        }
-        
-        assign_proxylist(ref_values[(String)context_lvls[c]], (String)species_lvls[s], placeholder_ref_values);
-        assign_proxylist(RtEffs[(String)context_lvls[c]], (String)species_lvls[s], placeholder_RtEffs);
-        assign_proxylist(tpointEffs[(String)context_lvls[c]], (String)species_lvls[s], placeholder_tpointEffs);
-        assign_proxylist(tslopeEffs[(String)context_lvls[c]], (String)species_lvls[s], placeholder_tslopeEffs);
-        
-      }
-    }
-    
-    return List::create(
-      _["ref_values"] = ref_values,                   // list of reference values for each context-species combination
-      _["RtEffs"] = RtEffs,                           // list of rate effects for each context-species combination
-      _["tpointEffs"] = tpointEffs,                   // list of tpoint effects for each context-species combination
-      _["tslopeEffs"] = tslopeEffs                    // list of tslope effects for each context-species combination
-    );
-    
-  }
-
 // Function for converting structured encoding of parameters into a vector
-void wspc::make_parameter_vector(
-    const List& beta,                       // Fixed-effect values
-    const List& wfactor                     // Random-effect warping factors
-  ) {
+void wspc::estimate_initial_parameters() {
     
     /*
      * Initializations
@@ -2395,21 +1969,7 @@ void wspc::make_parameter_vector(
     // Initialize List to hold names
     List param_names_list;
     
-    // Initialize vectors to hold indexes (faster to use std and wrap at end)
     int idx = 0;
-    iVec param_wfactor_point_idx_iVec; 
-    iVec param_wfactor_rate_idx_iVec;
-    iVec param_wfactor_slope_idx_iVec;
-    iVec param_beta_Rt_idx_iVec;        // ... Excluding ref level (same below)
-    iVec param_beta_tslope_idx_iVec;
-    iVec param_beta_tpoint_idx_iVec;
-    iVec param_baseline_Rt_idx_iVec;
-    iVec param_baseline_tslope_idx_iVec;
-    iVec param_baseline_tpoint_idx_iVec;
-    iVec param_baseline_idx_iVec;
-    beta_idx = Rcpp::clone(beta);
-    wfactor_idx = Rcpp::clone(wfactor); 
-    
     int n_context = context_lvls.size();
     int n_species = species_lvls.size();
     int n_ran = ran_lvls.size();
@@ -2421,82 +1981,136 @@ void wspc::make_parameter_vector(
     // Loop through model components 
     for (String mc : mc_list) {
       
-      // For make
-      List beta_mc = beta[mc];
-      // For map
-      List beta_idx_mc = Rcpp::clone(beta_mc);
-      
       // Loop through context values
+      std::vector<std::vector<std::vector<int>>> beta_idx_mc;
       for (int c = 0; c < n_context; c++) {
         String cxt = context_lvls[c];
         
-        // For make
-        List beta_mc_cxt = beta_mc[cxt];
-        // For map
-        List beta_idx_mc_cxt = Rcpp::clone(beta_mc_cxt);
+        // Make context mask
+        LogicalVector context_mask = eq_left_broadcast(context, cxt);
+        
+        // Extract found_cp, found_cp_trt, and count_log_avg_mat for this context level
+        List found_cp_list_c = found_cp_list[cxt];
+        List found_cp_trt_list_c = found_cp_trt_list[cxt];
+        List count_log_avg_mat_list_c = count_log_avg_mat_list[cxt];
         
         // Loop through species values
+        std::vector<std::vector<int>> beta_idx_mc_cxt;
         for (int s = 0; s < n_species; s++) {
           String sps = species_lvls[s];
           
-          // For make
+          // Extract deg and block num 
           int deg = degMat(s, c);
-          // For map
-          iVec beta_idx_mc_cxt_sps;
+          int n_blocks = deg + 1;
+          int bktp = deg;
+          if (mc == "Rt") {bktp = b_blocks;}
+          
+          // Initialize sMat to hold Rt values 
+          sMat RtVals(treatment_num, n_blocks);
+          
+          NumericMatrix Effs(treatment_num, bktp);
+          NumericMatrix run_estimates(treatment_num, deg);
+          
+          // Extract found_cp, found_cp_trt, and count_log_avg_mat for this context-species pair
+          IntegerMatrix found_cp = found_cp_list_c[sps];
+          NumericMatrix found_cp_trt = found_cp_trt_list_c[sps];
+          NumericMatrix count_log_avg_mat = count_log_avg_mat_list_c[sps];
+          
+          // Make species mask and context-species mask
+          LogicalVector species_mask = eq_left_broadcast(species, species_lvls[s]);
+          LogicalVector cs_mask = context_mask & species_mask & count_not_na_mask;
           
           if (deg > 0 || mc == "Rt") { 
-            NumericMatrix beta_mc_cxt_sps = beta_mc_cxt[sps];
             
-            // Unroll the effects matrices
-            // ... for each block/transition point t
-            for (int t = 0; t < beta_mc_cxt_sps.ncol(); t++) {
+            // Compute Effs for this model component, context, and species
+            if (mc == "Rt") {
+              // Estimate Rt values
+              for (int i = 0; i < treatment_num; i++) {
+                NumericVector count_log_avg = count_log_avg_mat.column(i);
+                NumericVector found_cp_trt_i_num = found_cp_trt.column(i);
+                IntegerVector found_cp_trt_i(deg);
+                for (int d = 0; d < deg; d++) {
+                  found_cp_trt_i[d] = std::round(found_cp_trt_i_num[d]);
+                }
+                dVec Rt_est(n_blocks); 
+                if (n_blocks == 1) { // case when deg = 0
+                  Rt_est[0] = vmean(count_log_avg);
+                  RtVals(i, 0) = (sdouble)Rt_est[0];
+                } else {
+                  // Estimate rate values as mean of count values in each block 
+                  std::vector<dVec> est_rate_runs = est_bkRates_tRuns(n_blocks, count_log_avg, found_cp_trt_i, rise_threshold_factor);
+                  Rt_est = est_rate_runs[0];
+                  run_estimates.row(i) = to_NumVec(est_rate_runs[1]);
+                  RtVals.row(i) = to_sVec(Rt_est); 
+                }
+              }
+              // Estimate Rt effect values 
+              for (int bk = 0; bk < n_blocks; bk++) {Effs.column(bk) = to_NumVec(weight_rows.fullPivLu().solve(RtVals.col(bk)));}
+            } else if (mc == "tpoint") {
+              // Estimate fixed effects from treatments for each tpoint
+              sMat found_cp_trt_transposed = to_sMat(found_cp_trt).transpose(); 
+              for (int d = 0; d < deg; d++) {Effs.column(d) = to_NumVec(weight_rows.fullPivLu().solve(found_cp_trt_transposed.col(d)));}
+            } else if (mc == "tslope") {
+              // Estimate tslopes for each treatment
+              NumericMatrix found_slope_trt(deg, treatment_num);
+              for (int i = 0; i < treatment_num; i++) {
+                for (int d = 0; d < deg; d++) {
+                  found_slope_trt(d, i) = 4.0/run_estimates(i, d); 
+                  if (found_slope_trt(d, i) < min_initialization_slope) {found_slope_trt(d, i) = min_initialization_slope;}
+                  // ^ ... keep from initializing too close to zero
+                }
+              }
+              // Estimate fixed effects from treatments for each tslope
+              sMat found_slope_trt_transposed = to_sMat(found_slope_trt).transpose();
+              for (int d = 0; d < deg; d++) {Effs.column(d) = to_NumVec(weight_rows.fullPivLu().solve(found_slope_trt_transposed.col(d)));}
               
-              // For map
+            }
+            
+            // For each block/transition point t and treatment i
+            std::vector<int> beta_idx_mc_cxt_sps;
+            for (int t = 0; t < bktp; t++) {
               String t_name = "Tns/Blk" + std::to_string(t + 1);
-              
-              for (int i = 0; i < treatment_lvls.length(); i++) {
+              for (int i = 0; i < treatment_num; i++) {
                 
-                // Map
+                // Add name
                 CharacterVector param_name;
                 if (i == 0) {param_name = CharacterVector::create("baseline", cxt, mc, sps, t_name);} 
                 else {param_name = CharacterVector::create("beta", mc, cxt, sps, treatment_lvls[i], "X", t_name);}
-                
-                // Add name
                 param_names_list.push_back(param_name);
                
                 // Collect indices 
                 if (i > 0) {
                   if (mc == "Rt") {
-                    param_beta_Rt_idx_iVec.push_back(idx);
+                    param_beta_Rt_idx.push_back(idx);
                   } else if (mc == "tslope") {   
-                    param_beta_tslope_idx_iVec.push_back(idx);
+                    param_beta_tslope_idx.push_back(idx);
                   } else if (mc == "tpoint") {   
-                    param_beta_tpoint_idx_iVec.push_back(idx);
+                    param_beta_tpoint_idx.push_back(idx);
                   }   
                 } else {
-                  param_baseline_idx_iVec.push_back(idx);
+                  param_baseline_idx.push_back(idx);
                   if (mc == "Rt") {
-                    param_baseline_Rt_idx_iVec.push_back(idx);
+                    param_baseline_Rt_idx.push_back(idx);
                   } else if (mc == "tslope") {   
-                    param_baseline_tslope_idx_iVec.push_back(idx);
+                    param_baseline_tslope_idx.push_back(idx);
                   } else if (mc == "tpoint") {   
-                    param_baseline_tpoint_idx_iVec.push_back(idx);
+                    param_baseline_tpoint_idx.push_back(idx);
                   }
                 }
                 beta_idx_mc_cxt_sps.push_back(idx);
                 idx++;  
                 
-                // Make
-                param_vector.push_back(beta_mc_cxt_sps(i,t));
+                // Make parameter vector
+                param_vector.push_back(Effs(i,t));
                 
               } 
             }
           } 
-          beta_idx_mc_cxt[sps] = beta_idx_mc_cxt_sps;
+          beta_idx_mc_cxt.pushback(beta_idx_mc_cxt_sps);
         } 
-        beta_idx_mc[cxt] = beta_idx_mc_cxt;
+        beta_idx_mc.push_back(beta_idx_mc_cxt);
       }
-      beta_idx[mc] = beta_idx_mc;
+      beta_idx.push_back(beta_idx_mc);
     }
     
     /*
@@ -2504,16 +2118,6 @@ void wspc::make_parameter_vector(
      */
     
     // Unroll the warping factors
-    
-    // For make
-    NumericMatrix wfactor_point = wfactor["point"];
-    NumericMatrix wfactor_rate = wfactor["rate"];
-    NumericMatrix wfactor_slope = wfactor["slope"];
-    // For map
-    NumericMatrix wfactor_idx_point = Rcpp::clone(wfactor_point); 
-    NumericMatrix wfactor_idx_rate = Rcpp::clone(wfactor_rate); 
-    NumericMatrix wfactor_idx_slope = Rcpp::clone(wfactor_slope);
-    
     for (int s = 0; s < n_species; s++) {
       // Intentionally skip the first level, which is "none"
       for (int r = 1; r < n_ran; r++) {
@@ -2524,35 +2128,33 @@ void wspc::make_parameter_vector(
         // ... Point warp
         CharacterVector param_name_point = CharacterVector::create("wfactor", "point", r_name, "X", c_name);
         param_names_list.push_back(param_name_point);
-        param_wfactor_point_idx_iVec.push_back(idx);
-        wfactor_idx_point(r, s) = idx;
+        param_wfactor_point_idx.push_back(idx);
+        wfactor_idx_point.push_back(idx);
         idx++;
         // ... Rate warp
         CharacterVector param_name_rate = CharacterVector::create("wfactor", "rate", r_name, "X", c_name);
         param_names_list.push_back(param_name_rate);
-        param_wfactor_rate_idx_iVec.push_back(idx);
-        wfactor_idx_rate(r, s) = idx; 
+        param_wfactor_rate_idx.push_back(idx);
+        wfactor_idx_rate.push_back(idx); 
         idx++;
         // ... Slope warp
         CharacterVector param_name_slope = CharacterVector::create("wfactor", "slope", r_name, "X", c_name);
         param_names_list.push_back(param_name_slope);
-        param_wfactor_slope_idx_iVec.push_back(idx);
-        wfactor_idx_slope(r, s) = idx;
+        param_wfactor_slope_idx.push_back(idx);
+        wfactor_idx_slope.push_back(idx);
         idx++;
        
         // Make
         // ... Point warp
-        param_vector.push_back(wfactor_point(r, s));
+        param_vector.push_back(R::runif(-0.1, 0.1));
         // ... Rate warp
-        param_vector.push_back(wfactor_rate(r, s));
+        param_vector.push_back(R::runif(-0.1, 0.1));
         // ... Slope warp
-        param_vector.push_back(wfactor_slope(r, s));
+        param_vector.push_back(R::runif(-0.1, 0.1));
         
       }
     } 
-    wfactor_idx["point"] = wfactor_idx_point;
-    wfactor_idx["rate"] = wfactor_idx_rate; 
-    wfactor_idx["slope"] = wfactor_idx_slope;
+    wfactor_idx = {wfactor_idx_point, wfactor_idx_rate, wfactor_idx_slope};
     
     // Reformat parameter names as single strings
     int n_params = param_names_list.size();
@@ -2570,18 +2172,8 @@ void wspc::make_parameter_vector(
       param_names[n] = name;
     } 
     
-    // Pack up parameter vector and mappings
+    // Wrap parameter vector
     fitted_parameters = Rcpp::wrap(param_vector);
-    param_wfactor_point_idx = wrap(param_wfactor_point_idx_iVec);
-    param_wfactor_rate_idx = wrap(param_wfactor_rate_idx_iVec);
-    param_wfactor_slope_idx = wrap(param_wfactor_slope_idx_iVec);
-    param_beta_Rt_idx = wrap(param_beta_Rt_idx_iVec);
-    param_beta_tslope_idx = wrap(param_beta_tslope_idx_iVec);
-    param_beta_tpoint_idx = wrap(param_beta_tpoint_idx_iVec);
-    param_baseline_Rt_idx = wrap(param_baseline_Rt_idx_iVec);
-    param_baseline_tslope_idx = wrap(param_baseline_tslope_idx_iVec);
-    param_baseline_tpoint_idx = wrap(param_baseline_tpoint_idx_iVec);
-    param_baseline_idx = wrap(param_baseline_idx_iVec);
     
   }
 
@@ -2841,16 +2433,6 @@ Rcpp::List wspc::results() {
       _["ran.lvls"] = ran_lvls
     );
     
-    // Pack up parameter indexes into list
-    for (int i = 0; i < wfactor_idx.size(); i++) {
-      rownames(wfactor_idx[i]) = ran_lvls;
-      colnames(wfactor_idx[i]) = species_lvls;
-    }
-    List param_idx = List::create(
-      _["beta"] = beta_idx,
-      _["w.factor"] = wfactor_idx
-    );
-    
     // Collect token pool
     List token_pool_list(n_count_rows); 
     for (int i = 0; i < n_count_rows; i++) {
@@ -2880,7 +2462,6 @@ Rcpp::List wspc::results() {
       _["treatment"] = treat,
       _["weight.matrix"] = weight_matrix,
       _["grouping.variables"] = grouping_variables,
-      _["param.idx0"] = param_idx, // "0" to indicate this goes out w/ C++ zero-based indexing
       _["token.pool"] = token_pool_list,
       _["settings"] = model_settings
     );
