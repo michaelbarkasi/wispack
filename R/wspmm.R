@@ -25,10 +25,9 @@ NULL
 #' @param converged.resamples.only Logical, if TRUE, only resamples with a converged fit are used for statistical analysis; if FALSE, all resamples are used. Applies only to bootstraps. 
 #' @param max.fork Integer, maximum number of parallel processes to use for bootstrapping.
 #' @param verbose Logical, if TRUE, prints information during the fitting process.
-#' @param model.settings List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, \code{warp_precision}, \code{round_none}, \code{trtKO}, and \code{max_bin}. Default values are provided.
+#' @param model.settings List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LRO_cost}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, \code{warp_precision}, \code{round_none}, \code{trtKO}, and \code{max_bin}. Default values are provided.
 #' @param MCMC.settings List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.
 #' @param plot.settings List, settings for plots to make, including \code{print.plots}, \code{dim.bounds}, \code{log.scale}, \code{splitting_factor}, \code{CI_style}, \code{label_size}, \code{title_size}, \code{axis_size}, \code{legend_size}, \code{count_size}, \code{count_jitter}, \code{count.alpha.ran}, \code{count.alpha.none}, \code{pred.alpha.ran}, and \code{pred.alpha.none}. Default values are provided.
-#' @param LRO.grid.search Logical, if TRUE, runs a grid search to find the optimal parameters for the LRO change-point detection algorithm and returns the results.
 #' @param ran.seed Integer, random seed for reproducibility. If NULL, no seed is set. Default is 1234.
 #' @return List giving the results of the fitted model, including: \code{model.component.list}, \code{count.data.summed}, \code{fitted.parameters}, \code{gamma.disperson}, \code{param.names}, \code{fix}, \code{treatment}, \code{grouping.variables}, \code{param.idx0}, \code{settings}, \code{sample.params}, \code{sample.params.bs}, \code{sample.params.MCMC}, \code{diagnostics.bs}, \code{diagnostics.MCMC}, \code{stats}, and \code{plots}
 #' @export
@@ -44,7 +43,6 @@ wisp <- function(
     model.settings = list(),
     MCMC.settings = list(),
     plot.settings = list(),
-    LRO.grid.search = FALSE,
     ran.seed = 1234
   ) {
    
@@ -179,6 +177,7 @@ wisp <- function(
       buffer_factor = 0.05,                       # buffer factor for minimum distance between t-points
       ctol = 1e-6,                                # convergence tolerance
       max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from parameter bounds
+      LRO_cost = "AIM",                           # character string giving cost to use when evaluating LRO parameters ("AIC", "BIC", "NLL"; anything else defaults to LROcutoff and LROwindow_factor)
       LROcutoff = 2.0,                            # cutoff for LROcp, a multiple of standard deviation
       LROwindow_factor = 1.25,                    # controls size of window used in LROcp algorithm (window = LROwindow_factor * bin_num * buffer_factor)
       rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
@@ -313,18 +312,14 @@ wisp <- function(
     
     if (verbose) {
       snk.report("Running LRO change-point detection and setting initial parameters", initial_breaks = 1)
-      snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 1)
+      snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 2)
     }
     
-    # Search for best LRO parameters, else proceed with defaults or user-provided values
-    if (LRO.grid.search) {
-      LRO_grid <- as.data.frame(cpp_model$LRO_grid_search(verbose))
-      LRO_grid <- LRO_grid[LRO_grid$success_code == 3, ]
-      return(LRO_grid)
-    } else {
-      # Run LRO change-point detection and find initial parameter values
-      cpp_model$LRO_initial_param_ests(verbose, 0.0, 0.0)
-    }
+    # Search for best LRO parameters
+    cpp_model$LRO_grid_search(verbose)
+    
+    # Find initial parameters using grid search results
+    cpp_model$LRO_initial_param_ests(verbose, 0.0, 0.0)
     
     # Fit model to data ####
     
@@ -336,7 +331,7 @@ wisp <- function(
       }
       
       # Fit model
-      cpp_model$fit(TRUE, verbose)
+      cpp_model$fit(verbose)
       
       # Grab model results 
       results <- cpp_model$results()
@@ -492,10 +487,7 @@ wisp <- function(
         if (verbose) snk.report...("Setting full-data fit as parameters", initial_breaks = 2, end_breaks = 1)
         final_parameters <- sample.params[nrow(sample.params),]
       }
-      cpp_model$set_parameters(
-        final_parameters,
-        verbose
-      )
+      ## STOPPED HERE, problem! NEED some way to set these parameters
       
       # Grab model results and add samples
       results <- cpp_model$results()
@@ -1708,8 +1700,8 @@ plot.timeseries <- function(
     n_trt <- nrow(wm)
     
     # Get tpoint and rate effects indices
-    beta_tpoint_idx <- wisp.results[["param.idx0"]][["beta"]][["tpoint"]]
-    beta_rate_idx <- wisp.results[["param.idx0"]][["beta"]][["Rt"]]
+    beta_tpoint_idx <- wisp.results[["param.idx0"]][["beta"]][[3]]
+    beta_rate_idx <- wisp.results[["param.idx0"]][["beta"]][[1]]
     
     df_count <- wisp.results$count.data.summed 
     df_count_split_mask <- df_count$treatment %in% split_names
@@ -1719,16 +1711,16 @@ plot.timeseries <- function(
     # Reconstruct treatment condition rates and tpoints
     df <- data.frame()
     # ... for each context 
-    for (cxt in seq_along(beta_rate_idx)) {
+    for (cxt in seq_along(wisp.results$grouping.variables$context.lvls)) {
       
       # Get indices for this context
       beta_tpoint_idx_cxt <- beta_tpoint_idx[[cxt]]
       beta_rate_idx_cxt <- beta_rate_idx[[cxt]]
       
-      context_mask <- df_count$context == names(beta_rate_idx)[cxt]
+      context_mask <- df_count$context == wisp.results$grouping.variables$context.lvls[cxt]
       
       # ... for each species
-      for (sps in seq_along(beta_rate_idx_cxt)) {
+      for (sps in seq_along(wisp.results$grouping.variables$species.lvls)) {
         
         # Make effect matrix for this species, rates
         rate_idx <- beta_rate_idx_cxt[[sps]] + 1
@@ -1740,7 +1732,7 @@ plot.timeseries <- function(
         tpoint_ev <- wisp.results$fitted.parameters[tpoint_idx]
         tpoint_em <- matrix(tpoint_ev, nrow = n_trt) # columns as blocks, rows as treatments
         
-        species_context_mask <- context_mask & df_count$species == names(beta_rate_idx_cxt)[sps]
+        species_context_mask <- context_mask & df_count$species == wisp.results$grouping.variables$species.lvls[sps]
         
         # Find rates
         rates <- wm %*% rate_em # row i of wm (= trt level) dot column j of em (= block level) gives rate for trt i in block j
@@ -1801,8 +1793,8 @@ plot.timeseries <- function(
                       block = b,
                       ran = rl,
                       splitting_factor = splitting_lvl[1],
-                      context = names(beta_rate_idx)[cxt],
-                      species = names(beta_rate_idx_cxt)[sps]
+                      context = wisp.results$grouping.variables$context.lvls[cxt],
+                      species = wisp.results$grouping.variables$species.lvls[sps]
                     )
                   )
                 }
@@ -1842,8 +1834,8 @@ plot.timeseries <- function(
                       block = b,
                       ran = rl,
                       splitting_factor = splitting_lvl[2],
-                      context = names(beta_rate_idx)[cxt],
-                      species = names(beta_rate_idx_cxt)[sps]
+                      context = wisp.results$grouping.variables$context.lvls[cxt],
+                      species = wisp.results$grouping.variables$species.lvls[sps]
                     )
                   )
                 }

@@ -120,7 +120,7 @@ model <- wisp(
 ```
 ```{r check3, echo = FALSE}
 test_val <- model[["fitted.parameters"]][["beta_Rt_GABA_Bcl11b_right18_X_Tns/Blk2"]]
-if (test_val < "-0.2239347" || test_val > "-0.2239349") stop(paste0("failed check 3", ", expected value: -0.2239348", ", actual value: ", test_val))
+if (test_val < -0.08501735 || test_val > -0.08501733) stop("failed check 3")
 ```
 
 <h2>Results</h2>
@@ -136,6 +136,10 @@ plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
 g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
 grid.draw(g)
+```
+```{r check4, echo = FALSE}
+test_val <- ggplot_build(plt_Glut)$data[[1]][4,2]
+if (test_val < 2.890371 || test_val > 2.890373) stop("failed check 4")
 ```
 
 There are a few things to notice, which exemplify how gene expression varies between cell types. 
@@ -165,6 +169,10 @@ plt_GABA2 <- plt_GABA2 + coord_cartesian(ylim = ylims)
 g <- arrangeGrob(plt_Glut1, plt_GABA1, plt_Glut2, plt_GABA2, ncol = 2)  
 grid.draw(g)
 ```
+```{r check5, echo = FALSE}
+test_val <- ggplot_build(plt_Glut1)$data[[1]][4,2]
+if (test_val < 3.386834 || test_val > 3.386836) stop("failed check 5")
+```
 
 Starting with <span class = "gene">BCL11B</span>, we see that the bump in L4 at P7 isn't confined to the left hemisphere in GABAergic cells, but also appears (perhaps shifted down into L5) in the right as well. Curiously, not only do expression levels drop with age (P12, P18), but the bump seems to disappear in both hemispheres. In contrast, the up-regulation of <span class = "gene">BCL11B</span> in deep layers (L5 and L6) in glutamatergic neurons is stable across age and hemisphere, albeit with a notable drop after P7.
 
@@ -180,6 +188,10 @@ plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
 g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
 grid.draw(g)
 ```
+```{r check6, echo = FALSE}
+test_val <- ggplot_build(plt_Glut)$data[[1]][4,2]
+if (test_val < 3.06297 || test_val > 3.06299) stop("failed check 6")
+```
 
 In CUX2 we see relatively flat expression across layers in GABAergic neurons, with an overall drop in expression level after P7. In contrast, while expression is constant across layers in glutamatergic neurons at P7, it only drops selectively, in deep layers (L5 and L6) after P7. 
 
@@ -192,6 +204,10 @@ plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
 g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
 grid.draw(g)
+```
+```{r check7, echo = FALSE}
+test_val <- ggplot_build(plt_Glut)$data[[1]][4,2]
+if (test_val < 1.943494 || test_val > 1.943496) stop("failed check 7")
 ```
 
 A closer look at [RORB expression](tutorial_corticallaminar.html) confirms the expected up-regulation in L4 in glutamatergic neurons. The absence of this bump in L4 in GABAergic neurons seems to hold bilaterally and across ages. In fact, there's little (if any) interesting up-regulation in GABAergic neurons, except perhaps a small bump in L6 in the right hemisphere at P7. 
@@ -211,6 +227,10 @@ plt_Glut2 <- plt_Glut2 + coord_cartesian(ylim = ylims)
 plt_GABA2 <- plt_GABA2 + coord_cartesian(ylim = ylims)
 g <- arrangeGrob(plt_Glut1, plt_GABA1, plt_Glut2, plt_GABA2, ncol = 2)  
 grid.draw(g)
+```
+```{r check8, echo = FALSE}
+test_val <- ggplot_build(plt_Glut1)$data[[1]][4,2]
+if (test_val < 5.28838 || test_val > 5.28840) stop("failed check 8")
 ```
 
 Finally, as observed in the reference level, <span class = "gene">NXPH3</span> and <span class = "gene">SATB2</span> expression is extremely similar across glutamatergic and GABAergic neurons, albeit with higher levels across the board in glutamatergic neurons (which, as noted above, may simply be due to a higher number of cells). 
@@ -235,6 +255,10 @@ plt_GABA2 <- plt_GABA2 + coord_cartesian(ylim = ylims)
 g <- arrangeGrob(plt_Glut1, plt_GABA1, plt_Glut2, plt_GABA2, ncol = 2)  
 grid.draw(g)
 ```
+```{r check9, echo = FALSE}
+test_val <- ggplot_build(plt_Glut1)$data[[1]][4,2]
+if (test_val < 1.374314 || test_val > 1.374316) stop("failed check 9")
+```
 
 The similar trajectories of the count (y-axis) across age (x-axis) for glutamatergic and GABAergic neurons for <span class = "gene">BCL11B</span> and <span class = "gene">SATB2</span> suggest a similar effect from age, regardless of cell type, hemisphere, or cortical layer (block). What is different between the cell types, however, is that while <span class = "gene">BCL11B</span> expression in glutamatergic neurons varies by cortical layer in glutamatergic neurons (with higher expression in the deeper layers, block 1), it is constant across cortical layers in GABAergic neurons. 
 
@@ -247,6 +271,10 @@ plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
 g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
 grid.draw(g)
+```
+```{r check10, echo = FALSE}
+test_val <- ggplot_build(plt_Glut)$data[[1]][4,2]
+if (test_val < 2.452830 || test_val > 2.452832) stop("failed check 10")
 ```
 
 Similar trajectories of the count (y-axis) across age (x-axis) are also seen for glutamatergic and GABAergic neurons for CUX2, albeit the similarity only holds for the deeper block (block 1) of the glutamatergic cells. The more superficial block (block 2) of glutamatergic neurons shows a trajectory different from that found in GABAergic neurons, with expression levels dipping at P12 before recovering at P18.
@@ -261,6 +289,10 @@ plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
 g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
 grid.draw(g)
 ```
+```{r check11, echo = FALSE}
+test_val <- ggplot_build(plt_Glut)$data[[1]][4,2]
+if (test_val < 1.260581 || test_val > 1.260583) stop("failed check 11")
+```
 
 While the GABAergic neurons show a temporal trajectory for <span class = "gene">FEZF2</span> expression that is similar to that seen for <span class = "gene">BCL11B</span> and CUX2, the glutamatergic neurons show variation across cortical layers (blocks), but no real lateralization in temporal trajectory.
 
@@ -273,6 +305,10 @@ plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
 g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
 grid.draw(g)
+```
+```{r check12, echo = FALSE}
+test_val <- ggplot_build(plt_Glut)$data[[1]][4,2]
+if (test_val < 1.673632 || test_val > 1.673634) stop("failed check 12")
 ```
 
 <span class = "gene">NXPH3</span>, on the other hand, shows lateralization of the temporal trajectory in both glutamatergic and GABAergic neurons. While the patterns in GABAergic neurons are hard to discern visually, there is a clear pattern in the glutamatergic neurons, with a dip in expression at P12 with recovery at P18, in the left but not the right hemisphere. 
@@ -287,12 +323,12 @@ plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
 g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
 grid.draw(g)
 ```
-```{r check4, echo = FALSE}
+```{r check13, echo = FALSE}
 gb <- ggplot2::ggplot_build(plt_Glut)
 layer_data <- gb$data[[1]]
 layer_data[, c("x", "y")]
 test_val <- layer_data[, c("x", "y")][4,2]
-if (test_val < 1.816616 || test_val > 1.816618) stop("failed check 4")
+if (test_val < 1.792312 || test_val > 1.792314) stop("failed check 13")
 ```
 
 <span class = "gene">RORB</span> is perhaps the most difficult to interpret visually, at least for glutamatergic neurons, which possibly have complex temporal trajectories interacting with both cortical layer and hemisphere. GABAergic neurons, on the other hand, show little variation along any dimension. 

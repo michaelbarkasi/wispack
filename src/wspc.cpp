@@ -24,22 +24,24 @@ wspc::wspc(
      */
     
     // Extract settings
-    buffer_factor = sdouble((double)settings["buffer_factor"]);
+    buffer_factor = (double)settings["buffer_factor"];
     ctol = (double)settings["ctol"];
-    max_penalty_at_distance_factor = sdouble((double)settings["max_penalty_at_distance_factor"]);
+    max_penalty_at_distance_factor = (double)settings["max_penalty_at_distance_factor"];
+    LRO_cost = Rcpp::as<Rcpp::String>(settings["LRO_cost"]);
     LROcutoff = (double)settings["LROcutoff"];
     LROwindow_factor = (double)settings["LROwindow_factor"];
     rise_threshold_factor = (double)settings["rise_threshold_factor"];
     max_evals = (int)settings["max_evals"];
     rng_seed = (unsigned int)settings["rng_seed"];
-    warp_precision = (sdouble)settings["warp_precision"];
-    inf_warp = (sdouble)settings["inf_warp"];
+    warp_precision = (double)settings["warp_precision"];
+    inf_warp = (double)settings["inf_warp"];
     round_none = (bool)settings["round_none"];
     trtKO = Rcpp::as<CharacterVector>(settings["trtKO"]);
+    n_bin = (int)settings["max_bin"];
     model_settings = Rcpp::clone(settings);
     
     // Report warp_inf 
-    const sdouble eps_ = std::numeric_limits<double>::epsilon(); // machine epsilon
+    const double eps_ = std::numeric_limits<double>::epsilon(); // machine epsilon
     if (verbose) {
       vprint_header("Infinity handling");
       vprint("machine epsilon: (eps_): ", eps_);
@@ -60,7 +62,6 @@ wspc::wspc(
     
     // Check structure of input data
     CharacterVector required_cols = CharacterVector::create("count", "bin", "context", "species", "ran");
-    col_names = col_names[!col_names.isin(trtKO)];
     int n_cols = col_names.size();
     int r_cols = required_cols.size();
     for (int i = 0; i < r_cols; i++) {
@@ -70,16 +71,14 @@ wspc::wspc(
     }
     
     // Save tokenized count column before collapsing to sums 
-    count_tokenized = to_sVec(Rcpp::as<NumericVector>(count_data["count"]));
+    count_tokenized = to_dVec(Rcpp::as<NumericVector>(count_data["count"]));
     
     // Find max bins and set warp bounds
     vprint_header("Extracting variables and data information", verbose);
-    bin_num = (sdouble)settings["max_bin"];
-    if (bin_num == 0.0) {bin_num = smax(to_sVec(Rcpp::as<NumericVector>(count_data["bin"])));}
-    warp_bounds.resize(3); 
-    for (int i = 0; i < 3; i++) {warp_bounds[i] = inf_warp;}            // initialize to infinity (no bounds)
-    warp_bounds[2] = bin_num;                                           // set tpoint bound to max bin
-    vprint("Max bin: " + std::to_string(bin_num.val()), verbose);
+    if (n_bin == 0) {n_bin = (int)Rcpp::max(Rcpp::as<NumericVector>(count_data["bin"]));}
+    vprint("Max bin: " + std::to_string(n_bin), verbose);
+    warp_bounds.resize(3);
+    warp_bounds << inf_warp, inf_warp, (double)n_bin;
     
     // Extract fixed effects 
     int n_fix = n_cols - r_cols;                                        // number of fixed effect variables, assume all non-required columns are fixed effects
@@ -94,7 +93,7 @@ wspc::wspc(
       fix_names[i] = col_names[i + r_cols];
       
       // Grab column of fixed-effect variable
-      SEXP col = count_data[fix_names[i]];
+      SEXP col = count_data[(String)fix_names[i]];
       CharacterVector lvls;
       
       // Sort levels
@@ -152,9 +151,9 @@ wspc::wspc(
     CharacterVector ref_lvl = {"ref"};                                  // define a baseline (i.e., reference) level
     treatment_components = make_treatments(fix_trt);                    // make components of all possible treatment levels
     treatment_components.insert(treatment_components.begin(), ref_lvl); // add "ref" to represent reference level
-    treatment_num = treatment_components.size();                        // grab number of treatments
-    treatment_lvls = CharacterVector(treatment_num);                    // resize variable to hold treatment level names
-    for (int t = 0; t < treatment_num; t++) {                           // collapse components into level names
+    n_treatments = treatment_components.size();                        // grab number of treatments
+    treatment_lvls = CharacterVector(n_treatments);                    // resize variable to hold treatment level names
+    for (int t = 0; t < n_treatments; t++) {                           // collapse components into level names
       treatment_lvls[t] = Rcpp::collapse(treatment_components[t]);
     }
     
@@ -165,7 +164,7 @@ wspc::wspc(
       for (int idx : trkKO_idx) {
         treatment_lvls.erase(treatment_lvls.begin() + (idx - cnt));  // ... remove from treatment_lvls
         treatment_components.erase(treatment_components.begin() + (idx - cnt++));  // ... remove from treatment_components, adjusting for previous removals
-        treatment_num--;  // ... decrease
+        n_treatments--;  // ... decrease
       }
     }
     vprint("Created treatment levels:", verbose);
@@ -174,8 +173,8 @@ wspc::wspc(
     // Create matrix to translate between treatment levels and fixed-effects columns
     // ... for making summed-count fixed-effect column 
     // ... each cell should contain the value of the treatment column n_fix, for the given treatment level
-    CharacterMatrix effects_rows(treatment_num, n_fix);
-    for (int tr = 0; tr < treatment_num; tr++) {
+    CharacterMatrix effects_rows(n_treatments, n_fix);
+    for (int tr = 0; tr < n_treatments; tr++) {
       CharacterVector trt_components = treatment_components[tr];
       for (int f = 0; f < n_fix; f++) {
         CharacterVector lvls = fix_lvls[f];
@@ -190,19 +189,19 @@ wspc::wspc(
     
     // When predicting parameter values for treatment level tr_predict, should treatment level tr_input's effect be applied?
     // ... i.e., what's the "weight" of each treatment level (columns of weight matrix) relative to the others (rows of weight matrix)? 
-    weight_rows.resize(treatment_num, treatment_num);
+    weight_rows.resize(n_treatments, n_treatments);
     weight_rows.setOnes(); // ... assume "yes"
-    for (int tr_predict = 0; tr_predict < treatment_num; tr_predict++) {
+    for (int tr_predict = 0; tr_predict < n_treatments; tr_predict++) {
       // Grab components of treatment level tr_predict
       CharacterVector tr_predict_components = treatment_components[tr_predict];
-      for (int tr_input = 0; tr_input < treatment_num; tr_input++) {
+      for (int tr_input = 0; tr_input < n_treatments; tr_input++) {
         // Grab components of treatment level tr_input
         CharacterVector tr_input_components = treatment_components[tr_input];
         // ... if tr_input is the base reference level, tr_input must be applied
         if (tr_input_components.size() == 1 && tr_input_components[0] == "ref") {continue;} 
         // ... else, must check whether all trc_i of tr_input are in tr_predict
-        LogicalVector input_comp_included;
-        for (String trc_i : tr_input_components) {
+        for (int i = 0; i < tr_input_components.size(); i++) {
+          String trc_i = tr_input_components[i];
           // if trc_i is not in tr_predict ...
           if(!any_true(eq_left_broadcast(tr_predict_components, trc_i))) {
             // ... check whether trc_i is a time point from "timeseries" ...
@@ -213,37 +212,29 @@ wspc::wspc(
                 // ... is a time point in "timeseries" ...
                 if (is_time[trc_p]) { 
                   pred_has_time = true;
-                  // ... that is greater than or equal to trc_i
+                  // ... that is less than trc_p
                   int i_rank = timeseries_rank[trc_i];
                   int p_rank = timeseries_rank[trc_p];
-                  if (i_rank <= p_rank) {
-                    // ... if so, trc_i is included in tr_predict
-                    input_comp_included.push_back(true);
-                  } else {
-                    // ... else, trc_i is not included in tr_predict
-                    input_comp_included.push_back(false);
+                  if (i_rank > p_rank) {
+                    // ... if so, trc_i is not included in tr_predict
+                    weight_rows(tr_predict, tr_input) = 0.0;
+                    continue;
                   }
                   // ... if so, tr_input applies and should be left at 1.0
                 } 
               }
               if (!pred_has_time) {
                 // trc_i is not in tr_predict
-                input_comp_included.push_back(false);
+                weight_rows(tr_predict, tr_input) = 0.0;
+                continue;
               }
             } else {
               // trc_i is not in tr_predict
-              input_comp_included.push_back(false);
+              weight_rows(tr_predict, tr_input) = 0.0;
+              continue;
             }
-          } else {
-            // trc_i is in tr_predict
-            input_comp_included.push_back(true);
-          }
+          } 
         }
-        // Sanity check 
-        if (input_comp_included.size() != tr_input_components.size()) {
-          Rcpp::stop("Error in constructing weight matrix.");
-        }
-        if (!all_true(input_comp_included)) {weight_rows(tr_predict, tr_input) = 0.0;}
       }
     }
     vprint("Constructed weight_row matrix", verbose);
@@ -273,9 +264,7 @@ wspc::wspc(
     int n_ran = ran_lvls.size();
     int n_species = species_lvls.size();
     int n_context = context_lvls.size();
-    int bin_num_i = (int)bin_num.val();
-    n_count_rows = bin_num_i * n_context * n_species * n_ran * treatment_num;
-    count_row_nums = Rcpp::seq(0, n_count_rows - 1);
+    n_count_rows = n_bin * n_context * n_species * n_ran * n_treatments;
     vprint("Total rows in summed count data table: " + std::to_string(n_count_rows), verbose);
     
     // Create summed count data rows, initializations
@@ -287,19 +276,19 @@ wspc::wspc(
     species_num.reserve(n_count_rows);
     ran = CharacterVector(n_count_rows);
     treatment = CharacterVector(n_count_rows);
-    weights.resize(n_count_rows, treatment_num);
+    weights.resize(n_count_rows, n_treatments);
     
     // Initiate count indexes 
     int idx_mcu = 0;
-    idx_mc_unique = IntegerVector(n_count_rows/bin_num_i);
+    idx_mc_unique = IntegerVector(n_count_rows/n_bin);
     token_pool.resize(n_count_rows);
     count_not_na_mask = LogicalVector(n_count_rows);
     count_not_na_mask.fill(false);
     vprint("Number of rows with unique model components: " + std::to_string(idx_mc_unique.size()), verbose);
     
     // Pre-compute bin masks
-    LogicalMatrix bin_masks(binT.size(), bin_num_i);
-    for (int b = 0; b < bin_num_i; b++) { 
+    LogicalMatrix bin_masks(binT.size(), n_bin);
+    for (int b = 0; b < n_bin; b++) { 
       bin_masks.column(b) = eq_left_broadcast(binT, b + 1);
     }
     
@@ -315,21 +304,21 @@ wspc::wspc(
         for (int s = 0; s < n_species; s++) {
           LogicalVector species_mask = context_mask & eq_left_broadcast(speciesT, species_lvls[s]);
           
-          for (int t = 0; t < treatment_num; t++) {
+          for (int t = 0; t < n_treatments; t++) {
             LogicalVector treatment_mask = Rcpp::clone(species_mask);
             for (int f = 0; f < n_fix; f++) {
-              treatment_mask = treatment_mask & eq_left_broadcast(Rcpp::as<CharacterVector>(count_data[fix_names[f]]), effects_rows(t, f));
+              treatment_mask = treatment_mask & eq_left_broadcast(Rcpp::as<CharacterVector>(count_data[(String)fix_names[f]]), effects_rows(t, f));
             }
             
             // Save mc-unique index
             idx_mc_unique[idx_mcu] = idx; 
             idx_mcu++;
             
-            for (int b = 0; b < bin_num_i; b++) {
+            for (int b = 0; b < n_bin; b++) {
               
               // Build columns 
-              count(idx) = 0.0;
-              bin(idx) = static_cast<sdouble>(b + 1.0);
+              count[idx] = 0.0;
+              bin[idx] = static_cast<double>(b + 1.0);
               context(idx) = context_lvls[c];
               species(idx) = species_lvls[s];
               context_num.push_back(c);
@@ -349,11 +338,11 @@ wspc::wspc(
                 token_pool[idx] = token_pool_idx; 
                 // ^ ... save for bootstrap resampling
                 for (int rw : token_pool_idx) {
-                  count(idx) += count_tokenized[rw];
+                  count[idx] += count_tokenized[rw];
                 }
                 count_not_na_mask(idx) = true;
               } else {
-                count(idx) = stan::math::NOT_A_NUMBER;
+                count[idx] = std::numeric_limits<double>::quiet_NaN();
               }
               
               // Increment index
@@ -372,6 +361,10 @@ wspc::wspc(
     // Extract idx from count_not_na_mask
     count_not_na_idx = Rwhich(count_not_na_mask);
     
+    // Find indexes of none rows
+    not_none_mask = !eq_left_broadcast(ran, "none");
+    r_idx = Rwhich(!not_none_mask);
+    
     // Make extrapolation pool
     if (n_ran > 1) {vprint_header("Making extrapolation pool", verbose);}
     make_extrapolation_pool(verbose); 
@@ -381,23 +374,20 @@ wspc::wspc(
     
     // Extrapolate "none" rows
     if (ran_lvls.size() > 1) {
-      count = extrapolate_none(count, ran, extrapolation_pool, true, round_none);
+      extrapolate_none();
       vprint("Extrapolated 'none' rows", verbose);
     }
     
     // Take log of observed counts 
-    count_log.resize(n_count_rows); 
-    for (int r = 0; r < n_count_rows; r++) {
-      count_log(r) = slog(count(r) + 1.0);
-    } 
+    count_log = dVec(n_count_rows); 
+    for (int r = 0; r < n_count_rows; r++) {count_log[r] = std::log(count[r] + 1.0);} 
     vprint("Took log of observed counts", verbose);
     
     // Compute tpoint buffer
-    tpoint_buffer = bin_num * buffer_factor;
-    double tpoint_buffer_d = tpoint_buffer.val();
-    int tpoint_buffer_int = (int)tpoint_buffer_d;
-    if (tpoint_buffer_d != tpoint_buffer_int) {tpoint_buffer_int++;} 
-    tpoint_buffer = (sdouble)tpoint_buffer_int;
+    tpoint_buffer = (double)n_bin * buffer_factor;
+    int tpoint_buffer_int = (int)tpoint_buffer;
+    if (tpoint_buffer != tpoint_buffer_int) {tpoint_buffer_int++;} 
+    tpoint_buffer = (double)tpoint_buffer_int;
     
     // Estimate gamma dispersion of raw counts
     compute_gamma_dispersion();
@@ -412,9 +402,9 @@ wspc::wspc(
     gv_sps_idx.reserve(n_count_rows);
     for (int r = 0; r < n_count_rows; r++) {
       CharacterVector::iterator it_ran = std::find(ran_lvls.begin(), ran_lvls.end(), ran[r]);
-      CharacterVector::iterator it_fix = std::find(species_lvls.begin(), species_lvls.end(), species[r]);
+      CharacterVector::iterator it_sps = std::find(species_lvls.begin(), species_lvls.end(), species[r]);
       gv_ran_idx[r] = std::distance(ran_lvls.begin(), it_ran);
-      gv_sps_idx[r] = std::distance(species_lvls.begin(), it_fix);
+      gv_sps_idx[r] = std::distance(species_lvls.begin(), it_sps);
     }
     vprint("Constructed grouping variable IDs", verbose);
     
@@ -441,44 +431,8 @@ wspc wspc::clone() const {
 
 // Clear stan
 void wspc::clear_stan_mem() {
-    
-    // Temporarily save stan variable values 
-    double dbin_num = bin_num.val();
-    double dbuffer_factor = buffer_factor.val();
-    double dtpoint_buffer = tpoint_buffer.val();
-    double dwarp_precision = warp_precision.val();
-    double dinf_warp = inf_warp.val();
-    double dmax_penalty_at_distance_factor = max_penalty_at_distance_factor.val();
-    dVec dbin = to_dVec(bin);
-    dVec dcount = to_dVec(count);
-    dVec dcount_log = to_dVec(count_log);
-    dVec dcount_tokenized = to_dVec(count_tokenized);
-    dVec dbp_coefs = to_dVec(bp_coefs);
-    dVec dwarp_bounds = to_dVec(warp_bounds);
-    NumericMatrix Numweights = to_NumMat(weights);
-    NumericMatrix Numweight_rows = to_NumMat(weight_rows);
-    NumericMatrix Numgamma_dispersion = to_NumMat(gamma_dispersion);
-    
     // Recover memory from stan
     stan::math::recover_memory();
-    
-    // Re-assign stan variables
-    bin_num = (sdouble)dbin_num;
-    buffer_factor = (sdouble)dbuffer_factor;
-    tpoint_buffer = (sdouble)dtpoint_buffer;
-    warp_precision = (sdouble)dwarp_precision;
-    inf_warp = (sdouble)dinf_warp;
-    max_penalty_at_distance_factor = (sdouble)dmax_penalty_at_distance_factor;
-    bin = to_sVec(dbin);
-    count = to_sVec(dcount);
-    count_log = to_sVec(dcount_log);
-    count_tokenized = to_sVec(dcount_tokenized);
-    bp_coefs = to_sVec(dbp_coefs);
-    warp_bounds = to_sVec(dwarp_bounds);
-    weights = to_sMat(Numweights);
-    weight_rows = to_sMat(Numweight_rows);
-    gamma_dispersion = to_sMat(Numgamma_dispersion);
-    
   }
 
 /*
@@ -494,7 +448,7 @@ void wspc::compute_gamma_dispersion() {
     int n_context = context_lvls.size();
     
     // Initialize gamma dispersion matrix
-    gamma_dispersion = sMat(n_species, n_context);
+    gamma_dispersion = eMat(n_species, n_context);
     // ... initialized with all zeros
     gd_species_idx = IntegerVector(n_species);
     gd_context_idx = IntegerVector(n_context);
@@ -513,9 +467,9 @@ void wspc::compute_gamma_dispersion() {
         // Estimate dispersion of raw count (not log)
         LogicalVector species_mask = eq_left_broadcast(species, species_lvls[s]);
         LogicalVector cs_mask = context_mask & species_mask & count_not_na_mask;
-        sVec count_cs_masked = masked_vec(count, cs_mask); 
-        sdouble count_cs_mean = vmean(count_cs_masked);
-        sdouble count_cs_var = vvar(count_cs_masked);
+        eVec count_cs_masked = to_eVec(masked_vec(count, cs_mask)); 
+        double count_cs_mean = vmean(count_cs_masked);
+        double count_cs_var = vvar(count_cs_masked);
         gamma_dispersion(s, c) = gamma_dispersion_formula(count_cs_mean, count_cs_var);
         gd_species_idx[(String)species_lvls[s]] = s;
         
@@ -525,31 +479,24 @@ void wspc::compute_gamma_dispersion() {
     
   }
 
+// Function to pre-make extrapolation pools for ran-level "none"
 void wspc::make_extrapolation_pool(bool verbose) {
-    
-    // Construct nan and none masks
-    LogicalVector nan_mask = !Rcpp::is_na(to_NumVec(count));
-    LogicalVector none_mask = !eq_left_broadcast(ran, "none");
-    
-    // Find indexes of none rows
-    IntegerVector r_idx = Rwhich(!none_mask);
-    
     // Resize vector to hold extrapolation pools
     extrapolation_pool = std::vector<IntegerVector>(count.size());
     
     // Convert bin vector to numeric and get max bin number
-    NumericVector bin_NumVec = to_NumVec(bin);
-    int max_bin = Rcpp::max(bin_NumVec);
+    NumericVector n_binVec = to_NumVec(bin);
+    int max_bin = Rcpp::max(n_binVec);
     
     // Pre-make masks for bin, context, species, and treatment levels
-    LogicalMatrix bin_masks(bin_NumVec.size(), max_bin);
+    LogicalMatrix bin_masks(n_binVec.size(), max_bin);
     LogicalMatrix context_masks(context.size(), context_lvls.size());
     LogicalMatrix species_masks(species.size(), species_lvls.size());
     LogicalMatrix treatment_masks(treatment.size(), treatment_lvls.size());
     colnames(context_masks) = context_lvls;
     colnames(species_masks) = species_lvls;
     colnames(treatment_masks) = treatment_lvls;
-    for (int i = 0; i < bin_masks.ncol(); i++) {bin_masks.column(i) = eq_left_broadcast(bin_NumVec, i + 1);}
+    for (int i = 0; i < bin_masks.ncol(); i++) {bin_masks.column(i) = eq_left_broadcast(n_binVec, i + 1);}
     for (int i = 0; i < context_lvls.size(); i++) {context_masks.column(i) = eq_left_broadcast(context, context_lvls[i]);}
     for (int i = 0; i < species_lvls.size(); i++) {species_masks.column(i) = eq_left_broadcast(species, species_lvls[i]);}
     for (int i = 0; i < treatment_lvls.size(); i++) {treatment_masks.column(i) = eq_left_broadcast(treatment, treatment_lvls[i]);}
@@ -561,12 +508,12 @@ void wspc::make_extrapolation_pool(bool verbose) {
       int r = r_idx[ri];
       
       // Find all rows with the same fixed effects and bin
-      LogicalVector mask = bin_masks.column(bin(r).val() - 1)
+      LogicalVector mask = bin_masks.column((int)bin[r] - 1)
         & context_masks.column(Rwhich(eq_left_broadcast(context_lvls, context(r)))[0])
         & species_masks.column(Rwhich(eq_left_broadcast(species_lvls, species(r)))[0])
         & treatment_masks.column(Rwhich(eq_left_broadcast(treatment_lvls, treatment(r)))[0])
-        & nan_mask
-        & none_mask;
+        & count_not_na_mask
+        & not_none_mask;
      
       // Extract pool 
       extrapolation_pool[r] = Rwhich(mask);
@@ -579,30 +526,36 @@ void wspc::make_extrapolation_pool(bool verbose) {
     }
   }
 
+void wspc::extrapolate_none() {
+    for (int r : r_idx) {
+      count[r] = 0.0;
+      IntegerVector extrapolation_pool_r = extrapolation_pool[r];
+      int extrapolation_sz = extrapolation_pool_r.size();
+      if (extrapolation_sz > 0) {
+        for (int i : extrapolation_pool_r) {count[r] += std::log(count[i] + 1.0);}
+        count[r] /= (double)extrapolation_sz;
+        count[r] = std::exp(count[r]) - 1.0; // Convert back from log space
+        if (round_none) {count[r] = std::round(count[r]);}
+      }
+    }
+  }
+
 // Function to take means of count_log 
 void wspc::find_count_log_means() {
-    
-    // Convert bin num to integer
-    int bin_num_i = (int)bin_num.val();
     
     // Grab number of context and species levels
     const int n_species = species_lvls.size();
     const int n_context = context_lvls.size();
     
     // Initialize lists to hold count_log_avg_mat for each context-species combination 
-    count_log_avg_mat_list = List(n_context);
-    count_log_avg_mat_list.names() = context_lvls;
+    count_log_avg_mat = std::vector<std::vector<NumericMatrix>>(n_context, std::vector<NumericMatrix>(n_species));
     
     // Loop through context levels
     for (int c = 0; c < n_context; c++) {
       
       // Make context mask
       LogicalVector context_mask = eq_left_broadcast(context, context_lvls[c]);
-      
-      // Set up lists for count_log_avg_mat for this context
-      count_log_avg_mat_list[(String)context_lvls[c]] = List(n_species);
-      name_proxylist(count_log_avg_mat_list[(String)context_lvls[c]], species_lvls);
-      
+     
       // Loop through species levels
       for (int s = 0; s < n_species; s++) { 
         
@@ -611,8 +564,8 @@ void wspc::find_count_log_means() {
         LogicalVector cs_mask = context_mask & species_mask & count_not_na_mask;
         
         // Find mean of count_log for each species-context pair
-        NumericMatrix count_log_avg_mat(bin_num_i, treatment_num);
-        for (int t = 0; t < treatment_num; t++) {
+        count_log_avg_mat[c][s] = NumericMatrix(n_bin, n_treatments);
+        for (int t = 0; t < n_treatments; t++) {
           String trt = treatment_lvls[t];
           
           // Make mask for treatment rows of this context-species pair
@@ -620,21 +573,18 @@ void wspc::find_count_log_means() {
           LogicalVector cs_trt_mask = cs_mask & trt_mask;
           
           // Grab average counts for this treatment level (used later to set initial values)
-          dVec count_log_avg(bin_num_i); 
-          sVec count_trt_masked = masked_vec(count_log, cs_trt_mask);
-          sVec bin_trt_masked = masked_vec(bin, cs_trt_mask);
-          for (int b = 0; b < bin_num_i; b++) {
+          dVec count_log_avg(n_bin); 
+          dVec count_trt_masked = masked_vec(count_log, cs_trt_mask);
+          dVec bin_trt_masked = masked_vec(bin, cs_trt_mask);
+          for (int b = 0; b < n_bin; b++) {
             LogicalVector mask_b = eq_left_broadcast(to_NumVec(bin_trt_masked), (double)b + 1.0);
-            sVec count_b = masked_vec(count_trt_masked, mask_b);
-            count_log_avg[b] = vmean(count_b).val();
+            dVec count_b = masked_vec(count_trt_masked, mask_b);
+            count_log_avg[b] = vmean(count_b);
           }
-          count_log_avg_mat.column(t) = to_NumVec(count_log_avg);
+          count_log_avg_mat[c][s].column(t) = to_NumVec(count_log_avg);
           
         }
        
-        // Assign results matrix to the context-species list
-        assign_proxylist(count_log_avg_mat_list[(String)context_lvls[c]], (String)species_lvls[s], count_log_avg_mat);
-        
       }
     }
     
@@ -643,41 +593,26 @@ void wspc::find_count_log_means() {
 // Function to estimate change points
 void wspc::estimate_change_points() {
    
-    // Convert bin number 
-    int bin_num_i = (int)bin_num.val();
-    
     // Grab number of context and species levels
     const int n_ran = ran_lvls.size();
     const int n_species = species_lvls.size();
     const int n_context = context_lvls.size();
-    const int n_ran_trt = n_ran * treatment_num;
+    const int n_ran_trt = n_ran * n_treatments;
     
     // Initialize matrix to hold degrees of each context-species combination
     degMat = IntegerMatrix(n_species, n_context);
     rownames(degMat) = species_lvls;
     colnames(degMat) = context_lvls;
     
-    // Initialize lists to hold results matrices for each context-species combination 
-    // ... for found_cp
-    found_cp_list = List(n_context);
-    found_cp_list.names() = context_lvls;
-    // ... for found_cp_trt
-    found_cp_trt_list = List(n_context);
-    found_cp_trt_list.names() = context_lvls;
+    // Reserve space to hold results matrices for each context-species combination 
+    found_cp = std::vector<std::vector<IntegerMatrix>>(n_context, std::vector<IntegerMatrix>(n_species));
+    found_cp_trt = std::vector<std::vector<NumericMatrix>>(n_context, std::vector<NumericMatrix>(n_species));
     
     // Loop through context levels
     for (int c = 0; c < n_context; c++) {
       
       // Make context mask
       LogicalVector context_mask = eq_left_broadcast(context, context_lvls[c]);
-      
-      // Set up lists for results matrices for this context
-      // ... for found_cp
-      found_cp_list[(String)context_lvls[c]] = List(n_species);
-      name_proxylist(found_cp_list[(String)context_lvls[c]], species_lvls);
-      // ... for found_cp_trt
-      found_cp_trt_list[(String)context_lvls[c]] = List(n_species);
-      name_proxylist(found_cp_trt_list[(String)context_lvls[c]], species_lvls);
       
       // Loop through species levels
       for (int s = 0; s < n_species; s++) { 
@@ -687,11 +622,11 @@ void wspc::estimate_change_points() {
         LogicalVector cs_mask = context_mask & species_mask & count_not_na_mask;
         
         // Initialize count array for change-point detection
-        sMat count_masked_array(bin_num_i, n_ran_trt);
+        eMat count_masked_array(n_bin, n_ran_trt);
         count_masked_array.setZero();
         LogicalVector good_col(n_ran_trt);
         // Collect count values for each treatment-ran level interaction of this species-context pair
-        for (int t = 0; t < treatment_num; t++) {
+        for (int t = 0; t < n_treatments; t++) {
           String trt = treatment_lvls[t];
           
           // Make mask for treatment rows of this context-species pair
@@ -705,20 +640,20 @@ void wspc::estimate_change_points() {
             LogicalVector mask = cs_trt_mask & ran_mask;
             
             // Make masked copies of count_log and bin
-            sVec count_masked = masked_vec(count_log, mask);  
-            sVec bin_masked = masked_vec(bin, mask);
-            if (count_masked.size() == bin_num_i && bin_masked.size() == bin_num_i) {
+            eVec count_log_masked = to_eVec(masked_vec(count_log, mask));  
+            dVec bin_masked = masked_vec(bin, mask);
+            if (count_log_masked.size() == n_bin && bin_masked.size() == n_bin) {
               
-              // Ensure count_masked is in correct order
+              // Ensure count_log_masked is in correct order
               // ... should be, but sanity check 
-              for (int b = 0; b < bin_num_i; b++) {
+              for (int b = 0; b < n_bin; b++) {
                 if (bin_masked[b] != (b + 1.0)) {
                   stop("Count or bin vectors not in correct order.");
                 }
               }
               
               // Set this column and mark good
-              count_masked_array.col(t*n_ran + r) = count_masked;
+              count_masked_array.col(t*n_ran + r) = count_log_masked;
               good_col(t*n_ran + r) = true;
               
             } else {
@@ -730,14 +665,14 @@ void wspc::estimate_change_points() {
         
         // Extract good column numbers 
         IntegerVector good_col_idx = Rwhich(good_col);
-        sMat count_masked_array_good = count_masked_array(Eigen::all, to_iVec(good_col_idx));
+        eMat count_masked_array_good = count_masked_array(Eigen::all, to_iVec(good_col_idx));
         
         // Estimate change points from masked count series
         IntegerMatrix found_cp_good = LROcp_array(
           count_masked_array_good,    // 2D matrix of points to test for change points (columns as series, rows as bins)
           ws,                         // running window size 
           LROcutoff,                  // points more than this times sd considered outliers
-          tpoint_buffer.val()         // Minimum distance between two change points
+          tpoint_buffer               // Minimum distance between two change points
         );
         
         // Estimate degree of this context-species pair 
@@ -745,63 +680,35 @@ void wspc::estimate_change_points() {
         degMat(s, c) = deg;
         
         // Fill columns into the found_cp matrix
-        IntegerMatrix found_cp(deg, n_ran_trt);
+        found_cp[c][s] = IntegerMatrix(deg, n_ran_trt);
         // ^ ... Rcpp should initialize these matrices with all zeros
         if (deg > 0) {
           for (int si = 0; si < good_col_idx.size(); si++) {
             // ... grab change points
-            found_cp.column(good_col_idx[si]) = found_cp_good.column(si);
+            found_cp[c][s].column(good_col_idx[si]) = found_cp_good.column(si);
           }
         }
         
         // Extract treatment means for each change point
-        NumericMatrix found_cp_trt(deg, treatment_num);
-        for (int t = 0; t < treatment_num; t++) {
+        found_cp_trt[c][s] = NumericMatrix(deg, n_treatments);
+        for (int t = 0; t < n_treatments; t++) {
           for (int d = 0; d < deg; d++) {
-            found_cp_trt(d, t) = 0.0;
+            double temp = 0.0;
             int n_ran_hit = 0;
             for (int r = 0; r < n_ran; r++) {
               if (good_col(t*n_ran + r)) { // ... ensure there is data here
-                found_cp_trt(d, t) += (double)found_cp(d, t*n_ran + r);
+                temp += (double)found_cp[c][s](d, t*n_ran + r);
                 n_ran_hit++;
               }
             }
-            found_cp_trt(d, t) = found_cp_trt(d, t) / (double)n_ran_hit;
+            found_cp_trt[c][s](d, t) = temp / (double)n_ran_hit;
           }
         }
-        
-        // Assign results matrices to the context-species list
-        assign_proxylist(found_cp_list[(String)context_lvls[c]], (String)species_lvls[s], found_cp);
-        assign_proxylist(found_cp_trt_list[(String)context_lvls[c]], (String)species_lvls[s], found_cp_trt);
         
       }
     }
     
-  }
-
-// Estimate change points and initial parameters for model fitting
-void wspc::LRO_initial_param_ests(
-    bool verbose,
-    double LROwf,
-    double LROco
-  ) {
-   
-    if (LROwf == 0.0) {LROwf = LROwindow_factor;}
-    if (LROco != 0.0) {LROcutoff = LROco;}
-    
-    // Compute running and filter window sizes for LRO change-point detection
-    ws = static_cast<int>(std::round(LROwf * bin_num.val() * buffer_factor.val()));
-    
-    // Estimate degree of each context-species combination at baseline using LRO change-point detection 
-    estimate_change_points();
-    vprint("Estimated change points", verbose);
-    
-    // Find initial parameter estimates
-    estimate_initial_parameters();
-    vprint("Estimated initial parameters", verbose);
-    vprint("Number of parameters: " + std::to_string((int)fitted_parameters.size()), verbose);
-    
-    // Compute size of the parameter boundary vector 
+    // Compute implied size of the parameter boundary vector 
     boundary_vec_size = 0;
     for (int r : idx_mc_unique) {
       // Grab degree for this row
@@ -818,52 +725,74 @@ void wspc::LRO_initial_param_ests(
         boundary_vec_size++;
       } 
     }
+    
+  }
+
+// Estimate change points and initial parameters for model fitting
+void wspc::LRO_initial_param_ests(
+    bool verbose,
+    double LROwf,
+    double LROco
+  ) {
+   
+    if (LROwf != 0.0) {LROwindow_factor = LROwf;}
+    if (LROco != 0.0) {LROcutoff = LROco;} // ... LROcutoff used in estimate_change_points, so set before calling
+    
+    // Compute running and filter window sizes for LRO change-point detection
+    ws = static_cast<int>(std::round(LROwindow_factor * (double)n_bin * buffer_factor));
+    
+    // Estimate degree of each context-species combination at baseline using LRO change-point detection 
+    estimate_change_points();
+    vprint("Estimated change points", verbose);
+    
+    // Find initial parameter estimates
+    estimate_initial_parameters();
+    vprint("Estimated initial parameters", verbose);
+    vprint("Number of parameters: " + std::to_string((int)fitted_parameters.size()), verbose);
     vprint("Size of boundary vector: " + std::to_string(boundary_vec_size), verbose);
     
-    // Check for any treatment-level knockouts and set effects to zero in param vector
-    for (String this_trtKO : trtKO) {fitted_parameters[grep_cpp(param_names, "_" + ((std::string)this_trtKO) + "_")] = 0.0;}
-    
     // Check feasibility 
-    List feasibility_results = check_parameter_feasibility(to_sVec(fitted_parameters), false); 
-    fitted_parameters = Rcpp::as<NumericVector>(feasibility_results["parameters"]);
+    check_parameter_feasibility(to_sVec(fitted_parameters)); 
     
   }
 
 // Search for best LRO change-point detection settings
-NumericMatrix wspc::LRO_grid_search(bool verbose) {
+void wspc::LRO_grid_search(bool verbose) {
     
-    if (verbose) {
-      vprint_header("Performing grid search to find optimal LRO parameters");
-    }
+    // Check if a grid search can be done
+    if (!(LRO_cost == "AIC" || LRO_cost == "BIC" || LRO_cost == "NLL")) {return;}
+    
+    // Set up search grid
+    vprint("Performing grid search (resolution 0.25) for optimal LRO window factor and cutoff", verbose);
     dVec LROwf_range = {1.00, 1.25, 1.50, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00};
     dVec LROco_range = LROwf_range;
-    NumericMatrix results(LROwf_range.size() * LROco_range.size(), 8);
+    LRO_grid_search_results = NumericMatrix(LROwf_range.size() * LROco_range.size(), 8);
     int n = count_not_na_idx.size();
     
+    // Run LRO estimation for each initial grid point
     for (int i = 0; i < LROwf_range.size(); ++i) {
+      vprint("LRO window factor: " + std::to_string(LROwf_range[i]), verbose);
       for (int j = 0; j < LROco_range.size(); ++j) {
-        if (verbose) {
-          vprint("LRO window factor: " + std::to_string(LROwf_range[i]) + ", LRO cutoff: " + std::to_string(LROco_range[j]));
-        }
         LRO_initial_param_ests(false, LROwf_range[i], LROco_range[j]);
-        fit(false, false);
+        fit(false);
         int k = fitted_parameters.size();
         int idx = i * LROco_range.size() + j;
         double nll = optim_results["neg_loglik"];
         double bnll = optim_results["penalized_neg_loglik"];
-        results(idx, 0) = LROwf_range[i];
-        results(idx, 1) = LROco_range[j];
-        results(idx, 2) = nll;
-        results(idx, 3) = bnll;
-        results(idx, 4) = (double)optim_results["success_code"];
-        results(idx, 5) = (double)k;
-        results(idx, 6) = 2.0 * ((double)k + nll);
-        results(idx, 7) = 2.0 * (std::log((double)n) * (double)k + nll);
+        LRO_grid_search_results(idx, 0) = LROwf_range[i];
+        LRO_grid_search_results(idx, 1) = LROco_range[j];
+        LRO_grid_search_results(idx, 2) = nll;
+        LRO_grid_search_results(idx, 3) = bnll;
+        LRO_grid_search_results(idx, 4) = (double)optim_results["success_code"];
+        LRO_grid_search_results(idx, 5) = (double)k;
+        LRO_grid_search_results(idx, 6) = 2.0 * ((double)k + nll);
+        LRO_grid_search_results(idx, 7) = 2.0 * (std::log((double)n) * (double)k + nll);
         clear_stan_mem();
       }
     }
     
-    colnames(results) = CharacterVector::create(
+    // Label results matrix
+    colnames(LRO_grid_search_results) = CharacterVector::create(
       "LROwindow_factor", 
       "LROcutoff", 
       "neg_loglik", 
@@ -874,7 +803,25 @@ NumericMatrix wspc::LRO_grid_search(bool verbose) {
       "BIC"
       );
     
-    return results;
+    // Find lowest cost window_factor and cutoff
+    double cost = inf_; 
+    for (int i = 0; i < LROwf_range.size() * LROco_range.size(); i++) {
+      double this_cost; 
+      if (LRO_cost == "AIC") {
+        this_cost = LRO_grid_search_results(i,6);
+      } else if (LRO_cost == "BIC") {
+        this_cost = LRO_grid_search_results(i,7);
+      } else if (LRO_cost == "NLL") {
+        this_cost = LRO_grid_search_results(i,2);
+      }
+      if (this_cost < cost) {
+        cost = this_cost;
+        LROwindow_factor = LRO_grid_search_results(i,0);
+        LROcutoff = LRO_grid_search_results(i,1);
+      } 
+    }
+    
+    vprint("Optimal LRO window factor: " + std::to_string(LROwindow_factor) + ", optimal LRO cutoff: " + std::to_string(LROcutoff), verbose);
     
   }   
 
@@ -890,28 +837,23 @@ sVec wspc::compute_warped_mc(
     const sVec& parameters,    // Parameters to use in computation
     const sdouble& wf          // Warping factor to apply 
   ) const {
-    
     // Grab degree
     int bktp = degMat(species_num[r], context_num[r]);
     if (mc == 0) {bktp++;} // ... 0 is Rt
-    
     // Extract weight matrix row
-    sVec weight_row = weights.row(r).transpose();
-    
+    eVec weight_row = weights.row(r).transpose();
     // Compute unwarped model component value  
     sVec mc_vec(bktp);
     mc_vec.setZero();
     for (int bt = 0; bt < bktp; bt++) {
-      for (int t = 0; t < treatment_num; t++) {
-        mc_vec(bt) += weight_row(t) * parameters(beta_idx[mc][context_num[r]][species_num[r]][bt*treatment_num + t]);
+      for (int t = 0; t < n_treatments; t++) {
+        mc_vec(bt) += weight_row(t) * parameters(beta_idx[mc][context_num[r]][species_num[r]][bt*n_treatments + t]);
       }
       // ... and apply warping factor
-      mc_vec(bt) = warp_mc(mc_vec(bt), warp_bounds[mc], wf);
+      mc_vec(bt) = warp_mc(mc_vec(bt), warp_bounds(mc), wf);
     }
-    
     // Send out
     return mc_vec;
-    
   }
 
 // Predict log of rates
@@ -937,14 +879,10 @@ sVec wspc::predict_rates(
     iVec mc_unique_rows = Rcpp::as<iVec>(idx_mc_unique);
     
     // Initialize variables to hold model components
-    sVec Rt; 
-    sVec tslope;
-    sVec tpoint;
+    sVec Rt; sVec tslope; sVec tpoint;
     
     // Grab warping indices and initiate variables to hold them
-    sdouble f_pw;
-    sdouble f_rw;
-    sdouble f_sw;
+    sdouble f_pw; sdouble f_rw; sdouble f_sw;
     
     // Compute predicted rate for rows of the summed count data
     for (int r = 0; r < n_count_rows; r++) {
@@ -956,11 +894,10 @@ sVec wspc::predict_rates(
       if (count_not_na_mask[r] || cnt > 0 || all_rows) {
         
         // Grab warping factors
-        int wfi = gv_sps_idx[r] * (ran_lvls.size() - 1) + gv_ran_idx[r];
+        // WARNING: this code is duplicated in boundary_dist
+        int wfi = gv_sps_idx[r] * (ran_lvls.size() - 1) + gv_ran_idx[r] - 1;
         if (gv_ran_idx[r] == 0) {
-          f_pw = 0.0;
-          f_rw = 0.0; 
-          f_sw = 0.0;
+          f_pw = 0.0; f_rw = 0.0; f_sw = 0.0;
         } else {
           f_pw = parameters(wfactor_idx[0][wfi]);
           f_rw = parameters(wfactor_idx[1][wfi]); 
@@ -968,20 +905,17 @@ sVec wspc::predict_rates(
         } 
         
         // Only update predicted model components if r begins a new batch of unique values 
-        int cnt = std::count(mc_unique_rows.begin(), mc_unique_rows.end(), r);
         if (cnt > 0) { 
-          
           // Compute warped model components for this row r
-          Rt = compute_warped_mc("Rt", r, parameters, f_rw);        
-          tslope = compute_warped_mc("tslope", r, parameters, f_sw); 
-          tpoint = compute_warped_mc("tpoint", r, parameters, f_pw);
-          
+          Rt = compute_warped_mc(0, r, parameters, f_rw);        
+          tslope = compute_warped_mc(1, r, parameters, f_sw); 
+          tpoint = compute_warped_mc(2, r, parameters, f_pw);
         } 
         
-        // Compute the actual poly-sigmoid!! 
+        // Compute the poly-sigmoid
         predicted_rates(r) = poly_sigmoid(
-          bin(r),
-          degMat(species_num[r], context_num[r]);,
+          bin[r],
+          degMat(species_num[r], context_num[r]),
           Rt,
           tslope,
           tpoint
@@ -1000,23 +934,18 @@ NumericVector wspc::predict_rates_R(
     const NumericVector& parameters_R,
     const bool& all_rows 
   ) {
-    
     // Convert parameters to sVec
     sVec parameters = to_sVec(parameters_R);
-    
     // Compute predicted rates
     sVec predicted_rates = predict_rates(
       parameters,
       all_rows
     );
-    
     // Convert to NumericVector 
     NumericVector predicted_rates_R = to_NumVec(predicted_rates);
-    
     // Clear memory and return
     clear_stan_mem();
     return predicted_rates_R;
-    
   }
 
 /*
@@ -1062,10 +991,10 @@ sdouble wspc::neg_loglik(
         // Analytic solution to the log of the integral from 0 to positive infinity of the Poisson times Gamma densities
         if (gamma_variance == 0) { 
           // if no over-dispersion, just use Poisson
-          log_lik += stan::math::poisson_lpmf(count_log(r), predicted_rates_log_var(r));
-        } else if (count_log(r) > 0.0 && predicted_rates_log_var(r) > 0.0) { 
+          log_lik += stan::math::poisson_lpmf(count_log[r], predicted_rates_log_var(r));
+        } else if (count_log[r] > 0.0 && predicted_rates_log_var(r) > 0.0) { 
           // otherwise, use Poisson-Gamma integral
-          log_lik += slog(poisson_gamma_integral(count_log(r), predicted_rates_log_var(r), gamma_variance));
+          log_lik += slog(poisson_gamma_integral(count_log[r], predicted_rates_log_var(r), gamma_variance));
         }
         
       }
@@ -1094,9 +1023,7 @@ sVec wspc::boundary_dist(
     int ctr = 0;
     
     // Grab warping indices and initiate variables to hold them
-    sdouble f_pw;
-    sdouble f_rw;
-    sdouble f_sw;
+    sdouble f_pw; sdouble f_rw; sdouble f_sw;
     
     // Compute the boundary distance, for ...
     // ... transition slopes (must be positive)
@@ -1105,11 +1032,10 @@ sVec wspc::boundary_dist(
     for (int r : idx_mc_unique) {
       
       // Grab warping factors
-      int wfi = gv_sps_idx[r] * (ran_lvls.size() - 1) + gv_ran_idx[r];
+      // WARNING: this code is duplicated from predict_rates
+      int wfi = gv_sps_idx[r] * (ran_lvls.size() - 1) + gv_ran_idx[r] - 1;
       if (gv_ran_idx[r] == 0) {
-        f_pw = 0.0;
-        f_rw = 0.0; 
-        f_sw = 0.0;
+        f_pw = 0.0; f_rw = 0.0; f_sw = 0.0;
       } else {
         f_pw = parameters(wfactor_idx[0][wfi]);
         f_rw = parameters(wfactor_idx[1][wfi]); 
@@ -1118,8 +1044,8 @@ sVec wspc::boundary_dist(
       
       // Compute Rt for this row r
       // ... note: Not computing rate for all rows, just ones with unique model components
-      // ... this reduces number of rows to compute by a factor of bin_num, which is significant
-      sVec Rt = compute_warped_mc("Rt", r, parameters, f_rw);
+      // ... this reduces number of rows to compute by a factor of n_bin, which is significant
+      sVec Rt = compute_warped_mc(0, r, parameters, f_rw);
       
       // Grab degree for this row
       int deg = Rt.size() - 1;
@@ -1128,50 +1054,32 @@ sVec wspc::boundary_dist(
       if (deg > 0){
         
         // Compute tslope and tpoint for this row r
-        sVec tslope = compute_warped_mc("tslope", r, parameters, f_sw); 
-        sVec tpoint = compute_warped_mc("tpoint", r, parameters, f_pw);
+        sVec tslope = compute_warped_mc(1, r, parameters, f_sw); 
+        sVec tpoint = compute_warped_mc(2, r, parameters, f_pw);
         
         // Transition slopes most be positive
-        for (int d = 0; d < deg; d++) {
-          boundary_dist_vec(ctr) = tslope(d); 
-          ctr++;
-        }
+        for (int d = 0; d < deg; d++) {boundary_dist_vec(ctr++) = tslope(d);}
         
         // Find tpoint boundary distances
-        // WARNING: this code is duplicated in test_tpoint
         sVec tpoint_ext(deg + 2);
         for (int bt = 0; bt < tpoint_ext.size(); bt++) {
-          if (bt == 0) {
-            tpoint_ext(bt) = 0.0;
-          } else if (bt <= deg) {
-            tpoint_ext(bt) = tpoint(bt - 1);
-          } else { 
-            tpoint_ext(bt) = bin_num;
-          } 
+          if (bt == 0) {tpoint_ext(bt) = 0.0;} 
+          else if (bt <= deg) {tpoint_ext(bt) = tpoint(bt - 1);} 
+          else {tpoint_ext(bt) = (sdouble)n_bin;} 
         }
         
         // Transition points must be in increasing order 
         // ... and can't be closer than the buffer
         // ... and first point must be > buffer, 
-        // ... and last point must be < bin_num - buffer
-        for (int d = 0; d < deg + 1; d++) {
-          sdouble buffer_dist = (tpoint_ext(d + 1) - tpoint_ext(d)) - tpoint_buffer; 
-          boundary_dist_vec(ctr) = buffer_dist;
-          ctr++;
-        }
+        // ... and last point must be < n_bin - buffer
+        for (int d = 0; d < deg + 1; d++) {boundary_dist_vec(ctr++) = (tpoint_ext(d + 1) - tpoint_ext(d)) - tpoint_buffer;}
         
         // All block rate values must be positive
-        for (int d = 0; d < deg + 1; d++) {
-          boundary_dist_vec(ctr) = Rt(d) - rt_lower_bound;
-          ctr++;
-        }
+        for (int d = 0; d < deg + 1; d++) {boundary_dist_vec(ctr++) = Rt(d) - rt_lower_bound;}
         
       } else {
-        
         // ... trivial to check if rate (Rt) is positive
-        boundary_dist_vec(ctr) = Rt(0) - rt_lower_bound;
-        ctr++;
-        
+        boundary_dist_vec(ctr++) = Rt(0) - rt_lower_bound;
       }
       
     } 
@@ -1187,91 +1095,14 @@ sVec wspc::boundary_dist(
     
   }
 
-// Test for tpoints below the buffer
-bool wspc::test_tpoints(
-    const sVec& parameters,
-    const bool& verbose
-  ) const {
-    
-    // Initialize vector to hold tpoints and unique model-component rows
-    sVec tpoint;
-    iVec mc_unique_rows = Rcpp::as<iVec>(idx_mc_unique);
-    
-    // Grab point-warping indices and initiate variables to hold them
-    sdouble f_pw;
-    
-    // Compute predicted rate for rows of the summed count data
-    for (int r = 0; r < n_count_rows; r++) {
-      
-      // Only update predicted model components if r begins a new batch of unique values 
-      int cnt = std::count(mc_unique_rows.begin(), mc_unique_rows.end(), r);
-      if (cnt > 0) { 
-        
-        // Grab warping factors
-        if (gv_ran_idx[r] == 0) {
-          f_pw = 0.0;
-        } else {
-          int wfi = gv_sps_idx[r] * (ran_lvls.size() - 1) + gv_ran_idx[r];
-          f_pw = parameters(wfactor_idx_point[wfi]);
-        }
-        
-        // Find degree
-        int deg = degMat(species_num[r], context_num[r]);
-        if (deg > 0) {
-          
-          // Compute tpoints for this row r
-          tpoint = compute_warped_mc("tpoint", r, parameters, f_pw);
-          
-          // Find tpoint boundary distances
-          // WARNING: this code is duplicated from boundary_dist
-          sVec tpoint_ext(deg + 2);
-          for (int bt = 0; bt < tpoint_ext.size(); bt++) {
-            if (bt == 0) {
-              tpoint_ext(bt) = 0.0;
-            } else if (bt <= deg) {
-              tpoint_ext(bt) = tpoint(bt - 1);
-            } else { 
-              tpoint_ext(bt) = bin_num;
-            } 
-          }
-          // Transition points must be in increasing order 
-          // ... and can't be closer than the buffer
-          // ... and first point must be >= buffer, 
-          // ... and last point must be <= bin_num - buffer
-          for (int d = 0; d < deg + 1; d++) {
-            sdouble buffer_dist = (tpoint_ext(d + 1) - tpoint_ext(d)) - tpoint_buffer;
-            if (buffer_dist < 0.0) {
-              if (verbose) {
-                vprint("Found tpoint below buffer, distance: " + std::to_string(buffer_dist.val()), true);
-                vprint("   deg: " + std::to_string(d) + ", row: " + std::to_string(r), true);
-                vprint("   tpoint_ext(d + 1): " + std::to_string(tpoint_ext(d + 1).val()) + ", tpoint_ext(d): " + std::to_string(tpoint_ext(d).val()), true);
-                vprint("   species: " + std::string(species[r]) + ", context: " + std::string(context[r]) + ", ran level: " + std::string(ran[r]) + ", treatment: " + std::string(treatment[r]), true);
-              }
-              return false;
-            }
-          }
-          
-        }
-        
-      }  
-      
-    }  
-    
-    return true;
-    
-  } 
-
 // Compute min boundary penalty
 sdouble wspc::min_boundary_dist(
     const sVec& parameters
   ) const {
-   
     // Compute boundary_dist and take min
     sVec bd = boundary_dist(parameters);
     sdouble bd_min = smin(bd);
-    
     return bd_min;
-    
   }
 
 // Wrap neg_min_boundary_dist in form needed for NLopt constraint function
@@ -1289,22 +1120,20 @@ double wspc::min_boundary_dist_NLopt(
     
     // Compute min_boundary_dist
     sdouble fx = model->min_boundary_dist(parameters_var);
-    if (!std::isfinite(fx.val())) {
-      Rcpp::Rcout << "Non-finite objective from min_boundary_dist_NLopt" << std::endl;
-    }
+    if (!std::isfinite(fx.val())) {fx = 0.0;}
     
     // Compute gradient if needed
     if (!grad.empty()) {
       Eigen::VectorXd grad_eigen = model->grad_min_boundary_dist(parameters_var);
       grad.assign(grad_eigen.data(), grad_eigen.data() + grad_eigen.size());
-    }  
+    }
     for (size_t i = 0; i < grad.size(); ++i) {
       if (!std::isfinite(grad[i])) {
         grad[i] = 0.0;
       }
     }
     
-    // Return the value of the neg_loglik
+    // Return the value
     return fx.val(); 
     
   } 
@@ -1316,14 +1145,10 @@ sdouble wspc::bounded_nll(
     
     // Compute weighted negative log-likelihood
     sdouble bnll = neg_loglik(parameters);
-    
     // Compute boundary distance
     sVec bd = boundary_dist(parameters);
-    
     // Add boundary penalty
-    for (int i = 0; i < boundary_vec_size; i++) {
-      bnll += boundary_penalty_transform(bd(i), bp_coefs(i));
-    }
+    for (int i = 0; i < boundary_vec_size; i++) {bnll += boundary_penalty_transform(bd(i), bp_coefs(i));}
     
     /*
      * Idea of boundary penalty transform: When "far" from boundary, the total penalty will be at most 
@@ -1344,10 +1169,8 @@ double wspc::bounded_nll_NLopt(
     
     // Grab model
     wspc* model = static_cast<wspc*>(data);
-    
     // Convert dVec to Eigen with stan
     sVec parameters_var = to_sVec(x);
-    
     // Compute bounded_nll
     sdouble fx = model->bounded_nll(parameters_var);
     
@@ -1372,25 +1195,18 @@ double wspc::bounded_nll_NLopt(
 Eigen::VectorXd wspc::grad_bounded_nll(
     const sVec& p_
   ) const { 
-   
     // Create nested autodiff context
     stan::math::nested_rev_autodiff nested;
-    
-    // Make copy
+    // Make copy to create var nodes for p
     sVec p = p_;
-    
     // Initialize bounded_nll variable
     sdouble bnll = bounded_nll(p);
-    
     // Initialize variable to hold gradient
     Eigen::VectorXd gr_bnll(p.size());
-    
     // Compute bounded_nll and its gradient
     stan::math::grad(bnll, p, gr_bnll);
-    
     // Return bounded_nll gradient
     return gr_bnll;
-    
   }
 
 // Compute the gradient of the min_boundary_dist function
@@ -1398,25 +1214,18 @@ Eigen::VectorXd wspc::grad_bounded_nll(
 Eigen::VectorXd wspc::grad_min_boundary_dist(
     const sVec& p_
   ) const { 
-    
     // Create nested autodiff context
     stan::math::nested_rev_autodiff nested;
-    
-    // Make copy
+    // Make copy to create var nodes for p
     sVec p = p_;
-    
     // Initialize min_boundary_dist variable
     sdouble mbd = min_boundary_dist(p);
-    
     // Initialize variable to hold gradient
     Eigen::VectorXd gr_mbd(p.size());
-    
     // Compute min_boundary_dist and its gradient
     stan::math::grad(mbd, p, gr_mbd);
-    
     // Return min_boundary_dist gradient
     return gr_mbd;
-    
   }
 
 /*
@@ -1425,21 +1234,15 @@ Eigen::VectorXd wspc::grad_min_boundary_dist(
  */
 
 // Fit model using NLopt
-void wspc::fit(
-    const bool set_params, 
-    const bool verbose
-  ) { 
+void wspc::fit(const bool verbose) { 
     
     // Set boundary-penalty coefficients 
     vprint("Setting boundary penalty coefficients", verbose);
     sVec initial_params_var = to_sVec(fitted_parameters);
-    sdouble max_penalty_at_distance = neg_loglik(initial_params_var) * max_penalty_at_distance_factor;
-    sdouble coefs_square = static_cast<double>(boundary_vec_size)/max_penalty_at_distance;
-    sdouble coefs = ssqrt(coefs_square);
-    bp_coefs = boundary_dist(initial_params_var);
-    for (int i = 0; i < boundary_vec_size - 1; i++) {
-      bp_coefs(i) = coefs/bp_coefs(i);
-    } 
+    double max_penalty_at_distance = neg_loglik(initial_params_var).val() * max_penalty_at_distance_factor;
+    double coefs = std::sqrt(static_cast<double>(boundary_vec_size)/max_penalty_at_distance);
+    bp_coefs = to_eVec(boundary_dist(initial_params_var));
+    for (int i = 0; i < boundary_vec_size - 1; i++) {bp_coefs(i) = coefs/bp_coefs(i);} 
     
     // Grab initial parameters
     dVec x = to_dVec(fitted_parameters); 
@@ -1491,10 +1294,6 @@ void wspc::fit(
       }
     } 
     
-    if (set_params) { // See above for explanation
-      set_parameters(to_NumVec(x), verbose);
-    } 
-    
     // Save optimization results
     optim_results["fitted_parameters"] = to_NumVec(x); // for predicting log-linked count
     optim_results["penalized_neg_loglik"] = min_fx;
@@ -1504,15 +1303,15 @@ void wspc::fit(
     
   } 
 
-// Resample count for bootstrapping
+// Resample count (with replacement) for bootstrapping
 void wspc::resample(
     unsigned int seed
   ) {
    
     // Initialize random number generator
-    pcg32 rng(seed);
+    std::mt19937 rng(seed);
     
-    // Resample (with replacement), re-sum token pool, take logs, recompute gamma_dispersion
+    // Resample and re-sum token pool
     for (int r : count_not_na_idx) {
       // ... but only for actual observations of random grouping variable
       if (ran[r] != "none") {
@@ -1525,20 +1324,25 @@ void wspc::resample(
           Rcpp::stop("Error: resample size < 1");
         }
         // ... re-sum into r's count
-        count(r) = 0.0;
+        count[r] = 0.0;
         for (int i = 0; i < resample_sz; i++) {
           // ... randomly select integer between 0 and resample_sz
-          int resample_idx = rng(resample_sz); 
-          count(r) += count_tokenized[token_pool_r[resample_idx]];
+          int resample_idx = rUnifi(0, resample_sz - 1, rng);
+          count[r] += count_tokenized[token_pool_r[resample_idx]];
         }
-        count_log(r) = slog(count(r) + 1.0);
+        count_log[r] = std::log(count[r] + 1.0);
       }
     }
     
     // Extrapolate none's and take their logs
-    count = extrapolate_none(count, ran, extrapolation_pool, true, round_none);
-    iVec r_rows = Rcpp::as<iVec>(count_row_nums[eq_left_broadcast(ran,"none")]);
-    for (int r : r_rows) {count_log(r) = slog(count(r) + 1.0);}
+    extrapolate_none();
+    for (int r : r_idx) {count_log[r] = std::log(count[r] + 1.0);}
+    
+    // Estimate gamma dispersion of these new raw re-sampled counts
+    compute_gamma_dispersion();
+    
+    // Find average these new re-sampled log counts for each context-species combination
+    find_count_log_means();
     
   }
 
@@ -1550,25 +1354,12 @@ dVec wspc::bs_fit(
     
     // Resample counts 
     resample(rng_seed + bs_num);
-    
-    // Estimate gamma dispersion of these new raw re-sampled counts
-    compute_gamma_dispersion();
-    
-    // Find average these new re-sampled log counts for each context-species combination
-    find_count_log_means();
-    
-    // Find initial parameter estimates for fixed-effect treatments, for new re-sampled data
+    // Find initial parameter estimates, for new re-sampled data
     estimate_initial_parameters();
-    
     // Check feasibility 
-    List feasibility_results = check_parameter_feasibility(to_sVec(fitted_parameters), false); 
-    fitted_parameters = Rcpp::as<NumericVector>(feasibility_results["parameters"]);
-    
+    check_parameter_feasibility(to_sVec(fitted_parameters));
     // Fit model
-    fit(
-      false, // don't bother setting parameters
-      false  // don't print anything
-    );
+    fit(false);
     
     // Prepare and return results
     dVec fitted_parameters = to_dVec(Rcpp::as<NumericVector>(optim_results["fitted_parameters"]));
@@ -1594,15 +1385,9 @@ Rcpp::NumericMatrix wspc::bs_batch(
     bool verbose
   ) {
     
-    // Reset initial parameters to check their feasibility 
-    set_parameters(fitted_parameters, verbose);
-    
     // Fit full model 
     vprint("Performing initial fit of full data", verbose);
-    fit(
-      false, // don't bother setting parameters
-      false  // don't print anything
-    );
+    fit(false);
     double pnll = optim_results["penalized_neg_loglik"]; 
     if (verbose) {vprint("Penalized neg_loglik: ", pnll);}
     
@@ -1653,16 +1438,12 @@ Rcpp::NumericMatrix wspc::bs_batch(
             
             // Close read end
             close(pipes[i][0]); 
-            
             // Fit bootstrap
             dVec result = bs_fit(this_row, false); 
-            
             // Send result
             write(pipes[i][1], result.data(), sizeof(double) * c_num);
-            
             // Close write end
             close(pipes[i][1]); 
-            
             // Exit child process
             _exit(0); 
             
@@ -1670,7 +1451,6 @@ Rcpp::NumericMatrix wspc::bs_batch(
             
             // Grab child pid
             pids[i] = pid;
-            
             // Close write end
             close(pipes[i][1]); 
             
@@ -1685,31 +1465,21 @@ Rcpp::NumericMatrix wspc::bs_batch(
           
           // Wait for child process
           waitpid(pids[i], NULL, 0); 
-          
           // Create a temporary buffer to hold the row data
           dVec temp_row(c_num); 
-          
           // Read the row from the pipe into the buffer
           read(pipes[i][0], temp_row.data(), sizeof(double) * c_num);
-          
           // Copy the buffer contents into the corresponding row of the matrix
           int this_row = b * max_fork + i;
           bs_results.row(this_row) = to_NumVec(temp_row);
-          
           // Close read end
           close(pipes[i][0]); 
           
         } 
         
       } else {
-        // Run in serial
-        
-        // Fit bootstrap
-        dVec result = bs_fit(b, true); 
-        
-        // Copy into the corresponding row of the matrix
-        bs_results.row(b) = to_NumVec(result);
-        
+        // Run in serial ... Fit bootstrap and copy into the corresponding row of the matrix
+        bs_results.row(b) = to_NumVec(bs_fit(b, true));
       }
       
       batch_timer.step("end");
@@ -1724,13 +1494,9 @@ Rcpp::NumericMatrix wspc::bs_batch(
       
     }
     
+    // Clear stan memory and return
     vprint("All complete!", verbose); 
-    
-    // Clear stan memory
-    if (bs_num_max == 0) {
-      clear_stan_mem();
-    }
-    
+    if (bs_num_max == 0) {clear_stan_mem();}
     return bs_results;
     
   }
@@ -1745,17 +1511,13 @@ Rcpp::NumericMatrix wspc::MCMC(
     bool verbose
   ) {
     
-    // Reset initial parameters to check their feasibility 
-    set_parameters(fitted_parameters, verbose);
-    
     // Fit full model 
-    vprint("Performing initial fit of full data", verbose);
-    fit(
-      start_from_fit,   // set fitted parameters?
-      false             // don't print anything
-    );
-    double pnll = optim_results["penalized_neg_loglik"]; 
-    if (verbose) {vprint("Penalized neg_loglik: ", pnll);}
+    if (start_from_fit) {
+      vprint("Starting MCMC walk from L-BFGS optimized parameters", verbose);
+      fit(false);
+      double pnll = optim_results["penalized_neg_loglik"]; 
+      if (verbose) {vprint("Penalized neg_loglik: ", pnll);}
+    }
     
     // Initiate variables to hold results
     const int n_params = fitted_parameters.size();
@@ -1766,22 +1528,17 @@ Rcpp::NumericMatrix wspc::MCMC(
     // Make baseline parameter mask 
     LogicalVector baseline_mask(n_params);
     baseline_mask.fill(false);
-    for (int i : param_baseline_idx) {
-      baseline_mask(i) = true;
-    }
+    for (int i : param_baseline_idx) {baseline_mask(i) = true;}
     
     // Make beta_Rt parameter mask
     LogicalVector beta_Rt_mask(n_params);
     beta_Rt_mask.fill(false);
-    for (int i : param_beta_Rt_idx) {
-      beta_Rt_mask(i) = true;
-    } 
+    for (int i : param_beta_Rt_idx) {beta_Rt_mask(i) = true;} 
     
     // Save results from initial full fit
-    NumericVector these_results = optim_results["fitted_parameters"];
-    dVec full_results = to_dVec(these_results);
+    dVec full_results = to_dVec(fitted_parameters);
     full_results.reserve(full_results.size() + 4);
-    full_results.push_back(Rcpp::as<double>(optim_results["penalized_neg_loglik"]));
+    full_results.push_back(Rcpp::as<double>(optim_results["penalized_neg_loglik"])); // STOPPED HERE; must fix
     full_results.push_back(Rcpp::as<double>(optim_results["neg_loglik"]));
     full_results.push_back(double(1.0)); // acceptance ratio
     full_results.push_back(double(0.0)); // ctr number
@@ -1808,7 +1565,7 @@ Rcpp::NumericMatrix wspc::MCMC(
     
     // Set random number generator with seed
     unsigned int seed = rng_seed + n_steps;
-    pcg32 walk_rng(seed);
+    std::mt19937 walk_rng(seed);
     
     // Take steps, Random-walk Metropolois algorithm
     while (step < n_steps) {
@@ -1842,10 +1599,10 @@ Rcpp::NumericMatrix wspc::MCMC(
           double bounded_step_size = normalized_step_size / bd_current_transformed.val();
           if (bounded_step_size == 0.0) {
             // ... presumably this case means current parameter is extremely close to zero or very close to boundary
-            params_next(i) = pcg_rnorm(params_current(i), step_size/10, walk_rng);
+            params_next(i) = rNorm(params_current(i), step_size/10, walk_rng);
           } else {
             // ... take next step
-            params_next(i) = pcg_rnorm(params_current(i), bounded_step_size, walk_rng);
+            params_next(i) = rNorm(params_current(i), bounded_step_size, walk_rng);
           }
           
           // Check that a good baseline parameter hasn't been sent below zero
@@ -1978,24 +1735,37 @@ void wspc::estimate_initial_parameters() {
      * Beta parameters (ref level and fixed effects)
      */
     
+    std::vector<std::vector<NumericMatrix>> run_estimates;
+    
+    // Clear vectors for pushbacks
+    beta_idx.clear();
+    param_baseline_tpoint_idx.clear();
+    param_baseline_tslope_idx.clear();
+    param_baseline_Rt_idx.clear();
+    param_baseline_idx.clear(); 
+    param_beta_tpoint_idx.clear(); 
+    param_beta_tslope_idx.clear();
+    param_beta_Rt_idx.clear();
+    param_wfactor_point_idx.clear();
+    param_wfactor_rate_idx.clear();
+    param_wfactor_slope_idx.clear();
+    
     // Loop through model components 
     for (String mc : mc_list) {
       
       // Loop through context values
-      std::vector<std::vector<std::vector<int>>> beta_idx_mc;
+      std::vector<std::vector<iVec>> beta_idx_mc;
       for (int c = 0; c < n_context; c++) {
         String cxt = context_lvls[c];
         
         // Make context mask
         LogicalVector context_mask = eq_left_broadcast(context, cxt);
         
-        // Extract found_cp, found_cp_trt, and count_log_avg_mat for this context level
-        List found_cp_list_c = found_cp_list[cxt];
-        List found_cp_trt_list_c = found_cp_trt_list[cxt];
-        List count_log_avg_mat_list_c = count_log_avg_mat_list[cxt];
+        // Initialize run-estimate vector 
+        std::vector<NumericMatrix> run_estimates_cxt;
         
         // Loop through species values
-        std::vector<std::vector<int>> beta_idx_mc_cxt;
+        std::vector<iVec> beta_idx_mc_cxt;
         for (int s = 0; s < n_species; s++) {
           String sps = species_lvls[s];
           
@@ -2003,31 +1773,27 @@ void wspc::estimate_initial_parameters() {
           int deg = degMat(s, c);
           int n_blocks = deg + 1;
           int bktp = deg;
-          if (mc == "Rt") {bktp = b_blocks;}
+          if (mc == "Rt") {bktp = n_blocks;}
           
-          // Initialize sMat to hold Rt values 
-          sMat RtVals(treatment_num, n_blocks);
+          // Initialize eMat to hold Rt values 
+          eMat RtVals(n_treatments, n_blocks);
           
-          NumericMatrix Effs(treatment_num, bktp);
-          NumericMatrix run_estimates(treatment_num, deg);
-          
-          // Extract found_cp, found_cp_trt, and count_log_avg_mat for this context-species pair
-          IntegerMatrix found_cp = found_cp_list_c[sps];
-          NumericMatrix found_cp_trt = found_cp_trt_list_c[sps];
-          NumericMatrix count_log_avg_mat = count_log_avg_mat_list_c[sps];
+          NumericMatrix Effs(n_treatments, bktp);
+          NumericMatrix run_estimates_sps(n_treatments, deg);
           
           // Make species mask and context-species mask
           LogicalVector species_mask = eq_left_broadcast(species, species_lvls[s]);
           LogicalVector cs_mask = context_mask & species_mask & count_not_na_mask;
           
-          if (deg > 0 || mc == "Rt") { 
+          iVec beta_idx_mc_cxt_sps;
+          if (deg > 0 || mc == "Rt") {
             
             // Compute Effs for this model component, context, and species
             if (mc == "Rt") {
               // Estimate Rt values
-              for (int i = 0; i < treatment_num; i++) {
-                NumericVector count_log_avg = count_log_avg_mat.column(i);
-                NumericVector found_cp_trt_i_num = found_cp_trt.column(i);
+              for (int i = 0; i < n_treatments; i++) {
+                NumericVector count_log_avg = count_log_avg_mat[c][s].column(i);
+                NumericVector found_cp_trt_i_num = found_cp_trt[c][s].column(i);
                 IntegerVector found_cp_trt_i(deg);
                 for (int d = 0; d < deg; d++) {
                   found_cp_trt_i[d] = std::round(found_cp_trt_i_num[d]);
@@ -2035,42 +1801,41 @@ void wspc::estimate_initial_parameters() {
                 dVec Rt_est(n_blocks); 
                 if (n_blocks == 1) { // case when deg = 0
                   Rt_est[0] = vmean(count_log_avg);
-                  RtVals(i, 0) = (sdouble)Rt_est[0];
+                  RtVals(i, 0) = (double)Rt_est[0];
                 } else {
                   // Estimate rate values as mean of count values in each block 
                   std::vector<dVec> est_rate_runs = est_bkRates_tRuns(n_blocks, count_log_avg, found_cp_trt_i, rise_threshold_factor);
                   Rt_est = est_rate_runs[0];
-                  run_estimates.row(i) = to_NumVec(est_rate_runs[1]);
-                  RtVals.row(i) = to_sVec(Rt_est); 
+                  run_estimates_sps.row(i) = to_NumVec(est_rate_runs[1]);
+                  RtVals.row(i) = to_eVec(Rt_est); 
                 }
               }
               // Estimate Rt effect values 
               for (int bk = 0; bk < n_blocks; bk++) {Effs.column(bk) = to_NumVec(weight_rows.fullPivLu().solve(RtVals.col(bk)));}
             } else if (mc == "tpoint") {
               // Estimate fixed effects from treatments for each tpoint
-              sMat found_cp_trt_transposed = to_sMat(found_cp_trt).transpose(); 
+              eMat found_cp_trt_transposed = to_eMat(found_cp_trt[c][s]).transpose(); 
               for (int d = 0; d < deg; d++) {Effs.column(d) = to_NumVec(weight_rows.fullPivLu().solve(found_cp_trt_transposed.col(d)));}
             } else if (mc == "tslope") {
               // Estimate tslopes for each treatment
-              NumericMatrix found_slope_trt(deg, treatment_num);
-              for (int i = 0; i < treatment_num; i++) {
+              NumericMatrix found_slope_trt(deg, n_treatments);
+              for (int i = 0; i < n_treatments; i++) {
                 for (int d = 0; d < deg; d++) {
-                  found_slope_trt(d, i) = 4.0/run_estimates(i, d); 
+                  found_slope_trt(d, i) = 4.0/run_estimates[c][s](i, d); 
                   if (found_slope_trt(d, i) < min_initialization_slope) {found_slope_trt(d, i) = min_initialization_slope;}
                   // ^ ... keep from initializing too close to zero
                 }
               }
               // Estimate fixed effects from treatments for each tslope
-              sMat found_slope_trt_transposed = to_sMat(found_slope_trt).transpose();
+              eMat found_slope_trt_transposed = to_eMat(found_slope_trt).transpose();
               for (int d = 0; d < deg; d++) {Effs.column(d) = to_NumVec(weight_rows.fullPivLu().solve(found_slope_trt_transposed.col(d)));}
               
             }
             
             // For each block/transition point t and treatment i
-            std::vector<int> beta_idx_mc_cxt_sps;
             for (int t = 0; t < bktp; t++) {
               String t_name = "Tns/Blk" + std::to_string(t + 1);
-              for (int i = 0; i < treatment_num; i++) {
+              for (int i = 0; i < n_treatments; i++) {
                 
                 // Add name
                 CharacterVector param_name;
@@ -2106,8 +1871,10 @@ void wspc::estimate_initial_parameters() {
               } 
             }
           } 
-          beta_idx_mc_cxt.pushback(beta_idx_mc_cxt_sps);
-        } 
+          if (mc == "Rt") {run_estimates_cxt.push_back(run_estimates_sps);}
+          beta_idx_mc_cxt.push_back(beta_idx_mc_cxt_sps);
+        }
+        if (mc == "Rt") {run_estimates.push_back(run_estimates_cxt);}
         beta_idx_mc.push_back(beta_idx_mc_cxt);
       }
       beta_idx.push_back(beta_idx_mc);
@@ -2118,39 +1885,36 @@ void wspc::estimate_initial_parameters() {
      */
     
     // Unroll the warping factors
+    iVec wfactor_idx_point;
+    iVec wfactor_idx_rate;
+    iVec wfactor_idx_slope;
     for (int s = 0; s < n_species; s++) {
       // Intentionally skip the first level, which is "none"
       for (int r = 1; r < n_ran; r++) {
         
-        // Map
-        String c_name = species_lvls[s];
-        String r_name = ran_lvls[r];
+        String sps_name = species_lvls[s];
+        String ran_name = ran_lvls[r];
         // ... Point warp
-        CharacterVector param_name_point = CharacterVector::create("wfactor", "point", r_name, "X", c_name);
+        CharacterVector param_name_point = CharacterVector::create("wfactor", "point", ran_name, "X", sps_name);
         param_names_list.push_back(param_name_point);
         param_wfactor_point_idx.push_back(idx);
         wfactor_idx_point.push_back(idx);
+        param_vector.push_back(R::runif(-0.1, 0.1));
         idx++;
         // ... Rate warp
-        CharacterVector param_name_rate = CharacterVector::create("wfactor", "rate", r_name, "X", c_name);
+        CharacterVector param_name_rate = CharacterVector::create("wfactor", "rate", ran_name, "X", sps_name);
         param_names_list.push_back(param_name_rate);
         param_wfactor_rate_idx.push_back(idx);
         wfactor_idx_rate.push_back(idx); 
+        param_vector.push_back(R::runif(-0.1, 0.1));
         idx++;
         // ... Slope warp
-        CharacterVector param_name_slope = CharacterVector::create("wfactor", "slope", r_name, "X", c_name);
+        CharacterVector param_name_slope = CharacterVector::create("wfactor", "slope", ran_name, "X", sps_name);
         param_names_list.push_back(param_name_slope);
         param_wfactor_slope_idx.push_back(idx);
         wfactor_idx_slope.push_back(idx);
+        param_vector.push_back(R::runif(-0.1, 0.1));
         idx++;
-       
-        // Make
-        // ... Point warp
-        param_vector.push_back(R::runif(-0.1, 0.1));
-        // ... Rate warp
-        param_vector.push_back(R::runif(-0.1, 0.1));
-        // ... Slope warp
-        param_vector.push_back(R::runif(-0.1, 0.1));
         
       }
     } 
@@ -2177,111 +1941,40 @@ void wspc::estimate_initial_parameters() {
     
   }
 
-// Set the model with the given parameters
-void wspc::set_parameters(
-    const NumericVector& parameters,
-    const bool verbose
-  ) { 
-    
-    /*
-     * This function: 
-     *  - Checks feasibility of provided parameters
-     *  - Predicts (and saves) rates based on provided parameters
-     *  - Saves parameters in fitted_parameters vector
-     */
-    
-    // Ensure provided parameters are feasible (i.e., don't predict negative rates) 
-    sVec parameters_var = to_sVec(parameters);
-    List feasibility_results = check_parameter_feasibility(parameters_var, verbose);
-    bool feasible = feasibility_results["feasible"];
-    
-    // Stop if not feasible 
-    if (!feasible) {
-      Rcpp::stop("Negative or nan rates predicted, or other boundary condition violated!");
-    }
-    
-    // Convert back to doubles, remove from log space, and save predicted values
-    predicted_rates_log = Rcpp::as<NumericVector>(feasibility_results["predicted_rates_log"]);
-    predicted_rates = NumericVector(n_count_rows); 
-    for (int i = 0; i < n_count_rows; i++) {
-      predicted_rates[i] = std::exp(predicted_rates_log(i)) - 1.0;
-    }
-    
-    // Update saved parameter vector 
-    fitted_parameters = Rcpp::as<NumericVector>(feasibility_results["parameters"]);
-    optim_results["fitted_parameters"] = Rcpp::as<NumericVector>(feasibility_results["parameters"]);
-    
-  } 
-
 // Check and correct parameter feasibility
-Rcpp::List wspc::check_parameter_feasibility(
-    const sVec& parameters_var,
-    const bool verbose
-  ) { 
-    
-    vprint("Checking feasibility of provided parameters", verbose); 
+Rcpp::List wspc::check_parameter_feasibility(const sVec& parameters_var) { 
     
     // Initialize vectors to return 
     sVec feasible_parameters_var = parameters_var; 
     sVec predicted_rates_log_var;
     
-    // Test if any tpoints are below the buffer 
-    bool feasible = test_tpoints(parameters_var, verbose);
+    // Compute boundary_dist and take min
+    sVec bd = boundary_dist(parameters_var);
+    sdouble bd_min = smin(bd);
+    bool feasible = bd_min > 0.0;
     
+    // Test if provided parameters produce any nan rates
     if (feasible) {
-      if (verbose) {vprint("... no tpoints below buffer");}
-      
-      // Predict rates 
       predicted_rates_log_var = predict_rates(
         parameters_var, // model parameters for generating prediction
         true            // compute all summed count rows, even with a count value of NA?
       );
-      
-      // Test if provided parameters produce any nan rates
       for (int i = 0; i < n_count_rows; i++) {
         if (std::isnan(predicted_rates_log_var(i))) {
           feasible = false;
+          break;
         }
-      }
-      
-      if (verbose) {
-        if (feasible) {
-          vprint("... no NAN rates predicted");
-        } else {
-          vprint("... NAN rates predicted");
-        }
-      }
-      
-      // Test if provided parameters produce any negative rates
-      for (int i = 0; i < n_count_rows; i++) {
-        if (!std::isnan(predicted_rates_log_var(i)) && predicted_rates_log_var(i) < rt_lower_bound) {
-          feasible = false;
-        }
-      }
-      
-      if (verbose) {
-        if (feasible) {
-          vprint("... no negative rates predicted");
-        } else { 
-          vprint("... negative rates predicted");
-        }
-      } 
-      
-    } 
-    
-    // Report feasibility of provided parameters
-    if (verbose) {
-      if (feasible) {
-        vprint("Provided parameters are feasible");
-      } else {
-        vprint("Provided parameters not feasible, searching nearby");
       }
     }
     
-    // Find and report initial distance to boundary
-    sdouble initial_dist = min_boundary_dist(parameters_var); 
-    if (verbose) {
-      vprint("Initial boundary distance (want > 0): ", initial_dist);
+    // Test if provided parameters produce any negative rates
+    if (feasible) {
+      for (int i = 0; i < n_count_rows; i++) {
+        if (predicted_rates_log_var(i) < rt_lower_bound) {
+          feasible = false;
+          break;
+        }
+      }
     }
     
     // If not feasible, attempt to find a feasible starting point
@@ -2312,8 +2005,8 @@ Rcpp::List wspc::check_parameter_feasibility(
           int idx0 = param_baseline_tpoint_idx[i-1];
           int idx1 = param_baseline_tpoint_idx[i];
           if (x[idx1] - x[idx0] < tpoint_buffer) {
-            x[idx0] -= tpoint_buffer.val()/4.0;
-            x[idx1] += tpoint_buffer.val()/4.0;
+            x[idx0] -= tpoint_buffer/4.0;
+            x[idx1] += tpoint_buffer/4.0;
           }
         }
         // Run nlopt 
@@ -2321,20 +2014,9 @@ Rcpp::List wspc::check_parameter_feasibility(
           nlopt::result sc = opt.optimize(x, max_fx);
           success_code = static_cast<int>(sc);
         } catch (std::exception& e) {
-          if (verbose && n_tries == max_tries - 1) {
-            Rcpp::Rcout << "Optimization failed: " << e.what() << std::endl;
-          }
           success_code = 0;
         }
         n_tries++;
-      }
-      
-      // Find and report final distance to boundary
-      if (verbose) {
-        vprint("Number of tries: ", n_tries);
-        vprint("Number of evals (last try): ", (int)opt.get_numevals());
-        vprint("Success code (last try): ", (int)success_code);
-        vprint("Final boundary distance (last try): ", (double)max_fx);
       }
       
       // Final check of boundary distance
@@ -2342,10 +2024,9 @@ Rcpp::List wspc::check_parameter_feasibility(
       
       // Check for success
       if (success_code == 0) {
-        vprint("Could not find a nearby feasible parameters, returning provided ones", verbose); 
+        Rcpp::warning("Could not find a nearby feasible parameters (boundary violation or nan rates), returning provided ones");
       } else { // found a feasible starting point, save
         feasible = true;
-        vprint("Nearby feasible parameters found!", verbose); 
         feasible_parameters_var = to_sVec(x);
         // Recompute predicted rates 
         predicted_rates_log_var = predict_rates(
@@ -2356,12 +2037,11 @@ Rcpp::List wspc::check_parameter_feasibility(
       
     }
     
-    // Return feasible parameters
-    return List::create(
-      _["feasible"] = feasible,
-      _["predicted_rates_log"] = to_NumVec(predicted_rates_log_var),
-      _["parameters"] = to_NumVec(feasible_parameters_var)
-    );
+    // Save feasible parameters and predicted rates 
+    fitted_parameters = to_NumVec(feasible_parameters_var);
+    optim_results["fitted_parameters"] = fitted_parameters;
+    predicted_rates_log = to_NumVec(predicted_rates_log_var);
+    for (int i = 0; i < n_count_rows; i++) {predicted_rates[i] = std::exp(predicted_rates_log(i)) - 1.0;}
     
   } 
 
@@ -2382,10 +2062,10 @@ Rcpp::List wspc::results() {
     
     // Create summed count data frame
     DataFrame count_data_summed = DataFrame::create(
-      _["bin"] = to_NumVec(bin),
-      _["count"] = to_NumVec(count),
+      _["bin"] = Rcpp::wrap(bin),
+      _["count"] = Rcpp::wrap(count),
       _["pred"] = predicted_rates_out,
-      _["count.log"] = to_NumVec(count_log),
+      _["count.log"] = Rcpp::wrap(count_log),
       _["pred.log"] = predicted_rates_log_out,
       _["context"] = context,
       _["species"] = species,
@@ -2433,6 +2113,12 @@ Rcpp::List wspc::results() {
       _["ran.lvls"] = ran_lvls
     );
     
+    // Pack up parameter indexes into list
+    List param_idx = List::create(
+      _["beta"] = Rcpp::wrap(beta_idx),
+      _["w.factor"] = Rcpp::wrap(wfactor_idx)
+    );
+    
     // Collect token pool
     List token_pool_list(n_count_rows); 
     for (int i = 0; i < n_count_rows; i++) {
@@ -2455,6 +2141,7 @@ Rcpp::List wspc::results() {
     List results_list = List::create(
       _["model.component.list"] = mc_list,
       _["count.data.summed"] = count_data_summed,
+      _["LRO.grid.search.results"] = LRO_grid_search_results,
       _["fitted.parameters"] = fitted_parameters,
       _["gamma.dispersion"] = g_dispersion,
       _["param.names"] = param_names,
@@ -2462,6 +2149,7 @@ Rcpp::List wspc::results() {
       _["treatment"] = treat,
       _["weight.matrix"] = weight_matrix,
       _["grouping.variables"] = grouping_variables,
+      _["param.idx0"] = param_idx, // "0" to indicate this goes out w/ C++ zero-based indexing
       _["token.pool"] = token_pool_list,
       _["settings"] = model_settings
     );
@@ -2554,7 +2242,6 @@ RCPP_MODULE(wspc) {
     .field("fitted_parameters", &wspc::fitted_parameters)
     .method("LRO_initial_param_ests", &wspc::LRO_initial_param_ests)
     .method("LRO_grid_search", &wspc::LRO_grid_search)
-    .method("set_parameters", &wspc::set_parameters)
     .method("neg_loglik_debug", &wspc::neg_loglik_debug)
     .method("bounded_nll_debug", &wspc::bounded_nll_debug)
     .method("grad_bounded_nll_debug", &wspc::grad_bounded_nll_debug)

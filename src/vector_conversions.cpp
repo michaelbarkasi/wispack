@@ -49,6 +49,64 @@ sVec to_sVec(
     return stan_vec;
   }
 
+// Convert to Eigen::Matrix with double elements ***********************************************************************
+
+// ... from NumericVector
+eVec to_eVec(
+    const NumericVector& vec
+  ) {
+    eVec e_vec(vec.size());
+    for (int i = 0; i < vec.size(); i++) {
+      e_vec(i) = static_cast<double>(vec[i]);
+    }
+    return e_vec;
+  }
+
+// ... overload, from std::vector with doubles 
+eVec to_eVec(
+    const dVec& vec
+  ) {
+    eVec e_vec(vec.size());
+    for (int i = 0; i < vec.size(); i++) {
+      e_vec(i) = static_cast<double>(vec[i]);
+    }
+    return e_vec;
+  }
+
+// ... overload, from std::vector with int
+eVec to_eVec(
+    const iVec& vec
+  ) {
+    eVec e_vec(vec.size());
+    for (int i = 0; i < vec.size(); i++) {
+        e_vec(i) = static_cast<double>(vec[i]);
+    }
+    return e_vec;
+  }
+
+// ... overload, from IntegerVector
+eVec to_eVec(
+    const IntegerVector& vec
+  ) {
+    NumericVector vec_ = as<NumericVector>(vec);
+    eVec e_vec(vec_.size());
+    for (int i = 0; i < vec_.size(); i++) {
+      e_vec(i) = static_cast<double>(vec_[i]);
+    }
+    return e_vec;
+  }
+
+// ... overload, from sVec
+eVec to_eVec(
+    const sVec& vec
+  ) {
+    eVec e_vec(vec.size());
+    for (int i = 0; i < vec.size(); i++) {
+      e_vec(i) = static_cast<double>(vec(i).val());
+    }
+    return e_vec;
+  }
+
 // Convert to NumericVector ********************************************************************************************
 
 // ... from Eigen::Matrix with sdouble elements
@@ -167,3 +225,28 @@ sMat to_sMat(
     return stan_mat;
   }
 
+// Convert to Eigen::Matrix with sdouble elements
+eMat to_eMat(
+    const IntegerMatrix& mat
+  ) {
+    eMat e_mat(mat.nrow(), mat.ncol());
+    for (int j = 0; j < mat.ncol(); j++) {
+      for (int i = 0; i < mat.nrow(); i++) {
+        e_mat(i, j) = static_cast<double>(mat(i, j));
+      }
+    }
+    return e_mat;
+  }
+
+// ... overload
+eMat to_eMat(
+    const NumericMatrix& mat
+  ) {
+    eMat e_mat(mat.nrow(), mat.ncol());
+    for (int j = 0; j < mat.ncol(); j++) {
+      for (int i = 0; i < mat.nrow(); i++) {
+        e_mat(i, j) = mat(i, j);
+      }
+    }
+    return e_mat;
+  }

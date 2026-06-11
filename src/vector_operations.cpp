@@ -64,6 +64,21 @@ int vmean(
     return std::round(sum / ctr); 
   }
 
+// ... overload 
+double vmean(
+    const eVec& x
+  ) {
+    double sum = 0.0;
+    int ctr = 0;
+    for (double xi : x) {
+      if (!std::isnan(xi)) {
+        sum += xi;
+        ctr++;
+      }
+    }
+    return sum / (double)ctr; 
+  }
+
 // Mean of vector elements within a range
 double vmean_range(
     const dVec& x,
@@ -149,6 +164,22 @@ sdouble vvar(
       }
     }
     return sum / (sdouble)ctr;
+  }
+
+// ... overload
+double vvar(
+    const eVec& x
+  ) {
+    double mean = vmean(x);
+    double sum = 0.0;
+    int ctr = 0;
+    for (double xi : x) {
+      if (!std::isnan(xi)) {
+        sum += (xi - mean) * (xi - mean);
+        ctr++;
+      }
+    }
+    return sum / (double)ctr;
   }
 
 // Standard deviation of vector elements 
@@ -518,51 +549,6 @@ IntegerVector iseq(
       seq[i] = start + i * by;
     }
     return seq;
-  }
-
-// List assignments ****************************************************************************************************
-
-// Name proxy list 
-void name_proxylist(
-    List list,
-    const CharacterVector& new_names
-  ) {
-    List out = List(list);
-    out.names() = new_names;
-    list = out;
-  }
-
-// Assign to proxy list 
-void assign_proxylist(
-    List list,
-    String element, 
-    List assignment
-  ) {
-    List out = List(list);
-    out[element] = assignment;
-    list = out;
-  }
-
-// ... overload
-void assign_proxylist(
-    List list,
-    String element, 
-    NumericVector assignment
-  ) {
-    List out = List(list);
-    out[element] = assignment;
-    list = out;
-  }
-
-// ... overload 
-void assign_proxylist(
-    List list,
-    String element, 
-    IntegerMatrix assignment
-  ) {
-    List out = List(list);
-    out[element] = assignment;
-    list = out;
   }
 
 // Misc ****************************************************************************************************************

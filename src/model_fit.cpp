@@ -2,47 +2,47 @@
 // model_fit.cpp
 #include "wspc.h"
 
-// Thread-safe normal distribution function
-double safe_rnorm(
+// Random draw from uniform distribution, integers
+int rUnifi(
+    int min,
+    int max,
+    std::mt19937& rng
+  ) {
+    std::uniform_int_distribution<int> dist(min, max);
+    return dist(rng);
+  }
+
+// Random draw from uniform distribution, reals
+double rUnifr(
+    double min,
+    double max,
+    std::mt19937& rng
+  ) {
+    std::uniform_real_distribution<double> dist(min, max);
+    return dist(rng);
+  }
+
+// Random draw from normal distribution
+double rNorm(
+    double mean, 
+    double sd,
+    std::mt19937& rng
+  ) {
+    std::normal_distribution<double> norm(mean, sd);
+    return norm(rng);
+  }
+
+// Random draw from normal distribution, thread-safe
+double safe_rNorm(
     double mean, 
     double sd
   ) {
     // Create a thread-local random engine
     static thread_local std::mt19937 generator(std::random_device{}());
-    
     // Create a normal distribution with the given mean and standard deviation
     std::normal_distribution<double> distribution(mean, sd);
-    
     // Generate and return a random number
     return distribution(generator);
-  }
-
-// Better normal-distribution random-number generator, with PCG and Box-Muller
-double pcg_rnorm(
-    double mean, 
-    double sd,
-    pcg32& rng
-  ) {
-   
-    // Sample from a uniform random distribution between 0 and 1
-    int u_max = 1e9; 
-    int u1i, u2i;
-    do {u1i = rng(u_max);} // randomly select integer between 0 and u_max
-    while (u1i == 0);
-    double u1 = (double)u1i/(double)u_max; // normalize to (0, 1)
-    u2i = rng(u_max);
-    double u2 = (double)u2i/(double)u_max; // normalize to (0, 1)
-    
-    const double two_pi = 2.0 * M_PI;
-    
-    //compute z0 and z1
-    double mag = sd * sqrt(-2.0 * log(u1));
-    double z0  = mag * cos(two_pi * u2) + mean;
-    //double z1  = mag * sin(two_pi * u2) + mean;
-   
-    //return std::make_pair(z0, z1);
-    return z0; // return only one value, for now
-    
   }
 
 // Density of normal distribution 
@@ -75,23 +75,6 @@ double log_dNorm(
     const double& sd        // standard deviation
   ) {
     return (-((x - mu) * (x - mu)) / (2.0 * sd * sd)) - std::log(2.0 * M_PI * sd * sd)/2.0;
-  }
-
-// Log of density of normal distribution, normalized so highest value is 0
-double log_dNorm0(
-    const double& x,        // value to evaluate
-    const double& mu,       // mean (expected value)
-    const double& sd        // standard deviation
-  ) {
-    return -((x - mu) * (x - mu)) / (2.0 * sd * sd);
-  }
-
-// Log of density of beta distribution, assuming equal shape parameters 
-sdouble log_dbeta1(
-    const sdouble& x,        // value to evaluate
-    const sdouble& shape     // shape parameter (same for both)
-  ) {
-    return slog((spower(x, shape - 1.0) * spower(1.0 - x, shape - 1.0)) / (spower(stan::math::tgamma(shape), 2.0) / stan::math::tgamma(2.0 * shape)));
   }
 
 // Log of density of gamma distribution
@@ -182,9 +165,9 @@ sdouble delta_var_est(
   }
 
 // Formula to calculate gamme dispersion factor from mean and variance of counts
-sdouble gamma_dispersion_formula(
-    const sdouble& count_cs_mean, // mean of counts for context-species combination
-    const sdouble& count_cs_var   // variance of counts for context-species combination
+double gamma_dispersion_formula(
+    const double& count_cs_mean, // mean of counts for context-species combination
+    const double& count_cs_var   // variance of counts for context-species combination
   ) {
     
     if (count_cs_var > count_cs_mean) {
@@ -204,13 +187,13 @@ sdouble warp_ratio(
     const sdouble& b,        // bound on this value 
     const sdouble& w         // warping parameter
   ) {
-    return(1.0 - spower(sexp(w*w), -basis/b));
+    return 1.0 - spower(sexp(w*w), -basis/b);
   }
 
 // Warping function for model components 
 sdouble warp_mc(
     const sdouble& s,        // value to warp
-    const sdouble& b,        // bound on this value 
+    const double& b,         // bound on this value 
     const sdouble& w         // warping parameter
   ) {
     sdouble basis;           // parameterizing coordinate to set the warp
@@ -225,7 +208,7 @@ sdouble warp_mc(
       magnitude = s;
       direction = -1.0;
     }
-    return(s + direction * warp_ratio(basis, b, w) * magnitude);
+    return s + direction * warp_ratio(basis, b, w) * magnitude;
   }
 
 // Wrapper for R
@@ -235,7 +218,7 @@ double warp_mc_R(
     const double& b,        // bound on this value 
     const double& w         // warping parameter
   ) {
-    return(warp_mc(sdouble(s), sdouble(b), sdouble(w)).val());
+    return warp_mc(sdouble(s), b, sdouble(w)).val();
   }
 
 // Numerically stable implementation of sigmoid function
@@ -256,7 +239,7 @@ sdouble sigmoid_stable(
 double sigmoid_stable_R(
     const double& x
   ) {
-    return(sigmoid_stable(sdouble(x)).val());
+    return sigmoid_stable(sdouble(x)).val();
   }
 
 // Core poly-sigmoid function of the model
@@ -323,7 +306,7 @@ double poly_sigmoid_R(
 // Inverse quadratic ramp function for boundary penalty
 sdouble boundary_penalty_transform(
     const sdouble& x,
-    const sdouble& a
+    const double& a
   ) {
     sdouble x_ = x;
     if (x_ <= 0) {
@@ -518,7 +501,7 @@ dVec LROcp_logRatio(
 
 // Likelihood ratio outlier change-point detection, arrays
 IntegerMatrix LROcp_array(
-    const sMat& series_array,     // 2D matrix of points to test for change points
+    const eMat& series_array,     // 2D matrix of points to test for change points
     const int& ws,                // Running window size
     const double& out_mult,       // Outlier multiplier
     const double& cp_buffer       // Minimum distance between two change points
@@ -684,32 +667,6 @@ std::vector<dVec> est_bkRates_tRuns(
     std::vector<dVec> out(2); 
     out[0] = Rt_est;
     out[1] = run_estimates;
-    return(out);
-    
-  }
-
-// Function to initialize random effect warping factors 
-List make_initial_random_effects(
-  const CharacterVector& wfactors_names,    // names of warping factors to initialize
-  const int& n_ran,                         // number of random effects
-  const int& n_species                      // number of species levels
-  ) {
-    
-    // Initialize new random effect warping factors 
-    List wfactors = List(wfactors_names.size());
-    wfactors.names() = wfactors_names;
-    
-    // Loop through warping factors (point and rate)
-    for (String wf : wfactors_names) {
-      // Initialize array to hold warping factors 
-      NumericMatrix wf_array(n_ran, n_species);
-      // Loop through species levels and make random assignments
-      for (int s = 0; s < n_species; s++) {
-        NumericVector wfs_s = Rcpp::runif(n_ran, -0.1, 0.1);
-        wf_array.column(s) = wfs_s;
-      } 
-      wfactors[wf] = wf_array;
-    } 
-    return wfactors;
+    return out;
     
   }

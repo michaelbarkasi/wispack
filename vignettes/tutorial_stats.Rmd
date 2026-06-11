@@ -308,7 +308,7 @@ model_median <- wisp(
 ```
 ```{r check5, echo = FALSE}
 test_val <- model_median$stats$parameters[1,2]
-if (test_val > 3.4171645317 || test_val < 3.4171645315) stop("failed check 5")
+if (test_val > 3.41812 || test_val < 3.41810) stop("failed check 5")
 ```
 
 Now, let's plot the age-effect parameters again, this time with the median estimate from the MCMC walk highlighted:

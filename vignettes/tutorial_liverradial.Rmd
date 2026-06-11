@@ -239,8 +239,9 @@ radial.model <- wisp(
   plot.settings = plot.settings
 )
 ```
-```{r check, echo = FALSE}
-if (radial.model$stats$parameters[4,2] == 0.13107595) stop("failed end check")
+```{r check1, echo = FALSE}
+test_val <- radial.model$stats$parameters[4,2]
+if (test_val < 0.1363701 || test_val > 0.1363703) stop("failed check 1")
 ```
 
 <h2>Examining results</h2>
@@ -257,6 +258,10 @@ plt_ass1 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver
 g <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
 grid.draw(g)
 ```
+```{r check2, echo = FALSE}
+test_val <- ggplot_build(plt_glul)$data[[1]][4,2]
+if (test_val < 4.40581 || test_val > 4.40583) stop("failed check 2")
+```
 
 While the rate-count plots make clear the spatial gradients of <span class = "gene">GLUL</span> and <span class = "gene">ASS1</span>, temporal information can only be read off implicitly. For <span class = "gene">ASS1</span>, we seem to see a slight decrease in gene expression over the day, from ZT0 to ZT18. For <span class = "gene">GLUL</span>, expression seems constant across the day, except perhaps for some minor interaction between zone and time that has the central region decreasing in expression as the portal region increases. These temporal patterns can be seen more clearly by looking at the time-series plots. 
 
@@ -265,6 +270,10 @@ plt_glul <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_live
 plt_ass1 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_ass1"]]
 g <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
 grid.draw(g)
+```
+```{r check3, echo = FALSE}
+test_val <- ggplot_build(plt_glul)$data[[1]][17,2]
+if (test_val < 3.146182 || test_val > 3.146184) stop("failed check 3")
 ```
 
 The time-series plot for <span class = "gene">ASS1</span> shows some variation over time, but the magnitude of that variation is small compared to the difference in expression level [between the blocks](tutorial_timeseries.html) (i.e., over space). The same holds true for <span class = "gene">GLUL</span>, although again we see the more portal region (block 2) seeming to increase in expression while the more central region (block 1) decreases.
@@ -279,6 +288,10 @@ plt_dbp <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_
 g <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
 grid.draw(g)
 ```
+```{r check4, echo = FALSE}
+test_val <- ggplot_build(plt_arntl)$data[[1]][4,2]
+if (test_val < 2.47398 || test_val > 2.47400) stop("failed check 4")
+```
 
 These temporal dynamics are made more clear in the time-series plots, which clearly show the mid-ZT dip in <span class = "gene">ARNTL</span> and the mid-ZT bump in <span class = "gene">DBP</span>. 
 
@@ -287,6 +300,10 @@ plt_arntl <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liv
 plt_dbp <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_dbp"]]
 g <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
 grid.draw(g)
+```
+```{r check5, echo = FALSE}
+test_val <- ggplot_build(plt_arntl)$data[[1]][4,2]
+if (test_val < 1.957246 || test_val > 1.957248) stop("failed check 5")
 ```
 
 <h3>Zonated and rhythmic genes</h3>
@@ -299,6 +316,10 @@ plt_pck1 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver
 g <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
 grid.draw(g)
 ```
+```{r check6, echo = FALSE}
+test_val <- ggplot_build(plt_elovl3)$data[[1]][4,2]
+if (test_val < 5.414370 || test_val > 5.414372) stop("failed check 6")
+```
 
 However, unlike <span class = "gene">GLUL</span> and <span class = "gene">PCK1</span>, <span class = "gene">ELOVL3</span> and <span class = "gene">PCK1</span> have notable temporal rhythm. <span class = "gene">ELOVL3</span> is similar to <span class = "gene">ARNTL</span>, with a mid-ZT dip. <span class = "gene">PCK1</span> is similar to <span class = "gene">DBP</span>, with a mid-ZT bump. 
 
@@ -307,6 +328,10 @@ plt_elovl3 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_li
 plt_pck1 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_pck1"]]
 g <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
 grid.draw(g)
+```
+```{r check7, echo = FALSE}
+test_val <- ggplot_build(plt_elovl3)$data[[1]][4,2]
+if (test_val < 4.66227 || test_val > 4.66229) stop("failed check 7")
 ```
 
 <h2>Advantages of wisp</h2>

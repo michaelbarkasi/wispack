@@ -13,7 +13,6 @@
 #include <RcppEigen.h>
 #include <Rcpp/Benchmark/Timer.h>
 #include <nlopt.hpp>
-#include "pcg/pcg_random.hpp"
 #include <unistd.h>                           // for forking on unix
 #include <random>                             // for thread-safe random number generation
 #include <sys/wait.h>                         // for Ubuntu C++ compiler to recognize waitpid
@@ -27,6 +26,8 @@ using sMat = Eigen::Matrix<stan::math::var, Eigen::Dynamic, Eigen::Dynamic>;
 using sVec = Eigen::Matrix<stan::math::var, Eigen::Dynamic, 1>;
 using dVec = std::vector<double>; 
 using iVec = std::vector<int>;
+using eMat = Eigen::MatrixXd;
+using eVec = Eigen::VectorXd;
 constexpr sdouble (*spower)(const sdouble&, const sdouble&) = stan::math::pow;
 constexpr sdouble (*smax)(const sVec&) = stan::math::max;
 constexpr sdouble (*smin)(const sVec&) = stan::math::min;
@@ -80,23 +81,22 @@ class wspc {
     
     // Data sizes
     int n_count_rows;                       // number of rows in summed count data frame
-    int treatment_num;                      // number of treatment combinations (including the reference, i.e. no treatment)
-    sdouble bin_num;                        // max bin (i.e., number of bins)
-    IntegerVector count_row_nums;           // sequence of integers from 0 to n_count_rows - 1
+    int n_treatments;                       // number of treatment combinations (including the reference, i.e. no treatment)
+    int n_bin;                              // max bin (i.e., number of bins)
     
-    // Data variables, stan
-    sVec bin;                               // bin column of summed data
-    sVec count;                             // count column of summed data
-    sVec count_log;                         // log of observed counts
-    sVec count_tokenized;                   // tokenized count data
+    // Data variables, numeric
+    dVec bin;                               // bin column of summed data
+    dVec count;                             // count column of summed data
+    dVec count_log;                         // log of observed counts
+    dVec count_tokenized;                   // tokenized count data
     
-    // Data variables, Rcpp ("factors")
+    // Data variables, factors
     CharacterVector context;                // context column of summed data (i.e., context of tokening for a species)
     CharacterVector species;                // species column of summed data (i.e., species tokens of which are counted)
     CharacterVector ran;                    // random effect column of summed data
     CharacterVector treatment;              // treatment column of summed data
-    std::vector<int> context_num;           // numeric encoding of context factor
-    std::vector<int> species_num;           // numeric encoding of species factor
+    iVec context_num;                       // numeric encoding of context factor
+    iVec species_num;                       // numeric encoding of species factor
     
     // Model predictions, Rcpp 
     NumericVector predicted_rates_log;      // log of values predicted by model
@@ -123,13 +123,15 @@ class wspc {
     CharacterVector ran_lvls;               // levels of random effect grouping variable
     
     // Variables to help with data manipulation
-    sMat weights;                           // weight matrix, rows as rows of summed count data, columns as treatments (first column is reference)
-    sMat weight_rows;                       // ... for making weights matrix and initial effects estimates
+    eMat weights;                           // weight matrix, rows as rows of summed count data, columns as treatments (first column is reference)
+    eMat weight_rows;                       // ... for making weights matrix and initial effects estimates
     IntegerVector idx_mc_unique;            // count data rows at which model component values will change
     std::vector<IntegerVector> token_pool;               // list of token count indexes associated with each summed count row
     std::vector<IntegerVector> extrapolation_pool;       // list of summed-count indexes giving summed count rows from which to extrapolate
-    IntegerVector count_not_na_idx;                      // indexes of non-NA rows in summed count data
+    IntegerVector r_idx;                    // indexes of rows with "none" in count
+    IntegerVector count_not_na_idx;         // indexes of non-NA rows in summed count data
     LogicalVector count_not_na_mask;        // mask of non-NA rows in summed count data
+    LogicalVector not_none_mask;            // mask of rows in summed count data with "none" in ran
     bool round_none;                        // whether to round extrapolated "none" counts to nearest integer
     
     // Variables related to model parameters
@@ -139,34 +141,36 @@ class wspc {
       "tpoint"                              // ... transition points
       }; 
     IntegerMatrix degMat;                   // matrix of degrees for each context (column) -- species (rows) pair
-    List found_cp_list;                     // list of found change points (IntegerMatrix) for each context-species combination
-    List found_cp_trt_list;                 // list of found change points (NumericMatrix) for each context-species combination, averaged across treatments
-    List count_log_avg_mat_list;            // list of average log counts (NumericMatrix) for each context-species combination
+    std::vector<std::vector<IntegerMatrix>> found_cp;       // list of found change points (IntegerMatrix) for each context-species combination
+    std::vector<std::vector<NumericMatrix>> found_cp_trt;   // list of found change points (NumericMatrix) for each context-species combination, averaged across treatments
+    std::vector<std::vector<NumericMatrix>> count_log_avg_mat;   // list of average log counts (NumericMatrix) for each context-species combination
     NumericVector fitted_parameters;        // vector holding the model parameters
     CharacterVector param_names;            // list holding the names of the model parameters as they appear in fitted_parameters
-    sdouble buffer_factor = 0.05;           // scaling factor for buffer value, the minimum distance between transition points 
-    sdouble tpoint_buffer;                  // min number of bins between transition points (immutable structural parameter)
-    sdouble warp_precision;                 // precision surviving in calculations of warping
-    sdouble inf_warp;                       // pseudo-infinity value for warping (representing no warp boundary)
-    sVec warp_bounds;                       // warping bounds for each model component
+    double buffer_factor;                   // scaling factor for buffer value, the minimum distance between transition points 
+    double tpoint_buffer;                   // min number of bins between transition points (immutable structural parameter)
+    double warp_precision;                  // precision surviving in calculations of warping
+    double inf_warp;                        // pseudo-infinity value for warping (representing no warp boundary)
+    eVec warp_bounds;                       // warping bounds for each model component
     
     // Indices for managing parameters vector
-    std::vector<int> param_wfactor_point_idx;  // ... indexes of parameter vector for quick access of different kinds of model parameters
-    std::vector<int> param_wfactor_rate_idx;
-    std::vector<int> param_wfactor_slope_idx;
-    std::vector<int> param_beta_Rt_idx;
-    std::vector<int> param_beta_tslope_idx;
-    std::vector<int> param_beta_tpoint_idx;
-    std::vector<int> param_baseline_Rt_idx;
-    std::vector<int> param_baseline_tslope_idx;
-    std::vector<int> param_baseline_tpoint_idx;
-    std::vector<int> param_baseline_idx;
-    std::vector<std::vector<std::vector<std::vector<int>>>> beta_idx;
-    std::vector<std::vector<int>> wfactor_idx; 
-    std::vector<int> gv_ran_idx;
-    std::vector<int> gv_sps_idx;  
+    iVec param_wfactor_point_idx;  // ... indexes of parameter vector for quick access of different kinds of model parameters
+    iVec param_wfactor_rate_idx;
+    iVec param_wfactor_slope_idx;
+    iVec param_beta_Rt_idx;
+    iVec param_beta_tslope_idx;
+    iVec param_beta_tpoint_idx;
+    iVec param_baseline_Rt_idx;
+    iVec param_baseline_tslope_idx;
+    iVec param_baseline_tpoint_idx;
+    iVec param_baseline_idx;
+    std::vector<std::vector<std::vector<iVec>>> beta_idx;
+    std::vector<iVec> wfactor_idx; 
+    iVec gv_ran_idx;
+    iVec gv_sps_idx;  
     
     // Variables for initial degree estimation
+    String LRO_cost;                        // Cost measure for LRO_grid_search: AIC or BIC
+    NumericMatrix LRO_grid_search_results;  // matrix to hold results of LRO_grid_search, with columns for settings and cost measure
     double LROcutoff;                       // cutoff (x sd) for likelihood ratio outlier detection
     double LROwindow_factor;                // factor for window size in likelihood ratio outlier detection (bigger is bigger window)
     double rise_threshold_factor;           // amount of detected rise as fraction of total required to end run
@@ -181,14 +185,14 @@ class wspc {
     int max_evals;                              // max number of evaluations
     double ctol;                                // convergence tolerance
     unsigned int rng_seed;                      // seed for random number generator
-    sMat gamma_dispersion;                      // dispersion terms for "kernel" of gamma-Poisson model
+    eMat gamma_dispersion;                      // dispersion terms for "kernel" of gamma-Poisson model
     IntegerVector gd_species_idx;               // indexes of species levels in gamma_dispersion
     IntegerVector gd_context_idx;               // indexes of context levels in gamma_dispersion
     
     // Boundary penalty variables
     int boundary_vec_size;                               // number of boundary components
-    sVec bp_coefs;                                       // coefficients used to scale boundary penality so it's negligible when far from boundary, and infinity at boundary
-    sdouble max_penalty_at_distance_factor;              // the max penalty when far from the boundary, as fraction of initial neg_loglik
+    eVec bp_coefs;                                       // coefficients used to scale boundary penality so it's negligible when far from boundary, and infinity at boundary
+    double max_penalty_at_distance_factor;               // the max penalty when far from the boundary, as fraction of initial neg_loglik
     
     /*
      * Basic idea of boundary penalty: there will be a number of relevant distances to a boundary. Want to transform
@@ -216,6 +220,9 @@ class wspc {
     // Find row numbers ("pool") of observed counts to use for extrapolation of "none's"
     void make_extrapolation_pool(bool verbose);
     
+    // Use extrapolation pool to extrapolate counts
+    void extrapolate_none();
+    
     // Function to take means of count_log 
     void find_count_log_means();
     
@@ -230,7 +237,7 @@ class wspc {
     );
     
     // Search for best LRO change-point detection settings
-    NumericMatrix LRO_grid_search(bool verbose);
+    void LRO_grid_search(bool verbose);
     
     // ***** computing predicted values from parameters 
     
@@ -264,12 +271,6 @@ class wspc {
     // Compute boundary distances
     sVec boundary_dist(
         const sVec& parameters
-    ) const;
-    
-    // Test for tpoints below the buffer
-    bool test_tpoints(
-        const sVec& parameters,
-        const bool& verbose
     ) const;
     
     // Compute min boundary penalty
@@ -313,10 +314,10 @@ class wspc {
     // ***** Bootstrapping and model fitting, for statistical testing
     
     // Fit model using NLopt
-    void fit(
-        const bool set_params, 
-        const bool verbose
-    );
+    void fit(const bool verbose);
+    
+    // Resample counts for bootstrapping
+    void resample(unsigned int seed);
     
     // Fit model to bootstrap resample
     dVec bs_fit(
@@ -343,34 +344,11 @@ class wspc {
     
     // ***** Setting parameters
     
-    // Build default fixed-effects matrices in shell
-    List build_beta_shell(
-        const List& ref_values,
-        const List& RtEffs,
-        const List& tpointEffs,
-        const List& tslopeEffs
-    );
-    
     // Estimate initial parameters for model fitting
-    List estimate_initial_parameters();
-    
-    // Function for converting structured encoding of parameters into a vector
-    void make_parameter_vector(
-        const List& beta, 
-        const List& wfactor
-    );
-    
-    // Set the model with the given parameters
-    void set_parameters(
-        const NumericVector& parameters,
-        const bool verbose
-    );
+    void estimate_initial_parameters();
     
     // Check and correct parameter feasibility
-    Rcpp::List check_parameter_feasibility(
-        const sVec& parameters_var,
-        const bool verbose
-    );
+    Rcpp::List check_parameter_feasibility(const sVec& parameters_var);
     
     // ***** export data to R
     Rcpp::List results(); 
@@ -427,6 +405,18 @@ sVec to_sVec(const iVec& vec);
 // ... overload, from IntegerVector
 sVec to_sVec(const IntegerVector& vec);
 
+// Convert to Eigen::Matrix with double elements
+// ... from NumericVector
+eVec to_eVec(const NumericVector& vec);
+// ... overload, from std::vector with doubles 
+eVec to_eVec(const dVec& vec);
+// ... overload, from std::vector with int
+eVec to_eVec(const iVec& vec);
+// ... overload, from IntegerVector
+eVec to_eVec(const IntegerVector& vec);
+// ... overload, from sVec
+eVec to_eVec(const sVec& vec);
+
 // Convert to NumericVector 
 // ... from Eigen::Matrix with sdouble elements
 NumericVector to_NumVec(const sVec& vec);
@@ -456,6 +446,10 @@ iVec to_iVec(const IntegerVector& vec);
 sMat to_sMat(const IntegerMatrix& mat);
 // ... overload
 sMat to_sMat(const NumericMatrix& mat);
+// ... convert to Eigen::Matrix with double elements
+eMat to_eMat(const IntegerMatrix& mat);
+// ... overload
+eMat to_eMat(const NumericMatrix& mat);
 
 // Vector operations ***************************************************************************************************
 
@@ -470,6 +464,8 @@ sdouble vmean(const sVec& x);
 double vmean(const NumericVector& x);
 // ... overload 
 int vmean(const iVec& x);
+// ... overload 
+double vmean(const eVec& x);
 
 // Mean of vector elements within a range
 double vmean_range(const dVec& x, const int& start, const int& end);
@@ -483,6 +479,8 @@ dVec roll_mean(const dVec& series, int filter_ws);
 
 // Variance of vector elements 
 sdouble vvar(const sVec& x);
+// ... overload 
+double vvar(const eVec& x);
 
 // Standard deviations of vector elements 
 double vsd(const dVec& x); 
@@ -561,19 +559,6 @@ NumericVector dseq(const double& start, const double& end, const int& lengthout)
 // Sequence of integers
 IntegerVector iseq(const int& start, const int& end, const int& lengthout);
 
-// List assignments 
-// ----------------
-
-// Name proxy list 
-void name_proxylist(List list, const CharacterVector& new_names);
-
-// Assign to proxy list 
-void assign_proxylist(List list, String element, List assignment);
-// ... overload
-void assign_proxylist(List list, String element, NumericVector assignment);
-// ... overload
-void assign_proxylist(List list, String element, IntegerMatrix assignment);
-
 // Misc
 // ____
 
@@ -614,16 +599,13 @@ LogicalVector eq_left_broadcast(const NumericVector& left, const double& right);
 bool any_true(const LogicalVector& x);
 bool all_true(const LogicalVector& x);
 
-// Model structure *****************************************************************************************************
-
-// Treatment combinations 
-// ----------------------
+// Treatment conditions ************************************************************************************************
 
 // Generate all combinations of j indices from {0, ..., n-1}
 void combinations(
   int n, int j, int start, 
-  std::vector<int>& current, 
-  std::vector<std::vector<int>>& result
+  iVec& current, 
+  std::vector<iVec>& result
   );
 
 // Generate Cartesian product of chosen CharacterVectors
@@ -639,31 +621,33 @@ std::vector<CharacterVector> make_treatments(
   std::vector<CharacterVector> fix_trt
   );
 
-// Extrapolating random-effect free counts
-// ---------------------------------------
-
-// Use extrapolation pool to extrapolate counts
-sVec extrapolate_none(
-  const sVec& count,
-  const CharacterVector& ran, 
-  const std::vector<IntegerVector>& extrapolation_pool,
-  const bool& log_transform,
-  const bool& round_count
-  );
-
 // Model fitting *******************************************************************************************************
 
-// Thread-safe normal distribution function
-double safe_rnorm(
-    double mean, 
-    double sd
+// Random draw from uniform distribution, integers
+int rUnifi(
+    int min,
+    int max,
+    std::mt19937& rng
   );
 
-// Better normal distribution function, with PCG and Box-Muller
-double pcg_rnorm(
+// Random draw from uniform distribution, reals
+double rUnifr(
+    double min,
+    double max,
+    std::mt19937& rng
+  );
+
+// Random draw from normal distribution
+double rNorm(
     double mean, 
     double sd,
-    pcg32& rng
+    std::mt19937& rng
+  );
+
+// Random draw from normal distribution, thread-safe
+double safe_rNorm(
+    double mean, 
+    double sd
   );
 
 // Log of density of normal distribution centered on zero
@@ -678,19 +662,6 @@ double log_dNorm(
     const double& x,               // value to evaluate
     const double& mu,              // mean
     const double& sd               // standard deviation
-  );
-
-// Log of density of normal distribution, normalized so highest value is 0
-double log_dNorm0(
-    const double& x,               // value to evaluate
-    const double& mu,              // mean
-    const double& sd               // standard deviation
-  );
-
-// Log of density of beta distribution, assuming equal shape parameters 
-sdouble log_dbeta1(
-    const sdouble& x,        // value to evaluate
-    const sdouble& shape     // shape parameter (same for both)
   );
 
 // Log of density of gamma distribution
@@ -735,9 +706,9 @@ sdouble delta_var_est(
   );
 
 // Formula to calculate gamme dispersion factor from mean and variance of counts
-sdouble gamma_dispersion_formula(
-    const sdouble& count_cs_mean, // mean of counts for context-species combination
-    const sdouble& count_cs_var   // variance of counts for context-species combination
+double gamma_dispersion_formula(
+    const double& count_cs_mean, // mean of counts for context-species combination
+    const double& count_cs_var   // variance of counts for context-species combination
   );
 
 // Function to set warping ratios 
@@ -750,7 +721,7 @@ sdouble warp_ratio(
 // Warping function for model components 
 sdouble warp_mc(
     const sdouble& x,        // value to warp
-    const sdouble& b,        // bound on this value 
+    const double& b,         // bound on this value 
     const sdouble& w         // warping parameter
   );
 
@@ -771,7 +742,7 @@ sdouble poly_sigmoid(
 // Inverse quadratic ramp function for boundary penalty
 sdouble boundary_penalty_transform(
   const sdouble& x,
-  const sdouble& a
+  const double& a
   );
 
 // Calculate rolling-window negloglik of a series being generated by a given rate, with or without change-point
@@ -803,7 +774,7 @@ dVec LROcp_logRatio(
 
 // Likelihood ratio outlier change-point detection, array input and output
 IntegerMatrix LROcp_array(
-    const sMat& series_array,     // 2D matrix of points to test for change points
+    const eMat& series_array,     // 2D matrix of points to test for change points
     const int& ws,                // Running window size
     const double& out_mult,       // Outlier multiplier
     const double& cp_buffer       // Minimum distance between two change points
@@ -815,13 +786,6 @@ std::vector<dVec> est_bkRates_tRuns(
     const NumericVector& count_series,  // count series
     const IntegerVector& cp_series,     // found change points
     const double& rise_threshold_factor // amount of detected rise as fraction of total required to end run
-  );
-
-// Function to initialize random effect warping factors 
-List make_initial_random_effects(
-    const CharacterVector& wfactors_names,  // names of warping factors to initialize
-    const int& n_ran,                       // number of random effects
-    const int& n_species                    // number of species levels
   );
 
 #endif // WSPC_H

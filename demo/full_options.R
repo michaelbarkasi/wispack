@@ -66,6 +66,7 @@ model.settings <- list(
     buffer_factor = 0.05,                       # buffer factor for minimum distance between t-points
     ctol = 1e-6,                                # convergence tolerance
     max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from parameter bounds
+    LRO_grid_search = "none",                   # Cost metric (AIC or BIC) to use for grid search to find initial LROcp parameters; any other character string will skip grid search
     LROcutoff = 2.0,                            # cutoff for LROcp, a multiple of standard deviation
     LROwindow_factor = 1.25,                    # controls size of window used in LROcp algorithm (window = LROwindow_factor * bin_num * buffer_factor)
     rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
