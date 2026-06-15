@@ -27,7 +27,7 @@ NULL
 #' @param verbose Logical, if TRUE, prints information during the fitting process.
 #' @param model.settings List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LRO_cost}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, \code{warp_precision}, \code{round_none}, \code{trtKO}, and \code{max_bin}. Default values are provided.
 #' @param MCMC.settings List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.
-#' @param plot.settings List, settings for plots to make, including \code{print.plots}, \code{dim.bounds}, \code{log.scale}, \code{splitting_factor}, \code{CI_style}, \code{label_size}, \code{title_size}, \code{axis_size}, \code{legend_size}, \code{count_size}, \code{count_jitter}, \code{count.alpha.ran}, \code{count.alpha.none}, \code{pred.alpha.ran}, and \code{pred.alpha.none}. Default values are provided.
+#' @param plot.settings List, settings for plots to make, including \code{print.plots}, \code{dim.bounds}, \code{log.scale}, \code{splitting_factor}, \code{CI_style}, \code{splitting_factor_colors}, \code{label_size}, \code{title_size}, \code{axis_size}, \code{legend_size}, \code{count_size}, \code{count_jitter}, \code{count.alpha.ran}, \code{count.alpha.none}, \code{pred.alpha.ran}, and \code{pred.alpha.none}. Default values are provided.
 #' @param ran.seed Integer, random seed for reproducibility. If NULL, no seed is set. Default is 1234.
 #' @return List giving the results of the fitted model, including: \code{model.component.list}, \code{count.data.summed}, \code{fitted.parameters}, \code{gamma.disperson}, \code{param.names}, \code{fix}, \code{treatment}, \code{grouping.variables}, \code{param.idx0}, \code{settings}, \code{sample.params}, \code{sample.params.bs}, \code{sample.params.MCMC}, \code{diagnostics.bs}, \code{diagnostics.MCMC}, \code{stats}, and \code{plots}
 #' @export
@@ -177,7 +177,7 @@ wisp <- function(
       buffer_factor = 0.05,                       # buffer factor for minimum distance between t-points
       ctol = 1e-6,                                # convergence tolerance
       max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from parameter bounds
-      LRO_cost = "AIM",                           # character string giving cost to use when evaluating LRO parameters ("AIC", "BIC", "NLL"; anything else defaults to LROcutoff and LROwindow_factor)
+      LRO_cost = "AIC",                           # character string giving cost to use when evaluating LRO parameters ("AIC", "BIC", "NLL"; anything else defaults to LROcutoff and LROwindow_factor)
       LROcutoff = 2.0,                            # cutoff for LROcp, a multiple of standard deviation
       LROwindow_factor = 1.25,                    # controls size of window used in LROcp algorithm (window = LROwindow_factor * bin_num * buffer_factor)
       rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
@@ -231,6 +231,7 @@ wisp <- function(
       log.scale = FALSE,
       splitting_factor = NULL,
       CI_style = TRUE,
+      splitting_factor_colors = c(120, 240), 
       label_size = 5.5,
       title_size = 20,
       axis_size = 12, 
@@ -736,7 +737,7 @@ sample.stats <- function(
       sample_results <- wisp.results$sample.params
     }
     
-    if (length(sample_results) == 0) {
+    if (length(sample_results) == 0 || is.null(dim(sample_results))) {
       snk.report...("\nNo samples to analyze") 
     } else {
       
@@ -1228,7 +1229,7 @@ plot.ratecount <- function(
       }
       fe1_colors <- colorspace::sequential_hcl(
         n = n_base,
-        h = 120,       # green, scale of 0:360
+        h = wisp.results$plot.settings$splitting_factor_colors[1],       # scale of 0:360
         c = c(25, 75), # scale of 0:100
         l = c(75, 40), # scale of 0:100
         fixup = TRUE,
@@ -1239,7 +1240,7 @@ plot.ratecount <- function(
       )
       fe2_colors <- colorspace::sequential_hcl(
         n = n_base,
-        h = 240,       # blue, scale of 0:360
+        h = wisp.results$plot.settings$splitting_factor_colors[2],       # scale of 0:360
         c = c(25, 75), # scale of 0:100
         l = c(75, 40), # scale of 0:100
         fixup = TRUE,
@@ -1880,7 +1881,7 @@ plot.timeseries <- function(
           n_base <- length(blks)
           splt1_colors <- colorspace::sequential_hcl(
             n = n_base,
-            h = 120,       # green, scale of 0:360
+            h = wisp.results$plot.settings$splitting_factor_colors[1],       # scale of 0:360
             c = c(25, 75), # scale of 0:100
             l = c(75, 40), # scale of 0:100
             fixup = TRUE,
@@ -1891,7 +1892,7 @@ plot.timeseries <- function(
           )
           splt2_colors <- colorspace::sequential_hcl(
             n = n_base,
-            h = 240,       # blue, scale of 0:360
+            h = wisp.results$plot.settings$splitting_factor_colors[2],       # scale of 0:360
             c = c(25, 75), # scale of 0:100
             l = c(75, 40), # scale of 0:100
             fixup = TRUE,
@@ -2848,7 +2849,7 @@ plot.species.summary <- function(
       length(wisp.results$plots$parameters) == 0 ||
       length(wisp.results$plots$residuals) == 0
       ) {
-      stop("No rate or parameter plots found in wisp.results")
+      stop("No rate, parameter, or residual plots found in wisp.results")
     }
     
     # Specify context and species levels to summarize

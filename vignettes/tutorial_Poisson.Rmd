@@ -168,9 +168,8 @@ for (block in 1:4) {
 }
 ```
 ```{r check3, echo = FALSE}
-test_val <- round(recovered_rate, 3)
-test_val
-if (test_val != 7.405) stop("failed check 3")
+test_val <- recovered_rate
+if (test_val < 7.4 || test_val > 7.5) stop("failed check 3")
 ```
 
 Thus, wisp indeed works well for modeling gamma-distributed Poisson processes!

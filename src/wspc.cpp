@@ -55,9 +55,7 @@ wspc::wspc(
     for (String this_trtKO : trtKO) {
       IntegerVector trkKO_idx = grep_cpp(col_names, this_trtKO);
       int cnt = 0;
-      for (int idx : trkKO_idx) {
-        col_names.erase(col_names.begin() + (idx - cnt));  // ... remove from col_names, adjusting for previous removals
-      }
+      for (int idx : trkKO_idx) {col_names.erase(col_names.begin() + (idx - cnt));}  // ... remove from col_names, adjusting for previous removals
     }
     
     // Check structure of input data
@@ -65,9 +63,7 @@ wspc::wspc(
     int n_cols = col_names.size();
     int r_cols = required_cols.size();
     for (int i = 0; i < r_cols; i++) {
-      if (col_names[i] != required_cols[i]) {
-        Rcpp::stop("Input data is missing required column (or out of order): " + required_cols[i]);
-      }
+      if (col_names[i] != required_cols[i]) {Rcpp::stop("Input data is missing required column (or out of order): " + required_cols[i]);}
     }
     
     // Save tokenized count column before collapsing to sums 
@@ -253,12 +249,6 @@ wspc::wspc(
     vprint("Random-effect grouping levels:", verbose);
     vprintV(ran_lvls, verbose);
     
-    // Temporarily extract tokenized-count columns 
-    IntegerVector binT = Rcpp::as<IntegerVector>(count_data["bin"]); 
-    CharacterVector contextT = Rcpp::as<CharacterVector>(count_data["context"]);
-    CharacterVector speciesT = Rcpp::as<CharacterVector>(count_data["species"]);
-    CharacterVector ranT = Rcpp::as<CharacterVector>(count_data["ran"]);
-    
     // Create summed count data, size constants
     int idx = 0;
     int n_ran = ran_lvls.size();
@@ -271,12 +261,9 @@ wspc::wspc(
     // Create summed count data rows, initializations
     count.resize(n_count_rows);
     bin.resize(n_count_rows);
-    context = CharacterVector(n_count_rows);
-    species = CharacterVector(n_count_rows);
+    ran_num.reserve(n_count_rows);
     context_num.reserve(n_count_rows);
     species_num.reserve(n_count_rows);
-    ran = CharacterVector(n_count_rows);
-    treatment = CharacterVector(n_count_rows);
     treatment_num.reserve(n_count_rows); 
     weights.resize(n_count_rows, n_treatments);
     
@@ -288,88 +275,103 @@ wspc::wspc(
     count_not_na_mask.fill(false);
     vprint("Number of rows with unique model components: " + std::to_string(idx_mc_unique.size()), verbose);
     
-    // Pre-compute bin masks
-    LogicalMatrix bin_masks(binT.size(), n_bin);
-    for (int b = 0; b < n_bin; b++) {bin_masks.column(b) = eq_left_broadcast(binT, b + 1);}
+    // Wrap up initialization
+    vprint_header("Wrapping up initialization", verbose);
+    
+    // Temporarily extract tokenized-count columns 
+    IntegerVector binT = Rcpp::as<IntegerVector>(count_data["bin"]); 
+    CharacterVector contextT = Rcpp::as<CharacterVector>(count_data["context"]);
+    CharacterVector speciesT = Rcpp::as<CharacterVector>(count_data["species"]);
+    CharacterVector ranT = Rcpp::as<CharacterVector>(count_data["ran"]);
+    
+    // Pre-extract fix effect columns (avoid repeated DataFrame lookup inside the hot loop)
+    std::vector<CharacterVector> fixT(n_fix);
+    for (int f = 0; f < n_fix; f++) {fixT[f] = Rcpp::as<CharacterVector>(count_data[(String)fix_names[f]]);}
+    
+    // Build hash map: (ran, context, species, fix_vals..., bin) -> row indices
+    // Only non-NA count rows are included.
+    int N_tok = (int)count_tokenized.size();
+    std::unordered_map<std::string, iVec> token_map;
+    token_map.reserve(N_tok);
+    
+    for (int row = 0; row < N_tok; row++) {
+      if (std::isnan(count_tokenized[row])) { continue; }
+      std::string key;
+      key += std::string(ranT[row])     + '\0';
+      key += std::string(contextT[row]) + '\0';
+      key += std::string(speciesT[row]) + '\0';
+      for (int f = 0; f < n_fix; f++) {
+        key += std::string(fixT[f][row]) + '\0';
+      }
+      key += std::to_string(binT[row]);
+      token_map[key].push_back(row);
+    }
     
     // Create summed count data columns and weight matrix
-    vprint_header("Creating summed-count data columns and weight matrix", verbose); 
-    LogicalVector nan_mask = !Rcpp::is_na(to_NumVec(count_tokenized));
+    vprint("Creating summed-count data columns and weight matrix", verbose);
     for (int r = 0; r < n_ran; r++) {
-      LogicalVector ran_mask = eq_left_broadcast(ranT, ran_lvls[r]) & nan_mask;
+      bool is_none = (ran_lvls[r] == "none");
       
       for (int c = 0; c < n_context; c++) {
-        LogicalVector context_mask = ran_mask & eq_left_broadcast(contextT, context_lvls[c]);
-        
         for (int s = 0; s < n_species; s++) {
-          LogicalVector species_mask = context_mask & eq_left_broadcast(speciesT, species_lvls[s]);
-          
           for (int t = 0; t < n_treatments; t++) {
-            LogicalVector treatment_mask = Rcpp::clone(species_mask);
+            
+            // Build the (ran, context, species, fix_vals) prefix once per (r,c,s,t)
+            std::string base_key;
+            base_key += std::string(ran_lvls[r])    + '\0';
+            base_key += std::string(context_lvls[c]) + '\0';
+            base_key += std::string(species_lvls[s]) + '\0';
             for (int f = 0; f < n_fix; f++) {
-              treatment_mask = treatment_mask & eq_left_broadcast(Rcpp::as<CharacterVector>(count_data[(String)fix_names[f]]), effects_rows(t, f));
+              base_key += std::string(effects_rows(t, f)) + '\0';
             }
             
             // Save mc-unique index
-            idx_mc_unique[idx_mcu] = idx; 
+            idx_mc_unique[idx_mcu] = idx;
             idx_mcu++;
             
             for (int b = 0; b < n_bin; b++) {
               
-              // Build columns 
+              // Build columns
               count[idx] = 0.0;
               bin[idx] = static_cast<double>(b + 1.0);
-              context(idx) = context_lvls[c];
-              species(idx) = species_lvls[s];
+              ran_num.push_back(r);
               context_num.push_back(c);
               species_num.push_back(s);
-              ran(idx) = ran_lvls[r];
-              treatment(idx) = treatment_lvls[t];
-              treatment_num.push_back(t); 
+              treatment_num.push_back(t);
               weights.row(idx) = weight_rows.row(t);
-              // ^ ... weights (and weight_rows) is a matrix specifying whether the effect from a given treatment level should apply when computing the effect of another treatment level.
-              // note: a complex treatment level like "right, KO, P12" is giving an interaction effect, not the effect of any one of its components. 
               
-              // Find token pool
-              LogicalVector token_mask = treatment_mask & bin_masks.column(b);
-              
-              // Sum count 
-              IntegerVector token_pool_idx = Rwhich(token_mask);
-              if (token_pool_idx.size() > 0 || ran_lvls[r] == "none") {
-                token_pool[idx] = to_iVec(token_pool_idx); 
-                // ^ ... save for bootstrap resampling
-                for (int rw : token_pool_idx) {count[idx] += count_tokenized[rw];}
+              if (is_none) {
+                // "none" ran level: no real tokens — count stays 0, pool stays empty
                 count_not_na_mask(idx) = true;
               } else {
-                count[idx] = std::numeric_limits<double>::quiet_NaN();
+                std::string key = base_key + std::to_string(b + 1);
+                auto it = token_map.find(key);
+                if (it != token_map.end()) {
+                  token_pool[idx] = it->second;
+                  for (int rw : it->second) { count[idx] += count_tokenized[rw]; }
+                  count_not_na_mask(idx) = true;
+                } else {
+                  count[idx] = std::numeric_limits<double>::quiet_NaN();
+                }
               }
               
-              // Increment index
-              idx++; 
-              
+              idx++;
             }
-            
           }
         }
       }
-      
-      vprint("Random level " + std::to_string(r) + ", " + std::to_string(r + 1) + "/" + std::to_string(n_ran) + " complete", verbose);
-      
     }
     
     // Extract idx from count_not_na_mask
     count_not_na_idx = Rwhich(count_not_na_mask);
     
     // Find indexes of none rows
-    not_none_mask = !eq_left_broadcast(ran, "none");
+    not_none_mask = !eq_left_broadcast(ran_num, 0);
     r_idx = Rwhich(!not_none_mask);
     
     // Make extrapolation pool
-    if (n_ran > 1) {vprint_header("Making extrapolation pool", verbose);}
+    if (n_ran > 1) {vprint("Making extrapolation pool", verbose);}
     make_extrapolation_pool(verbose); 
-    
-    // Wrap up initialization
-    vprint_header("Wrapping up initialization", verbose);
     
     // Extrapolate "none" rows
     if (ran_lvls.size() > 1) {
@@ -395,17 +397,6 @@ wspc::wspc(
     // Find average log counts for each context-species combination
     find_count_log_means();
     vprint("Found average log counts for each context-species combination", verbose);
-    
-    // Construct grouping variable ids as indexes for warping factor matrices, by count row
-    gv_ran_idx.reserve(n_count_rows);
-    gv_sps_idx.reserve(n_count_rows);
-    for (int r = 0; r < n_count_rows; r++) {
-      CharacterVector::iterator it_ran = std::find(ran_lvls.begin(), ran_lvls.end(), ran[r]);
-      CharacterVector::iterator it_sps = std::find(species_lvls.begin(), species_lvls.end(), species[r]);
-      gv_ran_idx[r] = std::distance(ran_lvls.begin(), it_ran);
-      gv_sps_idx[r] = std::distance(species_lvls.begin(), it_sps);
-    }
-    vprint("Constructed grouping variable IDs", verbose);
     
     // Initialize predicted rate vectors 
     predicted_rates = NumericVector(n_count_rows);
@@ -485,17 +476,12 @@ void wspc::make_extrapolation_pool(bool verbose) {
     extrapolation_pool = std::vector<iVec>(count.size());
     // Loop through none rows and find their interpolation pools
     int n_rows = r_idx.size();
-    IntegerVector tracker = iseq((int)(n_rows/5 - 1), n_rows - 1, 5); 
     for (int ri = 0; ri < n_rows; ri++) {
       int r = r_idx[ri];
       iVec idx = fetch_count_idx({-1, context_num[r], species_num[r], treatment_num[r], (int)bin[r] - 1});
       for (int rii : idx) {
         if (count_not_na_mask[rii] && not_none_mask[rii]) {extrapolation_pool[r].push_back(rii);}
       }
-      // Track progress
-      if (any_true(eq_left_broadcast(tracker, ri)) || n_rows <= 5) {
-        vprint("row: " + std::to_string(ri + 1) + "/" + std::to_string(n_rows), verbose);
-      } 
     }
   }
 
@@ -807,8 +793,8 @@ sVec wspc::predict_rates(
         
         // Grab warping factors
         // WARNING: this code is duplicated in boundary_dist
-        int wfi = gv_sps_idx[r] * (ran_lvls.size() - 1) + gv_ran_idx[r] - 1;
-        if (gv_ran_idx[r] == 0) {
+        int wfi = species_num[r] * (ran_lvls.size() - 1) + ran_num[r] - 1;
+        if (ran_num[r] == 0) {
           f_pw = 0.0; f_rw = 0.0; f_sw = 0.0;
         } else {
           f_pw = parameters(wfactor_idx[0][wfi]);
@@ -914,9 +900,7 @@ sdouble wspc::compute_nll(
     sdouble negloglik = -log_lik;
     
     // Check for infinities (zero likelihood)
-    if (std::isinf(negloglik) || negloglik > sdouble(inf_)) {
-      negloglik = sdouble(inf_);
-    }
+    if (std::isinf(negloglik) || negloglik > sdouble(inf_)) {negloglik = sdouble(inf_);}
     
     return negloglik;
     
@@ -942,8 +926,8 @@ sVec wspc::boundary_dist(
       
       // Grab warping factors
       // WARNING: this code is duplicated from predict_rates
-      int wfi = gv_sps_idx[r] * (ran_lvls.size() - 1) + gv_ran_idx[r] - 1;
-      if (gv_ran_idx[r] == 0) {
+      int wfi = species_num[r] * (ran_lvls.size() - 1) + ran_num[r] - 1;
+      if (ran_num[r] == 0) {
         f_pw = 0.0; f_rw = 0.0; f_sw = 0.0;
       } else {
         f_pw = parameters(wfactor_idx[0][wfi]);
@@ -1174,16 +1158,16 @@ void wspc::fit(const bool verbose) {
     } 
     
     // Fit model
-    int success_code = 0;
+    int sc = 0;
     double min_fx;
     try {
-      nlopt::result sc = opt.optimize(x, min_fx);
-      success_code = static_cast<int>(sc);
+      nlopt::result sc_ = opt.optimize(x, min_fx);
+      sc = static_cast<int>(sc_);
     } catch (std::exception& e) { 
       if (verbose) {
         Rcpp::Rcout << "Optimization failed: " << e.what() << std::endl;
       } 
-      success_code = 0;
+      sc = 0;
     } 
     
     // Find final nll for diagnostics
@@ -1198,7 +1182,7 @@ void wspc::fit(const bool verbose) {
       vprint("Final min boundary distance: ", mb_dist);
       int num_evals = opt.get_numevals();
       vprint("Number of evaluations: ", num_evals);
-      if (success_code == 0) {
+      if (sc == 0) {
         vprint("Warning: optimization did not converge.");
       }
     } 
@@ -1207,7 +1191,7 @@ void wspc::fit(const bool verbose) {
     fitted_parameters = to_NumVec(x);
     bnll = min_fx;
     nll = final_nll.val();
-    success_code = success_code;
+    success_code = sc;
     num_evals = opt.get_numevals();
     
     // Check feasibility 
@@ -1226,7 +1210,7 @@ void wspc::resample(
     // Resample and re-sum token pool
     for (int r : count_not_na_idx) {
       // ... but only for actual observations of random grouping variable
-      if (ran[r] != "none") {
+      if (ran_num[r] > 0) {
         // ... redraw randomly (with replacement) from the token pool of r and re-sum into r's count 
         int resample_sz = token_pool[r].size();
         if (resample_sz < 1) {
@@ -1469,12 +1453,12 @@ Rcpp::NumericMatrix wspc::MCMC(
     // Make baseline parameter mask 
     LogicalVector baseline_mask(n_params);
     baseline_mask.fill(false);
-    for (int i : param_baseline_idx) {baseline_mask(i) = true;}
+    for (int i : param_idx.baseline) {baseline_mask(i) = true;}
     
     // Make beta_Rt parameter mask
     LogicalVector beta_Rt_mask(n_params);
     beta_Rt_mask.fill(false);
-    for (int i : param_beta_Rt_idx) {beta_Rt_mask(i) = true;} 
+    for (int i : param_idx.beta_Rt) {beta_Rt_mask(i) = true;} 
     
     // Run MCMC simulation
     int step = 0;
@@ -1696,16 +1680,7 @@ void wspc::estimate_initial_parameters() {
     
     // Clear vectors for pushbacks
     beta_idx.clear();
-    param_baseline_tpoint_idx.clear();
-    param_baseline_tslope_idx.clear();
-    param_baseline_Rt_idx.clear();
-    param_baseline_idx.clear(); 
-    param_beta_tpoint_idx.clear(); 
-    param_beta_tslope_idx.clear();
-    param_beta_Rt_idx.clear();
-    param_wfactor_point_idx.clear();
-    param_wfactor_rate_idx.clear();
-    param_wfactor_slope_idx.clear();
+    param_idx = ParamIdx{};
     
     // Loop through model components 
     for (String mc : mc_list) {
@@ -1796,20 +1771,20 @@ void wspc::estimate_initial_parameters() {
                 // Collect indices 
                 if (i > 0) {
                   if (mc == "Rt") {
-                    param_beta_Rt_idx.push_back(idx);
+                    param_idx.beta_Rt.push_back(idx);
                   } else if (mc == "tslope") {   
-                    param_beta_tslope_idx.push_back(idx);
+                    param_idx.beta_tslope.push_back(idx);
                   } else if (mc == "tpoint") {   
-                    param_beta_tpoint_idx.push_back(idx);
+                    param_idx.beta_tpoint.push_back(idx);
                   }   
                 } else {
-                  param_baseline_idx.push_back(idx);
+                  param_idx.baseline.push_back(idx);
                   if (mc == "Rt") {
-                    param_baseline_Rt_idx.push_back(idx);
+                    param_idx.baseline_Rt.push_back(idx);
                   } else if (mc == "tslope") {   
-                    param_baseline_tslope_idx.push_back(idx);
+                    param_idx.baseline_tslope.push_back(idx);
                   } else if (mc == "tpoint") {   
-                    param_baseline_tpoint_idx.push_back(idx);
+                    param_idx.baseline_tpoint.push_back(idx);
                   }
                 }
                 beta_idx_mc_cxt_sps.push_back(idx);
@@ -1847,21 +1822,21 @@ void wspc::estimate_initial_parameters() {
         // ... Point warp
         CharacterVector param_name_point = CharacterVector::create("wfactor", "point", ran_name, "X", sps_name);
         param_names_list.push_back(param_name_point);
-        param_wfactor_point_idx.push_back(idx);
+        param_idx.wfactor_point.push_back(idx);
         wfactor_idx_point.push_back(idx);
         param_vector.push_back(R::runif(-0.1, 0.1));
         idx++;
         // ... Rate warp
         CharacterVector param_name_rate = CharacterVector::create("wfactor", "rate", ran_name, "X", sps_name);
         param_names_list.push_back(param_name_rate);
-        param_wfactor_rate_idx.push_back(idx);
+        param_idx.wfactor_rate.push_back(idx);
         wfactor_idx_rate.push_back(idx); 
         param_vector.push_back(R::runif(-0.1, 0.1));
         idx++;
         // ... Slope warp
         CharacterVector param_name_slope = CharacterVector::create("wfactor", "slope", ran_name, "X", sps_name);
         param_names_list.push_back(param_name_slope);
-        param_wfactor_slope_idx.push_back(idx);
+        param_idx.wfactor_slope.push_back(idx);
         wfactor_idx_slope.push_back(idx);
         param_vector.push_back(R::runif(-0.1, 0.1));
         idx++;
@@ -1948,12 +1923,12 @@ void wspc::check_parameter_feasibility(const sVec& parameters_var) {
       int max_tries = 6;
       while (n_tries < max_tries && success_code == 0) {
         // Manually reduce t-point effects 
-        for (int i : param_beta_tpoint_idx) {x[i] *= 0.5;}
-        for (int i : param_wfactor_point_idx) {x[i] *= 0.5;}
+        for (int i : param_idx.beta_tpoint) {x[i] *= 0.5;}
+        for (int i : param_idx.wfactor_point) {x[i] *= 0.5;}
         // Manually check baseline t-points 
-        for (int i = 1; i < param_baseline_tpoint_idx.size(); i++) {
-          int idx0 = param_baseline_tpoint_idx[i-1];
-          int idx1 = param_baseline_tpoint_idx[i];
+        for (int i = 1; i < param_idx.baseline_tpoint.size(); i++) {
+          int idx0 = param_idx.baseline_tpoint[i-1];
+          int idx1 = param_idx.baseline_tpoint[i];
           if (x[idx1] - x[idx0] < tpoint_buffer) {
             x[idx0] -= tpoint_buffer/4.0;
             x[idx1] += tpoint_buffer/4.0;
@@ -1974,7 +1949,7 @@ void wspc::check_parameter_feasibility(const sVec& parameters_var) {
       
       // Check for success
       if (success_code == 0) {
-        Rcpp::warning("Could not find a nearby feasible parameters (boundary violation or nan rates), returning provided ones");
+        Rcpp::warning("Could not find nearby feasible parameters (boundary violation or nan rates), returning provided ones");
       } else { // found a feasible starting point, save
         feasible = true;
         feasible_parameters_var = to_sVec(x);
@@ -2003,6 +1978,17 @@ void wspc::check_parameter_feasibility(const sVec& parameters_var) {
 
 Rcpp::List wspc::results() {
     
+    int n_count_rows = bin.size();
+    CharacterVector context(n_count_rows);
+    CharacterVector species(n_count_rows);
+    CharacterVector ran(n_count_rows);
+    CharacterVector treatment(n_count_rows);
+    for (int i = 0; i < n_count_rows; i++) {
+      context[i] = context_lvls[context_num[i]];
+      species[i] = species_lvls[species_num[i]];
+      ran[i] = ran_lvls[ran_num[i]];
+      treatment[i] = treatment_lvls[treatment_num[i]];
+    }
     // Create summed count data frame
     DataFrame count_data_summed = DataFrame::create(
       _["bin"] = Rcpp::wrap(bin),
@@ -2057,7 +2043,7 @@ Rcpp::List wspc::results() {
     );
     
     // Pack up parameter indexes into list
-    List param_idx = List::create(
+    List paramidx = List::create(
       _["beta"] = Rcpp::wrap(beta_idx),
       _["w.factor"] = Rcpp::wrap(wfactor_idx)
     );
@@ -2084,7 +2070,7 @@ Rcpp::List wspc::results() {
       _["treatment"] = treat,
       _["weight.matrix"] = weight_matrix,
       _["grouping.variables"] = grouping_variables,
-      _["param.idx0"] = param_idx, // "0" to indicate this goes out w/ C++ zero-based indexing
+      _["param.idx0"] = paramidx, // "0" to indicate this goes out w/ C++ zero-based indexing
       _["token.pool"] = Rcpp::wrap(token_pool),
       _["settings"] = model_settings
     );

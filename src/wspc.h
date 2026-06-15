@@ -73,6 +73,20 @@ static const double rt_lower_bound = -0.01; // Technically zero, but need wiggle
  * Object class to hold and fit Warped Sigmoidal Poisson-Process Mixed-Effect Model (WSPmm, aka "WiSP") model. 
  */
 
+// Indexes of parameter vector for quick access of different kinds of model parameters
+struct ParamIdx {
+  iVec wfactor_point;  
+  iVec wfactor_rate;
+  iVec wfactor_slope;
+  iVec beta_Rt;
+  iVec beta_tslope;
+  iVec beta_tpoint;
+  iVec baseline_Rt;
+  iVec baseline_tslope;
+  iVec baseline_tpoint;
+  iVec baseline;
+};
+
 class wspc {
   
   public:
@@ -92,10 +106,7 @@ class wspc {
     dVec count_tokenized;                   // token (non-summed) count data
     
     // Data variables, factors
-    CharacterVector context;                // context column of summed data (i.e., context of tokening for a species)
-    CharacterVector species;                // species column of summed data (i.e., species tokens of which are counted)
-    CharacterVector ran;                    // random effect column of summed data
-    CharacterVector treatment;              // treatment column of summed data
+    iVec ran_num;                           // numeric encoding of ran factor, with 0 as reference level
     iVec context_num;                       // numeric encoding of context factor
     iVec species_num;                       // numeric encoding of species factor
     iVec treatment_num;                     // numeric encoding of treatment factor
@@ -106,11 +117,7 @@ class wspc {
     
     // Fixed and random effect variables
     CharacterVector fix_names;              // names of fixed effect variables
-    CharacterVector wfactors_names = {
-      "point", 
-      "rate", 
-      "slope"
-      };
+    CharacterVector wfactors_names = {"point", "rate", "slope"};
     std::vector<CharacterVector> fix_lvls;  // levels for each fixed effect
     std::vector<CharacterVector> fix_trt;                // treatment levels for each fixed effect
     std::vector<CharacterVector> treatment_components;   // all possible treatment combinations, level components
@@ -137,11 +144,7 @@ class wspc {
     bool round_none;                        // whether to round extrapolated "none" counts to nearest integer
     
     // Variables related to model parameters
-    CharacterVector mc_list = {             // list of model components
-      "Rt",                                 // ... rates
-      "tslope",                             // ... transition slopes
-      "tpoint"                              // ... transition points
-      }; 
+    CharacterVector mc_list = {"Rt", "tslope", "tpoint"}; 
     IntegerMatrix degMat;                   // matrix of degrees for each context (column) -- species (rows) pair
     std::vector<std::vector<IntegerMatrix>> found_cp;       // list of found change points (IntegerMatrix) for each context-species combination
     std::vector<std::vector<NumericMatrix>> found_cp_trt;   // list of found change points (NumericMatrix) for each context-species combination, averaged across treatments
@@ -155,20 +158,9 @@ class wspc {
     eVec warp_bounds;                       // warping bounds for each model component
     
     // Indices for managing parameters vector
-    iVec param_wfactor_point_idx;  // ... indexes of parameter vector for quick access of different kinds of model parameters
-    iVec param_wfactor_rate_idx;
-    iVec param_wfactor_slope_idx;
-    iVec param_beta_Rt_idx;
-    iVec param_beta_tslope_idx;
-    iVec param_beta_tpoint_idx;
-    iVec param_baseline_Rt_idx;
-    iVec param_baseline_tslope_idx;
-    iVec param_baseline_tpoint_idx;
-    iVec param_baseline_idx;
+    ParamIdx param_idx; // ... indexes of parameter vector for quick access of different kinds of model parameters
     std::vector<std::vector<std::vector<iVec>>> beta_idx;
     std::vector<iVec> wfactor_idx; 
-    iVec gv_ran_idx;
-    iVec gv_sps_idx;  
     
     // Variables for initial degree estimation
     String LRO_cost;                        // Cost measure for LRO_grid_search: AIC or BIC
@@ -606,6 +598,8 @@ IntegerMatrix remove_row(
 LogicalVector eq_left_broadcast(const CharacterVector& left, const String& right);
 // ... overload 
 LogicalVector eq_left_broadcast(const IntegerVector& left, const int& right);
+// ... overload 
+LogicalVector eq_left_broadcast(const iVec& left, const int& right);
 // ... overload
 LogicalVector eq_left_broadcast(const NumericVector& left, const double& right);
 

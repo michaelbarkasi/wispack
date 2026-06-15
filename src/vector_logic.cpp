@@ -28,6 +28,19 @@ LogicalVector eq_left_broadcast(
     return out;
   }
 
+// ... overload 
+LogicalVector eq_left_broadcast(
+    const iVec& left,
+    const int& right
+  ) {
+    int n = left.size();
+    LogicalVector out(n);
+    for (int i = 0; i < n; i++) {
+      out[i] = left[i] == right;
+    }
+    return out;
+  }
+
 // ... overload
 LogicalVector eq_left_broadcast(
     const NumericVector& left,

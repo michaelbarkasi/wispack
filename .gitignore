@@ -8,6 +8,7 @@ wispack.Rcheck/*
 *.Rcheck/*
 .Rbuildignore
 .RData
+*.RDataTmp
 .Rhistory
 !.gitattributes
 .DS_Store
