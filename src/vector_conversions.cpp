@@ -159,6 +159,23 @@ NumericMatrix to_NumMat(
     return num_mat;
   }
 
+// ... overload, from vector<dVec> NumericMatrix
+NumericMatrix to_NumMat(
+    const std::vector<dVec>& mat
+  ) {
+    NumericMatrix num_mat(mat.size(), mat[0].size());
+    for (int j = 0; j < mat[0].size(); j++) {
+      for (int i = 0; i < mat.size(); i++) {
+        if (std::isnan(mat[i][j])) {
+          num_mat(i, j) = NA_REAL;
+        } else {
+          num_mat(i, j) = mat[i][j];
+        }
+      }
+    }
+    return num_mat;
+  }
+
 // Convert to IntegerVector ********************************************************************************************
 
 // ... from std::vector with int

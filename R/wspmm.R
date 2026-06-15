@@ -402,11 +402,13 @@ wisp <- function(
         if (verbose) snk.report("Running MCMC stimulations", end_breaks = 1)
         start_time_MCMC <- Sys.time()
         MCMC_walk <- cpp_model$MCMC(
-          MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin, 
+          MCMC.settings.internal$MCMC.burnin,
+          MCMC.settings.internal$MCMC.steps, 
           MCMC.settings.internal$MCMC.neighbor.filter,
           MCMC.settings.internal$MCMC.step.size,
           MCMC.settings.internal$MCMC.prior,
           MCMC.settings.internal$MCMC.burnin == 0, # If no burnin, start from parameters found with gradient descent
+          use.median,
           verbose 
         )
         run_time_MCMC <- Sys.time() - start_time_MCMC
@@ -415,11 +417,6 @@ wisp <- function(
           snk.print_vec("MCMC run time (total), minutes", c(as.numeric(run_time_MCMC, units = "mins")))
           snk.print_vec("MCMC run time (per retained step), seconds", c(as.numeric(run_time_MCMC, units = "secs") / (MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin)))
           snk.print_vec("MCMC run time (per step), seconds", c((as.numeric(run_time_MCMC, units = "secs") / (MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin))/MCMC.settings.internal$MCMC.neighbor.filter), end_breaks = 0)
-        }
-        
-        # Clear out burn-in, if any
-        if (MCMC.settings.internal$MCMC.burnin > 0) {
-          MCMC_walk <- MCMC_walk[-c(1:MCMC.settings.internal$MCMC.burnin),]
         }
         
         # Save MCMC estimates and diagnostics
@@ -445,6 +442,7 @@ wisp <- function(
         sample_results <- cpp_model$bs_batch(
           bootstraps.num, 
           max.fork,
+          use.median,
           verbose
         )
         run_time_bs <- Sys.time() - start_time_bs
@@ -478,16 +476,6 @@ wisp <- function(
       } else {
         stop("If not running MCMC or bootstrapping, set fit_only = TRUE")
       }
-      
-      # Set final fitted parameters
-      if (use.median) {
-        if (verbose) snk.report...("Setting median parameter samples as final parameters", initial_breaks = 1, end_breaks = 1)
-        final_parameters <- apply(sample.params, 2, function(x) median(x, na.rm = TRUE))
-      } else {
-        if (verbose) snk.report...("Setting full-data fit as parameters", initial_breaks = 2, end_breaks = 1)
-        final_parameters <- sample.params[nrow(sample.params),]
-      }
-      ## STOPPED HERE, problem! NEED some way to set these parameters
       
       # Grab model results and add samples
       results <- cpp_model$results()

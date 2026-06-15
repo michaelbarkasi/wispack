@@ -17,3 +17,4 @@ src/.DS_Store
 vignettes/*_cache/*
 docs/deps/font-awesome-6.5.2/webfonts/*
 .positai
+.RDataTmp

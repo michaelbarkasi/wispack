@@ -264,6 +264,7 @@ wspc::wspc(
     int n_ran = ran_lvls.size();
     int n_species = species_lvls.size();
     int n_context = context_lvls.size();
+    factor_sizes = {n_ran, n_context, n_species, n_treatments, n_bin};
     n_count_rows = n_bin * n_context * n_species * n_ran * n_treatments;
     vprint("Total rows in summed count data table: " + std::to_string(n_count_rows), verbose);
     
@@ -276,21 +277,20 @@ wspc::wspc(
     species_num.reserve(n_count_rows);
     ran = CharacterVector(n_count_rows);
     treatment = CharacterVector(n_count_rows);
+    treatment_num.reserve(n_count_rows); 
     weights.resize(n_count_rows, n_treatments);
     
     // Initiate count indexes 
     int idx_mcu = 0;
     idx_mc_unique = IntegerVector(n_count_rows/n_bin);
-    token_pool.resize(n_count_rows);
+    token_pool = std::vector<iVec>(n_count_rows);
     count_not_na_mask = LogicalVector(n_count_rows);
     count_not_na_mask.fill(false);
     vprint("Number of rows with unique model components: " + std::to_string(idx_mc_unique.size()), verbose);
     
     // Pre-compute bin masks
     LogicalMatrix bin_masks(binT.size(), n_bin);
-    for (int b = 0; b < n_bin; b++) { 
-      bin_masks.column(b) = eq_left_broadcast(binT, b + 1);
-    }
+    for (int b = 0; b < n_bin; b++) {bin_masks.column(b) = eq_left_broadcast(binT, b + 1);}
     
     // Create summed count data columns and weight matrix
     vprint_header("Creating summed-count data columns and weight matrix", verbose); 
@@ -325,6 +325,7 @@ wspc::wspc(
               species_num.push_back(s);
               ran(idx) = ran_lvls[r];
               treatment(idx) = treatment_lvls[t];
+              treatment_num.push_back(t); 
               weights.row(idx) = weight_rows.row(t);
               // ^ ... weights (and weight_rows) is a matrix specifying whether the effect from a given treatment level should apply when computing the effect of another treatment level.
               // note: a complex treatment level like "right, KO, P12" is giving an interaction effect, not the effect of any one of its components. 
@@ -335,11 +336,9 @@ wspc::wspc(
               // Sum count 
               IntegerVector token_pool_idx = Rwhich(token_mask);
               if (token_pool_idx.size() > 0 || ran_lvls[r] == "none") {
-                token_pool[idx] = token_pool_idx; 
+                token_pool[idx] = to_iVec(token_pool_idx); 
                 // ^ ... save for bootstrap resampling
-                for (int rw : token_pool_idx) {
-                  count[idx] += count_tokenized[rw];
-                }
+                for (int rw : token_pool_idx) {count[idx] += count_tokenized[rw];}
                 count_not_na_mask(idx) = true;
               } else {
                 count[idx] = std::numeric_limits<double>::quiet_NaN();
@@ -408,15 +407,9 @@ wspc::wspc(
     }
     vprint("Constructed grouping variable IDs", verbose);
     
-    // Initialize list to hold results from model fit
-    optim_results = List::create(
-      _["fitted_parameters"] = NumericVector(), 
-      _["penalized_neg_loglik"] = NA_REAL,
-      _["neg_loglik"] = NA_REAL, 
-      _["success_code"] = NA_INTEGER,
-      _["num_evals"] = NA_INTEGER,
-      _["bs_times"] = NumericVector()
-    ); 
+    // Initialize predicted rate vectors 
+    predicted_rates = NumericVector(n_count_rows);
+    predicted_rates_log = NumericVector(n_count_rows); 
     
   }
 
@@ -440,99 +433,78 @@ void wspc::clear_stan_mem() {
  * Initial setup
  */
 
+// Get row indices of count data from the given factor levels
+iVec wspc::fetch_count_idx(
+    iVec I // indexes of each factor
+  ) {
+    const int stack_depth = 5; // equals the size of factor_sizes
+    if (stack_depth != I.size()) {Rcpp::stop("Invalid stack size.");}
+    iVec idx = {0};
+    for (int i = 0; i < stack_depth; ++i) {
+      int remainder = 1;
+      for (int l = stack_depth - 1; l > i; --l) {remainder *= factor_sizes[l];}
+      if (I[i] < 0) {
+        // index all levels of this factor 
+        iVec idxj;
+        for (int k = 0; k < idx.size(); ++k) {
+          for (int j = 0; j < factor_sizes[i]; ++j) {
+            idxj.push_back(idx[k] + j * remainder);
+          }
+        }
+        idx = idxj;
+      } else {
+        // index specific level of this factor
+        for (int k = 0; k < idx.size(); ++k) {idx[k] += remainder * I[i];}
+      }
+    }
+    return idx;
+  }
+
 // Computes gamma_dispersion matrix and related vectors
 void wspc::compute_gamma_dispersion() {
-    
     // Grab number of context and species levels
     int n_species = species_lvls.size();
     int n_context = context_lvls.size();
-    
     // Initialize gamma dispersion matrix
-    gamma_dispersion = eMat(n_species, n_context);
-    // ... initialized with all zeros
-    gd_species_idx = IntegerVector(n_species);
-    gd_context_idx = IntegerVector(n_context);
-    gd_species_idx.names() = species_lvls;
-    gd_context_idx.names() = context_lvls;
-    
-    // Loop through context levels
+    gamma_dispersion = std::vector<dVec>(n_species, dVec(n_context));
+    // Loop through context and species levels
     for (int c = 0; c < n_context; c++) {
-      
-      LogicalVector context_mask = eq_left_broadcast(context, context_lvls[c]);
-      gd_context_idx[(String)context_lvls[c]] = c;
-      
-      // Loop through species levels
       for (int s = 0; s < n_species; s++) { 
-        
         // Estimate dispersion of raw count (not log)
-        LogicalVector species_mask = eq_left_broadcast(species, species_lvls[s]);
-        LogicalVector cs_mask = context_mask & species_mask & count_not_na_mask;
-        eVec count_cs_masked = to_eVec(masked_vec(count, cs_mask)); 
-        double count_cs_mean = vmean(count_cs_masked);
-        double count_cs_var = vvar(count_cs_masked);
-        gamma_dispersion(s, c) = gamma_dispersion_formula(count_cs_mean, count_cs_var);
-        gd_species_idx[(String)species_lvls[s]] = s;
-        
+        dVec count_cs_masked; 
+        for (int r : fetch_count_idx({-1, c, s, -1, -1})) {
+          if (count_not_na_mask[r]) {count_cs_masked.push_back(count[r]);}
+        }
+        gamma_dispersion[s][c] = gamma_dispersion_formula(vmean(count_cs_masked), vvar(count_cs_masked));
       }
-      
     }
-    
   }
 
 // Function to pre-make extrapolation pools for ran-level "none"
 void wspc::make_extrapolation_pool(bool verbose) {
-    // Resize vector to hold extrapolation pools
-    extrapolation_pool = std::vector<IntegerVector>(count.size());
-    
-    // Convert bin vector to numeric and get max bin number
-    NumericVector n_binVec = to_NumVec(bin);
-    int max_bin = Rcpp::max(n_binVec);
-    
-    // Pre-make masks for bin, context, species, and treatment levels
-    LogicalMatrix bin_masks(n_binVec.size(), max_bin);
-    LogicalMatrix context_masks(context.size(), context_lvls.size());
-    LogicalMatrix species_masks(species.size(), species_lvls.size());
-    LogicalMatrix treatment_masks(treatment.size(), treatment_lvls.size());
-    colnames(context_masks) = context_lvls;
-    colnames(species_masks) = species_lvls;
-    colnames(treatment_masks) = treatment_lvls;
-    for (int i = 0; i < bin_masks.ncol(); i++) {bin_masks.column(i) = eq_left_broadcast(n_binVec, i + 1);}
-    for (int i = 0; i < context_lvls.size(); i++) {context_masks.column(i) = eq_left_broadcast(context, context_lvls[i]);}
-    for (int i = 0; i < species_lvls.size(); i++) {species_masks.column(i) = eq_left_broadcast(species, species_lvls[i]);}
-    for (int i = 0; i < treatment_lvls.size(); i++) {treatment_masks.column(i) = eq_left_broadcast(treatment, treatment_lvls[i]);}
-    
+    extrapolation_pool = std::vector<iVec>(count.size());
     // Loop through none rows and find their interpolation pools
     int n_rows = r_idx.size();
     IntegerVector tracker = iseq((int)(n_rows/5 - 1), n_rows - 1, 5); 
     for (int ri = 0; ri < n_rows; ri++) {
       int r = r_idx[ri];
-      
-      // Find all rows with the same fixed effects and bin
-      LogicalVector mask = bin_masks.column((int)bin[r] - 1)
-        & context_masks.column(Rwhich(eq_left_broadcast(context_lvls, context(r)))[0])
-        & species_masks.column(Rwhich(eq_left_broadcast(species_lvls, species(r)))[0])
-        & treatment_masks.column(Rwhich(eq_left_broadcast(treatment_lvls, treatment(r)))[0])
-        & count_not_na_mask
-        & not_none_mask;
-     
-      // Extract pool 
-      extrapolation_pool[r] = Rwhich(mask);
-      
+      iVec idx = fetch_count_idx({-1, context_num[r], species_num[r], treatment_num[r], (int)bin[r] - 1});
+      for (int rii : idx) {
+        if (count_not_na_mask[rii] && not_none_mask[rii]) {extrapolation_pool[r].push_back(rii);}
+      }
       // Track progress
       if (any_true(eq_left_broadcast(tracker, ri)) || n_rows <= 5) {
         vprint("row: " + std::to_string(ri + 1) + "/" + std::to_string(n_rows), verbose);
       } 
-      
     }
   }
 
 void wspc::extrapolate_none() {
     for (int r : r_idx) {
       count[r] = 0.0;
-      IntegerVector extrapolation_pool_r = extrapolation_pool[r];
-      int extrapolation_sz = extrapolation_pool_r.size();
+      int extrapolation_sz = extrapolation_pool[r].size();
       if (extrapolation_sz > 0) {
-        for (int i : extrapolation_pool_r) {count[r] += std::log(count[i] + 1.0);}
+        for (int i : extrapolation_pool[r]) {count[r] += std::log(count[i] + 1.0);}
         count[r] /= (double)extrapolation_sz;
         count[r] = std::exp(count[r]) - 1.0; // Convert back from log space
         if (round_none) {count[r] = std::round(count[r]);}
@@ -542,52 +514,29 @@ void wspc::extrapolate_none() {
 
 // Function to take means of count_log 
 void wspc::find_count_log_means() {
-    
     // Grab number of context and species levels
     const int n_species = species_lvls.size();
     const int n_context = context_lvls.size();
-    
     // Initialize lists to hold count_log_avg_mat for each context-species combination 
     count_log_avg_mat = std::vector<std::vector<NumericMatrix>>(n_context, std::vector<NumericMatrix>(n_species));
-    
-    // Loop through context levels
+    // Loop through context and species levels
     for (int c = 0; c < n_context; c++) {
-      
-      // Make context mask
-      LogicalVector context_mask = eq_left_broadcast(context, context_lvls[c]);
-     
-      // Loop through species levels
       for (int s = 0; s < n_species; s++) { 
-        
-        // Make species mask and context-species mask
-        LogicalVector species_mask = eq_left_broadcast(species, species_lvls[s]);
-        LogicalVector cs_mask = context_mask & species_mask & count_not_na_mask;
-        
         // Find mean of count_log for each species-context pair
         count_log_avg_mat[c][s] = NumericMatrix(n_bin, n_treatments);
         for (int t = 0; t < n_treatments; t++) {
-          String trt = treatment_lvls[t];
-          
-          // Make mask for treatment rows of this context-species pair
-          LogicalVector trt_mask = eq_left_broadcast(treatment, trt);
-          LogicalVector cs_trt_mask = cs_mask & trt_mask;
-          
-          // Grab average counts for this treatment level (used later to set initial values)
           dVec count_log_avg(n_bin); 
-          dVec count_trt_masked = masked_vec(count_log, cs_trt_mask);
-          dVec bin_trt_masked = masked_vec(bin, cs_trt_mask);
           for (int b = 0; b < n_bin; b++) {
-            LogicalVector mask_b = eq_left_broadcast(to_NumVec(bin_trt_masked), (double)b + 1.0);
-            dVec count_b = masked_vec(count_trt_masked, mask_b);
+            dVec count_b; 
+            for (int i : fetch_count_idx({-1, c, s, t, b - 1})) {
+              if (count_not_na_mask[i]) {count_b.push_back(count_log[i]);}
+            }
             count_log_avg[b] = vmean(count_b);
           }
           count_log_avg_mat[c][s].column(t) = to_NumVec(count_log_avg);
-          
         }
-       
       }
     }
-    
   }
 
 // Function to estimate change points
@@ -608,54 +557,22 @@ void wspc::estimate_change_points() {
     found_cp = std::vector<std::vector<IntegerMatrix>>(n_context, std::vector<IntegerMatrix>(n_species));
     found_cp_trt = std::vector<std::vector<NumericMatrix>>(n_context, std::vector<NumericMatrix>(n_species));
     
-    // Loop through context levels
+    // Loop through context and species levels
     for (int c = 0; c < n_context; c++) {
-      
-      // Make context mask
-      LogicalVector context_mask = eq_left_broadcast(context, context_lvls[c]);
-      
-      // Loop through species levels
-      for (int s = 0; s < n_species; s++) { 
-        
-        // Make species mask and context-species mask
-        LogicalVector species_mask = eq_left_broadcast(species, species_lvls[s]);
-        LogicalVector cs_mask = context_mask & species_mask & count_not_na_mask;
-        
-        // Initialize count array for change-point detection
+      for (int s = 0; s < n_species; s++) {
         eMat count_masked_array(n_bin, n_ran_trt);
         count_masked_array.setZero();
         LogicalVector good_col(n_ran_trt);
-        // Collect count values for each treatment-ran level interaction of this species-context pair
         for (int t = 0; t < n_treatments; t++) {
-          String trt = treatment_lvls[t];
-          
-          // Make mask for treatment rows of this context-species pair
-          LogicalVector trt_mask = eq_left_broadcast(treatment, trt);
-          LogicalVector cs_trt_mask = cs_mask & trt_mask;
-          
-          // Collect count values for each ran level and this treatment trt
           for (int r = 0; r < n_ran; r++) {
-            // Make mask for ran level rows of this treatment (of this context-species pair)
-            LogicalVector ran_mask = eq_left_broadcast(ran, ran_lvls[r]);
-            LogicalVector mask = cs_trt_mask & ran_mask;
-            
-            // Make masked copies of count_log and bin
-            eVec count_log_masked = to_eVec(masked_vec(count_log, mask));  
-            dVec bin_masked = masked_vec(bin, mask);
-            if (count_log_masked.size() == n_bin && bin_masked.size() == n_bin) {
-              
-              // Ensure count_log_masked is in correct order
-              // ... should be, but sanity check 
-              for (int b = 0; b < n_bin; b++) {
-                if (bin_masked[b] != (b + 1.0)) {
-                  stop("Count or bin vectors not in correct order.");
-                }
-              }
-              
-              // Set this column and mark good
-              count_masked_array.col(t*n_ran + r) = count_log_masked;
+            dVec count_log_masked; 
+            for (int i : fetch_count_idx({r, c, s, t, -1})) {
+              if (count_not_na_mask[i]) {count_log_masked.push_back(count_log[i]);}
+            }
+            // Check and save column
+            if (count_log_masked.size() == n_bin) {
+              count_masked_array.col(t*n_ran + r) = to_eVec(count_log_masked);
               good_col(t*n_ran + r) = true;
-              
             } else {
               good_col(t*n_ran + r) = false;
             }
@@ -751,9 +668,6 @@ void wspc::LRO_initial_param_ests(
     vprint("Number of parameters: " + std::to_string((int)fitted_parameters.size()), verbose);
     vprint("Size of boundary vector: " + std::to_string(boundary_vec_size), verbose);
     
-    // Check feasibility 
-    check_parameter_feasibility(to_sVec(fitted_parameters)); 
-    
   }
 
 // Search for best LRO change-point detection settings
@@ -777,13 +691,11 @@ void wspc::LRO_grid_search(bool verbose) {
         fit(false);
         int k = fitted_parameters.size();
         int idx = i * LROco_range.size() + j;
-        double nll = optim_results["neg_loglik"];
-        double bnll = optim_results["penalized_neg_loglik"];
         LRO_grid_search_results(idx, 0) = LROwf_range[i];
         LRO_grid_search_results(idx, 1) = LROco_range[j];
         LRO_grid_search_results(idx, 2) = nll;
         LRO_grid_search_results(idx, 3) = bnll;
-        LRO_grid_search_results(idx, 4) = (double)optim_results["success_code"];
+        LRO_grid_search_results(idx, 4) = (double)success_code;
         LRO_grid_search_results(idx, 5) = (double)k;
         LRO_grid_search_results(idx, 6) = 2.0 * ((double)k + nll);
         LRO_grid_search_results(idx, 7) = 2.0 * (std::log((double)n) * (double)k + nll);
@@ -875,7 +787,7 @@ sVec wspc::predict_rates(
      */
     
     // Initialize variable to hold predicted rates 
-    sVec predicted_rates(n_count_rows);
+    sVec out(n_count_rows);
     iVec mc_unique_rows = Rcpp::as<iVec>(idx_mc_unique);
     
     // Initialize variables to hold model components
@@ -913,7 +825,7 @@ sVec wspc::predict_rates(
         } 
         
         // Compute the poly-sigmoid
-        predicted_rates(r) = poly_sigmoid(
+        out(r) = poly_sigmoid(
           bin[r],
           degMat(species_num[r], context_num[r]),
           Rt,
@@ -925,7 +837,7 @@ sVec wspc::predict_rates(
       
     }
     
-    return predicted_rates;
+    return out;
     
   }
 
@@ -937,15 +849,15 @@ NumericVector wspc::predict_rates_R(
     // Convert parameters to sVec
     sVec parameters = to_sVec(parameters_R);
     // Compute predicted rates
-    sVec predicted_rates = predict_rates(
+    sVec out = predict_rates(
       parameters,
       all_rows
     );
     // Convert to NumericVector 
-    NumericVector predicted_rates_R = to_NumVec(predicted_rates);
+    NumericVector out_R = to_NumVec(out);
     // Clear memory and return
     clear_stan_mem();
-    return predicted_rates_R;
+    return out_R;
   }
 
 /*
@@ -953,8 +865,8 @@ NumericVector wspc::predict_rates_R(
  * Computing objective function (i.e., fitting model and parameter boundary distances)
  */
 
-// Compute neg_loglik of observations under the given parameters
-sdouble wspc::neg_loglik(
+// Compute nll of observations under the given parameters
+sdouble wspc::compute_nll(
     const sVec& parameters
   ) const {
    
@@ -975,13 +887,10 @@ sdouble wspc::neg_loglik(
       } else {
         
         // Find gamma variance for this row
-        // ... grab context and species index numbers
-        int n_c = gd_species_idx[(String)species[r]];
-        int n_p = gd_context_idx[(String)context[r]];
         // ... pull predicted rate from log space
         sdouble pred_rate_var = sexp(predicted_rates_log_var(r)) - 1.0;
         // ... estimate variance of rate outside log space
-        sdouble gamma_variance = pred_rate_var + gamma_dispersion(n_c, n_p) * pred_rate_var * pred_rate_var;
+        sdouble gamma_variance = pred_rate_var + gamma_dispersion[species_num[r]][context_num[r]] * pred_rate_var * pred_rate_var;
         // ... estimate the corresponding variance of the rate back in log space 
         gamma_variance = delta_var_est(gamma_variance, pred_rate_var);
         
@@ -1138,13 +1047,13 @@ double wspc::min_boundary_dist_NLopt(
     
   } 
 
-// Compute neg_loglik plus boundary penalty (main objective function) 
-sdouble wspc::bounded_nll(
+// Compute nll plus boundary penalty (main objective function) 
+sdouble wspc::compute_bnll(
     const sVec& parameters
   ) const {
     
     // Compute weighted negative log-likelihood
-    sdouble bnll = neg_loglik(parameters);
+    sdouble bnll = compute_nll(parameters);
     // Compute boundary distance
     sVec bd = boundary_dist(parameters);
     // Add boundary penalty
@@ -1152,7 +1061,7 @@ sdouble wspc::bounded_nll(
     
     /*
      * Idea of boundary penalty transform: When "far" from boundary, the total penalty will be at most 
-     *  some specified fraction (e.g., 0.1) of the magnitude of the neg_loglik, but if any one component of 
+     *  some specified fraction (e.g., 0.1) of the magnitude of the nll, but if any one component of 
      *  the boundary distance approaches zero, the penalty smoothly goes to infinity. 
      */
     
@@ -1160,8 +1069,8 @@ sdouble wspc::bounded_nll(
     
   }
 
-// Wrap bounded_nll in form needed for NLopt objective function
-double wspc::bounded_nll_NLopt(
+// Wrap compute_bnll in form needed for NLopt objective function
+double wspc::compute_bnll_NLopt(
     const dVec& x, 
     dVec& grad, 
     void* data
@@ -1172,15 +1081,15 @@ double wspc::bounded_nll_NLopt(
     // Convert dVec to Eigen with stan
     sVec parameters_var = to_sVec(x);
     // Compute bounded_nll
-    sdouble fx = model->bounded_nll(parameters_var);
+    sdouble fx = model->compute_bnll(parameters_var);
     
     // Compute gradient if needed
     if (!grad.empty()) {
-      Eigen::VectorXd grad_eigen = model->grad_bounded_nll(parameters_var);
+      Eigen::VectorXd grad_eigen = model->grad_compute_bnll(parameters_var);
       grad.assign(grad_eigen.data(), grad_eigen.data() + grad_eigen.size());
     } 
     
-    // Return the value of the neg_loglik
+    // Return the value of the nll
     return fx.val(); 
     
   }
@@ -1190,22 +1099,22 @@ double wspc::bounded_nll_NLopt(
  * Computing gradients with stan reverse-mode autodiff
  */
 
-// Compute the gradient of the bounded_nll function
+// Compute the gradient of the compute_bnll function
 // ... this is the gradient function used in model optimization
-Eigen::VectorXd wspc::grad_bounded_nll(
+Eigen::VectorXd wspc::grad_compute_bnll(
     const sVec& p_
   ) const { 
     // Create nested autodiff context
     stan::math::nested_rev_autodiff nested;
     // Make copy to create var nodes for p
     sVec p = p_;
-    // Initialize bounded_nll variable
-    sdouble bnll = bounded_nll(p);
+    // Initialize bnll variable
+    sdouble bnll = compute_bnll(p);
     // Initialize variable to hold gradient
     Eigen::VectorXd gr_bnll(p.size());
-    // Compute bounded_nll and its gradient
+    // Compute bnll and its gradient
     stan::math::grad(bnll, p, gr_bnll);
-    // Return bounded_nll gradient
+    // Return bnll gradient
     return gr_bnll;
   }
 
@@ -1239,7 +1148,7 @@ void wspc::fit(const bool verbose) {
     // Set boundary-penalty coefficients 
     vprint("Setting boundary penalty coefficients", verbose);
     sVec initial_params_var = to_sVec(fitted_parameters);
-    double max_penalty_at_distance = neg_loglik(initial_params_var).val() * max_penalty_at_distance_factor;
+    double max_penalty_at_distance = compute_nll(initial_params_var).val() * max_penalty_at_distance_factor;
     double coefs = std::sqrt(static_cast<double>(boundary_vec_size)/max_penalty_at_distance);
     bp_coefs = to_eVec(boundary_dist(initial_params_var));
     for (int i = 0; i < boundary_vec_size - 1; i++) {bp_coefs(i) = coefs/bp_coefs(i);} 
@@ -1250,16 +1159,16 @@ void wspc::fit(const bool verbose) {
     
     // Set up NLopt optimizer
     nlopt::opt opt(nlopt::LD_LBFGS, n); // Might try? LD_LBFGS, LN_SBPLX, LN_COBYLA, GN_DIRECT
-    opt.set_min_objective(wspc::bounded_nll_NLopt, this);
+    opt.set_min_objective(wspc::compute_bnll_NLopt, this);
     opt.set_ftol_rel(ctol);             // Stop when iteration changes objective fn value by less than this fraction 
     opt.set_maxeval(max_evals);         // Maximum number of evaluations to try
     
-    // Find and print initial neg_loglik and total objective values
+    // Find and print initial nll and total objective values
     if (verbose) {
-      sdouble initial_nll = neg_loglik(initial_params_var);
-      vprint("Initial neg_loglik: ", initial_nll);
-      sdouble initial_obj = bounded_nll(initial_params_var);
-      vprint("Initial neg_loglik with penalty: ", initial_obj);
+      sdouble initial_nll = compute_nll(initial_params_var);
+      vprint("Initial nll: ", initial_nll);
+      sdouble initial_obj = compute_bnll(initial_params_var);
+      vprint("Initial nll with penalty: ", initial_obj);
       sdouble mb_dist = min_boundary_dist(initial_params_var);
       vprint("Initial min boundary distance: ", mb_dist);
     } 
@@ -1277,14 +1186,14 @@ void wspc::fit(const bool verbose) {
       success_code = 0;
     } 
     
-    // Find final neg_loglik for diagnostics
+    // Find final nll for diagnostics
     sVec parameters_final = to_sVec(x);
-    sdouble final_nll = neg_loglik(parameters_final);
+    sdouble final_nll = compute_nll(parameters_final);
     
-    // Print final neg_loglik, total objective, and min boundary distance values
+    // Print final nll, total objective, and min boundary distance values
     if (verbose) {
-      vprint("Final neg_loglik: ", final_nll);
-      vprint("Final neg_loglik with penalty: ", min_fx);
+      vprint("Final nll: ", final_nll);
+      vprint("Final nll with penalty: ", min_fx);
       sdouble mb_dist = min_boundary_dist(parameters_final);
       vprint("Final min boundary distance: ", mb_dist);
       int num_evals = opt.get_numevals();
@@ -1295,11 +1204,14 @@ void wspc::fit(const bool verbose) {
     } 
     
     // Save optimization results
-    optim_results["fitted_parameters"] = to_NumVec(x); // for predicting log-linked count
-    optim_results["penalized_neg_loglik"] = min_fx;
-    optim_results["neg_loglik"] = final_nll.val();
-    optim_results["success_code"] = success_code;
-    optim_results["num_evals"] = opt.get_numevals();
+    fitted_parameters = to_NumVec(x);
+    bnll = min_fx;
+    nll = final_nll.val();
+    success_code = success_code;
+    num_evals = opt.get_numevals();
+    
+    // Check feasibility 
+    check_parameter_feasibility(to_sVec(fitted_parameters)); 
     
   } 
 
@@ -1316,8 +1228,7 @@ void wspc::resample(
       // ... but only for actual observations of random grouping variable
       if (ran[r] != "none") {
         // ... redraw randomly (with replacement) from the token pool of r and re-sum into r's count 
-        IntegerVector token_pool_r = token_pool[r];
-        int resample_sz = token_pool_r.size();
+        int resample_sz = token_pool[r].size();
         if (resample_sz < 1) {
           // ... ensure new point is viable
           Rcpp::Rcout << "Error: resample size < 1, for row " << r << std::endl;
@@ -1328,7 +1239,7 @@ void wspc::resample(
         for (int i = 0; i < resample_sz; i++) {
           // ... randomly select integer between 0 and resample_sz
           int resample_idx = rUnifi(0, resample_sz - 1, rng);
-          count[r] += count_tokenized[token_pool_r[resample_idx]];
+          count[r] += count_tokenized[token_pool[r][resample_idx]];
         }
         count_log[r] = std::log(count[r] + 1.0);
       }
@@ -1356,25 +1267,21 @@ dVec wspc::bs_fit(
     resample(rng_seed + bs_num);
     // Find initial parameter estimates, for new re-sampled data
     estimate_initial_parameters();
-    // Check feasibility 
-    check_parameter_feasibility(to_sVec(fitted_parameters));
     // Fit model
     fit(false);
     
     // Prepare and return results
-    dVec fitted_parameters = to_dVec(Rcpp::as<NumericVector>(optim_results["fitted_parameters"]));
-    fitted_parameters.reserve(fitted_parameters.size() + 4);
-    fitted_parameters.push_back(Rcpp::as<double>(optim_results["penalized_neg_loglik"]));
-    fitted_parameters.push_back(Rcpp::as<double>(optim_results["neg_loglik"]));
-    fitted_parameters.push_back(Rcpp::as<double>(optim_results["success_code"]));
-    fitted_parameters.push_back(Rcpp::as<double>(optim_results["num_evals"]));
+    dVec res = to_dVec(fitted_parameters);
+    res.reserve(fitted_parameters.size() + 4);
+    res.push_back(bnll);
+    res.push_back(nll);
+    res.push_back((double)success_code);
+    res.push_back((double)num_evals);
     
     // Clear stan memory
-    if (clear_stan) {
-      clear_stan_mem();
-    }
+    if (clear_stan) {clear_stan_mem();}
     
-    return fitted_parameters;
+    return res;
     
   }
 
@@ -1382,14 +1289,14 @@ dVec wspc::bs_fit(
 Rcpp::NumericMatrix wspc::bs_batch(
     int bs_num_max,           // Number of bootstraps to perform
     int max_fork,             // Maximum number of forked processes per batch
+    bool use_median,
     bool verbose
   ) {
     
     // Fit full model 
     vprint("Performing initial fit of full data", verbose);
     fit(false);
-    double pnll = optim_results["penalized_neg_loglik"]; 
-    if (verbose) {vprint("Penalized neg_loglik: ", pnll);}
+    if (verbose) {vprint("Penalized nll: ", bnll);}
     
     // Initiate variables to hold results
     const int c_num = fitted_parameters.size() + 4;
@@ -1397,16 +1304,15 @@ Rcpp::NumericMatrix wspc::bs_batch(
     NumericMatrix bs_results(r_num, c_num);
     
     // Save results from initial full fit
-    NumericVector these_results = optim_results["fitted_parameters"];
-    dVec full_results = to_dVec(these_results);
-    full_results.reserve(full_results.size() + 4);
-    full_results.push_back(Rcpp::as<double>(optim_results["penalized_neg_loglik"]));
-    full_results.push_back(Rcpp::as<double>(optim_results["neg_loglik"]));
-    full_results.push_back(Rcpp::as<double>(optim_results["success_code"]));
-    full_results.push_back(Rcpp::as<double>(optim_results["num_evals"]));
+    dVec res = to_dVec(fitted_parameters);
+    res.reserve(res.size() + 4);
+    res.push_back(bnll);
+    res.push_back(nll);
+    res.push_back((double)success_code);
+    res.push_back((double)num_evals);
     
     // Save full fit results in last row of results matrix
-    bs_results.row(bs_num_max) = to_NumVec(full_results);
+    bs_results.row(bs_num_max) = to_NumVec(res);
     
     // Perform bootstrap fits in batches
     if (max_fork < 1) {max_fork = 1;} 
@@ -1494,6 +1400,22 @@ Rcpp::NumericMatrix wspc::bs_batch(
       
     }
     
+    // Use median instead of initial full-fit
+    if (use_median) {
+      // Compute column-wise median of all rows except the last
+      int r_num1 = r_num - 1;
+      for (int j = 0; j < c_num; j++) {
+        NumericVector col_vals(r_num1); // r_num elements (rows 0 to r_num-1)
+        for (int i = 0; i < r_num1; i++) {col_vals[i] = bs_results(i, j);}
+        std::sort(col_vals.begin(), col_vals.end());
+        double median;
+        if (r_num1 % 2 == 0) {median = (col_vals[r_num1 / 2 - 1] + col_vals[r_num1 / 2]) / 2.0;} 
+        else {median = col_vals[r_num1 / 2];}
+        bs_results(r_num1, j) = median;
+        if (j < fitted_parameters.size()) {fitted_parameters[j] = median;}
+      }
+    }
+    
     // Clear stan memory and return
     vprint("All complete!", verbose); 
     if (bs_num_max == 0) {clear_stan_mem();}
@@ -1503,27 +1425,46 @@ Rcpp::NumericMatrix wspc::bs_batch(
 
 // Markov-chain Monte Carlo (MCMC) simulation
 Rcpp::NumericMatrix wspc::MCMC(
-    int n_steps,              // Number of steps to take in random walk
+    int n_burnin,             // Number of initial steps to take (to find optimal parameters)
+    int n_steps,              // Number of steps to take in random walk (post-burnin)
     int neighbor_filter,      // Keep only ever neighbor_filter step
     double step_size,         // Step size for random walk
     double prior_sd,          // standard deviation to use in prior
     bool start_from_fit,      // Start from parameters found with gradient descent? 
+    bool use_median,
     bool verbose
   ) {
-    
-    // Fit full model 
-    if (start_from_fit) {
-      vprint("Starting MCMC walk from L-BFGS optimized parameters", verbose);
-      fit(false);
-      double pnll = optim_results["penalized_neg_loglik"]; 
-      if (verbose) {vprint("Penalized neg_loglik: ", pnll);}
-    }
     
     // Initiate variables to hold results
     const int n_params = fitted_parameters.size();
     const int c_num = n_params + 4;
     const int r_num = n_steps + 1;
     NumericMatrix RMW_steps(r_num, c_num);
+    n_steps += n_burnin;
+    
+    // Fit full model 
+    if (start_from_fit) {
+      vprint("Starting MCMC walk from L-BFGS optimized parameters", verbose);
+      fit(false);
+      if (verbose) {vprint("Penalized nll: ", bnll);}
+      // ... save results from initial full fit
+      dVec res = to_dVec(fitted_parameters);
+      res.reserve(res.size() + 4);
+      res.push_back(bnll); 
+      res.push_back(nll);
+      res.push_back(double(1.0)); // acceptance ratio
+      res.push_back(double(0.0)); // ctr number
+      // ... save full fit results in last row of results matrix
+      RMW_steps.row(r_num - 1) = to_NumVec(res);
+    } else {
+      // Set boundary-penalty coefficients 
+      vprint("Setting boundary penalty coefficients", verbose);
+      sVec initial_params_var = to_sVec(fitted_parameters);
+      double max_penalty_at_distance = compute_nll(initial_params_var).val() * max_penalty_at_distance_factor;
+      double coefs = std::sqrt(static_cast<double>(boundary_vec_size)/max_penalty_at_distance);
+      bp_coefs = to_eVec(boundary_dist(initial_params_var));
+      for (int i = 0; i < boundary_vec_size - 1; i++) {bp_coefs(i) = coefs/bp_coefs(i);} 
+    }
     
     // Make baseline parameter mask 
     LogicalVector baseline_mask(n_params);
@@ -1534,17 +1475,6 @@ Rcpp::NumericMatrix wspc::MCMC(
     LogicalVector beta_Rt_mask(n_params);
     beta_Rt_mask.fill(false);
     for (int i : param_beta_Rt_idx) {beta_Rt_mask(i) = true;} 
-    
-    // Save results from initial full fit
-    dVec full_results = to_dVec(fitted_parameters);
-    full_results.reserve(full_results.size() + 4);
-    full_results.push_back(Rcpp::as<double>(optim_results["penalized_neg_loglik"])); // STOPPED HERE; must fix
-    full_results.push_back(Rcpp::as<double>(optim_results["neg_loglik"]));
-    full_results.push_back(double(1.0)); // acceptance ratio
-    full_results.push_back(double(0.0)); // ctr number
-    
-    // Save full fit results in last row of results matrix
-    RMW_steps.row(n_steps) = to_NumVec(full_results);
     
     // Run MCMC simulation
     int step = 0;
@@ -1585,9 +1515,7 @@ Rcpp::NumericMatrix wspc::MCMC(
       if (bd_current_min > 0.0) {
         
         // ... transform boundary penalty
-        for (int i = 0; i < boundary_vec_size; i++) {
-          bd_current_transformed += boundary_penalty_transform(bd_current_vec(i), bp_coefs(i));
-        }
+        for (int i = 0; i < boundary_vec_size; i++) {bd_current_transformed += boundary_penalty_transform(bd_current_vec(i), bp_coefs(i));}
         bd_current_transformed += 1.0;
         
         // ... for each parameter
@@ -1607,9 +1535,7 @@ Rcpp::NumericMatrix wspc::MCMC(
           
           // Check that a good baseline parameter hasn't been sent below zero
           if (baseline_mask(i) || beta_Rt_mask(i)) {
-            if (params_next(i) < 0.0) {
-              params_next(i) = 0.0;
-            }
+            if (params_next(i) < 0.0) {params_next(i) = 0.0;}
           }
           
           // While looping, compute priors for this random step
@@ -1625,17 +1551,15 @@ Rcpp::NumericMatrix wspc::MCMC(
         }
         
       } else {
-        
         params_current = last_viable_parameters;
         step = last_viable_step;
         clear_stan_mem(); // Clear stan memory
         continue;
-        
       }
       
       // Compute likelihoods for this random step
-      double loglik_current = -bounded_nll(to_sVec(params_current)).val();
-      double loglik_next = -bounded_nll(to_sVec(params_next)).val();
+      double loglik_current = -compute_bnll(to_sVec(params_current)).val();
+      double loglik_next = -compute_bnll(to_sVec(params_next)).val();
       // Calculate posteriors and acceptance probability 
       double acceptance = std::exp(
         (loglik_next + prior_next) - 
@@ -1662,13 +1586,15 @@ Rcpp::NumericMatrix wspc::MCMC(
             printed_step1 = true; // ensure report is only printed once
           }
           // Save new parameters and results
-          dVec full_results = to_dVec(params_next);
-          full_results.reserve(full_results.size() + 4);
-          full_results.push_back(-loglik_next);
-          full_results.push_back(-loglik_next - (bd_current_transformed.val() - 1.0));
-          full_results.push_back(acceptance); // acceptance ratio
-          full_results.push_back(double(ctr + 0.0)); // ctr number
-          RMW_steps.row(step) = to_NumVec(full_results);
+          if (step >= n_burnin) {
+            dVec full_results = to_dVec(params_next);
+            full_results.reserve(full_results.size() + 4);
+            full_results.push_back(-loglik_next);
+            full_results.push_back(-loglik_next - (bd_current_transformed.val() - 1.0));
+            full_results.push_back(acceptance); // acceptance ratio
+            full_results.push_back(double(ctr + 0.0)); // ctr number
+            RMW_steps.row(step - n_burnin) = to_NumVec(full_results);
+          }
           // Advance step
           step++;
           // Reset neighbor counter
@@ -1697,12 +1623,43 @@ Rcpp::NumericMatrix wspc::MCMC(
       
       // Clear stan memory
       clear_stan_mem();
-      
     }
     
     // Report acceptance rate
     vprint("All complete!", verbose); 
     if (verbose) {vprint("Acceptance rate (aim for 0.2-0.3): ", acceptance_rate);}
+    
+    if (use_median) {
+      // Compute column-wise median of all rows except the last
+      int r_num1 = r_num - 1;
+      for (int j = 0; j < c_num; j++) {
+        NumericVector col_vals(r_num1); // r_num elements (rows 0 to r_num-1)
+        for (int i = 0; i < r_num1; i++) {col_vals[i] = RMW_steps(i, j);}
+        std::sort(col_vals.begin(), col_vals.end());
+        double median;
+        if (r_num1 % 2 == 0) {median = (col_vals[r_num1 / 2 - 1] + col_vals[r_num1 / 2]) / 2.0;} 
+        else {median = col_vals[r_num1 / 2];}
+        if (j < n_params) {fitted_parameters[j] = median;}
+      }
+      check_parameter_feasibility(to_sVec(fitted_parameters)); 
+      for (int j = 0; j < n_params; j++) {RMW_steps(r_num1, j) = fitted_parameters[j];}
+    } else {
+      // Fit with L-BFGS
+      fit(false);
+      if (verbose) {vprint("Penalized nll: ", bnll);}
+      // ... save results from initial full fit
+      dVec res = to_dVec(fitted_parameters);
+      res.reserve(res.size() + 4);
+      res.push_back(bnll);
+      res.push_back(nll);
+      res.push_back(double(1.0)); // acceptance ratio
+      res.push_back(double(0.0)); // ctr number
+      // ... save full fit results in last row of results matrix
+      RMW_steps.row(r_num - 1) = to_NumVec(res);
+    }
+   
+    // Check feasibility, set parameters, predict rates
+    
     
     return RMW_steps;
     
@@ -1758,9 +1715,6 @@ void wspc::estimate_initial_parameters() {
       for (int c = 0; c < n_context; c++) {
         String cxt = context_lvls[c];
         
-        // Make context mask
-        LogicalVector context_mask = eq_left_broadcast(context, cxt);
-        
         // Initialize run-estimate vector 
         std::vector<NumericMatrix> run_estimates_cxt;
         
@@ -1780,10 +1734,6 @@ void wspc::estimate_initial_parameters() {
           
           NumericMatrix Effs(n_treatments, bktp);
           NumericMatrix run_estimates_sps(n_treatments, deg);
-          
-          // Make species mask and context-species mask
-          LogicalVector species_mask = eq_left_broadcast(species, species_lvls[s]);
-          LogicalVector cs_mask = context_mask & species_mask & count_not_na_mask;
           
           iVec beta_idx_mc_cxt_sps;
           if (deg > 0 || mc == "Rt") {
@@ -1939,20 +1889,21 @@ void wspc::estimate_initial_parameters() {
     // Wrap parameter vector
     fitted_parameters = Rcpp::wrap(param_vector);
     
+    // Check feasibility 
+    check_parameter_feasibility(to_sVec(fitted_parameters)); 
+    
   }
 
 // Check and correct parameter feasibility
-Rcpp::List wspc::check_parameter_feasibility(const sVec& parameters_var) { 
+void wspc::check_parameter_feasibility(const sVec& parameters_var) { 
     
     // Initialize vectors to return 
     sVec feasible_parameters_var = parameters_var; 
     sVec predicted_rates_log_var;
-    
     // Compute boundary_dist and take min
     sVec bd = boundary_dist(parameters_var);
     sdouble bd_min = smin(bd);
     bool feasible = bd_min > 0.0;
-    
     // Test if provided parameters produce any nan rates
     if (feasible) {
       predicted_rates_log_var = predict_rates(
@@ -1966,7 +1917,6 @@ Rcpp::List wspc::check_parameter_feasibility(const sVec& parameters_var) {
         }
       }
     }
-    
     // Test if provided parameters produce any negative rates
     if (feasible) {
       for (int i = 0; i < n_count_rows; i++) {
@@ -2038,10 +1988,11 @@ Rcpp::List wspc::check_parameter_feasibility(const sVec& parameters_var) {
     }
     
     // Save feasible parameters and predicted rates 
-    fitted_parameters = to_NumVec(feasible_parameters_var);
-    optim_results["fitted_parameters"] = fitted_parameters;
-    predicted_rates_log = to_NumVec(predicted_rates_log_var);
-    for (int i = 0; i < n_count_rows; i++) {predicted_rates[i] = std::exp(predicted_rates_log(i)) - 1.0;}
+    if (feasible) {
+      fitted_parameters = to_NumVec(feasible_parameters_var);
+      predicted_rates_log = to_NumVec(predicted_rates_log_var);
+      for (int i = 0; i < n_count_rows; i++) {predicted_rates[i] = std::exp(predicted_rates_log(i)) - 1.0;}
+    } 
     
   } 
 
@@ -2052,21 +2003,13 @@ Rcpp::List wspc::check_parameter_feasibility(const sVec& parameters_var) {
 
 Rcpp::List wspc::results() {
     
-    NumericVector predicted_rates_out(n_count_rows);
-    NumericVector predicted_rates_log_out(n_count_rows);
-    if (predicted_rates.size() == n_count_rows) {
-      // conditional to prevent trying to access an empty vector
-      predicted_rates_out = predicted_rates;
-      predicted_rates_log_out = predicted_rates_log;
-    }
-    
     // Create summed count data frame
     DataFrame count_data_summed = DataFrame::create(
       _["bin"] = Rcpp::wrap(bin),
       _["count"] = Rcpp::wrap(count),
-      _["pred"] = predicted_rates_out,
+      _["pred"] = predicted_rates,
       _["count.log"] = Rcpp::wrap(count_log),
-      _["pred.log"] = predicted_rates_log_out,
+      _["pred.log"] = predicted_rates_log,
       _["context"] = context,
       _["species"] = species,
       _["ran"] = ran,
@@ -2119,14 +2062,6 @@ Rcpp::List wspc::results() {
       _["w.factor"] = Rcpp::wrap(wfactor_idx)
     );
     
-    // Collect token pool
-    List token_pool_list(n_count_rows); 
-    for (int i = 0; i < n_count_rows; i++) {
-      if (token_pool[i].size() > 0) {
-        token_pool_list[i] = (IntegerVector)token_pool[i];
-      } 
-    }
-    
     // Reformat gamma dispersion parameters 
     NumericMatrix g_dispersion = to_NumMat(gamma_dispersion);
     rownames(g_dispersion) = species_lvls;
@@ -2150,7 +2085,7 @@ Rcpp::List wspc::results() {
       _["weight.matrix"] = weight_matrix,
       _["grouping.variables"] = grouping_variables,
       _["param.idx0"] = param_idx, // "0" to indicate this goes out w/ C++ zero-based indexing
-      _["token.pool"] = token_pool_list,
+      _["token.pool"] = Rcpp::wrap(token_pool),
       _["settings"] = model_settings
     );
     
@@ -2163,16 +2098,16 @@ Rcpp::List wspc::results() {
  * Testing and debugging in R
  */
 
-// Wrap neg_loglik in form needed for R
-double wspc::neg_loglik_debug(
+// Wrap compute_nll in form needed for R
+double wspc::compute_nll_debug(
     const dVec& x
   ) {
     
     // Convert to sVec
     sVec parameters_var = to_sVec(x);
     
-    // Compute neg_loglik
-    double negloglik = neg_loglik(parameters_var).val();
+    // Compute nll
+    double negloglik = compute_nll(parameters_var).val();
     
     // Clear stan memory
     clear_stan_mem(); 
@@ -2182,8 +2117,8 @@ double wspc::neg_loglik_debug(
     
   }
 
-// Wrap bounded_nll in form needed for R
-double wspc::bounded_nll_debug(
+// Wrap compute_bnll in form needed for R
+double wspc::compute_bnll_debug(
     const dVec& x
   ) { 
     
@@ -2196,18 +2131,18 @@ double wspc::bounded_nll_debug(
     sVec parameters_var = to_sVec(x);
     
     // Compute bounded_nll
-    double fx = bounded_nll(parameters_var).val();
+    double fx = compute_bnll(parameters_var).val();
     
     // Clear stan memory
     clear_stan_mem(); 
     
-    // Return the value of the bounded_nll
+    // Return the value of compute_bnll
     return fx; 
     
   } 
 
-// Wrap grad_bounded_nll_debug in form needed for R
-Rcpp::NumericVector wspc::grad_bounded_nll_debug(
+// Wrap grad_compute_bnll_debug in form needed for R
+Rcpp::NumericVector wspc::grad_compute_bnll_debug(
     const dVec& x 
   ) const { 
     
@@ -2219,8 +2154,8 @@ Rcpp::NumericVector wspc::grad_bounded_nll_debug(
     // Convert dVec to Eigen with stan
     sVec parameters_var = to_sVec(x);
     
-    // Compute grdient of bounded_nll
-    Eigen::VectorXd grad_fx = grad_bounded_nll(parameters_var);
+    // Compute grdient of compute_bnll
+    Eigen::VectorXd grad_fx = grad_compute_bnll(parameters_var);
     
     // Cast to NumericVector
     NumericVector grad_fx_R(grad_fx.size());
@@ -2228,7 +2163,7 @@ Rcpp::NumericVector wspc::grad_bounded_nll_debug(
       grad_fx_R[i] = grad_fx(i);
     } 
     
-    // Return the value of the grad of bounded_nll
+    // Return the value of the grad of compute_bnll
     return grad_fx_R; 
     
   }  
@@ -2238,13 +2173,12 @@ RCPP_EXPOSED_CLASS(wspc)
 RCPP_MODULE(wspc) {
     class_<wspc>("wspc")
     .constructor<DataFrame, List, bool>()  
-    .field("optim_results", &wspc::optim_results)
     .field("fitted_parameters", &wspc::fitted_parameters)
     .method("LRO_initial_param_ests", &wspc::LRO_initial_param_ests)
     .method("LRO_grid_search", &wspc::LRO_grid_search)
-    .method("neg_loglik_debug", &wspc::neg_loglik_debug)
-    .method("bounded_nll_debug", &wspc::bounded_nll_debug)
-    .method("grad_bounded_nll_debug", &wspc::grad_bounded_nll_debug)
+    .method("compute_nll_debug", &wspc::compute_nll_debug)
+    .method("compute_bnll_debug", &wspc::compute_bnll_debug)
+    .method("grad_compute_bnll_debug", &wspc::grad_compute_bnll_debug)
     .method("predict_rates_R", &wspc::predict_rates_R)
     .method("fit", &wspc::fit)
     .method("bs_fit", &wspc::bs_fit)

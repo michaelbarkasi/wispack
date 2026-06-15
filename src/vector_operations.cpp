@@ -151,6 +151,22 @@ dVec roll_mean(
   }
 
 // Variance of vector elements
+double vvar(
+    const dVec& x
+  ) {
+    double mean = vmean(x);
+    double sum = 0.0;
+    int ctr = 0;
+    for (double xi : x) {
+      if (!std::isnan(xi)) {
+        sum += (xi - mean) * (xi - mean);
+        ctr++;
+      }
+    }
+    return sum / (double)ctr;
+  }
+
+// ... overload
 sdouble vvar(
     const sVec& x
   ) {
@@ -647,3 +663,4 @@ IntegerMatrix remove_row(
     return out;
   }
  
+

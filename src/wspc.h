@@ -83,12 +83,13 @@ class wspc {
     int n_count_rows;                       // number of rows in summed count data frame
     int n_treatments;                       // number of treatment combinations (including the reference, i.e. no treatment)
     int n_bin;                              // max bin (i.e., number of bins)
+    iVec factor_sizes;                      // lengths of the vectors holding factor levels, in order of summed count construction: <n_ran, n_context, n_species, n_treatments, n_bin>
     
     // Data variables, numeric
     dVec bin;                               // bin column of summed data
     dVec count;                             // count column of summed data
-    dVec count_log;                         // log of observed counts
-    dVec count_tokenized;                   // tokenized count data
+    dVec count_log;                         // log of summed counts
+    dVec count_tokenized;                   // token (non-summed) count data
     
     // Data variables, factors
     CharacterVector context;                // context column of summed data (i.e., context of tokening for a species)
@@ -97,6 +98,7 @@ class wspc {
     CharacterVector treatment;              // treatment column of summed data
     iVec context_num;                       // numeric encoding of context factor
     iVec species_num;                       // numeric encoding of species factor
+    iVec treatment_num;                     // numeric encoding of treatment factor
     
     // Model predictions, Rcpp 
     NumericVector predicted_rates_log;      // log of values predicted by model
@@ -126,8 +128,8 @@ class wspc {
     eMat weights;                           // weight matrix, rows as rows of summed count data, columns as treatments (first column is reference)
     eMat weight_rows;                       // ... for making weights matrix and initial effects estimates
     IntegerVector idx_mc_unique;            // count data rows at which model component values will change
-    std::vector<IntegerVector> token_pool;               // list of token count indexes associated with each summed count row
-    std::vector<IntegerVector> extrapolation_pool;       // list of summed-count indexes giving summed count rows from which to extrapolate
+    std::vector<iVec> token_pool;           // list of token count indexes associated with each summed count row
+    std::vector<iVec> extrapolation_pool;   // list of summed-count indexes giving summed count rows from which to extrapolate
     IntegerVector r_idx;                    // indexes of rows with "none" in count
     IntegerVector count_not_na_idx;         // indexes of non-NA rows in summed count data
     LogicalVector count_not_na_mask;        // mask of non-NA rows in summed count data
@@ -179,20 +181,22 @@ class wspc {
     
     // Model settings and results 
     List model_settings;
-    List optim_results; 
     
     // Variables for optimization
     int max_evals;                              // max number of evaluations
     double ctol;                                // convergence tolerance
     unsigned int rng_seed;                      // seed for random number generator
-    eMat gamma_dispersion;                      // dispersion terms for "kernel" of gamma-Poisson model
-    IntegerVector gd_species_idx;               // indexes of species levels in gamma_dispersion
-    IntegerVector gd_context_idx;               // indexes of context levels in gamma_dispersion
+    std::vector<dVec> gamma_dispersion;         // dispersion terms for "kernel" of gamma-Poisson model
+    double bnll;
+    double nll;
+    int success_code;
+    int num_evals;
+    NumericVector bs_times;
     
     // Boundary penalty variables
     int boundary_vec_size;                               // number of boundary components
     eVec bp_coefs;                                       // coefficients used to scale boundary penality so it's negligible when far from boundary, and infinity at boundary
-    double max_penalty_at_distance_factor;               // the max penalty when far from the boundary, as fraction of initial neg_loglik
+    double max_penalty_at_distance_factor;               // the max penalty when far from the boundary, as fraction of initial nll
     
     /*
      * Basic idea of boundary penalty: there will be a number of relevant distances to a boundary. Want to transform
@@ -213,6 +217,9 @@ class wspc {
     void clear_stan_mem();
     
     // ***** Initial setup
+    
+    // Get row indices of count data from the given factor levels
+    iVec fetch_count_idx(iVec I);
     
     // Computes gamma_dispersion matrix and related vectors
     void compute_gamma_dispersion();
@@ -263,8 +270,8 @@ class wspc {
     
     // ***** computing objective function (i.e., fitting model and parameter boundary distances)
     
-    // Compute weighted total neg_loglik of observations under the given parameters
-    sdouble neg_loglik(
+    // Compute weighted total nll of observations under the given parameters
+    sdouble compute_nll(
         const sVec& parameters
     ) const;
     
@@ -285,13 +292,13 @@ class wspc {
         void* data
     );
     
-    // Compute neg_loglik plus boundary penalty (main objective function) 
-    sdouble bounded_nll(
+    // Compute nll plus boundary penalty (main objective function) 
+    sdouble compute_bnll(
         const sVec& parameters
     ) const;
     
-    // Wrap bounded_nll in form needed for NLopt objective function
-    static double bounded_nll_NLopt(
+    // Wrap compute_bnll in form needed for NLopt objective function
+    static double compute_bnll_NLopt(
         const dVec& x, 
         dVec& grad, 
         void* data
@@ -299,9 +306,9 @@ class wspc {
     
     // ***** Computing gradients with stan reverse-mode autodiff
     
-    // Compute the gradient of the bounded_nll function
+    // Compute the gradient of the compute_bnll function
     // ... this is the gradient function used in model optimization
-    Eigen::VectorXd grad_bounded_nll(
+    Eigen::VectorXd grad_compute_bnll(
         const sVec& p_
     ) const;
     
@@ -327,18 +334,21 @@ class wspc {
     
     // Fork bootstraps (parallel processing)
     Rcpp::NumericMatrix bs_batch(
-        int bs_num_max,                     // Number of bootstraps to perform
-        int max_fork,                       // Maximum number of forked processes per batch
+        int bs_num_max,           // Number of bootstraps to perform
+        int max_fork,             // Maximum number of forked processes per batch
+        bool use_median,
         bool verbose
     );
     
     // Markov-chain Monte Carlo (MCMC) simulation
     Rcpp::NumericMatrix MCMC(
-        int n_steps,                        // Number of steps to take in random walk
-        int neighbor_filter,                // Keep only ever neighbor_filter step
-        double step_size,                   // Step size for random walk
-        double prior_sd,                    // Standard deviation of prior distribution
-        bool start_from_fit,                // Start from parameters found with gradient descent?
+        int n_burnin,             // Number of initial steps to take (to find optimal parameters)
+        int n_steps,              // Number of steps to take in random walk (post-burnin)
+        int neighbor_filter,      // Keep only ever neighbor_filter step
+        double step_size,         // Step size for random walk
+        double prior_sd,          // standard deviation to use in prior
+        bool start_from_fit,      // Start from parameters found with gradient descent? 
+        bool use_median,
         bool verbose
     );
     
@@ -348,25 +358,25 @@ class wspc {
     void estimate_initial_parameters();
     
     // Check and correct parameter feasibility
-    Rcpp::List check_parameter_feasibility(const sVec& parameters_var);
+    void check_parameter_feasibility(const sVec& parameters_var);
     
     // ***** export data to R
     Rcpp::List results(); 
     
     // ***** misc and debugging 
     
-    // Wrap neg_loglik in form needed for R
-    double neg_loglik_debug(
+    // Wrap compute_nll in form needed for R
+    double compute_nll_debug(
         const dVec& x
     );
     
-    // Wrap bounded_nll in form needed for R
-    double bounded_nll_debug(
+    // Wrap compute_bnll in form needed for R
+    double compute_bnll_debug(
         const dVec& x
     );
     
-    // Wrap grad_bounded_nll_debug in form needed for R
-    Rcpp::NumericVector grad_bounded_nll_debug(
+    // Wrap grad_compute_bnll_debug in form needed for R
+    Rcpp::NumericVector grad_compute_bnll_debug(
         const dVec& x 
     ) const;
    
@@ -426,6 +436,8 @@ NumericVector to_NumVec(const dVec& vec);
 NumericVector to_NumVec(const IntegerVector& vec);
 // ... convert to NumericMatrix
 NumericMatrix to_NumMat(const sMat& mat);
+// ... overload, from vector<dVec>
+NumericMatrix to_NumMat(const std::vector<dVec>& mat);
 
 // Convert to IntegerVector
 // ... from std::vector with int
@@ -478,6 +490,8 @@ double vmean_range(const NumericVector& x, const int& start, const int& end);
 dVec roll_mean(const dVec& series, int filter_ws);
 
 // Variance of vector elements 
+double vvar(const dVec& x);
+// ... overload 
 sdouble vvar(const sVec& x);
 // ... overload 
 double vvar(const eVec& x);
