@@ -14,6 +14,23 @@ date: "`r Sys.Date()`"
 - Ensure nested loops for matrix operations have the major axis (column) on outside. 
 - Extracellular (out-of-soma) transcripts do not follow a Poisson distribution, and so any attempt to model them with wisp needs to account for this. 
 
+## Version 2.3 (June 16, 2026)
+
+- Part 1 of a major code refactor/optimization. 
+- Improved algorithm in <span class = "function">check_parameter_feasibility</span> for finding nearby feasible initial parameters.
+- Improved placement of <span class = "function">check_parameter_feasibility</span> within the various fit, MCMC, and bootstrap pipelines.
+- Converted several large-signature stand-alone functions into wspc methods: <span class = "function">compute_gamma_dispersion</span>, <span class = "function">make_extrapolation_pool</span>, <span class = "function">find_count_log_means</span>, <span class = "function">estimate_change_points</span>, and <span class = "function">estimate_initial_parameters</span>. 
+- Simplified parameter vector handling. 
+- Wrote checks into tutorials, to ensure code changes do not change results. 
+- Replaced some R Lists with std::vector.
+- Improved weight-matrix construction.
+- Replaced pcg with std rng, to ease licensing issues.
+- Removed stan variables from wspc objects.
+- Replaced R-style masking with numeric indexing for summed count data. 
+- Added <span class = "code_variable">print.settings</span> argument <span class = "code_variable">splitting_factor_colors</span> to <span class = "function">wisp</span> to allow users to specify colors for the splitting factor in ratecount and timeseries plots. 
+- Performed extensive optimization of the code, leading to a x2 or x3 speedup in running <span class = "function">wisp</span>. 
+- Documentation updated, but not yet rebuilt. 
+
 ## Version 2.2 (June 5, 2026)
 
 - Added <span class = "code_variable">model.settings</span> argument <span class = "code_variable">max_bin</span> to <span class = "function">wisp</span> which allows users to specify the largest bin number. If left at zero, the function will infer the maximum bin number from the count data.
