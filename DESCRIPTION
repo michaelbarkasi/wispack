@@ -2,7 +2,7 @@ Package: wispack
 Type: Package
 Encoding: UTF-8
 Title: Warped-sigmoid Poisson-process mixed-effects models (WSPmm)
-Version: 2.3
+Version: 2.4
 Date: 2025-06-05
 Author: Michael Barkasi
 Maintainer: Michael Barkasi <barkasi@wustl.edu>

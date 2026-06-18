@@ -67,11 +67,33 @@ static const double rt_lower_bound = -0.01; // Technically zero, but need wiggle
  *  
  */
 
-// Main class **********************************************************************************************************
+// Classes and structures **********************************************************************************************
 
-/*
- * Object class to hold and fit Warped Sigmoidal Poisson-Process Mixed-Effect Model (WSPmm, aka "WiSP") model. 
- */
+// Variables related to model fitting 
+struct ModelFit {
+  CharacterVector mc_list = {"Rt", "tslope", "tpoint"}; 
+  CharacterVector param_names;            // list holding the names of the model parameters as they appear in fitted_parameters
+  NumericVector params;                   // vector holding the model parameters
+  int max_evals;                          // max number of evaluations
+  int success_code;
+  int num_evals;
+  int boundary_vec_size;                  // number of boundary components
+  unsigned int rng_seed;                  // seed for random number generator
+  double bnll;
+  double nll;
+  double ctol;                            // convergence tolerance
+  double max_penalty_at_distance_factor;  // the max penalty when far from the boundary, as fraction of initial nll
+  double warp_precision;                  // precision surviving in calculations of warping
+  double inf_warp;                        // pseudo-infinity value for warping (representing no warp boundary)
+  eVec warp_bounds;                       // warping bounds for each model component
+  eVec bp_coefs;                          // coefficients used to scale boundary penality so it's negligible when far from boundary, and infinity at boundary
+  std::vector<dVec> gamma_dispersion;     // dispersion terms for "kernel" of gamma-Poisson model
+  /*
+   * Basic idea of boundary penalty: there will be a number of relevant distances to a boundary. Want to transform
+   *  these distances so that they go to infinity as they approach zero, yet while they are 
+   *  sufficiently far from zero ("at distance"), they are not too large.
+   */
+};
 
 // Indexes of parameter vector for quick access of different kinds of model parameters
 struct ParamIdx {
@@ -87,156 +109,124 @@ struct ParamIdx {
   iVec baseline;
 };
 
+// Indexes of factor sizes
+struct FactorSizes {
+  int ran;
+  int context;
+  int species;
+  int treatments;
+  int bin;
+  int fix;
+  int count_rows;
+};
+
+// Vectors of grouping variable levels 
+struct GroupingLvls {
+  CharacterVector ran;     // levels of random effect grouping variable
+  CharacterVector context; // levels of context grouping variable (fixed-effects)
+  CharacterVector species; // levels of species grouping variable (fixed-effects)
+};
+
+// Summed count data: data frame (plus extras) of summed count data, with columns for factors and predicted values
+struct SummedCount {
+  dVec bin;                         // bin column of summed data
+  dVec count;                       // count column of summed data
+  dVec count_log;                   // log of summed counts
+  dVec pr_log;                      // log of values predicted by model
+  dVec pr;                          // values predicted by model
+  iVec ran;                         // numeric encoding of ran factor, with 0 as reference level
+  iVec cxt;                         // numeric encoding of context factor
+  iVec sps;                         // numeric encoding of species factor
+  iVec trt;                         // numeric encoding of treatment factor
+  eMat weights;                     // weight matrix, rows as rows of summed count data, columns as treatments (first column is reference), giving weight of each treatment for each row
+  IntegerVector idx_mc_unique;      // count data rows at which model component values will change
+  IntegerVector r_idx;              // indexes of rows with "none" in summed count data
+  IntegerVector not_na_idx;         // indexes of non-NA rows in summed count data
+  LogicalVector not_na_mask;        // mask of non-NA rows in summed count data
+  LogicalVector not_none_mask;      // mask of rows in summed count data with "none" in ran
+  std::vector<iVec> extrap_pool;    // list of summed-count indexes giving summed count rows from which to extrapolate
+  std::vector<iVec> token_pool;     // list of token count indexes associated with each summed count row
+  dVec tokens;                      // token (non-summed) count data from which this structure was built
+  std::vector<std::vector<NumericMatrix>> count_log_avg;   // list of average log counts (NumericMatrix) for each context-species combination
+};
+
+// Variables related to change-point detection 
+struct ChangePoints {
+  IntegerMatrix deg;                                  // matrix of degrees for each context (column) -- species (rows) pair
+  std::vector<std::vector<IntegerMatrix>> found;      // list of found change points (IntegerMatrix) for each context-species combination
+  std::vector<std::vector<NumericMatrix>> found_trt;  // list of found change points (NumericMatrix) for each context-species combination, averaged across treatments
+  double buffer_factor;                               // scaling factor for buffer value, the minimum distance between transition points 
+  double tpoint_buffer;                               // min number of bins between transition points (immutable structural parameter)
+  String LRO_cost;                                    // Cost measure for LRO_grid_search: AIC or BIC
+  NumericMatrix LRO_grid_search_results;              // matrix to hold results of LRO_grid_search, with columns for settings and cost measure
+  double LROcutoff;                                   // cutoff (x sd) for likelihood ratio outlier detection
+  double LROwindow_factor;                            // factor for window size in likelihood ratio outlier detection (bigger is bigger window)
+  double rise_threshold_factor;                       // amount of detected rise as fraction of total required to end run
+  double min_initialization_slope = 0.25;             // minimum slope for initialization of transition slopes
+  int ws;                                             // running window size for likelihood ratio outlier detection (high-pass filter)
+};
+
+// Structure to hold effects data 
+struct EffectsVars {
+  CharacterVector fix_names;                     // names of fixed effect variables
+  std::vector<CharacterVector> fix_lvls;         // levels for each fixed effect
+  std::vector<CharacterVector> fix_trt;          // treatment levels for each fixed effect
+  std::vector<CharacterVector> trt_components;   // all possible treatment combinations, level components
+  CharacterVector trt_lvls;                      // all possible treatment combinations, levels as single-string name
+  CharacterVector fix_ref;                       // reference level for each fixed effect
+  CharacterVector trt_KO;                        // Names of treatments to "knock out" (remove from model), if any. 
+  eMat weight_rows;                              // Specifies when predicting parameter values for treatment level tr_predict, whether treatment level tr_input's effect be applied
+  IntegerVector timeseries_rank;                 // integer sequence the elements of which are ranks, element names as elements from the special "timeseries" fixed effect variable, giving order of time series
+  LogicalVector is_time = {false};               // logical vector to track which fixed effect levels are in "timeseries"
+};
+
+// Object class to hold and fit Warped Sigmoidal Poisson-Process Mixed-Effect Model (WSPmm, aka "WiSP") model.
 class wspc {
   
   public:
     
     // Fields **********************************************************************************************************
     
-    // Data sizes
-    int n_count_rows;                       // number of rows in summed count data frame
-    int n_treatments;                       // number of treatment combinations (including the reference, i.e. no treatment)
-    int n_bin;                              // max bin (i.e., number of bins)
-    iVec factor_sizes;                      // lengths of the vectors holding factor levels, in order of summed count construction: <n_ran, n_context, n_species, n_treatments, n_bin>
-    
-    // Data variables, numeric
-    dVec bin;                               // bin column of summed data
-    dVec count;                             // count column of summed data
-    dVec count_log;                         // log of summed counts
-    dVec count_tokenized;                   // token (non-summed) count data
-    
-    // Data variables, factors
-    iVec ran_num;                           // numeric encoding of ran factor, with 0 as reference level
-    iVec context_num;                       // numeric encoding of context factor
-    iVec species_num;                       // numeric encoding of species factor
-    iVec treatment_num;                     // numeric encoding of treatment factor
-    
-    // Model predictions, Rcpp 
-    NumericVector predicted_rates_log;      // log of values predicted by model
-    NumericVector predicted_rates;          // values predicted by model
-    
-    // Fixed and random effect variables
-    CharacterVector fix_names;              // names of fixed effect variables
-    CharacterVector wfactors_names = {"point", "rate", "slope"};
-    std::vector<CharacterVector> fix_lvls;  // levels for each fixed effect
-    std::vector<CharacterVector> fix_trt;                // treatment levels for each fixed effect
-    std::vector<CharacterVector> treatment_components;   // all possible treatment combinations, level components
-    CharacterVector treatment_lvls;                      // all possible treatment combinations, levels as single-string name
-    CharacterVector fix_ref;                // reference level for each fixed effect
-    CharacterVector trtKO;                  // Names of treatments to "knock out" (remove from model), if any. 
-    IntegerVector timeseries_rank;          // integer sequence the elements of which are ranks, element names as elements from the special "timeseries" fixed effect variable, giving order of time series
-    
-    // Grouping variables
-    CharacterVector context_lvls;           // levels of context grouping variable (fixed-effects)
-    CharacterVector species_lvls;           // levels of species grouping variable (fixed-effects)
-    CharacterVector ran_lvls;               // levels of random effect grouping variable
-    
-    // Variables to help with data manipulation
-    eMat weights;                           // weight matrix, rows as rows of summed count data, columns as treatments (first column is reference)
-    eMat weight_rows;                       // ... for making weights matrix and initial effects estimates
-    IntegerVector idx_mc_unique;            // count data rows at which model component values will change
-    std::vector<iVec> token_pool;           // list of token count indexes associated with each summed count row
-    std::vector<iVec> extrapolation_pool;   // list of summed-count indexes giving summed count rows from which to extrapolate
-    IntegerVector r_idx;                    // indexes of rows with "none" in count
-    IntegerVector count_not_na_idx;         // indexes of non-NA rows in summed count data
-    LogicalVector count_not_na_mask;        // mask of non-NA rows in summed count data
-    LogicalVector not_none_mask;            // mask of rows in summed count data with "none" in ran
-    bool round_none;                        // whether to round extrapolated "none" counts to nearest integer
-    
-    // Variables related to model parameters
-    CharacterVector mc_list = {"Rt", "tslope", "tpoint"}; 
-    IntegerMatrix degMat;                   // matrix of degrees for each context (column) -- species (rows) pair
-    std::vector<std::vector<IntegerMatrix>> found_cp;       // list of found change points (IntegerMatrix) for each context-species combination
-    std::vector<std::vector<NumericMatrix>> found_cp_trt;   // list of found change points (NumericMatrix) for each context-species combination, averaged across treatments
-    std::vector<std::vector<NumericMatrix>> count_log_avg_mat;   // list of average log counts (NumericMatrix) for each context-species combination
-    NumericVector fitted_parameters;        // vector holding the model parameters
-    CharacterVector param_names;            // list holding the names of the model parameters as they appear in fitted_parameters
-    double buffer_factor;                   // scaling factor for buffer value, the minimum distance between transition points 
-    double tpoint_buffer;                   // min number of bins between transition points (immutable structural parameter)
-    double warp_precision;                  // precision surviving in calculations of warping
-    double inf_warp;                        // pseudo-infinity value for warping (representing no warp boundary)
-    eVec warp_bounds;                       // warping bounds for each model component
+    // Main structures
+    ModelFit mf;                            // Variables related to fitting model
+    FactorSizes n_ = {0,0,0,0,0,0,0};       // Data sizes
+    SummedCount sc;                         // Summed count data 
+    EffectsVars ev;                         // Fixed and random effect variables
+    GroupingLvls grouping_lvls;             // levels of grouping variables
+    ChangePoints cp;                        // Variables related to change-point detection
     
     // Indices for managing parameters vector
-    ParamIdx param_idx; // ... indexes of parameter vector for quick access of different kinds of model parameters
+    ParamIdx param_idx; 
     std::vector<std::vector<std::vector<iVec>>> beta_idx;
     std::vector<iVec> wfactor_idx; 
     
-    // Variables for initial degree estimation
-    String LRO_cost;                        // Cost measure for LRO_grid_search: AIC or BIC
-    NumericMatrix LRO_grid_search_results;  // matrix to hold results of LRO_grid_search, with columns for settings and cost measure
-    double LROcutoff;                       // cutoff (x sd) for likelihood ratio outlier detection
-    double LROwindow_factor;                // factor for window size in likelihood ratio outlier detection (bigger is bigger window)
-    double rise_threshold_factor;           // amount of detected rise as fraction of total required to end run
-    double min_initialization_slope = 0.25; // minimum slope for initialization of transition slopes
-    int ws;                                 // running window size for likelihood ratio outlier detection (high-pass filter)
-    
-    // Model settings and results 
-    List model_settings;
-    
-    // Variables for optimization
-    int max_evals;                              // max number of evaluations
-    double ctol;                                // convergence tolerance
-    unsigned int rng_seed;                      // seed for random number generator
-    std::vector<dVec> gamma_dispersion;         // dispersion terms for "kernel" of gamma-Poisson model
-    double bnll;
-    double nll;
-    int success_code;
-    int num_evals;
-    NumericVector bs_times;
-    
-    // Boundary penalty variables
-    int boundary_vec_size;                               // number of boundary components
-    eVec bp_coefs;                                       // coefficients used to scale boundary penality so it's negligible when far from boundary, and infinity at boundary
-    double max_penalty_at_distance_factor;               // the max penalty when far from the boundary, as fraction of initial nll
-    
-    /*
-     * Basic idea of boundary penalty: there will be a number of relevant distances to a boundary. Want to transform
-     *  these distances so that they go to infinity as they approach zero, yet while they are 
-     *  sufficiently far from zero ("at distance"), they are not too large.
-     */
-    
+    // Misc
+    bool round_none;                        // whether to round extrapolated "none" counts to nearest integer
+    List model_settings;                    // Copy of the settings sent from R
+   
     // Methods *********************************************************************************************************
    
-    // Constructor
-    wspc(Rcpp::DataFrame count_data, Rcpp::List settings, bool verbose);
-    // Destructor
-    ~wspc();
-    // R copy 
-    wspc clone() const;
-    
-    // Clear Stan
-    void clear_stan_mem();
+    // ***** Constructor and helpers
+    void init_settings(const Rcpp::List& settings);                        // Load settings 
+    void init_gv(const Rcpp::DataFrame& count_data, bool verbose);         // Get grouping variables 
+    void extract_fixeff(const Rcpp::DataFrame& count_data, bool verbose);  // Extract fixed effects 
+    CharacterMatrix set_treatment_levels(bool verbose);                    // Make and set treatment levels 
+    void make_weight_rows_matrix();                                        // Make weight rows matrix 
+    void init_summed_count(const Rcpp::DataFrame& count_data, const CharacterMatrix& effects_rows, bool verbose); // Build summed count data from tokenized count data
+    wspc(Rcpp::DataFrame count_data, Rcpp::List settings, bool verbose);   // Constructor
+    ~wspc();                                                               // Destructor
+    wspc clone() const;                                                    // R copy 
+    void clear_stan_mem();                                                 // Clear Stan
     
     // ***** Initial setup
-    
-    // Get row indices of count data from the given factor levels
-    iVec fetch_count_idx(iVec I);
-    
-    // Computes gamma_dispersion matrix and related vectors
-    void compute_gamma_dispersion();
-    
-    // Find row numbers ("pool") of observed counts to use for extrapolation of "none's"
-    void make_extrapolation_pool(bool verbose);
-    
-    // Use extrapolation pool to extrapolate counts
-    void extrapolate_none();
-    
-    // Function to take means of count_log 
-    void find_count_log_means();
-    
-    // Function to estimate change points
-    void estimate_change_points();
-    
-    // Estimate change points and initial parameters for model fitting
-    void LRO_initial_param_ests(
-      bool verbose = false,
-      double LROwf = 0.0,
-      double LROco = 0.0
-    );
-    
-    // Search for best LRO change-point detection settings
-    void LRO_grid_search(bool verbose);
+    iVec fetch_count_idx(iVec I);                                          // Get row indices of count data from the given factor levels
+    void compute_gamma_dispersion();                                       // Computes gamma_dispersion matrix and related vectors
+    void make_extrapolation_pool();                                        // Find row numbers ("pool") of observed counts to use for extrapolation of "none's"
+    void extrapolate_none();                                               // Use extrapolation pool to extrapolate counts
+    void find_count_log_means();                                           // Function to take means of count_log 
+    void estimate_change_points();                                         // Function to estimate change points
+    void LRO_initial_param_ests(bool verbose = false,double LROwf = 0.0,double LROco = 0.0); // Estimate change points and initial parameters for model fitting
+    void LRO_grid_search(bool verbose);                                    // Search for best LRO change-point detection settings
     
     // ***** computing predicted values from parameters 
     
@@ -261,54 +251,14 @@ class wspc {
     );
     
     // ***** computing objective function (i.e., fitting model and parameter boundary distances)
-    
-    // Compute weighted total nll of observations under the given parameters
-    sdouble compute_nll(
-        const sVec& parameters
-    ) const;
-    
-    // Compute boundary distances
-    sVec boundary_dist(
-        const sVec& parameters
-    ) const;
-    
-    // Compute min boundary penalty
-    sdouble min_boundary_dist(
-        const sVec& parameters
-    ) const;
-    
-    // Wrap neg_min_boundary_dist in form needed for NLopt constraint function
-    static double min_boundary_dist_NLopt(
-        const dVec& x,
-        dVec& grad,
-        void* data
-    );
-    
-    // Compute nll plus boundary penalty (main objective function) 
-    sdouble compute_bnll(
-        const sVec& parameters
-    ) const;
-    
-    // Wrap compute_bnll in form needed for NLopt objective function
-    static double compute_bnll_NLopt(
-        const dVec& x, 
-        dVec& grad, 
-        void* data
-    );
-    
-    // ***** Computing gradients with stan reverse-mode autodiff
-    
-    // Compute the gradient of the compute_bnll function
-    // ... this is the gradient function used in model optimization
-    Eigen::VectorXd grad_compute_bnll(
-        const sVec& p_
-    ) const;
-    
-    // Compute the gradient of the min_boundary_dist function
-    // ... this is the gradient function used in the search for feasible parameters
-    Eigen::VectorXd grad_min_boundary_dist(
-        const sVec& p_
-    ) const;
+    sdouble compute_nll(const sVec& parameters) const;                            // Compute weighted total nll of observations under the given parameters
+    sVec boundary_dist(const sVec& parameters) const;                             // Compute boundary distances
+    sdouble min_boundary_dist(const sVec& parameters) const;                      // Compute min boundary penalty
+    static double min_boundary_dist_NLopt(const dVec& x, dVec& grad, void* data); // Wrap neg_min_boundary_dist in form needed for NLopt constraint function
+    sdouble compute_bnll(const sVec& parameters) const;                           // Compute nll plus boundary penalty (main objective function) 
+    static double compute_bnll_NLopt(const dVec& x, dVec& grad, void* data);      // Wrap compute_bnll in form needed for NLopt objective function
+    Eigen::VectorXd grad_compute_bnll(const sVec& p_) const;                      // Compute the gradient of the compute_bnll function ... this is the gradient function used in model optimization
+    Eigen::VectorXd grad_min_boundary_dist(const sVec& p_) const;                 // Compute the gradient of the min_boundary_dist function ... this is the gradient function used in the search for feasible parameters
     
     // ***** Bootstrapping and model fitting, for statistical testing
     
@@ -345,32 +295,16 @@ class wspc {
     );
     
     // ***** Setting parameters
-    
-    // Estimate initial parameters for model fitting
-    void estimate_initial_parameters();
-    
-    // Check and correct parameter feasibility
-    void check_parameter_feasibility(const sVec& parameters_var);
+    void estimate_initial_parameters();                                // Estimate initial parameters for model fitting
+    void check_parameter_feasibility(const sVec& parameters_var);      // Check and correct parameter feasibility
     
     // ***** export data to R
     Rcpp::List results(); 
     
     // ***** misc and debugging 
-    
-    // Wrap compute_nll in form needed for R
-    double compute_nll_debug(
-        const dVec& x
-    );
-    
-    // Wrap compute_bnll in form needed for R
-    double compute_bnll_debug(
-        const dVec& x
-    );
-    
-    // Wrap grad_compute_bnll_debug in form needed for R
-    Rcpp::NumericVector grad_compute_bnll_debug(
-        const dVec& x 
-    ) const;
+    double compute_nll_debug(const dVec& x);                           // Wrap compute_nll in form needed for R
+    double compute_bnll_debug(const dVec& x);                          // Wrap compute_bnll in form needed for R
+    Rcpp::NumericVector grad_compute_bnll_debug(const dVec& x ) const; // Wrap grad_compute_bnll_debug in form needed for R
    
   };
 
