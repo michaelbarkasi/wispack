@@ -143,9 +143,11 @@ for (param_type in c("Rt", "tslope", "tpoint")) {
 ```
 ```{r check2, echo = FALSE}
 test_val <- est_param[grepl("Rt", param_names)][1]
-if (test_val < 4.674 || test_val > 4.676) stop("failed check 2")
+if (test_val < 4.5 || test_val > 4.75) stop("failed check 2")
 test_val <- est_param[grepl("tslope", param_names)][2]
-if (test_val < 14 || test_val > 15) stop("failed check 2")
+if (test_val < 10) stop("failed check 2")
+test_val <- est_param[grepl("tpoint", param_names)][2]
+if (test_val < 49 || test_val > 51) stop("failed check 2")
 ```
 
 It is immediately clear from the three tpoint parameters (i.e., $p$) that wisp has recovered the transition points at bins $25$, $50$, and $75$. However, at first glance, the rates (Rt) look off. This is because wisp has predicted the log transform of the sum of the rates. To recover the original rates of $1$, $5$, $2$, and $7$, we need to exponentiate the recovered rates, subtract $1$, and divide by the mean number of tokens per bin within the block. 

@@ -135,6 +135,7 @@ void vprintV(
   }
   
 // ... overload for sdouble
+// ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val()
 void vprintV(
     const sVec& vec,
     bool verbose
@@ -142,13 +143,13 @@ void vprintV(
     if (vec.size() > 20) {
       Rcpp::Rcout << "vec (first 20): ";
       for (int i = 0; i < 20; ++i) {
-        Rcpp::Rcout << vec(i).val() << " ";
+        Rcpp::Rcout << autodiff::val(vec(i)) << " ";
       }
       Rcpp::Rcout << std::endl;
     } else { 
       Rcpp::Rcout << "vec: ";
       for (int i = 0; i < vec.size(); ++i) {
-        Rcpp::Rcout << vec(i).val() << " ";
+        Rcpp::Rcout << autodiff::val(vec(i)) << " ";
       }
       Rcpp::Rcout << std::endl;
     } 

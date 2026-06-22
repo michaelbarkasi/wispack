@@ -210,6 +210,8 @@ library(wispack, quietly = TRUE)
 model <- wisp(
     count.data = countdata,
     variables = data.variables,
+    model.settings = list(LRO_cost = "none"),
+    MCMC.settings = list(MCMC.burnin = 0, MCMC.steps = 10), 
     plot.settings = list(
         print.plots = FALSE, 
         dim.bounds = colMeans(layer.boundary.bins)

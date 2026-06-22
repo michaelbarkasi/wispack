@@ -4,11 +4,12 @@
 #define WSPC_H
 
 // Rcpp
-// [[Rcpp::depends(BH)]]
 // [[Rcpp::depends(RcppEigen)]]
-// [[Rcpp::depends(StanHeaders)]]
-#include <stan/math.hpp>                      // pulls in everything from rev/ and prim/
-#include <stan/math/memory/stack_alloc.hpp>   // for better/faster stack memory allocation
+// ... revised by Claude Sonnet 4.6
+// Replaced Stan headers with autodiff (header-only, bundled in inst/include/).
+#include <autodiff/reverse/var.hpp>           // autodiff reverse-mode var type
+#include <autodiff/reverse/var/eigen.hpp>     // Eigen integration + autodiff::gradient()
+#include "autodiff_extensions.h"             // differentiable lgamma/tgamma for autodiff
 #include <Rcpp.h>
 #include <RcppEigen.h>
 #include <Rcpp/Benchmark/Timer.h>
@@ -21,19 +22,46 @@ using namespace Rcpp;
 // [[Rcpp::plugins(cpp14)]]
 
 // Define aliases for convenience
-using sdouble = stan::math::var;
-using sMat = Eigen::Matrix<stan::math::var, Eigen::Dynamic, Eigen::Dynamic>;
-using sVec = Eigen::Matrix<stan::math::var, Eigen::Dynamic, 1>;
+// ... revised by Claude Sonnet 4.6: replaced stan::math::var with autodiff::var
+using sdouble = autodiff::var;
+// ... revised by Claude Sonnet 4.6: added iMat alias (Eigen int matrix, avoids Rcpp caching issues)
+using iMat = Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>;
+using sMat = Eigen::Matrix<autodiff::var, Eigen::Dynamic, Eigen::Dynamic>;
+using sVec = Eigen::Matrix<autodiff::var, Eigen::Dynamic, 1>;
 using dVec = std::vector<double>; 
 using iVec = std::vector<int>;
 using eMat = Eigen::MatrixXd;
 using eVec = Eigen::VectorXd;
-constexpr sdouble (*spower)(const sdouble&, const sdouble&) = stan::math::pow;
-constexpr sdouble (*smax)(const sVec&) = stan::math::max;
-constexpr sdouble (*smin)(const sVec&) = stan::math::min;
-constexpr sdouble (*slog)(const sdouble&) = stan::math::log;
-constexpr sdouble (*sexp)(const sdouble&) = stan::math::exp;
-constexpr sdouble (*ssqrt)(const sdouble&) = stan::math::sqrt;
+
+// ... revised by Claude Sonnet 4.6
+// Replaced constexpr function-pointer aliases with inline wrappers.
+// autodiff uses ADL (argument-dependent lookup) for standard math overloads.
+inline sdouble spower(const sdouble& a, const sdouble& b) { using std::pow;  return pow(a, b); }
+inline sdouble slog(const sdouble& a)                     { using std::log;  return log(a); }
+inline sdouble sexp(const sdouble& a)                     { using std::exp;  return exp(a); }
+inline sdouble ssqrt(const sdouble& a)                    { using std::sqrt; return sqrt(a); }
+
+// smin/smax over a sVec: select the argmin/argmax element so the gradient flows through it.
+// This mirrors Stan's stan::math::min/max behaviour (subgradient at the selected index).
+inline sdouble smin(const sVec& v) {
+    int idx = 0;
+    double best = autodiff::val(v(0));
+    for (int i = 1; i < v.size(); i++) {
+        double vi = autodiff::val(v(i));
+        if (vi < best) { best = vi; idx = i; }
+    }
+    return v(idx);
+}
+inline sdouble smax(const sVec& v) {
+    int idx = 0;
+    double best = autodiff::val(v(0));
+    for (int i = 1; i < v.size(); i++) {
+        double vi = autodiff::val(v(i));
+        if (vi > best) { best = vi; idx = i; }
+    }
+    return v(idx);
+}
+
 typedef int IndexType;
 
 // Constants ***********************************************************************************************************
@@ -152,7 +180,9 @@ struct SummedCount {
 
 // Variables related to change-point detection 
 struct ChangePoints {
-  IntegerMatrix deg;                                  // matrix of degrees for each context (column) -- species (rows) pair
+  // ... revised by Claude Sonnet 4.6: changed from Rcpp::IntegerMatrix to Eigen::iMat (avoids
+  //     Rcpp's cached INTEGER() pointer becoming stale under autodiff's heap-intensive allocation)
+  iMat deg;                                           // matrix of degrees for each context (column) -- species (rows) pair
   std::vector<std::vector<IntegerMatrix>> found;      // list of found change points (IntegerMatrix) for each context-species combination
   std::vector<std::vector<NumericMatrix>> found_trt;  // list of found change points (NumericMatrix) for each context-species combination, averaged across treatments
   double buffer_factor;                               // scaling factor for buffer value, the minimum distance between transition points 

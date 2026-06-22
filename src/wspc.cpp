@@ -331,7 +331,6 @@ void wspc::init_summed_count(
               sc.sps[idx]         = s;
               sc.trt[idx]         = t;
               sc.weights.row(idx) = ev.weight_rows.row(t);
-              
               if (is_none) {
                 // "none" ran level: no real tokens — count stays 0, pool stays empty
                 sc.not_na_mask(idx) = true;
@@ -412,6 +411,12 @@ wspc::wspc(
     // Find and set treatment levels 
     CharacterMatrix effects_rows = set_treatment_levels(verbose);
     
+    // Recalculate n_.count_rows now that n_.treatments is known
+    // ... revised by Claude Sonnet 4.6: n_.count_rows was computed in init_gv before n_.treatments
+    //     was set, so it was always 0. Recalculate here after set_treatment_levels().
+    n_.count_rows = n_.bin * n_.context * n_.species * n_.ran * n_.treatments;
+    vprint("Total rows in summed count data: " + std::to_string(n_.count_rows), verbose);
+    
     // Make weight rows matrix
     make_weight_rows_matrix();
     
@@ -441,10 +446,9 @@ wspc wspc::clone() const {
   return this_copy;
 }
 
-// Clear stan
+// ... revised by Claude Sonnet 4.6: no-op; autodiff manages tape memory automatically
 void wspc::clear_stan_mem() {
-    // Recover memory from stan
-    stan::math::recover_memory();
+    // No-op: autodiff manages tape memory automatically; nothing to recover.
   }
 
 /*
@@ -513,14 +517,14 @@ void wspc::make_extrapolation_pool() {
 
 void wspc::extrapolate_none() {
     for (int r : sc.r_idx) {
-      sc.count[r] = 0.0;
       int extrap_sz = sc.extrap_pool[r].size();
       if (extrap_sz > 0) {
+        sc.count[r] = 0.0;
         for (int i : sc.extrap_pool[r]) {sc.count[r] += std::log(sc.count[i] + 1.0);}
         sc.count[r] /= (double)extrap_sz;
         sc.count[r] = std::exp(sc.count[r]) - 1.0; // Convert back from log space
         if (round_none) {sc.count[r] = std::round(sc.count[r]);}
-      }
+      } 
     }
   }
 
@@ -555,9 +559,8 @@ void wspc::estimate_change_points() {
     const int n_ran_trt = n_.ran * n_.treatments;
     
     // Initialize matrix to hold degrees of each context-species combination
-    cp.deg = IntegerMatrix(n_.species, n_.context);
-    rownames(cp.deg) = grouping_lvls.species;
-    colnames(cp.deg) = grouping_lvls.context;
+    // ... revised by Claude Sonnet 4.6: use Eigen iMat (no Rcpp caching layer)
+    cp.deg = iMat::Zero(n_.species, n_.context);
     
     // Reserve space to hold results matrices for each context-species combination 
     cp.found = std::vector<std::vector<IntegerMatrix>>(n_.context, std::vector<IntegerMatrix>(n_.species));
@@ -886,7 +889,9 @@ sdouble wspc::compute_nll(
     // Compute the log-likelihood of the count data, assuming a Poisson distribution with Gamma kernel for over-dispersion
     for (int r : sc.not_na_idx) {
       
-      if (std::isinf(predicted_rates_log_var(r)) || predicted_rates_log_var(r) < rt_lower_bound || std::isnan(predicted_rates_log_var(r))) {
+      // ... revised by Claude Sonnet 4.6: replaced std::isinf/isnan(sdouble) with autodiff::val() wrappers;
+      //     replaced stan::math::poisson_lpmf with log_dPois
+      if (std::isinf(autodiff::val(predicted_rates_log_var(r))) || predicted_rates_log_var(r) < rt_lower_bound || std::isnan(autodiff::val(predicted_rates_log_var(r)))) {
         return sdouble(inf_);
       } else {
         
@@ -903,8 +908,8 @@ sdouble wspc::compute_nll(
         
         // Analytic solution to the log of the integral from 0 to positive infinity of the Poisson times Gamma densities
         if (gamma_variance == 0) { 
-          // if no over-dispersion, just use Poisson
-          log_lik += stan::math::poisson_lpmf(sc.count_log[r], predicted_rates_log_var(r));
+          // if no over-dispersion, just use Poisson (using local log_dPois instead of stan::math::poisson_lpmf)
+          log_lik += log_dPois(sdouble(sc.count_log[r]), predicted_rates_log_var(r));
         } else if (sc.count_log[r] > 0.0 && predicted_rates_log_var(r) > 0.0) { 
           // otherwise, use Poisson-Gamma integral
           log_lik += slog(poisson_gamma_integral(sc.count_log[r], predicted_rates_log_var(r), gamma_variance));
@@ -918,7 +923,8 @@ sdouble wspc::compute_nll(
     sdouble negloglik = -log_lik;
     
     // Check for infinities (zero likelihood)
-    if (std::isinf(negloglik) || negloglik > sdouble(inf_)) {negloglik = sdouble(inf_);}
+    // ... revised by Claude Sonnet 4.6: replaced std::isinf(sdouble) with autodiff::val() wrapper
+    if (std::isinf(autodiff::val(negloglik)) || negloglik > sdouble(inf_)) {negloglik = sdouble(inf_);}
     
     return negloglik;
     
@@ -996,8 +1002,9 @@ sVec wspc::boundary_dist(
     } 
     
     // Check for nan
+    // ... revised by Claude Sonnet 4.6: replaced std::isnan(sdouble) with autodiff::val() wrapper
     for (int i = 0; i < mf.boundary_vec_size; i++) {
-      if (std::isnan(boundary_dist_vec(i))) {
+      if (std::isnan(autodiff::val(boundary_dist_vec(i)))) {
         boundary_dist_vec(i) = 0.0;
       }
     }
@@ -1025,13 +1032,13 @@ double wspc::min_boundary_dist_NLopt(
     
     // Grab model
     wspc* model = static_cast<wspc*>(data);
-    
-    // Convert dVec to Eigen with stan
+    // Convert dVec to Eigen with autodiff var
     sVec parameters_var = to_sVec(x);
     
     // Compute min_boundary_dist
+    // ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val()
     sdouble fx = model->min_boundary_dist(parameters_var);
-    if (!std::isfinite(fx.val())) {fx = 0.0;}
+    if (!std::isfinite(autodiff::val(fx))) {fx = 0.0;}
     
     // Compute gradient if needed
     if (!grad.empty()) {
@@ -1045,7 +1052,7 @@ double wspc::min_boundary_dist_NLopt(
     }
     
     // Return the value
-    return fx.val(); 
+    return autodiff::val(fx); 
     
   } 
 
@@ -1080,7 +1087,7 @@ double wspc::compute_bnll_NLopt(
     
     // Grab model
     wspc* model = static_cast<wspc*>(data);
-    // Convert dVec to Eigen with stan
+    // Convert dVec to Eigen with autodiff var
     sVec parameters_var = to_sVec(x);
     // Compute bounded_nll
     sdouble fx = model->compute_bnll(parameters_var);
@@ -1092,13 +1099,17 @@ double wspc::compute_bnll_NLopt(
     } 
     
     // Return the value of the nll
-    return fx.val(); 
+    // ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val()
+    return autodiff::val(fx); 
     
   }
 
 /*
  * *************************************************************************
- * Computing gradients with stan reverse-mode autodiff
+ * Computing gradients with autodiff reverse-mode autodiff
+ * ... revised by Claude Sonnet 4.6: replaced stan::math::nested_rev_autodiff + grad()
+ *     with autodiff::gradient(y, x), which returns Eigen::VectorXd directly.
+ *     No tape context needs to be set up or recovered manually.
  */
 
 // Compute the gradient of the compute_bnll function
@@ -1106,18 +1117,12 @@ double wspc::compute_bnll_NLopt(
 Eigen::VectorXd wspc::grad_compute_bnll(
     const sVec& p_
   ) const { 
-    // Create nested autodiff context
-    stan::math::nested_rev_autodiff nested;
-    // Make copy to create var nodes for p
+    // Copy to create fresh independent var nodes
     sVec p = p_;
-    // Initialize bnll variable
+    // Evaluate objective; autodiff records the tape
     sdouble bnll = compute_bnll(p);
-    // Initialize variable to hold gradient
-    Eigen::VectorXd gr_bnll(p.size());
-    // Compute bnll and its gradient
-    stan::math::grad(bnll, p, gr_bnll);
-    // Return bnll gradient
-    return gr_bnll;
+    // Back-propagate and return gradient as Eigen::VectorXd
+    return autodiff::gradient(bnll, p);
   }
 
 // Compute the gradient of the min_boundary_dist function
@@ -1125,18 +1130,12 @@ Eigen::VectorXd wspc::grad_compute_bnll(
 Eigen::VectorXd wspc::grad_min_boundary_dist(
     const sVec& p_
   ) const { 
-    // Create nested autodiff context
-    stan::math::nested_rev_autodiff nested;
-    // Make copy to create var nodes for p
+    // Copy to create fresh independent var nodes
     sVec p = p_;
-    // Initialize min_boundary_dist variable
+    // Evaluate objective; autodiff records the tape
     sdouble mbd = min_boundary_dist(p);
-    // Initialize variable to hold gradient
-    Eigen::VectorXd gr_mbd(p.size());
-    // Compute min_boundary_dist and its gradient
-    stan::math::grad(mbd, p, gr_mbd);
-    // Return min_boundary_dist gradient
-    return gr_mbd;
+    // Back-propagate and return gradient as Eigen::VectorXd
+    return autodiff::gradient(mbd, p);
   }
 
 /*
@@ -1150,7 +1149,8 @@ void wspc::fit(const bool verbose) {
     // Set boundary-penalty coefficients 
     vprint("Setting boundary penalty coefficients", verbose);
     sVec initial_params_var = to_sVec(mf.params);
-    double max_penalty_at_distance = compute_nll(initial_params_var).val() * mf.max_penalty_at_distance_factor;
+    // ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val()
+    double max_penalty_at_distance = autodiff::val(compute_nll(initial_params_var)) * mf.max_penalty_at_distance_factor;
     double coefs = std::sqrt(static_cast<double>(mf.boundary_vec_size)/max_penalty_at_distance);
     mf.bp_coefs = to_eVec(boundary_dist(initial_params_var));
     for (int i = 0; i < mf.boundary_vec_size - 1; i++) {mf.bp_coefs(i) = coefs/mf.bp_coefs(i);} 
@@ -1208,7 +1208,8 @@ void wspc::fit(const bool verbose) {
     // Save optimization results
     mf.params = to_NumVec(x);
     mf.bnll = min_fx;
-    mf.nll = final_nll.val();
+    // ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val()
+    mf.nll = autodiff::val(final_nll);
     mf.success_code = sc;
     mf.num_evals = opt.get_numevals();
     
@@ -1462,7 +1463,8 @@ Rcpp::NumericMatrix wspc::MCMC(
       // Set boundary-penalty coefficients 
       vprint("Setting boundary penalty coefficients", verbose);
       sVec initial_params_var = to_sVec(mf.params);
-      double max_penalty_at_distance = compute_nll(initial_params_var).val() * mf.max_penalty_at_distance_factor;
+      // ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val()
+      double max_penalty_at_distance = autodiff::val(compute_nll(initial_params_var)) * mf.max_penalty_at_distance_factor;
       double coefs = std::sqrt(static_cast<double>(mf.boundary_vec_size)/max_penalty_at_distance);
       mf.bp_coefs = to_eVec(boundary_dist(initial_params_var));
       for (int i = 0; i < mf.boundary_vec_size - 1; i++) {mf.bp_coefs(i) = coefs/mf.bp_coefs(i);} 
@@ -1472,12 +1474,12 @@ Rcpp::NumericMatrix wspc::MCMC(
     LogicalVector baseline_mask(n_params);
     baseline_mask.fill(false);
     for (int i : param_idx.baseline) {baseline_mask(i) = true;}
-    
+     
     // Make beta_Rt parameter mask
     LogicalVector beta_Rt_mask(n_params);
     beta_Rt_mask.fill(false);
     for (int i : param_idx.beta_Rt) {beta_Rt_mask(i) = true;} 
-    
+     
     // Run MCMC simulation
     int step = 0;
     int ctr = 0;
@@ -1526,7 +1528,8 @@ Rcpp::NumericMatrix wspc::MCMC(
           // ... calculate step size
           int param_oom = static_cast<int>(std::floor(std::log10(std::abs(params_current(i)))));
           double normalized_step_size = step_size * std::pow(10, static_cast<double>(param_oom + 1.0));
-          double bounded_step_size = normalized_step_size / bd_current_transformed.val();
+          // ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val()
+          double bounded_step_size = normalized_step_size / autodiff::val(bd_current_transformed);
           if (bounded_step_size == 0.0) {
             // ... presumably this case means current parameter is extremely close to zero or very close to boundary
             params_next(i) = rNorm(params_current(i), step_size/10, walk_rng);
@@ -1560,8 +1563,9 @@ Rcpp::NumericMatrix wspc::MCMC(
       }
       
       // Compute likelihoods for this random step
-      double loglik_current = -compute_bnll(to_sVec(params_current)).val();
-      double loglik_next = -compute_bnll(to_sVec(params_next)).val();
+      // ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val()
+      double loglik_current = -autodiff::val(compute_bnll(to_sVec(params_current)));
+      double loglik_next = -autodiff::val(compute_bnll(to_sVec(params_next)));
       // Calculate posteriors and acceptance probability 
       double acceptance = std::exp(
         (loglik_next + prior_next) - 
@@ -1592,7 +1596,8 @@ Rcpp::NumericMatrix wspc::MCMC(
             dVec full_results = to_dVec(params_next);
             full_results.reserve(full_results.size() + 4);
             full_results.push_back(-loglik_next);
-            full_results.push_back(-loglik_next - (bd_current_transformed.val() - 1.0));
+            // ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val()
+            full_results.push_back(-loglik_next - (autodiff::val(bd_current_transformed) - 1.0));
             full_results.push_back(acceptance); // acceptance ratio
             full_results.push_back(double(ctr + 0.0)); // ctr number
             RMW_steps.row(step - n_burnin) = to_NumVec(full_results);
@@ -1901,8 +1906,9 @@ void wspc::check_parameter_feasibility(const sVec& parameters_var) {
         parameters_var, // model parameters for generating prediction
         true            // compute all summed count rows, even with a count value of NA?
       );
+      // ... revised by Claude Sonnet 4.6: replaced std::isnan(sdouble) with autodiff::val() wrapper
       for (int i = 0; i < n_.count_rows; i++) {
-        if (std::isnan(predicted_rates_log_var(i))) {
+        if (std::isnan(autodiff::val(predicted_rates_log_var(i)))) {
           feasible = false;
           break;
         }
@@ -1981,8 +1987,9 @@ void wspc::check_parameter_feasibility(const sVec& parameters_var) {
     // Save feasible parameters and predicted rates 
     if (feasible) {
       mf.params = to_NumVec(feasible_parameters_var);
+      // ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val()
       for (int i = 0; i < n_.count_rows; i++) {
-        sc.pr_log[i] = predicted_rates_log_var(i).val();
+        sc.pr_log[i] = autodiff::val(predicted_rates_log_var(i));
         sc.pr[i] = std::exp(sc.pr_log[i]) - 1.0;
       }
     } 
@@ -2110,9 +2117,10 @@ double wspc::compute_nll_debug(
     sVec parameters_var = to_sVec(x);
     
     // Compute nll
-    double negloglik = compute_nll(parameters_var).val();
+    // ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val()
+    double negloglik = autodiff::val(compute_nll(parameters_var));
     
-    // Clear stan memory
+    // Clear autodiff memory (no-op; kept for API compatibility)
     clear_stan_mem(); 
     
     // Return as double
@@ -2130,13 +2138,14 @@ double wspc::compute_bnll_debug(
      *  comparing stan grad to finite difference in R. 
      */
     
-    // Convert dVec to Eigen with stan
+    // Convert dVec to Eigen with autodiff var
     sVec parameters_var = to_sVec(x);
     
     // Compute bounded_nll
-    double fx = compute_bnll(parameters_var).val();
+    // ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val()
+    double fx = autodiff::val(compute_bnll(parameters_var));
     
-    // Clear stan memory
+    // Clear autodiff memory (no-op; kept for API compatibility)
     clear_stan_mem(); 
     
     // Return the value of compute_bnll

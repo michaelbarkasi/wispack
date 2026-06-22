@@ -78,6 +78,7 @@ double log_dNorm(
   }
 
 // Log of density of gamma distribution
+// ... revised by Claude Sonnet 4.6: replaced stan::math::tgamma with autodiff_ext::s_tgamma
 sdouble log_dGamma(
     const sdouble& x,              // value to evaluate
     const sdouble& expected_value, // expected value   
@@ -89,11 +90,12 @@ sdouble log_dGamma(
     sdouble shape = (expected_value * expected_value) / variance;
     sdouble rate = shape / expected_value;
     return slog(
-      (spower(rate, shape) * spower(x, shape - 1.0) * sexp(-rate * x)) / stan::math::tgamma(shape)
+      (spower(rate, shape) * spower(x, shape - 1.0) * sexp(-rate * x)) / autodiff_ext::s_tgamma(shape)
     );
   }
 
 // Density of gamma distribution
+// ... revised by Claude Sonnet 4.6: replaced stan::math::tgamma with autodiff_ext::s_tgamma
 sdouble dGamma(
     const sdouble& x,              // value to evaluate
     const sdouble& expected_value, // expected value   
@@ -105,19 +107,17 @@ sdouble dGamma(
     sdouble shape = (expected_value * expected_value) / variance;
     sdouble rate = shape / expected_value;
     return (
-      (spower(rate, shape) * spower(x, shape - 1.0) * sexp(-rate * x)) / stan::math::tgamma(shape)
+      (spower(rate, shape) * spower(x, shape - 1.0) * sexp(-rate * x)) / autodiff_ext::s_tgamma(shape)
     );
   }
 
 // Log of density of Poisson distribution
+// ... revised by Claude Sonnet 4.6: replaced stan::math::lgamma with autodiff_ext::s_lgamma
 sdouble log_dPois(
     const sdouble& x,        // value to evaluate
     const sdouble& lambda    // rate parameter
   ) {
-    return x * slog(lambda) - lambda - stan::math::lgamma(x + 1.0);
-    // ^ Hand-written function for log Poisson density
-    //  ... could use stan implementation: stan::math::poisson_lpmf(count_log(r), pred_rate_log);
-    //  ... but seems identical in results and speed?
+    return x * slog(lambda) - lambda - autodiff_ext::s_lgamma(x + 1.0);
   }
 
 // Density of Poisson distribution
@@ -129,6 +129,7 @@ sdouble dPois(
   }
 
 // Integral of Poisson-Gamma distribution, from 0 to positive infinity
+// ... revised by Claude Sonnet 4.6: replaced stan::math::lgamma with autodiff_ext::s_lgamma
 sdouble poisson_gamma_integral(
     sdouble y, // observed count value
     sdouble r, // expected process rate drawn from the gamma distribution
@@ -143,8 +144,8 @@ sdouble poisson_gamma_integral(
     // Idea: This is an analytic solution to the integral of dPois(y, lambda) * dGamma(lambda, r, v) from 0 to positive infinity. 
     //        ... The solution takes the form of a ratio num/denom which is subject to overflow/underflow, and so instead of 
     //            computing this ratio directly, we compute the log of the numerator and denominator separately, and then exponentiate the difference.
-    sdouble log_num = s * slog(R) + stan::math::lgamma(y + s); 
-    sdouble log_denom = stan::math::lgamma(y + 1.0) + stan::math::lgamma(s) + (y + s) * slog(R + 1.0);
+    sdouble log_num = s * slog(R) + autodiff_ext::s_lgamma(y + s); 
+    sdouble log_denom = autodiff_ext::s_lgamma(y + 1.0) + autodiff_ext::s_lgamma(s) + (y + s) * slog(R + 1.0);
     sdouble integral = sexp(log_num - log_denom);
    
     // note: this return value is *not* the log of the density! It's the density itself. 
@@ -212,21 +213,23 @@ sdouble warp_mc(
   }
 
 // Wrapper for R
+// ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val()
 // [[Rcpp::export]]
 double warp_mc_R(
     const double& s,        // value to warp
     const double& b,        // bound on this value 
     const double& w         // warping parameter
   ) {
-    return warp_mc(sdouble(s), b, sdouble(w)).val();
+    return autodiff::val(warp_mc(sdouble(s), b, sdouble(w)));
   }
 
 // Numerically stable implementation of sigmoid function
+// ... revised by Claude Sonnet 4.6: replaced x.val() with autodiff::val(x)
 sdouble sigmoid_stable(
     const sdouble& x
   ) {
     // Implementation of sigmoid function that's numerically stable
-    if (x.val() > 0) {
+    if (autodiff::val(x) > 0) {
       return 1.0 / (1.0 + sexp(-x));
     } else {
       sdouble exp_x = sexp(x);
@@ -235,11 +238,12 @@ sdouble sigmoid_stable(
   }
 
 // Wrapper for R
+// ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val()
 // [[Rcpp::export]]
 double sigmoid_stable_R(
     const double& x
   ) {
-    return sigmoid_stable(sdouble(x)).val();
+    return autodiff::val(sigmoid_stable(sdouble(x)));
   }
 
 // Core poly-sigmoid function of the model
@@ -270,8 +274,9 @@ sdouble poly_sigmoid(
     } else {
       sdouble ps = Rt(0);
       if (Rt.size() < deg + 1) {Rcpp::stop("Error in poly_sigmoid: Rt.size() < deg + 1");}
+      // ... revised by Claude Sonnet 4.6: replaced std::isinf(sdouble) with std::isinf(autodiff::val(...))
       for (int i = 0; i < deg; i++) {
-        if (std::isinf(Rt(i+1))) {
+        if (std::isinf(autodiff::val(Rt(i+1)))) {
           return Rt(i+1);
         } else {
           sdouble sig_term = tslope(i)*(b - tpoint(i));
@@ -284,6 +289,7 @@ sdouble poly_sigmoid(
   }
 
 // Wrapper for R
+// ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val()
 // [[Rcpp::export]]
 double poly_sigmoid_R(
     const double& b,                   // input variable
@@ -293,13 +299,13 @@ double poly_sigmoid_R(
     const NumericVector& tpoint        // vector containing the point of each transition in the bin space
   ) {
     
-    return poly_sigmoid(
+    return autodiff::val(poly_sigmoid(
       sdouble(b), 
       deg, 
       to_sVec(Rt), 
       to_sVec(tslope), 
       to_sVec(tpoint)
-    ).val();
+    ));
     
   }
 

@@ -20,13 +20,14 @@ double vmean(
   }
 
 // ... overload 
+// ... revised by Claude Sonnet 4.6: replaced std::isnan(sdouble) with autodiff::val() wrapper
 sdouble vmean(
     const sVec& x
   ) {
     sdouble sum = 0.0;
     int ctr = 0;
     for (sdouble xi : x) {
-      if (!std::isnan(xi)) {
+      if (!std::isnan(autodiff::val(xi))) {
         sum += xi;
         ctr++;
       }
@@ -98,6 +99,7 @@ double vmean_range(
   }
 
 // ... overload 
+// ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val(); std::isnan on autodiff::val()
 sdouble vmean_range(
     const sVec& x,
     const int& start,
@@ -107,7 +109,7 @@ sdouble vmean_range(
     sdouble sum = 0.0;
     int ctr = 0;
     for (int i = start; i < end; i++) {
-      if (!std::isnan(x[i].val())) {
+      if (!std::isnan(autodiff::val(x[i]))) {
         sum += x[i];
         ctr++;
       }
@@ -167,6 +169,7 @@ double vvar(
   }
 
 // ... overload
+// ... revised by Claude Sonnet 4.6: replaced std::isnan(sdouble) with autodiff::val() wrapper
 sdouble vvar(
     const sVec& x
   ) {
@@ -174,7 +177,7 @@ sdouble vvar(
     sdouble sum = 0.0;
     int ctr = 0;
     for (sdouble xi : x) {
-      if (!std::isnan(xi)) {
+      if (!std::isnan(autodiff::val(xi))) {
         sum += (xi - mean) * (xi - mean);
         ctr++;
       }

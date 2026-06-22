@@ -97,12 +97,13 @@ eVec to_eVec(
   }
 
 // ... overload, from sVec
+// ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val()
 eVec to_eVec(
     const sVec& vec
   ) {
     eVec e_vec(vec.size());
     for (int i = 0; i < vec.size(); i++) {
-      e_vec(i) = static_cast<double>(vec(i).val());
+      e_vec(i) = autodiff::val(vec(i));
     }
     return e_vec;
   }
@@ -110,15 +111,17 @@ eVec to_eVec(
 // Convert to NumericVector ********************************************************************************************
 
 // ... from Eigen::Matrix with sdouble elements
+// ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val(); std::isnan on autodiff::val()
 NumericVector to_NumVec(
     const sVec& vec
   ) {
     NumericVector num_vec(vec.size());
     for (int i = 0; i < vec.size(); i++) {
-      if (std::isnan(vec(i))) {
+      double v = autodiff::val(vec(i));
+      if (std::isnan(v)) {
         num_vec(i) = NA_REAL;
       } else {
-        num_vec(i) = vec(i).val();
+        num_vec(i) = v;
       }
     }
     return num_vec;
@@ -143,16 +146,18 @@ NumericVector to_NumVec(
   }
 
 // ... to NumericMatrix
+// ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val(); std::isnan on autodiff::val()
 NumericMatrix to_NumMat(
     const sMat& mat
   ) {
     NumericMatrix num_mat(mat.rows(), mat.cols());
     for (int j = 0; j < mat.cols(); j++) {
       for (int i = 0; i < mat.rows(); i++) {
-        if (std::isnan(mat(i, j))) {
+        double v = autodiff::val(mat(i, j));
+        if (std::isnan(v)) {
           num_mat(i, j) = NA_REAL;
         } else {
-          num_mat(i, j) = mat(i, j).val();
+          num_mat(i, j) = v;
         }
       }
     }
@@ -195,12 +200,13 @@ dVec to_dVec(
   }
 
 // ... from Eigen::Matrix with sdouble elements
+// ... revised by Claude Sonnet 4.6: replaced .val() with autodiff::val()
 dVec to_dVec(
     const sVec& vec
   ) {
     dVec dvec(vec.size());
     for (int i = 0; i < vec.size(); i++) {
-      dvec[i] = vec(i).val();
+      dvec[i] = autodiff::val(vec(i));
     }
     return dvec;
   }
