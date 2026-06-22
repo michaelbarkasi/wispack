@@ -210,6 +210,7 @@ library(wispack, quietly = TRUE)
 model <- wisp(
     count.data = countdata,
     variables = data.variables,
+    model.settings = list(LRO_cost = "none"),
     plot.settings = list(
         print.plots = FALSE, 
         dim.bounds = colMeans(layer.boundary.bins)

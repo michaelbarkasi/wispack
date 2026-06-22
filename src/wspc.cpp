@@ -358,9 +358,9 @@ void wspc::init_summed_count(
     for (int r = 0; r < n_.count_rows; r++) {sc.count_log[r] = std::log(sc.count[r] + 1.0);} 
     
     // Derive index vectors from masks
-    sc.not_na_idx = Rwhich(sc.not_na_mask);
-    sc.not_none_mask    = !eq_left_broadcast(sc.ran, 0);
-    sc.r_idx            = Rwhich(!sc.not_none_mask);
+    sc.not_na_idx     = Rwhich(sc.not_na_mask);
+    sc.not_none_mask  = !eq_left_broadcast(sc.ran, 0);
+    sc.r_idx          = Rwhich(!sc.not_none_mask);
     
   }
 
@@ -411,6 +411,11 @@ wspc::wspc(
     
     // Find and set treatment levels 
     CharacterMatrix effects_rows = set_treatment_levels(verbose);
+    
+    // Recalculate n_.count_rows now that n_.treatments is known.
+    // (n_.count_rows was first computed in init_gv() before set_treatment_levels()
+    // ran, so n_.treatments was still 0 at that point, giving n_.count_rows = 0.)
+    n_.count_rows = n_.bin * n_.context * n_.species * n_.ran * n_.treatments;
     
     // Make weight rows matrix
     make_weight_rows_matrix();
@@ -511,17 +516,19 @@ void wspc::make_extrapolation_pool() {
     }
   }
 
+// Function to extrapolate "none" rows
 void wspc::extrapolate_none() {
     for (int r : sc.r_idx) {
-      sc.count[r] = 0.0;
       int extrap_sz = sc.extrap_pool[r].size();
       if (extrap_sz > 0) {
+        sc.count[r] = 0.0; // Find mean of the log values
         for (int i : sc.extrap_pool[r]) {sc.count[r] += std::log(sc.count[i] + 1.0);}
         sc.count[r] /= (double)extrap_sz;
         sc.count[r] = std::exp(sc.count[r]) - 1.0; // Convert back from log space
         if (round_none) {sc.count[r] = std::round(sc.count[r]);}
       }
     }
+    for (int r : sc.r_idx) {sc.count_log[r] = std::log(sc.count[r] + 1.0);}
   }
 
 // Function to take means of count_log 
@@ -903,8 +910,8 @@ sdouble wspc::compute_nll(
         
         // Analytic solution to the log of the integral from 0 to positive infinity of the Poisson times Gamma densities
         if (gamma_variance == 0) { 
-          // if no over-dispersion, just use Poisson
-          log_lik += stan::math::poisson_lpmf(sc.count_log[r], predicted_rates_log_var(r));
+          // if no over-dispersion, just use Poisson (via the existing log_dPois helper)
+          log_lik += log_dPois(sc.count_log[r], predicted_rates_log_var(r));
         } else if (sc.count_log[r] > 0.0 && predicted_rates_log_var(r) > 0.0) { 
           // otherwise, use Poisson-Gamma integral
           log_lik += slog(poisson_gamma_integral(sc.count_log[r], predicted_rates_log_var(r), gamma_variance));
@@ -1249,7 +1256,6 @@ void wspc::resample(
     
     // Extrapolate none's and take their logs
     extrapolate_none();
-    for (int r : sc.r_idx) {sc.count_log[r] = std::log(sc.count[r] + 1.0);}
     
     // Estimate gamma dispersion of these new raw re-sampled counts
     compute_gamma_dispersion();
@@ -1489,6 +1495,7 @@ Rcpp::NumericMatrix wspc::MCMC(
     IntegerVector tracker = iseq(n_steps/10, n_steps, tracker_steps);
     bool printed_step1 = false;
     // Grab current point (model parameters) in random walk
+    NumericVector params_initial = mf.params;
     NumericVector params_current = mf.params;
     NumericVector last_viable_parameters = params_current;
     
@@ -1646,6 +1653,8 @@ Rcpp::NumericMatrix wspc::MCMC(
       check_parameter_feasibility(to_sVec(mf.params)); 
       for (int j = 0; j < n_params; j++) {RMW_steps(r_num1, j) = mf.params[j];}
     } else {
+      // Reset to initial params 
+      mf.params = params_initial;
       // Fit with L-BFGS
       fit(false);
       if (verbose) {vprint("Penalized nll: ", mf.bnll);}
@@ -1660,9 +1669,6 @@ Rcpp::NumericMatrix wspc::MCMC(
       RMW_steps.row(r_num - 1) = to_NumVec(res);
     }
    
-    // Check feasibility, set parameters, predict rates
-    
-    
     return RMW_steps;
     
   }
