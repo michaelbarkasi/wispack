@@ -12,21 +12,21 @@
 void wspc::init_settings(
     const Rcpp::List& settings
   ) {
-    cp.buffer_factor = Rcpp::as<double>(settings["buffer_factor"]);
-    mf.ctol = Rcpp::as<double>(settings["ctol"]);
+    cp.buffer_factor                  = Rcpp::as<double>(settings["buffer_factor"]);
+    mf.ctol                           = Rcpp::as<double>(settings["ctol"]);
     mf.max_penalty_at_distance_factor = Rcpp::as<double>(settings["max_penalty_at_distance_factor"]);
-    cp.LRO_cost = Rcpp::as<Rcpp::String>(settings["LRO_cost"]);
-    cp.LROcutoff = Rcpp::as<double>(settings["LROcutoff"]);
-    cp.LROwindow_factor = Rcpp::as<double>(settings["LROwindow_factor"]);
-    cp.rise_threshold_factor = Rcpp::as<double>(settings["rise_threshold_factor"]);
-    mf.max_evals = Rcpp::as<int>(settings["max_evals"]);
-    mf.rng_seed = Rcpp::as<unsigned int>(settings["rng_seed"]);
-    mf.warp_precision = Rcpp::as<double>(settings["warp_precision"]);
-    mf.inf_warp = Rcpp::as<double>(settings["inf_warp"]);
-    round_none = Rcpp::as<bool>(settings["round_none"]);
-    ev.trt_KO = Rcpp::as<CharacterVector>(settings["trtKO"]);
-    n_.bin = Rcpp::as<int>(settings["max_bin"]);
-    model_settings = Rcpp::clone(settings);
+    cp.LRO_cost                       = Rcpp::as<Rcpp::String>(settings["LRO_cost"]);
+    cp.LROcutoff                      = Rcpp::as<double>(settings["LROcutoff"]);
+    cp.LROwindow_factor               = Rcpp::as<double>(settings["LROwindow_factor"]);
+    cp.rise_threshold_factor          = Rcpp::as<double>(settings["rise_threshold_factor"]);
+    mf.max_evals                      = Rcpp::as<int>(settings["max_evals"]);
+    mf.rng_seed                       = Rcpp::as<unsigned int>(settings["rng_seed"]);
+    mf.warp_precision                 = Rcpp::as<double>(settings["warp_precision"]);
+    mf.inf_warp                       = Rcpp::as<double>(settings["inf_warp"]);
+    round_none                        = Rcpp::as<bool>(settings["round_none"]);
+    ev.trt_KO                         = Rcpp::as<CharacterVector>(settings["trtKO"]);
+    n_.bin                            = Rcpp::as<int>(settings["max_bin"]);
+    model_settings                    = Rcpp::clone(settings);
   }
 
 // Get grouping variables
@@ -37,7 +37,7 @@ void wspc::init_gv(
     // Extract grouping variables 
     grouping_lvls.context = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["context"]));
     grouping_lvls.species = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["species"]));
-    grouping_lvls.ran = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["ran"]));
+    grouping_lvls.ran     = Rcpp::sort_unique(Rcpp::as<CharacterVector>(count_data["ran"]));
     // ... add "none" to represent no random effect (reference level)
     if (grouping_lvls.ran.size() > 1) {grouping_lvls.ran.push_front("none");} 
     // ... print extracted grouping variables
@@ -48,9 +48,9 @@ void wspc::init_gv(
     vprint("Random-effect grouping levels:", verbose);
     vprintV(grouping_lvls.ran, verbose);
     // ... grab factor sizes
-    n_.ran = grouping_lvls.ran.size();
-    n_.context = grouping_lvls.context.size();
-    n_.species = grouping_lvls.species.size();
+    n_.ran        = grouping_lvls.ran.size();
+    n_.context    = grouping_lvls.context.size();
+    n_.species    = grouping_lvls.species.size();
     n_.count_rows = n_.bin * n_.context * n_.species * n_.ran * n_.treatments;
   }
 
@@ -76,12 +76,12 @@ void wspc::extract_fixeff(
     }
    
     // Loop through fixed effects
-    n_.fix = n_cols - r_cols;               // number of fixed effect variables, assume all non-required columns are fixed effects
-    ev.fix_names = CharacterVector(n_.fix);        // names of fixed effect variables 
-    ev.fix_ref = CharacterVector(n_.fix);          // reference level for each fixed effect
-    ev.fix_lvls.resize(n_.fix);                    // levels for each fixed effect, ev.fix_lvls is a std vector holding an Rcpp CharacterVector
-    ev.fix_trt.resize(n_.fix);                     // treatments for each fixed effect, ev.fix_trt is a std vector holding an Rcpp CharacterVector
-    CharacterVector is_time_name = {"ref"};
+    n_.fix                            = n_cols - r_cols;                  // number of fixed effect variables, assume all non-required columns are fixed effects
+    ev.fix_names                      = CharacterVector(n_.fix);          // names of fixed effect variables 
+    ev.fix_ref                        = CharacterVector(n_.fix);          // reference level for each fixed effect
+    ev.fix_lvls.resize(n_.fix);                                           // levels for each fixed effect, ev.fix_lvls is a std vector holding an Rcpp CharacterVector
+    ev.fix_trt.resize(n_.fix);                                            // treatments for each fixed effect, ev.fix_trt is a std vector holding an Rcpp CharacterVector
+    CharacterVector is_time_name      = {"ref"};
     CharacterVector time_series_names = {"no time series"};
     for (int i = 0; i < n_.fix; i++) {
       ev.fix_names[i] = col_names[i + r_cols];
@@ -107,12 +107,12 @@ void wspc::extract_fixeff(
         Rcpp::stop("Fixed effect " + ev.fix_names[i] + " has more than 2 levels. Only binary fixed effects are currently supported, except for 'timeseries'.");
       }
       ev.fix_lvls[i] = lvls;
-      ev.fix_ref[i] = lvls[0];                                   // assume first level is reference
-      ev.fix_trt[i] = lvls[Rcpp::Range(1, lvls.size() - 1)];     // assume all other levels are treatment levels
+      ev.fix_ref[i]  = lvls[0];                                   // assume first level is reference
+      ev.fix_trt[i]  = lvls[Rcpp::Range(1, lvls.size() - 1)];     // assume all other levels are treatment levels
       
       // Check for time series
-      if (ev.fix_names[i] == "timeseries") {                     // make it easy to access time-series element rank from the element name
-        ev.timeseries_rank = seq(1, lvls.size());
+      if (ev.fix_names[i] == "timeseries") {                      // make it easy to access time-series element rank from the element name
+        ev.timeseries_rank         = seq(1, lvls.size());
         ev.timeseries_rank.names() = lvls;
         time_series_names = lvls;
         for (String l : lvls) {
@@ -149,11 +149,11 @@ CharacterMatrix wspc::set_treatment_levels(
   ) {
     
     // Create all possible treatment combinations 
-    ev.trt_components = make_treatments(ev.fix_trt);                    // make components of all possible treatment levels
-    ev.trt_components.insert(ev.trt_components.begin(), {"ref"}); // add "ref" to represent reference level
-    n_.treatments = ev.trt_components.size();                         // grab number of treatments
-    ev.trt_lvls = CharacterVector(n_.treatments);                     // resize variable to hold treatment level names
-    for (int t = 0; t < n_.treatments; t++) {                            // collapse components into level names
+    ev.trt_components = make_treatments(ev.fix_trt);                // make components of all possible treatment levels
+    ev.trt_components.insert(ev.trt_components.begin(), {"ref"});   // add "ref" to represent reference level
+    n_.treatments     = ev.trt_components.size();                   // grab number of treatments
+    ev.trt_lvls       = CharacterVector(n_.treatments);             // resize variable to hold treatment level names
+    for (int t = 0; t < n_.treatments; t++) {                       // collapse components into level names
       ev.trt_lvls[t] = Rcpp::collapse(ev.trt_components[t]);
     }
     
@@ -161,7 +161,7 @@ CharacterMatrix wspc::set_treatment_levels(
     for (String trt_KO : ev.trt_KO) {
       int cnt = 0;
       for (int idx : grep_cpp(ev.trt_lvls, trt_KO)) {
-        ev.trt_lvls.erase(ev.trt_lvls.begin() + (idx - cnt));  // ... remove from ev.trt_lvls
+        ev.trt_lvls.erase(ev.trt_lvls.begin() + (idx - cnt));                // ... remove from ev.trt_lvls
         ev.trt_components.erase(ev.trt_components.begin() + (idx - cnt++));  // ... remove from ev.trt_components, adjusting for previous removals
         n_.treatments--;  // ... decrease
       }
@@ -191,9 +191,9 @@ CharacterMatrix wspc::set_treatment_levels(
   }
 
 // Function to make weight rows matrix
-// When predicting parameter values for treatment level tr_predict, should treatment level tr_input's effect be applied?
-// ... i.e., what's the "weight" of each treatment level (columns of weight matrix) relative to the others (rows of weight matrix)? 
 void wspc::make_weight_rows_matrix() {
+  // When predicting parameter values for treatment level tr_predict, should treatment level tr_input's effect be applied?
+  // ... i.e., what's the "weight" of each treatment level (columns of weight matrix) relative to the others (rows of weight matrix)? 
     ev.weight_rows.resize(n_.treatments, n_.treatments);
     ev.weight_rows.setOnes(); // ... assume "yes"
     for (int tr_predict = 0; tr_predict < n_.treatments; tr_predict++) {
@@ -244,7 +244,6 @@ void wspc::make_weight_rows_matrix() {
     }
   }
 
-
 // Build summed count data struct from tokenized count data
 void wspc::init_summed_count(
     const Rcpp::DataFrame& count_data,
@@ -271,7 +270,7 @@ void wspc::init_summed_count(
     int idx_mcu = 0;
     sc.idx_mc_unique     = IntegerVector(n_.count_rows / n_.bin);
     sc.token_pool        = std::vector<iVec>(n_.count_rows);
-    sc.not_na_mask = LogicalVector(n_.count_rows);
+    sc.not_na_mask       = LogicalVector(n_.count_rows);
     sc.not_na_mask.fill(false);
     vprint("Number of rows with unique model components: " + std::to_string(sc.idx_mc_unique.size()), verbose);
     
@@ -676,8 +675,8 @@ void wspc::LRO_initial_param_ests(
     // Find initial parameter estimates
     estimate_initial_parameters();
     vprint("Estimated initial parameters", verbose);
-    vprint("Number of parameters: " + std::to_string((int)mf.params.size()), verbose);
-    vprint("Size of boundary vector: " + std::to_string(mf.boundary_vec_size), verbose);
+    vprint("Number of parameters: "    + std::to_string((int)mf.params.size()), verbose);
+    vprint("Size of boundary vector: " + std::to_string(mf.boundary_vec_size),  verbose);
     
   }
 
@@ -689,8 +688,8 @@ void wspc::LRO_grid_search(bool verbose) {
     
     // Set up search grid
     vprint("Performing grid search (resolution 0.25) for optimal LRO window factor and cutoff", verbose);
-    dVec LROwf_range = {1.00, 1.25, 1.50, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00};
-    dVec LROco_range = LROwf_range;
+    dVec LROwf_range           = {1.00, 1.25, 1.50, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00};
+    dVec LROco_range           = LROwf_range;
     cp.LRO_grid_search_results = NumericMatrix(LROwf_range.size() * LROco_range.size(), 8);
     int n = sc.not_na_idx.size();
     
@@ -738,14 +737,13 @@ void wspc::LRO_grid_search(bool verbose) {
         this_cost = cp.LRO_grid_search_results(i,2);
       }
       if (this_cost < cost) {
-        cost = this_cost;
+        cost                = this_cost;
         cp.LROwindow_factor = cp.LRO_grid_search_results(i,0);
-        cp.LROcutoff = cp.LRO_grid_search_results(i,1);
+        cp.LROcutoff        = cp.LRO_grid_search_results(i,1);
       } 
     }
     
     vprint("Optimal LRO window factor: " + std::to_string(cp.LROwindow_factor) + ", optimal LRO cutoff: " + std::to_string(cp.LROcutoff), verbose);
-    
   }   
 
 /*
@@ -755,8 +753,8 @@ void wspc::LRO_grid_search(bool verbose) {
 
 // Compute model component values for rows of summed count data
 sVec wspc::compute_warped_mc(
-    int mc,                    // Model component number for which to compute values, 0 = Rt, 1 = tslope, 2 = tpoint
-    int r,                     // Row of summed count data for which to compute model component 
+    int   mc,                  // Model component number for which to compute values, 0 = Rt, 1 = tslope, 2 = tpoint
+    int   r,                   // Row of summed count data for which to compute model component 
     const sVec& parameters,    // Parameters to use in computation
     const sdouble& wf          // Warping factor to apply 
   ) const {
@@ -809,10 +807,8 @@ sVec wspc::predict_rates(
     
     // Compute predicted rate for rows of the summed count data
     for (int r = 0; r < n_.count_rows; r++) {
-      
       // Update predicted model components if r begins a new batch of unique values 
       int cnt = std::count(mc_unique_rows.begin(), mc_unique_rows.end(), r);
-      
       // Unless all_rows, only compute values for non-NA rows or rows that begin a new batch
       if (sc.not_na_mask[r] || cnt > 0 || all_rows) {
         
@@ -830,7 +826,7 @@ sVec wspc::predict_rates(
         // Only update predicted model components if r begins a new batch of unique values 
         if (cnt > 0) { 
           // Compute warped model components for this row r
-          Rt = compute_warped_mc(0, r, parameters, f_rw);        
+          Rt     = compute_warped_mc(0, r, parameters, f_rw);        
           tslope = compute_warped_mc(1, r, parameters, f_sw); 
           tpoint = compute_warped_mc(2, r, parameters, f_pw);
         } 
@@ -843,32 +839,24 @@ sVec wspc::predict_rates(
           tslope,
           tpoint
         ); 
-        
       }
-      
     }
     
     return out;
-    
   }
 
 // Predict log of rates, R wrapper 
-NumericVector wspc::predict_rates_R(
-    const NumericVector& parameters_R,
-    const bool& all_rows 
+NumericMatrix wspc::predict_rates_batch(
+    const NumericMatrix& parameters_mat
   ) {
-    // Convert parameters to sVec
-    sVec parameters = to_sVec(parameters_R);
-    // Compute predicted rates
-    sVec out = predict_rates(
-      parameters,
-      all_rows
-    );
-    // Convert to NumericVector 
-    NumericVector out_R = to_NumVec(out);
-    // Clear memory and return
+    int n_resamples = parameters_mat.nrow(); 
+    NumericMatrix pred_values(n_.count_rows, n_resamples);
+    for (int i = 0; i < n_resamples; ++i) {
+      NumericVector these_params = parameters_mat.row(i);
+      pred_values.column(i)      = to_NumVec(predict_rates(to_sVec(these_params), true));
+    }
     clear_stan_mem();
-    return out_R;
+    return pred_values;
   }
 
 /*
@@ -899,11 +887,11 @@ sdouble wspc::compute_nll(
         
         // Find gamma variance for this row
         // ... pull predicted rate from log space
-        sdouble pred_rate_var = sexp(predicted_rates_log_var(r)) - 1.0;
+        sdouble pred_rate_var  = sexp(predicted_rates_log_var(r)) - 1.0;
         // ... estimate variance of rate outside log space
         sdouble gamma_variance = pred_rate_var + mf.gamma_dispersion[sc.sps[r]][sc.cxt[r]] * pred_rate_var * pred_rate_var;
         // ... estimate the corresponding variance of the rate back in log space 
-        gamma_variance = delta_var_est(gamma_variance, pred_rate_var);
+        gamma_variance         = delta_var_est(gamma_variance, pred_rate_var);
         
         // Pull up if only approximately zero 
         if (predicted_rates_log_var(r) < 0.0) {predicted_rates_log_var(r) = 0.0;}
@@ -916,19 +904,14 @@ sdouble wspc::compute_nll(
           // otherwise, use Poisson-Gamma integral
           log_lik += slog(poisson_gamma_integral(sc.count_log[r], predicted_rates_log_var(r), gamma_variance));
         }
-        
       }
-      
     }
     
-    // Take negative
-    sdouble negloglik = -log_lik;
-    
-    // Check for infinities (zero likelihood)
-    if (std::isinf(negloglik) || negloglik > sdouble(inf_)) {negloglik = sdouble(inf_);}
-    
+    sdouble negloglik = -log_lik;                             // Take negative
+    if (std::isinf(negloglik) || negloglik > sdouble(inf_)) { // Check for infinities (zero likelihood)
+      negloglik = sdouble(inf_);
+    } 
     return negloglik;
-    
   } 
 
 // Compute boundary distances
@@ -1010,7 +993,6 @@ sVec wspc::boundary_dist(
     }
     
     return boundary_dist_vec;
-    
   }
 
 // Compute min boundary penalty
@@ -1018,7 +1000,7 @@ sdouble wspc::min_boundary_dist(
     const sVec& parameters
   ) const {
     // Compute boundary_dist and take min
-    sVec bd = boundary_dist(parameters);
+    sVec bd        = boundary_dist(parameters);
     sdouble bd_min = smin(bd);
     return bd_min;
   }
@@ -1026,47 +1008,33 @@ sdouble wspc::min_boundary_dist(
 // Wrap neg_min_boundary_dist in form needed for NLopt constraint function
 double wspc::min_boundary_dist_NLopt(
     const dVec& x,
-    dVec& grad,
-    void* data
+    dVec&       grad,
+    void*       data
   ) { 
-    
-    // Grab model
-    wspc* model = static_cast<wspc*>(data);
-    
-    // Convert dVec to Eigen with stan
-    sVec parameters_var = to_sVec(x);
-    
-    // Compute min_boundary_dist
-    sdouble fx = model->min_boundary_dist(parameters_var);
+    wspc*   model          = static_cast<wspc*>(data);                 // Grab model
+    sVec    parameters_var = to_sVec(x);                               // Convert dVec to Eigen with stan
+    sdouble fx             = model->min_boundary_dist(parameters_var); // Compute min_boundary_dist
     if (!std::isfinite(fx.val())) {fx = 0.0;}
-    
-    // Compute gradient if needed
-    if (!grad.empty()) {
+    if (!grad.empty()) {                                               // Compute gradient if needed
       Eigen::VectorXd grad_eigen = model->grad_min_boundary_dist(parameters_var);
       grad.assign(grad_eigen.data(), grad_eigen.data() + grad_eigen.size());
     }
     for (size_t i = 0; i < grad.size(); ++i) {
-      if (!std::isfinite(grad[i])) {
-        grad[i] = 0.0;
-      }
+      if (!std::isfinite(grad[i])) {grad[i] = 0.0;}
     }
-    
-    // Return the value
-    return fx.val(); 
-    
+    return fx.val();                                                  // Return the value
   } 
 
 // Compute nll plus boundary penalty (main objective function) 
 sdouble wspc::compute_bnll(
     const sVec& parameters
   ) const {
-    
-    // Compute weighted negative log-likelihood
-    sdouble bnll = compute_nll(parameters);
-    // Compute boundary distance
-    sVec bd = boundary_dist(parameters);
-    // Add boundary penalty
-    for (int i = 0; i < mf.boundary_vec_size; i++) {bnll += boundary_penalty_transform(bd(i), mf.bp_coefs(i));}
+    sdouble bnll = compute_nll(parameters);           // Compute weighted negative log-likelihood
+    sVec    bd   = boundary_dist(parameters);         // Compute boundary distance
+    for (int i = 0; i < mf.boundary_vec_size; i++) {  // Add boundary penalty
+      bnll += boundary_penalty_transform(bd(i), mf.bp_coefs(i));
+    }
+    return bnll;
     
     /*
      * Idea of boundary penalty transform: When "far" from boundary, the total penalty will be at most 
@@ -1074,33 +1042,22 @@ sdouble wspc::compute_bnll(
      *  the boundary distance approaches zero, the penalty smoothly goes to infinity. 
      */
     
-    return bnll;
-    
   }
 
 // Wrap compute_bnll in form needed for NLopt objective function
 double wspc::compute_bnll_NLopt(
     const dVec& x, 
-    dVec& grad, 
-    void* data
+    dVec&       grad, 
+    void*       data
   ) {
-    
-    // Grab model
-    wspc* model = static_cast<wspc*>(data);
-    // Convert dVec to Eigen with stan
-    sVec parameters_var = to_sVec(x);
-    // Compute bounded_nll
-    sdouble fx = model->compute_bnll(parameters_var);
-    
-    // Compute gradient if needed
-    if (!grad.empty()) {
+    wspc*   model          = static_cast<wspc*>(data);              // Grab model
+    sVec    parameters_var = to_sVec(x);                            // Convert dVec to Eigen with stan
+    sdouble fx             = model->compute_bnll(parameters_var);   // Compute bounded_nll
+    if (!grad.empty()) {                                            // Compute gradient if needed
       Eigen::VectorXd grad_eigen = model->grad_compute_bnll(parameters_var);
       grad.assign(grad_eigen.data(), grad_eigen.data() + grad_eigen.size());
     } 
-    
-    // Return the value of the nll
-    return fx.val(); 
-    
+    return fx.val();                                                // Return the value of the nll
   }
 
 /*
@@ -1109,41 +1066,29 @@ double wspc::compute_bnll_NLopt(
  */
 
 // Compute the gradient of the compute_bnll function
-// ... this is the gradient function used in model optimization
 Eigen::VectorXd wspc::grad_compute_bnll(
     const sVec& p_
   ) const { 
-    // Create nested autodiff context
-    stan::math::nested_rev_autodiff nested;
-    // Make copy to create var nodes for p
-    sVec p = p_;
-    // Initialize bnll variable
-    sdouble bnll = compute_bnll(p);
-    // Initialize variable to hold gradient
-    Eigen::VectorXd gr_bnll(p.size());
-    // Compute bnll and its gradient
-    stan::math::grad(bnll, p, gr_bnll);
-    // Return bnll gradient
-    return gr_bnll;
+    // ... this is the gradient function used in model optimization
+    stan::math::nested_rev_autodiff      nested;                      // Create nested autodiff context
+    sVec                                 p    = p_;                   // Make copy to create var nodes for p
+    sdouble                              bnll = compute_bnll(p);      // Initialize bnll variable
+    Eigen::VectorXd                      gr_bnll(p.size());           // Initialize variable to hold gradient
+    stan::math::grad(bnll, p, gr_bnll);                               // Compute bnll and its gradient
+    return gr_bnll;                                                   // Return bnll gradient
   }
 
 // Compute the gradient of the min_boundary_dist function
-// ... this is the gradient function used in the search for feasible parameters
 Eigen::VectorXd wspc::grad_min_boundary_dist(
     const sVec& p_
   ) const { 
-    // Create nested autodiff context
-    stan::math::nested_rev_autodiff nested;
-    // Make copy to create var nodes for p
-    sVec p = p_;
-    // Initialize min_boundary_dist variable
-    sdouble mbd = min_boundary_dist(p);
-    // Initialize variable to hold gradient
-    Eigen::VectorXd gr_mbd(p.size());
-    // Compute min_boundary_dist and its gradient
-    stan::math::grad(mbd, p, gr_mbd);
-    // Return min_boundary_dist gradient
-    return gr_mbd;
+    // ... this is the gradient function used in the search for feasible parameters
+    stan::math::nested_rev_autodiff      nested;                      // Create nested autodiff context
+    sVec                                 p    = p_;                   // Make copy to create var nodes for p
+    sdouble                              mbd  = min_boundary_dist(p); // Initialize min_boundary_dist variable
+    Eigen::VectorXd                      gr_mbd(p.size());            // Initialize variable to hold gradient
+    stan::math::grad(mbd, p, gr_mbd);                                 // Compute min_boundary_dist and its gradient
+    return gr_mbd;                                                    // Return min_boundary_dist gradient
   }
 
 /*
@@ -1156,18 +1101,18 @@ void wspc::fit(const bool verbose) {
     
     // Set boundary-penalty coefficients 
     vprint("Setting boundary penalty coefficients", verbose);
-    sVec initial_params_var = to_sVec(mf.params);
+    sVec   initial_params_var      = to_sVec(mf.params);
     double max_penalty_at_distance = compute_nll(initial_params_var).val() * mf.max_penalty_at_distance_factor;
-    double coefs = std::sqrt(static_cast<double>(mf.boundary_vec_size)/max_penalty_at_distance);
-    mf.bp_coefs = to_eVec(boundary_dist(initial_params_var));
+    double coefs                   = std::sqrt(static_cast<double>(mf.boundary_vec_size)/max_penalty_at_distance);
+    mf.bp_coefs                    = to_eVec(boundary_dist(initial_params_var));
     for (int i = 0; i < mf.boundary_vec_size - 1; i++) {mf.bp_coefs(i) = coefs/mf.bp_coefs(i);} 
     
     // Grab initial parameters
-    dVec x = to_dVec(mf.params); 
+    dVec x   = to_dVec(mf.params); 
     size_t n = x.size();
     
     // Set up NLopt optimizer
-    nlopt::opt opt(nlopt::LD_LBFGS, n); // Might try? LD_LBFGS, LN_SBPLX, LN_COBYLA, GN_DIRECT
+    nlopt::opt opt(nlopt::LD_LBFGS, n);    // Might try? LD_LBFGS, LN_SBPLX, LN_COBYLA, GN_DIRECT
     opt.set_min_objective(wspc::compute_bnll_NLopt, this);
     opt.set_ftol_rel(mf.ctol);             // Stop when iteration changes objective fn value by less than this fraction 
     opt.set_maxeval(mf.max_evals);         // Maximum number of evaluations to try
@@ -1178,16 +1123,16 @@ void wspc::fit(const bool verbose) {
       vprint("Initial nll: ", initial_nll);
       sdouble initial_obj = compute_bnll(initial_params_var);
       vprint("Initial nll with penalty: ", initial_obj);
-      sdouble mb_dist = min_boundary_dist(initial_params_var);
+      sdouble mb_dist     = min_boundary_dist(initial_params_var);
       vprint("Initial min boundary distance: ", mb_dist);
     } 
     
     // Fit model
-    int sc = 0;
+    int    sc = 0;
     double min_fx;
     try {
       nlopt::result sc_ = opt.optimize(x, min_fx);
-      sc = static_cast<int>(sc_);
+      sc                = static_cast<int>(sc_);
     } catch (std::exception& e) { 
       if (verbose) {
         Rcpp::Rcout << "Optimization failed: " << e.what() << std::endl;
@@ -1196,8 +1141,8 @@ void wspc::fit(const bool verbose) {
     } 
     
     // Find final nll for diagnostics
-    sVec parameters_final = to_sVec(x);
-    sdouble final_nll = compute_nll(parameters_final);
+    sVec    parameters_final = to_sVec(x);
+    sdouble final_nll        = compute_nll(parameters_final);
     
     // Print final nll, total objective, and min boundary distance values
     if (verbose) {
@@ -1205,7 +1150,7 @@ void wspc::fit(const bool verbose) {
       vprint("Final nll with penalty: ", min_fx);
       sdouble mb_dist = min_boundary_dist(parameters_final);
       vprint("Final min boundary distance: ", mb_dist);
-      int num_evals = opt.get_numevals();
+      int num_evals   = opt.get_numevals();
       vprint("Number of evaluations: ", num_evals);
       if (sc == 0) {
         vprint("Warning: optimization did not converge.");
@@ -1213,11 +1158,11 @@ void wspc::fit(const bool verbose) {
     } 
     
     // Save optimization results
-    mf.params = to_NumVec(x);
-    mf.bnll = min_fx;
-    mf.nll = final_nll.val();
+    mf.params       = to_NumVec(x);
+    mf.bnll         = min_fx;
+    mf.nll          = final_nll.val();
     mf.success_code = sc;
-    mf.num_evals = opt.get_numevals();
+    mf.num_evals    = opt.get_numevals();
     
     // Check feasibility 
     check_parameter_feasibility(to_sVec(mf.params)); 
@@ -1228,7 +1173,6 @@ void wspc::fit(const bool verbose) {
 void wspc::resample(
     unsigned int seed
   ) {
-   
     // Initialize random number generator
     std::mt19937 rng(seed);
     
@@ -1254,29 +1198,19 @@ void wspc::resample(
       }
     }
     
-    // Extrapolate none's and take their logs
-    extrapolate_none();
-    
-    // Estimate gamma dispersion of these new raw re-sampled counts
-    compute_gamma_dispersion();
-    
-    // Find average these new re-sampled log counts for each context-species combination
-    find_count_log_means();
-    
+    extrapolate_none();          // Extrapolate none's and take their logs
+    compute_gamma_dispersion();  // Estimate gamma dispersion of these new raw re-sampled counts
+    find_count_log_means();      // Find average these new re-sampled log counts for each context-species combination
   }
 
 // Fit model to bootstrap resample
 dVec wspc::bs_fit(
-    int bs_num,               // A unique number for this resample
-    bool clear_stan           // Recover stan memory at end?
+    int  bs_num,                    // A unique number for this resample
+    bool clear_stan                 // Recover stan memory at end?
   ) {
-    
-    // Resample counts 
-    resample(mf.rng_seed + bs_num);
-    // Find initial parameter estimates, for new re-sampled data
-    estimate_initial_parameters();
-    // Fit model
-    fit(false);
+    resample(mf.rng_seed + bs_num); // Resample counts 
+    estimate_initial_parameters();  // Find initial parameter estimates, for new re-sampled data
+    fit(false);                     // Fit model
     
     // Prepare and return results
     dVec res = to_dVec(mf.params);
@@ -1288,9 +1222,7 @@ dVec wspc::bs_fit(
     
     // Clear stan memory
     if (clear_stan) {clear_stan_mem();}
-    
     return res;
-    
   }
 
 // Fork bootstraps (parallel processing)
@@ -2187,7 +2119,7 @@ RCPP_MODULE(wspc) {
     .method("compute_nll_debug", &wspc::compute_nll_debug)
     .method("compute_bnll_debug", &wspc::compute_bnll_debug)
     .method("grad_compute_bnll_debug", &wspc::grad_compute_bnll_debug)
-    .method("predict_rates_R", &wspc::predict_rates_R)
+    .method("predict_rates_batch", &wspc::predict_rates_batch)
     .method("fit", &wspc::fit)
     .method("bs_batch", &wspc::bs_batch)
     .method("MCMC", &wspc::MCMC)

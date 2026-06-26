@@ -24,7 +24,7 @@ sample.stats(
 \item{verbose}{Logical, if TRUE, prints information during the statistical analysis.}
 }
 \value{
-Data frame giving, for each parameter, its name, estimate, confidence interval (CI.low, CI.high), p-value, adjusted p-value (p.value.adj), adjusted alpha (alpha.adj), and significance level (significance).
+A copy of wisp.results with (1) a new entry \code{parameters} under \code{stats} holding a data frame giving, for each parameter, its name, estimate, confidence interval (CI.low, CI.high), p-value, adjusted p-value (p.value.adj), adjusted alpha (alpha.adj), and significance level (significance), and also (2) 95\% confidence interval range columns in \code{count.data.summed} for predicted log count by bin.
 }
 \description{
 Runs statistical analysis on the resampled parameters from the wisp function. It computes p-values and confidence intervals for each parameter, adjusting for multiple comparisons using either the Bonferroni correction or the Holm-Bonferroni method.
