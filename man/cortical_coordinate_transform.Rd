@@ -11,6 +11,7 @@ cortical_coordinate_transform(
   L1_removed = TRUE,
   nat_left = FALSE,
   nat_right = FALSE,
+  leveling_layer = "L4",
   verbose = TRUE
 )
 }
@@ -26,6 +27,8 @@ cortical_coordinate_transform(
 \item{nat_left}{Logical, setting used based on manual visual checks to ensure consistent orientation, causes angle and coordinate sign flips in layer leveling (default is FALSE)}
 
 \item{nat_right}{Logical, setting used based on manual visual checks to ensure consistent orientation, causes angle and coordinate sign flips in layer leveling (default is FALSE)}
+
+\item{leveling_layer}{Character string, the layer to use when leveling tissue patch in coordinate transformation (default is)}
 
 \item{verbose}{Logical, whether to print progress messages (default is TRUE)}
 }

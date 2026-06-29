@@ -35,7 +35,7 @@ affine <- function(
     coord,              # Set of coordinates to rotate, columns as dimensions, rows as points
     scale_H = 1,
     scale_W = 1,
-    theta = 0,          # angle to rotate coordinates, in radians
+    theta   = 0,        # angle to rotate coordinates, in radians
     shear_x = 0,
     shear_y = 0
   ) {
@@ -50,76 +50,89 @@ parse_hdf5 <- function(
     file_path,
     mouse_num,
     z_view_bottom = TRUE,
-    raw = TRUE,             # Grab normalized transcript counts, or raw ones?
-    ROI_only = TRUE,        # Grab all transcripts, or just those in ROI?
-    remove_L1 = TRUE,       # Exclude transcripts in layer 1?
-    ROIname = "Primary auditory area",
-    drop_blanks = TRUE
+    raw           = TRUE,                    # Grab normalized transcript counts, or raw ones?
+    ROI_only      = TRUE,                    # Grab all transcripts, or just those in ROI?
+    remove_L1     = TRUE,                    # Exclude transcripts in layer 1?
+    ROIname       = "Primary auditory area",
+    drop_blanks   = TRUE
   ) {
     
     # Load data
     file <- hdf5r::H5File$new(file_path, mode = "r")
     if (!raw) warning("Using normalized counts for hdf5 parsing")
-    
     # Cell type codes for each cell
-    celltype_MMC <- file[["/obs/MapMyCells_class/codes"]][] + 1          # Starts at 0, want numbers to match category names
-    cellsubclass_MMC <- file[["/obs/MapMyCells_subclass/codes"]][] + 1   # Starts at 0, want numbers to match category names
-    cellsupertype_MMC <- file[["/obs/MapMyCells_supertype/codes"]][] + 1 # Starts at 0, want numbers to match category names
-    
-    # Cell type names and their codes
-    celltype_names <- gsub("^...", "", file[["/obs/MapMyCells_class/categories"]][])
-    cellsubclass_names <- gsub("^...", "", file[["/obs/MapMyCells_subclass/categories"]][])
-    cellsupertype_names <- gsub("^...", "", file[["/obs/MapMyCells_supertype/categories"]][])
-    celltype_names[celltype_names == " Transcripts (filtered)"] <- "TSCRPT_filtered"
-    celltype_names[celltype_names == " Bootstrapping Probability (filtered)"] <- "filtered"
-    cellsubclass_names[cellsubclass_names == " Bootstrapping Probability (filtered)"] <- "filtered"
-    cellsupertype_names[cellsupertype_names == " Bootstrapping Probability (filtered)"] <- "filtered"
+    if (file$exists("/obs/MapMyCells_class/")) {
+      celltype_MMC        <- file[["/obs/MapMyCells_class/codes"]][] + 1          # Starts at 0, want numbers to match category names
+      celltype_names      <- gsub("^...", "", file[["/obs/MapMyCells_class/categories"]][])
+      celltype_names[celltype_names == " Transcripts (filtered)"] <- "TSCRPT_filtered"
+      celltype_names[celltype_names == " Bootstrapping Probability (filtered)"] <- "filtered"
+    } else {
+      celltype_MMC        <- c("unknown") 
+      celltype_names      <- c("unknown") 
+    }
+    if (file$exists("/obs/MapMyCells_class/")) {
+      cellsubclass_MMC    <- file[["/obs/MapMyCells_subclass/codes"]][] + 1   # Starts at 0, want numbers to match category names
+      cellsubclass_names  <- gsub("^...", "", file[["/obs/MapMyCells_subclass/categories"]][])
+      cellsubclass_names[cellsubclass_names == " Bootstrapping Probability (filtered)"] <- "filtered"
+    } else {
+      cellsubclass_MMC    <- c("unknown") 
+      cellsubclass_names  <- c("unknown") 
+    }
+    if (file$exists("/obs/MapMyCells_class/")) {
+      cellsupertype_MMC   <- file[["/obs/MapMyCells_supertype/codes"]][] + 1 # Starts at 0, want numbers to match category names
+      cellsupertype_names <- gsub("^...", "", file[["/obs/MapMyCells_supertype/categories"]][])
+      cellsupertype_names[cellsupertype_names == " Bootstrapping Probability (filtered)"] <- "filtered"
+    } else {
+      cellsupertype_MMC   <- c("unknown")
+      cellsupertype_names <- c("unknown") 
+    }
     
     # Gene names
-    nonblanks <- file[["/var/Genes"]][]
-    barcode_names <- file[["/var/_index"]][]
-    gene_names <- barcode_names[nonblanks]
+    if (file$exists("/var/Genes")) nonblanks <- file[["/var/Genes"]][]
+    else nonblanks <- TRUE
+    barcode_names  <- file[["/var/_index"]][]
+    gene_names     <- barcode_names[nonblanks]
     
     # Raw transcript counts, rows are cells, columns genes
-    if (raw) transcript_counts_raw <- t(file[["/raw/X"]][,])     # should have integer elements, not normalized
-    else transcript_counts_raw <- t(file[["/X"]][,])             # should have integer elements, normalized for MapMyCells
+    if (raw) transcript_counts_raw    <- t(file[["/raw/X"]][,])     # should have integer elements, not normalized
+    else transcript_counts_raw        <- t(file[["/X"]][,])             # should have integer elements, normalized for MapMyCells
     if (drop_blanks) {
-      transcript_counts_raw <- transcript_counts_raw[, nonblanks]  # drop blanks
+      transcript_counts_raw           <- transcript_counts_raw[, nonblanks]  # drop blanks
       colnames(transcript_counts_raw) <- gene_names  
     } else {
       colnames(transcript_counts_raw) <- barcode_names
     }
-    n_cells <- nrow(transcript_counts_raw)
+    n_cells                           <- nrow(transcript_counts_raw)
     
     # Grab rows for cortical layers
     ROI_names <- list(
-      LL1 = paste0("/obs/ROI__Left ", ROIname, ", layer 1"),
-      LL23 = paste0("/obs/ROI__Left ", ROIname, ", layer 2/3"),
-      LL4 = paste0("/obs/ROI__Left ", ROIname, ", layer 4"),
-      LL5 = paste0("/obs/ROI__Left ", ROIname, ", layer 5"),
-      LL6a = paste0("/obs/ROI__Left ", ROIname, ", layer 6a"),
-      LL6b = paste0("/obs/ROI__Left ", ROIname, ", layer 6b"),
-      RL1 = paste0("/obs/ROI__Right ", ROIname, ", layer 1"),
+      LL1  = paste0("/obs/ROI__Left ",  ROIname, ", layer 1"),
+      LL23 = paste0("/obs/ROI__Left ",  ROIname, ", layer 2/3"),
+      LL4  = paste0("/obs/ROI__Left ",  ROIname, ", layer 4"),
+      LL5  = paste0("/obs/ROI__Left ",  ROIname, ", layer 5"),
+      LL6a = paste0("/obs/ROI__Left ",  ROIname, ", layer 6a"),
+      LL6b = paste0("/obs/ROI__Left ",  ROIname, ", layer 6b"),
+      RL1  = paste0("/obs/ROI__Right ", ROIname, ", layer 1"),
       RL23 = paste0("/obs/ROI__Right ", ROIname, ", layer 2/3"),
-      RL4 = paste0("/obs/ROI__Right ", ROIname, ", layer 4"),
-      RL5 = paste0("/obs/ROI__Right ", ROIname, ", layer 5"),
+      RL4  = paste0("/obs/ROI__Right ", ROIname, ", layer 4"),
+      RL5  = paste0("/obs/ROI__Right ", ROIname, ", layer 5"),
       RL6a = paste0("/obs/ROI__Right ", ROIname, ", layer 6a"),
       RL6b = paste0("/obs/ROI__Right ", ROIname, ", layer 6b")
     )
-    L1_mask <- file[[ROI_names[["LL1"]]]][] | file[[ROI_names[["RL1"]]]][]
+    L1_mask  <- file[[ROI_names[["LL1"]]]][]  | file[[ROI_names[["RL1"]]]][]
     L23_mask <- file[[ROI_names[["LL23"]]]][] | file[[ROI_names[["RL23"]]]][]
-    L4_mask <- file[[ROI_names[["LL4"]]]][] | file[[ROI_names[["RL4"]]]][]
-    L5_mask <- file[[ROI_names[["LL5"]]]][] | file[[ROI_names[["RL5"]]]][]
+    L4_mask  <- file[[ROI_names[["LL4"]]]][]  | file[[ROI_names[["RL4"]]]][]
+    L5_mask  <- file[[ROI_names[["LL5"]]]][]  | file[[ROI_names[["RL5"]]]][]
     L6a_mask <- file[[ROI_names[["LL6a"]]]][] | file[[ROI_names[["RL6a"]]]][]
     L6b_mask <- file[[ROI_names[["LL6b"]]]][] | file[[ROI_names[["RL6b"]]]][]
-    layer <- rep("notROI", n_cells)
-    layer[L1_mask] <- "L1"
+    layer    <- rep("notROI", n_cells)
+    layer[L1_mask]  <- "L1"
     layer[L23_mask] <- "L23"
-    layer[L4_mask] <- "L4"
-    layer[L5_mask] <- "L5"
+    layer[L4_mask]  <- "L4"
+    layer[L5_mask]  <- "L5"
     layer[L6a_mask] <- "L6a"
     layer[L6b_mask] <- "L6b"
-    layer <- as.factor(layer)
+    layer           <- as.factor(layer)
     
     # Grab rows for left and right hemisphere
     left_mask <- file[[ROI_names[["LL1"]]]][] | 
@@ -134,15 +147,15 @@ parse_hdf5 <- function(
       file[[ROI_names[["RL5"]]]][] | 
       file[[ROI_names[["RL6a"]]]][] | 
       file[[ROI_names[["RL6b"]]]][]
-    hemisphere <- rep("notROI", n_cells)
-    hemisphere[left_mask] <- "left"
+    hemisphere             <- rep("notROI", n_cells)
+    hemisphere[left_mask]  <- "left"
     hemisphere[right_mask] <- "right"
-    hemisphere <- as.factor(hemisphere)
+    hemisphere             <- as.factor(hemisphere)
     
     # Grab metadata and form columns
-    age <- as.factor(rep(as.integer(sub("P", "", file[["/uns/info/metadata/age"]][])), n_cells))
-    sex <- as.factor(rep(file[["/uns/info/metadata/sex"]][], n_cells))
-    strain <- as.factor(rep(file[["/uns/info/metadata/strain"]][], n_cells))
+    age        <- as.factor(rep(as.integer(sub("P", "", file[["/uns/info/metadata/age"]][])), n_cells))
+    sex        <- as.factor(rep(file[["/uns/info/metadata/sex"]][], n_cells))
+    strain     <- as.factor(rep(file[["/uns/info/metadata/strain"]][], n_cells))
     experience <- as.factor(rep(file[["/uns/info/metadata/treatment"]][], n_cells))
     
     # Grab spatial coordinates and form columns 
@@ -159,13 +172,13 @@ parse_hdf5 <- function(
     
     # Reorient spatial coordinates of whole slice 
     # ... center around middle of L5 left cortical area
-    L5_left_mask <- L5_mask & left_mask
-    x_coord <- x_coord - mean(x_coord[L5_left_mask])
-    y_coord <- y_coord - mean(y_coord[L5_left_mask])
+    L5_left_mask     <- L5_mask & left_mask
+    x_coord          <- x_coord - mean(x_coord[L5_left_mask])
+    y_coord          <- y_coord - mean(y_coord[L5_left_mask])
     # ... align x axis and line through L5 cortical regions
-    L5_right_mask <- L5_mask & right_mask
-    right_xlarger <- mean(x_coord[L5_right_mask]) > mean(x_coord[L5_left_mask])
-    tilt_slope <- mean(y_coord[L5_right_mask]) / mean(x_coord[L5_right_mask])
+    L5_right_mask    <- L5_mask & right_mask
+    right_xlarger    <- mean(x_coord[L5_right_mask]) > mean(x_coord[L5_left_mask])
+    tilt_slope       <- mean(y_coord[L5_right_mask]) / mean(x_coord[L5_right_mask])
     if (tilt_slope < 0) {
       y_tilt_radians <- -atan(-tilt_slope)
     } else {
@@ -188,7 +201,7 @@ parse_hdf5 <- function(
       if (right_xlarger) anterior_up <- TRUE
       else anterior_up <- FALSE
     }
-    if (!anterior_up) y_coord <- -y_coord
+    if (!anterior_up) y_coord   <- -y_coord
     # ... make sure right is positive
     if (!right_xlarger) x_coord <- -x_coord
     # ... push into positive quadrant corner
@@ -221,16 +234,16 @@ parse_hdf5 <- function(
     }
     
     # Replace cell type number with cell type name
-    transcript_counts$cellsubclass_MMC <- cellsubclass_names[transcript_counts$cellsubclass_MMC]
+    transcript_counts$cellsubclass_MMC  <- cellsubclass_names[transcript_counts$cellsubclass_MMC]
     transcript_counts$cellsupertype_MMC <- cellsupertype_names[transcript_counts$cellsupertype_MMC]
-    transcript_counts$celltype_MMC <- celltype_names[transcript_counts$celltype_MMC]
+    transcript_counts$celltype_MMC      <- celltype_names[transcript_counts$celltype_MMC]
     
     # Convert to factor 
-    transcript_counts$celltype_MMC <- as.factor(transcript_counts$celltype_MMC)
+    transcript_counts$celltype_MMC      <- as.factor(transcript_counts$celltype_MMC)
     
     # Remove Layer 1
     if (remove_L1) {
-      L1_mask <- transcript_counts$layer == "L1"
+      L1_mask           <- transcript_counts$layer == "L1"
       transcript_counts <- transcript_counts[!L1_mask,]
     }
     
@@ -246,7 +259,7 @@ parse_csv <- function(
     file_path,
     mouse_num,
     z_view_bottom = TRUE,
-    remove_L1 = TRUE       # Exclude transcripts in layer 1?  
+    remove_L1     = TRUE       # Exclude transcripts in layer 1?  
   ) {
     
     # Load data
@@ -392,13 +405,13 @@ parse_csv <- function(
 #' @export
 make_count_data <- function(
     data_path, 
-    remove_L1 = TRUE,
-    ROIname = "Primary auditory area",
-    ROI_only = TRUE,
-    raw = TRUE,
-    drop_blanks = TRUE,
+    remove_L1            = TRUE,
+    ROIname              = "Primary auditory area",
+    ROI_only             = TRUE,
+    raw                  = TRUE,
+    drop_blanks          = TRUE,
     load_first_file_only = FALSE,
-    verbose = TRUE
+    verbose              = TRUE
   ) {
     
     # Get a list of all HDF5 files in the "data" folder
@@ -432,12 +445,12 @@ make_count_data <- function(
       assign(
         paste0("mouse", f), 
         parse_hdf5(
-          file_path = files[f], 
-          mouse_num = f, 
-          raw = raw, 
-          ROI_only = ROI_only, 
-          remove_L1 = remove_L1, 
-          ROIname = ROIname, 
+          file_path   = files[f], 
+          mouse_num   = f, 
+          raw         = raw, 
+          ROI_only    = ROI_only, 
+          remove_L1   = remove_L1, 
+          ROIname     = ROIname, 
           drop_blanks = drop_blanks
           )
         )
@@ -450,8 +463,8 @@ make_count_data <- function(
         "age", "sex", 
         "strain", "experience",
         "x_coord", "y_coord"))
-      noise_columns <- grep("_noise$", colnames(get(paste0("mouse", f))), value = FALSE)
-      mean_rates <- c(mean_rates, mean(as.matrix(get(paste0("mouse", f))[,-c(ind_var_fields, noise_columns)])))
+      noise_columns   <- grep("_noise$", colnames(get(paste0("mouse", f))), value = FALSE)
+      mean_rates      <- c(mean_rates, mean(as.matrix(get(paste0("mouse", f))[,-c(ind_var_fields, noise_columns)])))
       cells_per_mouse <- c(cells_per_mouse, nrow(get(paste0("mouse", f))))
     }
     
@@ -510,10 +523,10 @@ make_count_data <- function(
 #' @export
 make_count_data_csv <- function(
     data_path, 
-    remove_L1 = TRUE,
-    initialize_zeros = FALSE,
+    remove_L1            = TRUE,
+    initialize_zeros     = FALSE,
     load_first_file_only = FALSE,
-    verbose = TRUE
+    verbose              = TRUE
   ) {
     
     # Get a list of all csv files in the "data" folder
@@ -652,56 +665,57 @@ plot_results <- function(
 coordinate_transform <- function(
     mouse_num, 
     df,
-    nat_left = FALSE,    # This setting used based on manual visual checks to ensure consistent orientation, causes angle and coordinate sign flips in layer leveling
-    nat_right = FALSE,   # This setting used based on manual visual checks to ensure consistent orientation, causes angle and coordinate sign flips in layer leveling
-    verbose = TRUE
+    leveling_layer = "L4",
+    nat_left       = FALSE,    # This setting used based on manual visual checks to ensure consistent orientation, causes angle and coordinate sign flips in layer leveling
+    nat_right      = FALSE,   # This setting used based on manual visual checks to ensure consistent orientation, causes angle and coordinate sign flips in layer leveling
+    verbose        = TRUE
   ) {
     
     if (verbose) snk.report...("Grabbing coordinates and defining layers and hemispheres")
     
     # Grab indexes
-    mask <- df$mouse == mouse_num 
-    mask_left <- df[mask,"hemisphere"] == "left"
-    mask_right <- df[mask,"hemisphere"] == "right"
+    mask        <- df$mouse == mouse_num 
+    mask_left   <- df[mask,"hemisphere"] == "left"
+    mask_right  <- df[mask,"hemisphere"] == "right"
     
     # Define columns for coordinate
-    x_coord <- "x_coord"
-    y_coord <- "y_coord"
-    all_coord <- c(x_coord, y_coord)
+    x_coord     <- "x_coord"
+    y_coord     <- "y_coord"
+    all_coord   <- c(x_coord, y_coord)
     
     # Grab coordinates 
     coordinates <- df[mask, all_coord]
     
     # Define layer rows
-    mask_left_L1 <- mask_left & df[mask, "layer"] == "L1"
-    mask_right_L1 <- mask_right & df[mask, "layer"] == "L1"
-    mask_left_L23 <- mask_left & df[mask, "layer"] == "L23"
+    mask_left_L1   <- mask_left  & df[mask, "layer"] == "L1"
+    mask_right_L1  <- mask_right & df[mask, "layer"] == "L1"
+    mask_left_L23  <- mask_left  & df[mask, "layer"] == "L23"
     mask_right_L23 <- mask_right & df[mask, "layer"] == "L23"
-    mask_left_L4 <- mask_left & df[mask, "layer"] == "L4"
-    mask_right_L4 <- mask_right & df[mask, "layer"] == "L4"
-    mask_left_L5 <- mask_left & df[mask, "layer"] == "L5"
-    mask_right_L5 <- mask_right & df[mask, "layer"] == "L5"
-    mask_left_L6a <- mask_left & df[mask, "layer"] == "L6a"
+    mask_left_L4   <- mask_left  & df[mask, "layer"] == "L4"
+    mask_right_L4  <- mask_right & df[mask, "layer"] == "L4"
+    mask_left_L5   <- mask_left  & df[mask, "layer"] == "L5"
+    mask_right_L5  <- mask_right & df[mask, "layer"] == "L5"
+    mask_left_L6a  <- mask_left  & df[mask, "layer"] == "L6a"
     mask_right_L6a <- mask_right & df[mask, "layer"] == "L6a"
-    mask_left_L6b <- mask_left & df[mask, "layer"] == "L6b"
+    mask_left_L6b  <- mask_left  & df[mask, "layer"] == "L6b"
     mask_right_L6b <- mask_right & df[mask, "layer"] == "L6b"
     
     # Put layer rows in convenient lists
     # ... left hemisphere
     layer_rows_left <- list(
-      L1 = mask_left_L1,
+      L1  = mask_left_L1,
       L23 = mask_left_L23,
-      L4 = mask_left_L4,
-      L5 = mask_left_L5,
+      L4  = mask_left_L4,
+      L5  = mask_left_L5,
       L6a = mask_left_L6a,
       L6b = mask_left_L6b
     )
     # ... right hemisphere
     layer_rows_right <- list(
-      L1 = mask_right_L1,
+      L1  = mask_right_L1,
       L23 = mask_right_L23,
-      L4 = mask_right_L4,
-      L5 = mask_right_L5,
+      L4  = mask_right_L4,
+      L5  = mask_right_L5,
       L6a = mask_right_L6a,
       L6b = mask_right_L6b
     )
@@ -717,8 +731,8 @@ coordinate_transform <- function(
     plot_untransformed <- ggplot(df2[df2$mouse == mouse_num,], aes(x = x_coord, y = y_coord, color = layer)) +
       geom_point(na.rm = TRUE) +
       labs(
-        x = "X Coordinate", 
-        y = "Y Coordinate", 
+        x     = "X Coordinate", 
+        y     = "Y Coordinate", 
         color = "Layer", 
         title = paste("Untransformed Cortical layers, mouse", mouse_num)
       ) +
@@ -750,7 +764,7 @@ coordinate_transform <- function(
     }
     # ... perform recentering
     coordinates <- recenter_coordinates(coordinates, mask_right, mask_right_L5)
-    coordinates <- recenter_coordinates(coordinates, mask_left, mask_left_L5)
+    coordinates <- recenter_coordinates(coordinates, mask_left,  mask_left_L5)
     
     # Test by plotting (recentered)
     plot_recenter <- plot_results(
@@ -765,10 +779,10 @@ coordinate_transform <- function(
       hemisphere, 
       mask_hemisphere, 
       mask_layer, 
-      flip_right = TRUE,
-      natural_left = FALSE,
+      flip_right    = TRUE,
+      natural_left  = FALSE,
       natural_right = FALSE,
-      verbose = FALSE
+      verbose       = FALSE
     ) {
       # Fit linear model to the mask_layer coordinates to get the angle of the slice
       model <- lm(y_coord ~ x_coord, data = data[mask_layer,])
@@ -778,38 +792,38 @@ coordinate_transform <- function(
         angle <- -atan(slope)
         if (natural_left || natural_right) angle <- -angle
       } else {
-        angle <- atan(slope)
+        angle <-  atan(slope)
       }
       if (verbose) cat("\nangle: ", angle*57.3)
       # Center layer on x axis 
-      y_mean <- mean(data[mask_layer, y_coord])
-      new_coord <- data[mask_hemisphere,]
-      colnames(new_coord) <- colnames(data)
+      y_mean               <- mean(data[mask_layer, y_coord])
+      new_coord            <- data[mask_hemisphere,]
+      colnames(new_coord)  <- colnames(data)
       new_coord[, y_coord] <- new_coord[, y_coord] - y_mean
       # Level by rotating
       new_coord <- matrix_transform(new_coord, angle)
-      colnames(new_coord) <- colnames(data)
+      colnames(new_coord)  <- colnames(data)
       # Undo centering
       new_coord[, y_coord] <- new_coord[, y_coord] + y_mean
       # Flip hemispheres if necessary
       if (hemisphere == "right" && flip_right && !natural_right) new_coord[, y_coord] <- -new_coord[, y_coord]
-      if (hemisphere == "right" && flip_right && natural_right) new_coord[, x_coord] <- -new_coord[, x_coord]
+      if (hemisphere == "right" && flip_right &&  natural_right) new_coord[, x_coord] <- -new_coord[, x_coord]
       if (natural_left) new_coord[, y_coord] <- -new_coord[, y_coord]
       # Return just the transformed hemisphere
       return(new_coord)
     }
     
     # Step 2: Rotate each patch so that L4 aligns with the x-axis and L1 (or L23, if L1 removed) is on top
-    if (verbose) snk.report...("Step 2, rotating each patch so that L4 aligns with the x-axis with anterior in positive y direction")
-    coordinates[mask_right,] <- level_layer(coordinates, "right", mask_right, mask_right_L4, natural_right = nat_right, verbose = FALSE)
-    coordinates[mask_left,] <- level_layer(coordinates, "left", mask_left, mask_left_L4, natural_left = nat_left, verbose = FALSE)
+    if (verbose) snk.report...(paste0("Step 2, rotating each patch so that ", leveling_layer, " aligns with the x-axis with anterior in positive y direction"))
+    coordinates[mask_right,] <- level_layer(coordinates, "right", mask_right, layer_rows_right[[leveling_layer]], natural_right = nat_right, verbose = FALSE)
+    coordinates[mask_left,]  <- level_layer(coordinates, "left",  mask_left,  layer_rows_left[[leveling_layer]],  natural_left  = nat_left,  verbose = FALSE)
     
     # Test by plotting (L4 leveled)
-    plot_level_L4 <- plot_results(
+    plot_leveled <- plot_results(
       df, coordinates, mouse_num,
       paste("Transformed cortical layers (L4 leveled), mouse", mouse_num)
     )
-    plot_list <- c(plot_list, list(plot_level_L4 = plot_level_L4))
+    plot_list <- c(plot_list, list(plot_leveled = plot_leveled))
     
     # Step 3: Model and flatten laminar curve based on L4
     if (verbose) snk.report...("Step 3, modeling and flattening laminar curve based on L4")
@@ -822,30 +836,37 @@ coordinate_transform <- function(
     ) {
       
       # Down-sample data 
-      just_these <- sample(1:sum(mask_layer), as.integer(sum(mask_layer)/2))
+      just_these   <- sample(1:sum(mask_layer), as.integer(sum(mask_layer)/2))
       data_sampled <- data[mask_layer,][just_these,]
       
       # Fit curve
-      model <- nls(
-        y_coord ~ -c * (x_coord - a)^2 + b,
-        data = data_sampled,
-        start = list(a = 0, b = 1, c = 0.001)
+      model <- tryCatch(
+        nls(
+          y_coord ~ -c * (x_coord - a)^2 + b,
+          data = data_sampled,
+          start = list(a = 0, b = 1, c = 0.001)
+        ),
+        error = function(e) {
+          return(NULL)
+        }
       )
       
+      # If fitting failed, return the unmodified data
+      if (is.null(model))
+        return(data[mask_hemisphere, ])
+      
       # Get coefficients
-      pars <- model$m$getPars()
+      pars <- coef(model)
       
       # Define function to flatten data 
-      uw <- function(x, b, a, c) {
-        c*(x - a)^2 + b
-      }
+      uw <- function(x, b, a, c) {c*(x - a)^2 + b}
       
       # Flatten this hemisphere 
       data[mask_hemisphere, y_coord] <- uw(
         x = data[mask_hemisphere, x_coord], 
         b = data[mask_hemisphere, y_coord], 
         pars["a"], pars["c"]
-        )
+      )
       
       return(data[mask_hemisphere,])
       
@@ -853,7 +874,7 @@ coordinate_transform <- function(
     
     # Flatten each hemisphere
     coordinates[mask_right,] <- flatten(coordinates, mask_right, mask_right_L4)
-    coordinates[mask_left,] <- flatten(coordinates, mask_left, mask_left_L4)
+    coordinates[mask_left,]  <- flatten(coordinates, mask_left, mask_left_L4)
     
     # Test by plotting (flattened)
     plot_flattened <- plot_results(
@@ -873,13 +894,14 @@ coordinate_transform <- function(
 # Define helper function for binning coordinates and smoothing edges
 coordinate_binning <- function(
     mouse_num,
-    total_bins,             # Number of bins to use when binning data
-    layer_names,            # e.g., c("L1", "L23", "L4", "L5", "L6a", "L6b")
+    total_bins,                    # Number of bins to use when binning data
+    layer_names,                   # e.g., c("L1", "L23", "L4", "L5", "L6a", "L6b")
     df,
-    L1_removed = TRUE,      # Exclude transcripts in layer 1?
-    nat_left = FALSE,       # This setting used based on manual visual checks to ensure consistent orientation, causes angle and coordinate sign flips in layer leveling
-    nat_right = FALSE,      # This setting used based on manual visual checks to ensure consistent orientation, causes angle and coordinate sign flips in layer leveling
-    verbose = TRUE
+    L1_removed     = TRUE,         # Exclude transcripts in layer 1?
+    leveling_layer = leveling_layer,
+    nat_left       = FALSE,        # This setting used based on manual visual checks to ensure consistent orientation, causes angle and coordinate sign flips in layer leveling
+    nat_right      = FALSE,        # This setting used based on manual visual checks to ensure consistent orientation, causes angle and coordinate sign flips in layer leveling
+    verbose        = TRUE
   ) {
     
     # Grab rows for the mouse
@@ -889,7 +911,7 @@ coordinate_binning <- function(
     
     # Apply coordinate transform to those rows
     if (verbose) snk.report...("Performing coordinate transform")
-    coord_trans <- coordinate_transform(mouse_num, df, nat_left = nat_left, nat_right = nat_right)
+    coord_trans <- coordinate_transform(mouse_num, df, leveling_layer = leveling_layer, nat_left = nat_left, nat_right = nat_right)
     plot_list <- coord_trans$plot_list
     coord_trans <- coord_trans$coord
     
@@ -1087,17 +1109,19 @@ coordinate_binning <- function(
 #' @param L1_removed Logical, whether the data in count_data has L1 removed (default is TRUE)
 #' @param nat_left Logical, setting used based on manual visual checks to ensure consistent orientation, causes angle and coordinate sign flips in layer leveling (default is FALSE)
 #' @param nat_right Logical, setting used based on manual visual checks to ensure consistent orientation, causes angle and coordinate sign flips in layer leveling (default is FALSE)
+#' @param leveling_layer Character string, the layer to use when leveling tissue patch in coordinate transformation (default is)
 #' @param verbose Logical, whether to print progress messages (default is TRUE)
 #' @return A list containing the transformed count data, layer boundary estimates, and optionally the generated plots
 #' @export
 cortical_coordinate_transform <- function(
     count_data,
     total_bins,
-    keep_plots = FALSE,
-    L1_removed = TRUE,
-    nat_left = FALSE, 
-    nat_right = FALSE,        
-    verbose = TRUE
+    keep_plots     = FALSE,
+    L1_removed     = TRUE,
+    nat_left       = FALSE, 
+    nat_right      = FALSE,    
+    leveling_layer = "L4", 
+    verbose        = TRUE
   ) {
     
     # Count_data input should have genes across in columns, not stacked in rows
@@ -1125,7 +1149,7 @@ cortical_coordinate_transform <- function(
       assign(paste0("plot_list_m", mouse_num), list(slice_plot = slice_plots[[paste0("slice_plot", mouse_num)]]))
       
       # Transform and bin coordinates
-      count_data <- coordinate_binning(mouse_num, total_bins, layer_names, count_data, L1_removed, nat_left, nat_right)
+      count_data <- coordinate_binning(mouse_num, total_bins, layer_names, count_data, L1_removed, leveling_layer, nat_left, nat_right, verbose)
       
       # Extract layer boundary estimates and plots 
       layer_boundary_bins[mouse_num,] <- count_data$layer_boundary_bins
