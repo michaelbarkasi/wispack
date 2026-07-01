@@ -2,14 +2,15 @@
 
 ## Introduction
 
-Wisp models can include thousands of parameters, each with their own
-intuitive physical interpretation. At bottom, wisp models are
-parameterized by a handful of [fixed-effect spatial
-parameters](https://michaelbarkasi.github.io/wispack/articles/tutorial_Poisson.md)
+Wisp models can have thousands of parameters, each with their own
+intuitive physical interpretation. Schematically, the picture is more
+simple. At bottom, wisp models are parameterized by a handful of
+[fixed-effect spatial parameter
+types](https://michaelbarkasi.github.io/wispack/articles/tutorial_Poisson.md)
 – block rates, transition points, and transition slopes – plus
 [random-effect
 scalars](https://michaelbarkasi.github.io/wispack/articles/tutorial_warping.md)
-for each of these fixed-effect spatial parameters. However, the
+for each of these fixed-effect spatial parameter types. However, the
 fixed-effect spatial parameters multiply with the number of species, the
 number of
 [contexts](https://michaelbarkasi.github.io/wispack/articles/tutorial_multicontext.md),
@@ -21,7 +22,7 @@ intuitive plotting methods for visualizing wisp model results.
 
 ## Rate-count plots
 
-The backbone of wisp visualization is the rate-count plot, as in
+The backbone of wisp visualization is the *rate-count plot*, as in
 “predicted rate, observed count”. Rate-count plots come in two forms,
 one giving confidence-intervals (CI) and the other giving a scatter plot
 of observations. Both forms give predicted rates across the spatial axis
@@ -31,8 +32,9 @@ for all treatment conditions.
 
 The CI rate-count plot is a simplified line plot showing predicted rate
 as a function of spatial position, along with a 95% confidence interval
-for the rate at each spatial location. As a demonstration, let’s grab
-the model of the laminar axis of somatosensory cortex from the RORB
+for the rate at each spatial location. As a demonstration, let’s use a
+re-done version of the model of the laminar axis of somatosensory cortex
+from the RORB
 [tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.md):
 
 ``` r
@@ -51,28 +53,31 @@ model <- readRDS(
   )
 ```
 
-Note that the saved model just loaded was made under exactly the same
-conditions as the original from the RORB
+The saved model just loaded was made for the [stats
+tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md)
+under the same settings used in the RORB
 [tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.md),
 except that the wisp function was set, as in the following code chunk,
 to also run a thousand bootstraps in addition to the default MCMC walk.
 We want bootstraps because we will be plotting the model parameters
 below, and bootstraps generate more reliable [parameter
 estimates](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md)
-than the MCMC walk.
+than the MCMC walk. As will be visible in the first rate-count plot
+below (at least, when compared to the same plot in the RORB tutorial),
+this change has a big effect on the CI and parameter estimates.
 
 ``` r
 
 model <- wisp(
-    count.data = countdata,
-    variables = data.variables,
-    plot.settings = list(
-        print.plots = FALSE, 
-        dim.bounds = colMeans(layer.boundary.bins)
-      ),
+    count.data     = countdata,
+    variables      = list(species = "gene", ran = "mouse", timeseries = "age"),
+    model.settings = list(LRO_cost = "none"), 
+    plot.settings  = list(
+      print.plots  = FALSE, 
+      dim.bounds   = colMeans(layer.boundary.bins)),
     bootstraps.num = 1000, 
-    max.fork = 5,
-    verbose = TRUE
+    max.fork       = 20,
+    verbose        = TRUE
   )
 ```
 
@@ -91,15 +96,19 @@ layer.boundary.bins <- read.csv(
   )
 ```
 
-Let’s use the plot.ratecount function to reproduce the RORB plot that
-was made and shown in the previous tutorial:
+Let’s use the plot.ratecount function to remake the RORB plot that was
+made and shown in the RORB
+[tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.md),
+this time using the bootstrap resamples for the CI instead of MCMC
+resamples:
 
 ``` r
 
 plot.ratecount(
-  model,
-  dim.boundaries = colMeans(layer.boundary.bins),
-  species = "Rorb" 
+    model,
+    dim.boundaries = colMeans(layer.boundary.bins),
+    species        = "Rorb",
+    verbose        = FALSE
   )
 ```
 
@@ -114,8 +123,8 @@ explained in the RORB
 [tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.md),
 this confidence interval is computed without any multiple comparison
 correction (unlike p-values, which are corrected for multiple
-comparisons). Note that the different ribbon sizes in this plot compared
-to the plot from the RORB
+comparisons). As noted above, the different ribbon sizes in this plot
+compared to the plot from the RORB
 [tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.md)
 are due to using bootstraps instead of MCMC samples.
 
@@ -131,10 +140,11 @@ However, it’s possible to rescale the vertical axis into log form:
 ``` r
 
 plot.ratecount(
-  model,
-  dim.boundaries = colMeans(layer.boundary.bins),
-  species = "Rorb",
-  log.scale = TRUE
+    model,
+    dim.boundaries = colMeans(layer.boundary.bins),
+    species        = "Rorb",
+    log.scale      = TRUE,
+    verbose        = FALSE
   )
 ```
 
@@ -142,19 +152,21 @@ plot.ratecount(
 
 ### Scatter plots
 
-The second kind of rate-count plot, the scatter rate-count plot, is a
+The second kind of rate-count plot, the *scatter rate-count plot*, is a
 more complex plot showing predicted rate without random effects as a
-line, model fit to individual replicates as dashed lines, and observed
-counts as scatter points. It’s accessed via the CI_style argument in
-plot.ratecount:
+line, model fit to individual replicates (i.e., predicted rates with
+random effects) as dashed lines, and observed counts (plus
+interpolations for random-effect-free counts) as scatter points. It’s
+accessed via the CI_style argument in plot.ratecount:
 
 ``` r
 
 plot.ratecount(
-  model,
-  dim.boundaries = colMeans(layer.boundary.bins),
-  CI_style = FALSE,
-  species = "Rorb" 
+    model,
+    dim.boundaries = colMeans(layer.boundary.bins),
+    CI_style       = FALSE,
+    species        = "Rorb",
+    verbose        = FALSE
   )
 ```
 
@@ -172,9 +184,9 @@ provides a function to decompose them into their components.
 ``` r
 
 plots.decomp <- plot.decomposition(
-  model,
-  dim.boundaries = colMeans(layer.boundary.bins),
-  species = "Rorb"
+    model,
+    dim.boundaries = colMeans(layer.boundary.bins),
+    species        = "Rorb"
   )
 ```
 
@@ -214,7 +226,7 @@ Notice how each plot has two dashed lines which fit the observed counts
 well, and two which do not. This is because the model is fit to each
 sample in all treatment conditions. The treatment conditions are got by
 the interaction of covariates hemisphere and age. Although each sample
-includes both hemispheres, it can only include one age. The model pulls
+includes both hemispheres, it can only include one age. The model pools
 information across samples to extrapolate the fit for the missing
 treatment conditions. Thus, some of the dashed lines represent fits to
 observed counts in treatment conditions that were not actually observed
@@ -233,8 +245,9 @@ the time-series plot for RORB again:
 ``` r
 
 plot.timeseries(
-  model, 
-  species = "Rorb"
+    model, 
+    species = "Rorb",
+    verbose = FALSE
   )
 ```
 
@@ -265,8 +278,9 @@ the corresponding random-effect scalars – that define a wisp model.
 ``` r
 
 plots.param <- plot.parameters(
-  model,
-  species = "Rorb"
+    model,
+    species = "Rorb",
+    verbose = FALSE
   )
 ```
 

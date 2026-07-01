@@ -23,4 +23,6 @@ analyze.residuals(wisp.results, verbose = TRUE)
 
 ## Value
 
-Numeric p-value.
+A list containing data frames `stats` and `stats.log` holding summary
+stats for residuals and log-residuals, respectively, plus a list of
+plots visualizing these stats.

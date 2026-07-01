@@ -16,7 +16,8 @@ of mice. The data has been preprocessed into laminar coordinates as
 described in [the
 tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.md)
 on modeling the cortical-laminar axis (see also [this
-preprint](https://doi.org/10.1101/2025.06.11.659209)). As with all data
+preprint](https://doi.org/10.1101/2025.06.11.659209) or the published
+[paper](https://doi.org/10.1093/nar/gkag466)). As with all data
 appropriate for wispack, and in line with well-known modeling functions
 in R (e.g.,
 [lme4::lmer](https://cran.r-project.org/web/packages/lme4/index.html)
@@ -96,7 +97,8 @@ countdata <- countdata[Glut_mask | GABA_mask, ]
 unique_celltypes <- unique(countdata$celltype_MMC)
 cat(
   "\nNumber of unique cell types:", length(unique_celltypes), "\n", 
-  "\nCell types:", paste0(unique_celltypes, collapse = ", "))
+  "\nCell types:", paste0(unique_celltypes, collapse = ", ")
+  )
 ```
 
 ``` scroll-output
@@ -162,9 +164,9 @@ the names for the species, ran, and timeseries variables.
 
 # Define variables in the dataframe for the model
 data.variables <- list(
-    context = "celltype_MMC",
-    species = "gene",
-    ran = "mouse",
+    context    = "celltype_MMC",
+    species    = "gene",
+    ran        = "mouse",
     timeseries = "age"
   )
 ```
@@ -172,31 +174,30 @@ data.variables <- list(
 With data loaded and variables set, we can fit the wisp model. As it’s
 not necessary for demonstrating cell-type modeling, we’ll only fit the
 model (fit_only = TRUE) without running any [statistical parameter
-estimation](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md).
+estimation](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md).[^1]
 
 ``` r
 
 library(wispack, quietly = TRUE)
 
 model <- wisp(
-    count.data = countdata,
-    variables = data.variables,
-    fit_only = TRUE,
-    model.settings = list(LROcutoff = 2.0, LROwindow_factor = 2.0),
-    plot.settings = list(
-        print.plots = FALSE, 
-        dim.bounds = colMeans(layer.boundary.bins),
-        title_size = 12,
-        log.scale = TRUE,
+    count.data     = countdata,
+    variables      = data.variables,
+    fit_only       = TRUE,
+    model.settings = list(LRO_cost = "none", LROwindow_factor = 1.75),
+    plot.settings  = list(
+        print.plots     = FALSE, 
+        dim.bounds      = colMeans(layer.boundary.bins),
+        title_size      = 12,
+        log.scale       = TRUE,
         count.alpha.ran = 0.0,
-        pred.alpha.ran = 0.0
+        pred.alpha.ran  = 0.0
       ),
-    verbose = TRUE
+    verbose        = TRUE
   )
 ```
 
 ``` scroll-output
-## 
 ## 
 ## Parsing data and settings for wisp model
 ## ----------------------------------------
@@ -205,8 +206,9 @@ model <- wisp(
 ##  buffer_factor: 0.05
 ##  ctol: 1e-06
 ##  max_penalty_at_distance_factor: 0.01
+##  LRO_cost: none
 ##  LROcutoff: 2
-##  LROwindow_factor: 2
+##  LROwindow_factor: 1.75
 ##  rise_threshold_factor: 0.8
 ##  max_evals: 1000
 ##  rng_seed: 42
@@ -222,6 +224,7 @@ model <- wisp(
 ##  log.scale: TRUE
 ##  splitting_factor: 
 ##  CI_style: TRUE
+##  splitting_factor_colors: 120, 240
 ##  label_size: 5.5
 ##  title_size: 12
 ##  axis_size: 12
@@ -255,6 +258,9 @@ model <- wisp(
 ## 
 ## Initializing Cpp (wspc) model
 ## ----------------------------------------
+## Context grouping levels: "GABA" "Glut"
+## Species grouping levels: "Bcl11b" "Cux2" "Fezf2" "Nxph3" "Rorb" "Satb2"
+## Random-effect grouping levels: "none" "1" "2" "3" "4" "5"
 ## 
 ## Infinity handling:
 ## machine epsilon: (eps_): 2.22045e-16
@@ -263,74 +269,32 @@ model <- wisp(
 ## implied pseudo-infinity for unbounded warp (inf_warp): 4.5036e+08
 ## 
 ## Extracting variables and data information:
-## Found max bin: 100.000000
-## Fixed effects:
-## "hemisphere" "timeseries"
-## Ref levels:
-## "left" "7"
-## Time series detected:
-## "7" "12" "18"
-## Created treatment levels:
-## "ref" "right" "12" "18" "right12" "right18"
-## Constructed weight_row matrix
-## Context grouping levels:
-## "GABA" "Glut"
-## Species grouping levels:
-## "Bcl11b" "Cux2" "Fezf2" "Nxph3" "Rorb" "Satb2"
-## Random-effect grouping levels:
-## "none" "1" "2" "3" "4" "5"
+## Max bin: 100
+## Fixed effects: "hemisphere" "timeseries"
+## Ref levels: "left" "7"
+## Time series detected: "7" "12" "18"
+## Created treatment levels: "ref" "right" "12" "18" "right12" "right18"
 ## Total rows in summed count data table: 43200
 ## Number of rows with unique model components: 432
 ## 
-## Creating summed-count data columns and weight matrix:
-## Random level 0, 1/6 complete
-## Random level 1, 2/6 complete
-## Random level 2, 3/6 complete
-## Random level 3, 4/6 complete
-## Random level 4, 5/6 complete
-## Random level 5, 6/6 complete
-## 
-## Making extrapolation pool:
-## row: 1440/7200
-## row: 2880/7200
-## row: 4320/7200
-## row: 5760/7200
-## row: 7200/7200
-## 
-## Wrapping up initialization:
-## Extrapolated 'none' rows
-## Took log of observed counts
-## Estimated gamma dispersion of raw counts
-## Found average log counts for each context-species combination
-## Constructed grouping variable IDs
-## 
 ## Running LRO change-point detection and setting initial parameters
 ## ----------------------------------------
+## 
 ## Estimated change points
-## Estimated initial parameters for fixed-effect treatments
-## Built initial beta (ref and fixed-effects) matrices
-## Initialized random-effect warping factors
-## Made and mapped parameter vector
-## Number of parameters: 720
-## Size of boundary vector: 4212
+## Estimated initial parameters
+## Number of parameters: 936
+## Size of boundary vector: 5508
 ## 
 ## Fitting model to data
 ## ----------------------------------------
 ## 
-## Setting boundary penalty coefficients
-## Initial neg_loglik: 23295.3
-## Initial neg_loglik with penalty: 23528.2
-## Initial min boundary distance: 0.0364665
-## Final neg_loglik: 21444.6
-## Final neg_loglik with penalty: 21574.4
-## Final min boundary distance: 0.10638
-## Number of evaluations: 372
-## Checking feasibility of provided parameters
-## ... no tpoints below buffer
-## ... no NAN rates predicted
-## ... no negative rates predicted
-## Provided parameters are feasible
-## Initial boundary distance (want > 0): 0.10638
+## Initial nll: 23319.1
+## Initial nll with penalty: 23552.3
+## Initial min boundary distance: 0.0350121
+## Final nll: 21422.6
+## Final nll with penalty: 21540.4
+## Final min boundary distance: 0.123832
+## Number of evaluations: 270
 ## 
 ## Making rate-count plots... 
 ## Making time series plots...
@@ -340,15 +304,16 @@ model <- wisp(
 
 When given different contexts, the wisp function will make different
 rate-count and time-series plots for each context. For the big picture,
-let’s compare the reference levels for all gene between glutamatergic
+let’s compare the reference levels for all genes between glutamatergic
 and GABAergic neurons.
 
 ``` r
 
-plt_Glut <- model[["plots"]][["ratecount"]][["plot_pred.log_context_Glut"]] + theme(legend.position = "bottom")
-plt_GABA <- model[["plots"]][["ratecount"]][["plot_pred.log_context_GABA"]] + theme(legend.position = "bottom")
-ylims <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
-ylims <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
+rc_plots <- model[["plots"]][["ratecount"]]
+plt_Glut <- rc_plots[["plot_pred.log_context_Glut"]] + theme(legend.position = "bottom")
+plt_GABA <- rc_plots[["plot_pred.log_context_GABA"]] + theme(legend.position = "bottom")
+ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
+ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
 g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
@@ -362,13 +327,17 @@ varies between cell types.
 
 - Expression levels for these six genes are much higher in glutamatergic
   neurons compared with GABAergic neurons, although this is in part
-  because there are more glutamatergic cells.
+  because there are more glutamatergic cells and wisp models the total
+  count (sum) of transcripts across all cells within a given spatial
+  coordinate.
 - The characteristic bump in [RORB
   expression](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.md)
   in L4 is only there is glutamatergic neurons; it is gone in GABAergic
   neurons.
-- Conversely, there appears to be a bump in BCL11B expression in L4 of
-  GABAergic neurons which is absent in glutamatergic neurons.
+- However, there appears to be a bump in BCL11B expression in L4 of both
+  glutamatergic and GABAergic neurons.
+- There also might be a bump in FEZF2 in L4 in GABAergic neurons that’s
+  missing in glutamatergic neurons.
 - NXPH3 and SATB2 expression takes on roughly the same shape in both
   cell types, with higher expression in deeper layers for NXPH3 and
   higher expression in surface layers in SATB2.
@@ -383,14 +352,14 @@ levels.
 
 ``` r
 
-plt_Glut1 <- model[["plots"]][["ratecount"]][["plot_pred.log_context_Glut_fixEff_Bcl11b"]] + theme(legend.position = "bottom") 
-plt_GABA1 <- model[["plots"]][["ratecount"]][["plot_pred.log_context_GABA_fixEff_Bcl11b"]] + theme(legend.position = "bottom") 
-plt_Glut2 <- model[["plots"]][["ratecount"]][["plot_pred.log_context_Glut_fixEff_Fezf2"]] + theme(legend.position = "bottom") 
-plt_GABA2 <- model[["plots"]][["ratecount"]][["plot_pred.log_context_GABA_fixEff_Fezf2"]] + theme(legend.position = "bottom") 
-ylims <- ggplot_build(plt_Glut1)$layout$panel_params[[1]]$y.range
-ylims <- range(c(ylims, ggplot_build(plt_GABA1)$layout$panel_params[[1]]$y.range))
-ylims <- range(c(ylims, ggplot_build(plt_Glut2)$layout$panel_params[[1]]$y.range))
-ylims <- range(c(ylims, ggplot_build(plt_GABA2)$layout$panel_params[[1]]$y.range))
+plt_Glut1 <- rc_plots[["plot_pred.log_context_Glut_fixEff_Bcl11b"]] + theme(legend.position = "bottom") 
+plt_GABA1 <- rc_plots[["plot_pred.log_context_GABA_fixEff_Bcl11b"]] + theme(legend.position = "bottom") 
+plt_Glut2 <- rc_plots[["plot_pred.log_context_Glut_fixEff_Fezf2"]]  + theme(legend.position = "bottom") 
+plt_GABA2 <- rc_plots[["plot_pred.log_context_GABA_fixEff_Fezf2"]]  + theme(legend.position = "bottom") 
+ylims     <- ggplot_build(plt_Glut1)$layout$panel_params[[1]]$y.range
+ylims     <- range(c(ylims, ggplot_build(plt_GABA1)$layout$panel_params[[1]]$y.range))
+ylims     <- range(c(ylims, ggplot_build(plt_Glut2)$layout$panel_params[[1]]$y.range))
+ylims     <- range(c(ylims, ggplot_build(plt_GABA2)$layout$panel_params[[1]]$y.range))
 plt_Glut1 <- plt_Glut1 + coord_cartesian(ylim = ylims)
 plt_GABA1 <- plt_GABA1 + coord_cartesian(ylim = ylims)
 plt_Glut2 <- plt_Glut2 + coord_cartesian(ylim = ylims)
@@ -402,25 +371,27 @@ grid.draw(g)
 ![](tutorial_multicontext_files/figure-html/print_plots_Bcl11bFezf2-1.png)
 
 Starting with BCL11B, we see that the bump in L4 at P7 isn’t confined to
-the left hemisphere in GABAergic cells, but also appears (perhaps
-shifted down into L5) in the right as well. Curiously, not only do
-expression levels drop with age (P12, P18), but the bump seems to
-disappear in both hemispheres. In contrast, the up-regulation of BCL11B
-in deep layers (L5 and L6) in glutamatergic neurons is stable across age
-and hemisphere, albeit with a notable drop after P7.
+the left hemisphere in both glutamatergic and GABAergic cells, but also
+appears (perhaps shifted down into L5) in the right as well. Curiously,
+not only do expression levels drop with age (P12, P18), but in GABAergic
+cells the bump seems to disappear in both hemispheres. In contrast, in
+glutamatergic cells, the L4 bump turns into a more general up-regulation
+of BCL11B in deep layers (L5 and L6), albeit with a notable drop off in
+overall rate after P7.
 
 Similar to BCL11B, FEZF2 expression in GABAergic cells seems to show a
 bilateral bump, this time across all of L5 and L4, which disappears
-after P7. In glutamatergic neurons, FEZF2 expression parallels BCL11B
-just as closely, albeit with higher overall expression and, perhaps,
-with retained up-regulation in L5 after P7.
+after P7. In glutamatergic neurons, FEZF2 expression shows interesting
+parallels to BCL11B, albeit in this case, it’s the older ages which show
+a more localized bump in L5 and the younger age which shows a more
+diffuse deep-layer up-regulation.
 
 ``` r
 
-plt_Glut <- model[["plots"]][["ratecount"]][["plot_pred.log_context_Glut_fixEff_Cux2"]] + theme(legend.position = "bottom")
-plt_GABA <- model[["plots"]][["ratecount"]][["plot_pred.log_context_GABA_fixEff_Cux2"]] + theme(legend.position = "bottom") 
-ylims <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
-ylims <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
+plt_Glut <- rc_plots[["plot_pred.log_context_Glut_fixEff_Cux2"]] + theme(legend.position = "bottom")
+plt_GABA <- rc_plots[["plot_pred.log_context_GABA_fixEff_Cux2"]] + theme(legend.position = "bottom") 
+ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
+ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
 g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
@@ -429,17 +400,18 @@ grid.draw(g)
 
 ![](tutorial_multicontext_files/figure-html/print_plots_Cux2-1.png)
 
-In CUX2 we see relatively flat expression across layers in GABAergic
-neurons, with an overall drop in expression level after P7. In contrast,
-while expression is constant across layers in glutamatergic neurons at
-P7, it only drops selectively, in deep layers (L5 and L6) after P7.
+In CUX2 we see some interesting spatial variation in GABAergic neurons
+at P7, which drops in P12 and P18 to relatively flat expression across
+all layers. In contrast, while expression is constant across layers in
+glutamatergic neurons at P7, it only drops selectively, in deep layers
+(L5 and L6) after P7.
 
 ``` r
 
-plt_Glut <- model[["plots"]][["ratecount"]][["plot_pred.log_context_Glut_fixEff_Rorb"]] + theme(legend.position = "bottom") 
-plt_GABA <- model[["plots"]][["ratecount"]][["plot_pred.log_context_GABA_fixEff_Rorb"]] + theme(legend.position = "bottom") 
-ylims <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
-ylims <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
+plt_Glut <- rc_plots[["plot_pred.log_context_Glut_fixEff_Rorb"]] + theme(legend.position = "bottom") 
+plt_GABA <- rc_plots[["plot_pred.log_context_GABA_fixEff_Rorb"]] + theme(legend.position = "bottom") 
+ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
+ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
 g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
@@ -453,19 +425,18 @@ expression](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticall
 confirms the expected up-regulation in L4 in glutamatergic neurons. The
 absence of this bump in L4 in GABAergic neurons seems to hold
 bilaterally and across ages. In fact, there’s little (if any)
-interesting up-regulation in GABAergic neurons, except perhaps a small
-bump in L6 in the right hemisphere at P7.
+interesting up-regulation in GABAergic neurons.
 
 ``` r
 
-plt_Glut1 <- model[["plots"]][["ratecount"]][["plot_pred.log_context_Glut_fixEff_Nxph3"]] + theme(legend.position = "bottom") 
-plt_GABA1 <- model[["plots"]][["ratecount"]][["plot_pred.log_context_GABA_fixEff_Nxph3"]] + theme(legend.position = "bottom") 
-plt_Glut2 <- model[["plots"]][["ratecount"]][["plot_pred.log_context_Glut_fixEff_Satb2"]] + theme(legend.position = "bottom") 
-plt_GABA2 <- model[["plots"]][["ratecount"]][["plot_pred.log_context_GABA_fixEff_Satb2"]] + theme(legend.position = "bottom") 
-ylims <- ggplot_build(plt_Glut1)$layout$panel_params[[1]]$y.range
-ylims <- range(c(ylims, ggplot_build(plt_GABA1)$layout$panel_params[[1]]$y.range))
-ylims <- range(c(ylims, ggplot_build(plt_Glut2)$layout$panel_params[[1]]$y.range))
-ylims <- range(c(ylims, ggplot_build(plt_GABA2)$layout$panel_params[[1]]$y.range))
+plt_Glut1 <- rc_plots[["plot_pred.log_context_Glut_fixEff_Nxph3"]] + theme(legend.position = "bottom") 
+plt_GABA1 <- rc_plots[["plot_pred.log_context_GABA_fixEff_Nxph3"]] + theme(legend.position = "bottom") 
+plt_Glut2 <- rc_plots[["plot_pred.log_context_Glut_fixEff_Satb2"]] + theme(legend.position = "bottom") 
+plt_GABA2 <- rc_plots[["plot_pred.log_context_GABA_fixEff_Satb2"]] + theme(legend.position = "bottom") 
+ylims     <- ggplot_build(plt_Glut1)$layout$panel_params[[1]]$y.range
+ylims     <- range(c(ylims, ggplot_build(plt_GABA1)$layout$panel_params[[1]]$y.range))
+ylims     <- range(c(ylims, ggplot_build(plt_Glut2)$layout$panel_params[[1]]$y.range))
+ylims     <- range(c(ylims, ggplot_build(plt_GABA2)$layout$panel_params[[1]]$y.range))
 plt_Glut1 <- plt_Glut1 + coord_cartesian(ylim = ylims)
 plt_GABA1 <- plt_GABA1 + coord_cartesian(ylim = ylims)
 plt_Glut2 <- plt_Glut2 + coord_cartesian(ylim = ylims)
@@ -477,9 +448,9 @@ grid.draw(g)
 ![](tutorial_multicontext_files/figure-html/print_plots_Nxph3Satb2-1.png)
 
 Finally, as observed in the reference level, NXPH3 and SATB2 expression
-is extremely similar across glutamatergic and GABAergic neurons, albeit
-with higher levels across the board in glutamatergic neurons (which, as
-noted above, may simply be due to a higher number of cells).
+is similar across glutamatergic and GABAergic neurons, albeit with
+higher levels across the board in glutamatergic neurons (which, as noted
+above, may simply be due to a higher number of cells).
 
 ### Time-series plots
 
@@ -487,19 +458,20 @@ Temporal trajectories of the count (y-axis) across age (x-axis) can be
 visualized with the [time-series
 plots](https://michaelbarkasi.github.io/wispack/articles/tutorial_timeseries.md).
 These show some interesting patterns on their own. For example, while
-BCL11B shares spatial pattern with FEZF2, its temporal pattern is more
+BCL11B shares a spatial pattern with FEZF2, its temporal pattern is more
 similar to that of SATB2.
 
 ``` r
 
-plt_Glut1 <- model[["plots"]][["timeseries"]][["plot_pred.log_context_Glut_timeseries_Bcl11b"]] + theme(plot.title = element_text(hjust = 0.0))
-plt_GABA1 <- model[["plots"]][["timeseries"]][["plot_pred.log_context_GABA_timeseries_Bcl11b"]] + theme(plot.title = element_text(hjust = 0.0))
-plt_Glut2 <- model[["plots"]][["timeseries"]][["plot_pred.log_context_Glut_timeseries_Satb2"]] + theme(plot.title = element_text(hjust = 0.0))
-plt_GABA2 <- model[["plots"]][["timeseries"]][["plot_pred.log_context_GABA_timeseries_Satb2"]] + theme(plot.title = element_text(hjust = 0.0))
-ylims <- ggplot_build(plt_Glut1)$layout$panel_params[[1]]$y.range
-ylims <- range(c(ylims, ggplot_build(plt_GABA1)$layout$panel_params[[1]]$y.range))
-ylims <- range(c(ylims, ggplot_build(plt_Glut2)$layout$panel_params[[1]]$y.range))
-ylims <- range(c(ylims, ggplot_build(plt_GABA2)$layout$panel_params[[1]]$y.range))
+ts_plots  <- model[["plots"]][["timeseries"]]
+plt_Glut1 <- ts_plots[["plot_pred.log_context_Glut_timeseries_Bcl11b"]] + theme(plot.title = element_text(hjust = 0.0))
+plt_GABA1 <- ts_plots[["plot_pred.log_context_GABA_timeseries_Bcl11b"]] + theme(plot.title = element_text(hjust = 0.0))
+plt_Glut2 <- ts_plots[["plot_pred.log_context_Glut_timeseries_Satb2"]]  + theme(plot.title = element_text(hjust = 0.0))
+plt_GABA2 <- ts_plots[["plot_pred.log_context_GABA_timeseries_Satb2"]]  + theme(plot.title = element_text(hjust = 0.0))
+ylims     <- ggplot_build(plt_Glut1)$layout$panel_params[[1]]$y.range
+ylims     <- range(c(ylims, ggplot_build(plt_GABA1)$layout$panel_params[[1]]$y.range))
+ylims     <- range(c(ylims, ggplot_build(plt_Glut2)$layout$panel_params[[1]]$y.range))
+ylims     <- range(c(ylims, ggplot_build(plt_GABA2)$layout$panel_params[[1]]$y.range))
 plt_Glut1 <- plt_Glut1 + coord_cartesian(ylim = ylims)
 plt_GABA1 <- plt_GABA1 + coord_cartesian(ylim = ylims)
 plt_Glut2 <- plt_Glut2 + coord_cartesian(ylim = ylims)
@@ -516,15 +488,19 @@ similar effect from age, regardless of cell type, hemisphere, or
 cortical layer (block). What is different between the cell types,
 however, is that while BCL11B expression in glutamatergic neurons varies
 by cortical layer in glutamatergic neurons (with higher expression in
-the deeper layers, block 1), it is constant across cortical layers in
-GABAergic neurons.
+the deeper layers, blocks 1 and 2), it is constant across cortical
+layers in GABAergic neurons. This can be seen in the plots by the way
+the lines representing temporal trajectories for the blocks are spread
+widely across the y-axis for glutamatergic neurons, but those lines
+bunch tightly for GABAergic neurons. In contrast, the dispersion of the
+block lines for SATB2 is tight for both cell types.
 
 ``` r
 
-plt_Glut <- model[["plots"]][["timeseries"]][["plot_pred.log_context_Glut_timeseries_Cux2"]] + theme(plot.title = element_text(hjust = 0.0))
-plt_GABA <- model[["plots"]][["timeseries"]][["plot_pred.log_context_GABA_timeseries_Cux2"]] + theme(plot.title = element_text(hjust = 0.0))
-ylims <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
-ylims <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
+plt_Glut <- ts_plots[["plot_pred.log_context_Glut_timeseries_Cux2"]] + theme(plot.title = element_text(hjust = 0.0))
+plt_GABA <- ts_plots[["plot_pred.log_context_GABA_timeseries_Cux2"]] + theme(plot.title = element_text(hjust = 0.0))
+ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
+ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
 g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
@@ -535,18 +511,20 @@ grid.draw(g)
 
 Similar trajectories of the count (y-axis) across age (x-axis) are also
 seen for glutamatergic and GABAergic neurons for CUX2, albeit the
-similarity only holds for the deeper block (block 1) of the
-glutamatergic cells. The more superficial block (block 2) of
-glutamatergic neurons shows a trajectory different from that found in
-GABAergic neurons, with expression levels dipping at P12 before
-recovering at P18.
+similarity only holds for the mid block (block 2) of the glutamatergic
+cells. The more superficial block (block 2) of glutamatergic neurons
+shows a trajectory different from that found in GABAergic neurons, with
+expression levels dipping at P12 before recovering at P18, and the
+deepest block (block 1) of glutamatergic neurons shows continual decline
+with age, in contrast to what appears to be stabilization in GABAergic
+neurons at P12.
 
 ``` r
 
-plt_Glut <- model[["plots"]][["timeseries"]][["plot_pred.log_context_Glut_timeseries_Fezf2"]] + theme(plot.title = element_text(hjust = 0.0))
-plt_GABA <- model[["plots"]][["timeseries"]][["plot_pred.log_context_GABA_timeseries_Fezf2"]] + theme(plot.title = element_text(hjust = 0.0))
-ylims <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
-ylims <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
+plt_Glut <- ts_plots[["plot_pred.log_context_Glut_timeseries_Fezf2"]] + theme(plot.title = element_text(hjust = 0.0))
+plt_GABA <- ts_plots[["plot_pred.log_context_GABA_timeseries_Fezf2"]] + theme(plot.title = element_text(hjust = 0.0))
+ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
+ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
 g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
@@ -555,17 +533,19 @@ grid.draw(g)
 
 ![](tutorial_multicontext_files/figure-html/print_timeseries_plots_Fezf2-1.png)
 
-While the GABAergic neurons show a temporal trajectory for FEZF2
-expression that is similar to that seen for BCL11B and CUX2, the
-glutamatergic neurons show variation across cortical layers (blocks),
-but no real lateralization in temporal trajectory.
+The GABAergic neurons show a temporal trajectory for FEZF2 expression
+that is similar to that seen for CUX2. The glutamatergic neurons also
+show a temporal trajectory for FEZF2 expression that is similar to that
+seen for CUX2, albeit in this case, the layers are flipped: Superficial
+layers having higher expression levels in CUX2, and deep layers having
+higher expression in FEZF2.
 
 ``` r
 
-plt_Glut <- model[["plots"]][["timeseries"]][["plot_pred.log_context_Glut_timeseries_Nxph3"]] + theme(plot.title = element_text(hjust = 0.0))
-plt_GABA <- model[["plots"]][["timeseries"]][["plot_pred.log_context_GABA_timeseries_Nxph3"]] + theme(plot.title = element_text(hjust = 0.0))
-ylims <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
-ylims <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
+plt_Glut <- ts_plots[["plot_pred.log_context_Glut_timeseries_Nxph3"]] + theme(plot.title = element_text(hjust = 0.0))
+plt_GABA <- ts_plots[["plot_pred.log_context_GABA_timeseries_Nxph3"]] + theme(plot.title = element_text(hjust = 0.0))
+ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
+ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
 g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
@@ -574,18 +554,17 @@ grid.draw(g)
 
 ![](tutorial_multicontext_files/figure-html/print_timeseries_plots_Nxph3-1.png)
 
-NXPH3, on the other hand, shows lateralization of the temporal
-trajectory in both glutamatergic and GABAergic neurons. While the
-patterns in GABAergic neurons are hard to discern visually, there is a
-clear pattern in the glutamatergic neurons, with a dip in expression at
-P12 with recovery at P18, in the left but not the right hemisphere.
+NXPH3 shows lateralization of the temporal trajectory in both
+glutamatergic and GABAergic neurons: in both hemisphere’s expression
+rates dip in P12 before recovering at P18, but the dip is steeper in the
+left than in the right.
 
 ``` r
 
-plt_Glut <- model[["plots"]][["timeseries"]][["plot_pred.log_context_Glut_timeseries_Rorb"]] + theme(plot.title = element_text(hjust = 0.0))
-plt_GABA <- model[["plots"]][["timeseries"]][["plot_pred.log_context_GABA_timeseries_Rorb"]] + theme(plot.title = element_text(hjust = 0.0))
-ylims <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
-ylims <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
+plt_Glut <- ts_plots[["plot_pred.log_context_Glut_timeseries_Rorb"]] + theme(plot.title = element_text(hjust = 0.0))
+plt_GABA <- ts_plots[["plot_pred.log_context_GABA_timeseries_Rorb"]] + theme(plot.title = element_text(hjust = 0.0))
+ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
+ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
 g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
@@ -597,4 +576,18 @@ grid.draw(g)
 RORB is perhaps the most difficult to interpret visually, at least for
 glutamatergic neurons, which possibly have complex temporal trajectories
 interacting with both cortical layer and hemisphere. GABAergic neurons,
-on the other hand, show little variation along any dimension.
+on the other hand, show little variation along any dimension. However,
+the main point is simple: temporal trajectory of gene expression depends
+on cell type.
+
+[^1]: A second caveat is that, as of v2.2, the LRO algorithm for
+    detecting change points depends on two key settings, determining
+    what counts as an outlier and neighborhood size. By default, these
+    are set via a grid search which looks to minimize some cost metric
+    (LRO_cost), either AIC, BIC, or negative log-likelihood. For
+    simplicity, this metric is here set to “none”, triggering wisp to
+    skip the grid search and use a set of default parameter values for
+    the LRO algorithm. This tutorial was originally written for v2.0 of
+    wispack. Changes in the LRO algorithm have made it so that, as of
+    v2.4, reproducing something like the original results requires
+    turning off the grid search and setting the window factor to 1.75.

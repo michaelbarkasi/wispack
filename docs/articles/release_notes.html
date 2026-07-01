@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -84,8 +84,10 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Release Notes</h1>
+                        <h4 data-toc-skip class="author">Michael
+Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-06-05</h4>
+            <h4 data-toc-skip class="date">July 3, 2026 (v2.4)</h4>
       
 
       <div class="d-none name"><code>release_notes.Rmd</code></div>
@@ -120,6 +122,52 @@ update the tutorial on customizing statistical analyses.</li>
 <li>Extracellular (out-of-soma) transcripts do not follow a Poisson
 distribution, and so any attempt to model them with wisp needs to
 account for this.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="version-2-4-july-3-2026">Version 2.4 (July 3, 2026)<a class="anchor" aria-label="anchor" href="#version-2-4-july-3-2026"></a>
+</h2>
+<ul>
+<li>Part 2 of a major code refactor/optimization.</li>
+<li>Finished refactoring wspc object class and its initialization method
+into a more organized structure.</li>
+<li>Fixed issue in <span class="function">extrapolate_none</span>.</li>
+<li>Added option to level preprocessing coordinate transform (the <span class="function">cortical_coordinate_transform</span> function) based on
+different layers.</li>
+<li>Updated Roxygen2 descriptions for user-facing R functions.</li>
+<li>Checked all tutorials to ensure they work with current version and
+removed auto-dating, so their current working version is properly
+documented. Included footnotes on saved and pre-processed code
+chunks.</li>
+<li>Substantial code cleaning.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="version-2-3-june-16-2026">Version 2.3 (June 16, 2026)<a class="anchor" aria-label="anchor" href="#version-2-3-june-16-2026"></a>
+</h2>
+<ul>
+<li>Part 1 of a major code refactor/optimization.</li>
+<li>Improved algorithm in <span class="function">check_parameter_feasibility</span> for finding nearby
+feasible initial parameters.</li>
+<li>Improved placement of <span class="function">check_parameter_feasibility</span> within the various
+fit, MCMC, and bootstrap pipelines.</li>
+<li>Converted several large-signature stand-alone functions into wspc
+methods: <span class="function">compute_gamma_dispersion</span>, <span class="function">make_extrapolation_pool</span>, <span class="function">find_count_log_means</span>, <span class="function">estimate_change_points</span>, and <span class="function">estimate_initial_parameters</span>.</li>
+<li>Simplified parameter vector handling.</li>
+<li>Wrote checks into tutorials, to ensure code changes do not change
+results.</li>
+<li>Replaced some R Lists with std::vector.</li>
+<li>Improved weight-matrix construction.</li>
+<li>Replaced pcg with std rng, to ease licensing issues.</li>
+<li>Removed stan variables from wspc objects.</li>
+<li>Replaced R-style masking with numeric indexing for summed count
+data.</li>
+<li>Added <span class="code_variable">print.settings</span> argument
+<span class="code_variable">splitting_factor_colors</span> to <span class="function">wisp</span> to allow users to specify colors for the
+splitting factor in ratecount and timeseries plots.</li>
+<li>Performed extensive optimization of the code, leading to a x2 or x3
+speedup in running <span class="function">wisp</span>.</li>
+<li>Documentation updated, but not yet rebuilt.</li>
 </ul>
 </div>
 <div class="section level2">

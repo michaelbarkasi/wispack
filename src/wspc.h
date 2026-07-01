@@ -325,6 +325,7 @@ void vprint(const std::string& message, sdouble val);
 void vprint(const std::string& message, double val);
 void vprint(const std::string& message, int val);
 void vprintV(const CharacterVector& message, bool verbose);
+void vprintMV(const std::string& lead, const CharacterVector& message,bool verbose);
 
 // Function for printing vectors
 void vprintV(const NumericVector& vec, bool verbose);

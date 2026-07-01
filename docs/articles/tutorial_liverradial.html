@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -87,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-06-05</h4>
+            <h4 data-toc-skip class="date">July 3, 2026 (v2.4)</h4>
       
 
       <div class="d-none name"><code>tutorial_liverradial.Rmd</code></div>
@@ -215,66 +215,116 @@ data with count <span class="math inline">y_ib_i</span>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/HenrikBengtsson/R.matlab" class="external-link">R.matlab</a></span><span class="op">)</span></span>
 <span><span class="va">files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span></span>
-<span>    path <span class="op">=</span> <span class="st">"Droin_data"</span>, </span>
-<span>    pattern <span class="op">=</span> <span class="st">"\\.mat$"</span>, </span>
+<span>    path       <span class="op">=</span> <span class="st">"Droin_data"</span>, </span>
+<span>    pattern    <span class="op">=</span> <span class="st">"\\.mat$"</span>, </span>
 <span>    full.names <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span></span>
-<span><span class="va">Droin_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">files</span>, <span class="va">readMat</span><span class="op">)</span></span>
+<span><span class="va">Droin_data</span>        <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">files</span>, <span class="va">readMat</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">files</span><span class="op">)</span></span></code></pre></div>
 <p>Droin et al. bulk-sequenced thousands of genes. For this
 demonstration, we will model just a few with known zonation and temporal
 rhythm:</p>
 <table class="table">
 <colgroup>
-<col width="41%">
-<col width="17%">
-<col width="20%">
-<col width="20%">
+<col style="width: 25%;">
+<col style="width: 45%;">
+<col style="width: 15%;">
+<col style="width: 15%;">
 </colgroup>
-<thead><tr class="header">
-<th align="left">Abbreviation</th>
-<th align="left">Name</th>
-<th align="left">Zonation</th>
-<th align="left">Rhythm</th>
+<thead><tr>
+<th>
+Abbreviation
+</th>
+<th>
+Name
+</th>
+<th>
+Zonation
+</th>
+<th>
+Rhythm
+</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
-<td align="left"><span class="gene">GLUL</span></td>
-<td align="left">Glutamine synthethase</td>
-<td align="left">Central</td>
-<td align="left"></td>
+<tr>
+<td>
+<span class="gene">GLUL</span>
+</td>
+<td>
+Glutamine synthethase
+</td>
+<td>
+Central
+</td>
+<td>
+</td>
 </tr>
-<tr class="even">
-<td align="left"><span class="gene">ASS1</span></td>
-<td align="left">Urea cycle gene argininosuccinate synthetase</td>
-<td align="left">Portal</td>
-<td align="left"></td>
+<tr>
+<td>
+<span class="gene">ASS1</span>
+</td>
+<td>
+Urea cycle gene argininosuccinate synthetase
+</td>
+<td>
+Portal
+</td>
+<td>
+</td>
 </tr>
-<tr class="odd">
-<td align="left">
+<tr>
+<td>
 <span class="gene">ARNTL</span>, <span class="gene">BMAL1</span>
 </td>
-<td align="left">Basic helix-loop-helix ARNT like 1</td>
-<td align="left"></td>
-<td align="left">Circadian</td>
+<td>
+Basic helix-loop-helix ARNT like 1
+</td>
+<td>
+</td>
+<td>
+Circadian
+</td>
 </tr>
-<tr class="even">
-<td align="left"><span class="gene">DBP</span></td>
-<td align="left">PAR bZip transcription factor</td>
-<td align="left"></td>
-<td align="left">Circadian</td>
+<tr>
+<td>
+<span class="gene">DBP</span>
+</td>
+<td>
+PAR bZip transcription factor
+</td>
+<td>
+</td>
+<td>
+Circadian
+</td>
 </tr>
-<tr class="odd">
-<td align="left"><span class="gene">ELOVL3</span></td>
-<td align="left">ELOVL fatty acid elongase 3</td>
-<td align="left">Central</td>
-<td align="left">Circadian</td>
+<tr>
+<td>
+<span class="gene">ELOVL3</span>
+</td>
+<td>
+ELOVL fatty acid elongase 3
+</td>
+<td>
+Central
+</td>
+<td>
+Circadian
+</td>
 </tr>
-<tr class="even">
-<td align="left"><span class="gene">PCK1</span></td>
-<td align="left">Phosphoenolpyruvate carboxykinase 1</td>
-<td align="left">Portal</td>
-<td align="left">Circadian</td>
+<tr>
+<td>
+<span class="gene">PCK1</span>
+</td>
+<td>
+Phosphoenolpyruvate carboxykinase 1
+</td>
+<td>
+Portal
+</td>
+<td>
+Circadian
+</td>
 </tr>
 </tbody>
 </table>
@@ -286,21 +336,21 @@ rhythm:</p>
 <span><span class="co"># For each loaded MatLab file, subset to the above genes</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">fn</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">files</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="co"># Check that the desired genes are in the file</span></span>
-<span>    <span class="va">gene_idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html" class="external-link">which</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"all.genes"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">genes_to_keep</span><span class="op">)</span></span>
+<span>    <span class="va">gene_idx</span>      <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html" class="external-link">which</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"all.genes"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">genes_to_keep</span><span class="op">)</span></span>
 <span>    <span class="va">genes_to_keep</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"all.genes"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">[</span><span class="va">gene_idx</span><span class="op">]</span></span>
 <span>    <span class="co"># Subset file components to just these genes</span></span>
-<span>    <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"seq.data"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"seq.data"</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="va">gene_idx</span>,<span class="op">]</span></span>
-<span>    <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"mat.norm"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"mat.norm"</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="va">gene_idx</span>,<span class="op">]</span></span>
+<span>    <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"seq.data"</span><span class="op">]</span><span class="op">]</span>    <span class="op">&lt;-</span> <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"seq.data"</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="va">gene_idx</span>,<span class="op">]</span></span>
+<span>    <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"mat.norm"</span><span class="op">]</span><span class="op">]</span>    <span class="op">&lt;-</span> <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"mat.norm"</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="va">gene_idx</span>,<span class="op">]</span></span>
 <span>    <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"MeanGeneExp"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"MeanGeneExp"</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="va">gene_idx</span>,<span class="op">]</span></span>
-<span>    <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"SE"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"SE"</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="va">gene_idx</span>,<span class="op">]</span></span>
-<span>    <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"q.vals"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"q.vals"</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="va">gene_idx</span>,<span class="op">]</span></span>
+<span>    <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"SE"</span><span class="op">]</span><span class="op">]</span>          <span class="op">&lt;-</span> <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"SE"</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="va">gene_idx</span>,<span class="op">]</span></span>
+<span>    <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"q.vals"</span><span class="op">]</span><span class="op">]</span>      <span class="op">&lt;-</span> <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"q.vals"</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="va">gene_idx</span>,<span class="op">]</span></span>
 <span>    <span class="co"># Rename data rows with gene names</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"seq.data"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">genes_to_keep</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"mat.norm"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">genes_to_keep</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"seq.data"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>    <span class="op">&lt;-</span> <span class="va">genes_to_keep</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"mat.norm"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>    <span class="op">&lt;-</span> <span class="va">genes_to_keep</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"MeanGeneExp"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">genes_to_keep</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"SE"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">genes_to_keep</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"q.vals"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">genes_to_keep</span></span>
-<span>    <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"all.genes"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">genes_to_keep</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"SE"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>          <span class="op">&lt;-</span> <span class="va">genes_to_keep</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"q.vals"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>         <span class="op">&lt;-</span> <span class="va">genes_to_keep</span></span>
+<span>    <span class="va">Droin_data</span><span class="op">[[</span><span class="va">fn</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"all.genes"</span><span class="op">]</span><span class="op">]</span>             <span class="op">&lt;-</span> <span class="va">genes_to_keep</span></span>
 <span>  <span class="op">}</span></span></code></pre></div>
 <p>Finally, we can build a data frame of simulated counts suitable for
 the <span class="function">wisp</span> function. As described in more
@@ -317,61 +367,56 @@ case, <span class="code_variable">ZT</span>).</p>
 <span></span>
 <span><span class="co"># For each subsetted MatLab file ...</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  </span>
-<span>  <span class="co"># Grab gene list and data dimensions</span></span>
-<span>  <span class="va">gene_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"mat.norm"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
-<span>  <span class="va">n_genes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">gene_list</span><span class="op">)</span></span>
-<span>  <span class="va">n_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"mat.norm"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
-<span>  <span class="va">n_bins</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"Pmat"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># Grab row sums for renormalization of probability to 1</span></span>
-<span>  <span class="va">Pmat_row_sums</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"Pmat"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
-<span>  </span>
-<span>  <span class="co"># De-normalize transcript counts to realistic rates</span></span>
-<span>  <span class="va">denormalized_rates</span> <span class="op">&lt;-</span> <span class="va">Droin_data</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"mat.norm"</span><span class="op">]</span><span class="op">]</span> <span class="op">*</span> <span class="fl">1e3</span></span>
-<span>  </span>
-<span>  <span class="co"># ... for each gene</span></span>
-<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">g</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_genes</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    </span>
-<span>    <span class="co"># ... for each zone (i.e., spatial coordinate, or bin)</span></span>
-<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">b</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_bins</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>      </span>
-<span>      <span class="co"># Simulate count of gene g in each cell, for mouse i</span></span>
-<span>      <span class="va">sim_gene_counts_by_cell</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="va">n_cells</span>, <span class="va">denormalized_rates</span><span class="op">[</span><span class="va">g</span>,<span class="op">]</span><span class="op">)</span></span>
-<span>      </span>
-<span>      <span class="co"># Get probability of bin membership for each cell, for mouse i </span></span>
-<span>      <span class="va">probability_of_zone_membership_by_cell</span> <span class="op">&lt;-</span> <span class="va">Droin_data</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"Pmat"</span><span class="op">]</span><span class="op">]</span><span class="op">[</span>,<span class="va">b</span><span class="op">]</span> <span class="op">/</span> <span class="va">Pmat_row_sums</span></span>
-<span>      </span>
-<span>      <span class="co"># Randomly select whether each cell is in this bin</span></span>
-<span>      <span class="va">cell_weight</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span>n <span class="op">=</span> <span class="va">n_cells</span>, size <span class="op">=</span> <span class="fl">1</span>, prob <span class="op">=</span> <span class="va">probability_of_zone_membership_by_cell</span><span class="op">)</span></span>
-<span>      </span>
-<span>      <span class="va">count_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
-<span>        <span class="va">count_data</span>,</span>
-<span>        <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>          <span class="co"># add mouse number</span></span>
-<span>          mouse <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">i</span>, <span class="va">n_cells</span><span class="op">)</span>,</span>
-<span>          <span class="co"># extract ZT from file name and add</span></span>
-<span>          ZT <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">"\\D"</span>, <span class="st">""</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">)</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>, <span class="va">n_cells</span><span class="op">)</span>,</span>
-<span>          <span class="co"># add bin number</span></span>
-<span>          bin <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">b</span>, <span class="va">n_cells</span><span class="op">)</span>,</span>
-<span>          <span class="co"># add gene name</span></span>
-<span>          gene <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">gene_list</span><span class="op">[</span><span class="va">g</span><span class="op">]</span>, <span class="va">n_cells</span><span class="op">)</span>,</span>
-<span>          <span class="co"># compute and log-transform the zone-weighted normalized gene counts</span></span>
-<span>          count <span class="op">=</span> <span class="va">sim_gene_counts_by_cell</span> <span class="op">*</span> <span class="va">cell_weight</span></span>
+<span>    <span class="co"># Grab gene list and data dimensions</span></span>
+<span>    <span class="va">gene_list</span>          <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"mat.norm"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="va">n_genes</span>            <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">gene_list</span><span class="op">)</span></span>
+<span>    <span class="va">n_cells</span>            <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"mat.norm"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="va">n_bins</span>             <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"Pmat"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="co"># Grab row sums for renormalization of probability to 1</span></span>
+<span>    <span class="va">Pmat_row_sums</span>      <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"Pmat"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="co"># De-normalize transcript counts to realistic rates</span></span>
+<span>    <span class="va">denormalized_rates</span> <span class="op">&lt;-</span> <span class="va">Droin_data</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"mat.norm"</span><span class="op">]</span><span class="op">]</span> <span class="op">*</span> <span class="fl">1e3</span></span>
+<span>    </span>
+<span>    <span class="co"># ... for each gene</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">g</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_genes</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>      <span class="co"># ... for each zone (i.e., spatial coordinate, or bin)</span></span>
+<span>      <span class="kw">for</span> <span class="op">(</span><span class="va">b</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="va">n_bins</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>        </span>
+<span>        <span class="co"># Simulate count of gene g in each cell, for mouse i</span></span>
+<span>        <span class="va">sim_counts</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="va">n_cells</span>, <span class="va">denormalized_rates</span><span class="op">[</span><span class="va">g</span>,<span class="op">]</span><span class="op">)</span></span>
+<span>        <span class="co"># Get probability of bin membership for each cell, for mouse i </span></span>
+<span>        <span class="va">mem_prob</span>    <span class="op">&lt;-</span> <span class="va">Droin_data</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"Pmat"</span><span class="op">]</span><span class="op">]</span><span class="op">[</span>,<span class="va">b</span><span class="op">]</span> <span class="op">/</span> <span class="va">Pmat_row_sums</span></span>
+<span>        <span class="co"># Randomly select whether each cell is in this bin</span></span>
+<span>        <span class="va">cell_weight</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span>n <span class="op">=</span> <span class="va">n_cells</span>, size <span class="op">=</span> <span class="fl">1</span>, prob <span class="op">=</span> <span class="va">mem_prob</span><span class="op">)</span></span>
+<span>        </span>
+<span>        <span class="va">count_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
+<span>          <span class="va">count_data</span>,</span>
+<span>          <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>            <span class="co"># add mouse number</span></span>
+<span>            mouse <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">i</span>, <span class="va">n_cells</span><span class="op">)</span>,</span>
+<span>            <span class="co"># extract ZT from file name and add</span></span>
+<span>            ZT    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">gsub</a></span><span class="op">(</span><span class="st">"\\D"</span>, <span class="st">""</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">Droin_data</span><span class="op">)</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>, <span class="va">n_cells</span><span class="op">)</span>,</span>
+<span>            <span class="co"># add bin number</span></span>
+<span>            bin   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">b</span>, <span class="va">n_cells</span><span class="op">)</span>,</span>
+<span>            <span class="co"># add gene name</span></span>
+<span>            gene  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">gene_list</span><span class="op">[</span><span class="va">g</span><span class="op">]</span>, <span class="va">n_cells</span><span class="op">)</span>,</span>
+<span>            <span class="co"># compute and log-transform the zone-weighted normalized gene counts</span></span>
+<span>            count <span class="op">=</span> <span class="va">sim_counts</span> <span class="op">*</span> <span class="va">cell_weight</span></span>
+<span>          <span class="op">)</span></span>
 <span>        <span class="op">)</span></span>
-<span>      <span class="op">)</span></span>
-<span>      </span>
-<span>      <span class="co"># Note: to reconstruct the Droin et al. data, use: </span></span>
-<span>      <span class="co">#       count = transform_data(Droin_data[[i]][["mat.norm"]][g,] * Droin_data[[i]][["Pmat"]][,b])</span></span>
-<span>      <span class="co">#   with the function: </span></span>
-<span>      <span class="co">#       transform_data &lt;- function(x) {</span></span>
-<span>      <span class="co">#           log2(x + 1e-4) - log2(11e-5)</span></span>
-<span>      <span class="co">#         }</span></span>
-<span>      </span>
+<span>        </span>
+<span>        <span class="co"># Note: to reconstruct the Droin et al. data, use: </span></span>
+<span>        <span class="co">#       count = transform_data(Droin_data[[i]][["mat.norm"]][g,] * Droin_data[[i]][["Pmat"]][,b])</span></span>
+<span>        <span class="co">#   with the function: </span></span>
+<span>        <span class="co">#       transform_data &lt;- function(x) {</span></span>
+<span>        <span class="co">#           log2(x + 1e-4) - log2(11e-5)</span></span>
+<span>        <span class="co">#         }</span></span>
+<span>        </span>
+<span>      <span class="op">}</span></span>
 <span>    <span class="op">}</span></span>
-<span>  <span class="op">}</span></span>
-<span>  </span>
-<span><span class="op">}</span></span></code></pre></div>
+<span>    </span>
+<span>  <span class="op">}</span></span></code></pre></div>
 <h2>
 Fitting a wisp
 </h2>
@@ -389,11 +434,11 @@ this package. We will load it directly.</p>
 <p>The first step is to set the variables to be modelled:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">data.variables</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  count <span class="op">=</span> <span class="st">"count"</span>,</span>
-<span>  bin <span class="op">=</span> <span class="st">"bin"</span>, </span>
-<span>  context <span class="op">=</span> <span class="st">"liver"</span>, </span>
-<span>  species <span class="op">=</span> <span class="st">"gene"</span>,</span>
-<span>  ran <span class="op">=</span> <span class="st">"mouse"</span>,</span>
+<span>  count      <span class="op">=</span> <span class="st">"count"</span>,</span>
+<span>  bin        <span class="op">=</span> <span class="st">"bin"</span>, </span>
+<span>  context    <span class="op">=</span> <span class="st">"liver"</span>, </span>
+<span>  species    <span class="op">=</span> <span class="st">"gene"</span>,</span>
+<span>  ran        <span class="op">=</span> <span class="st">"mouse"</span>,</span>
 <span>  timeseries <span class="op">=</span> <span class="st">"ZT"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>There are only eight coordinates in the spatial dimension (bins <span class="math inline">1</span> to <span class="math inline">8</span>).
@@ -404,9 +449,15 @@ of rate-transition slopes detected when searching for rate-transition
 points), and <span class="code_variable">LROcutoff</span> (which
 controls the sensitivity of rate-transition point detection). Previous
 testing (not shown here) suggests that all that’s necessary is lowering
-the <span class="code_variable">LROcutoff</span> from the default <span class="math inline">2.0</span> to <span class="math inline">1.5</span>.</p>
+the <span class="code_variable">LROcutoff</span> from the default <span class="math inline">2.0</span> to <span class="math inline">1.5</span>.<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;This sentence reflects v2.0 of wispack. As of v2.2,
+wispack now by default runs a grid search to find the window factor and
+cutoff for the LRO algorithm which minimizes a cost function, by default
+AIC, but BIC and negative log-likelihood are also options. For the
+purpose of this demo, we will reserve the original settings by setting
+&lt;span class="code_variable"&gt;LRO_cost&lt;/span&gt; to “none”.&lt;/p&gt;'><sup>1</sup></a></p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model.settings</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  LRO_cost  <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>  LROcutoff <span class="op">=</span> <span class="fl">1.5</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Next, we need to adjust a few of the plot settings. First, we want to
@@ -416,19 +467,26 @@ the low number of spatial coordinates. Finally, we adjust the alpha
 than the random-effect predictions.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plot.settings</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  print.plots <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  title_size <span class="op">=</span> <span class="fl">14</span>,</span>
-<span>  log.scale <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  count_size <span class="op">=</span> <span class="fl">2.5</span>,</span>
-<span>  count_jitter <span class="op">=</span> <span class="fl">0.0</span>,</span>
+<span>  print.plots      <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  title_size       <span class="op">=</span> <span class="fl">14</span>,</span>
+<span>  log.scale        <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  count_size       <span class="op">=</span> <span class="fl">2.5</span>,</span>
+<span>  count_jitter     <span class="op">=</span> <span class="fl">0.0</span>,</span>
 <span>  count.alpha.none <span class="op">=</span> <span class="fl">0.8</span>,</span>
-<span>  count.alpha.ran <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>  pred.alpha.ran <span class="op">=</span> <span class="fl">0.0</span></span>
+<span>  count.alpha.ran  <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  pred.alpha.ran   <span class="op">=</span> <span class="fl">0.0</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Finally, we can fit the model. For the purpose of estimating the
+<p>Finally, we can fit the model.<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;As explained in the previous footnote, changes have been
+made to the LRO change-point detection algorithm since this tutorial was
+written. This tutorial was written for wispack v2.0 and reproduces an
+analysis originally done in the published &lt;a href="https://doi.org/10.1093/nar/gkag466" class="external-link"&gt;paper&lt;/a&gt; introducing wisps.
+However, improvements in the LRO algorithm have lend to slightly
+different results as of the last compiling of this tutorial for v2.4 of
+wispack. So, the discrepancy between the results presented here and
+those presented in the &lt;a href="https://doi.org/10.1093/nar/gkag466" class="external-link"&gt;paper&lt;/a&gt; are due to changes
+in the LRO algorithm.&lt;/p&gt;'><sup>2</sup></a> For the purpose of estimating the
 parameters, we will use bootstraps instead of MCMC sampling. So, we set
-the number of MCMC steps to zero and the number of bootstraps to
-1000.</p>
+the number of MCMC steps to zero and the number of bootstraps to <span class="math inline">1,000</span>.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load wispack</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -439,16 +497,15 @@ the number of MCMC steps to zero and the number of bootstraps to
 <span></span>
 <span><span class="co"># Fit model</span></span>
 <span><span class="va">radial.model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
-<span>  count.data <span class="op">=</span> <span class="va">count_data</span>,</span>
-<span>  variables <span class="op">=</span> <span class="va">data.variables</span>,</span>
+<span>  count.data     <span class="op">=</span> <span class="va">count_data</span>,</span>
+<span>  variables      <span class="op">=</span> <span class="va">data.variables</span>,</span>
 <span>  bootstraps.num <span class="op">=</span> <span class="fl">1e3</span>,</span>
-<span>  max.fork <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  max.fork       <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  model.settings <span class="op">=</span> <span class="va">model.settings</span>,</span>
-<span>  MCMC.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>MCMC.steps <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
-<span>  plot.settings <span class="op">=</span> <span class="va">plot.settings</span></span>
+<span>  MCMC.settings  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>MCMC.steps <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span>  plot.settings  <span class="op">=</span> <span class="va">plot.settings</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## </span></span>
-<span><span class="co">## </span></span>
 <span><span class="co">## Parsing data and settings for wisp model</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
@@ -456,6 +513,7 @@ the number of MCMC steps to zero and the number of bootstraps to
 <span><span class="co">##  buffer_factor: 0.05</span></span>
 <span><span class="co">##  ctol: 1e-06</span></span>
 <span><span class="co">##  max_penalty_at_distance_factor: 0.01</span></span>
+<span><span class="co">##  LRO_cost: none</span></span>
 <span><span class="co">##  LROcutoff: 1.5</span></span>
 <span><span class="co">##  LROwindow_factor: 1.25</span></span>
 <span><span class="co">##  rise_threshold_factor: 0.8</span></span>
@@ -473,6 +531,7 @@ the number of MCMC steps to zero and the number of bootstraps to
 <span><span class="co">##  log.scale: TRUE</span></span>
 <span><span class="co">##  splitting_factor: </span></span>
 <span><span class="co">##  CI_style: TRUE</span></span>
+<span><span class="co">##  splitting_factor_colors: 120, 240</span></span>
 <span><span class="co">##  label_size: 5.5</span></span>
 <span><span class="co">##  title_size: 14</span></span>
 <span><span class="co">##  axis_size: 12</span></span>
@@ -513,6 +572,9 @@ the number of MCMC steps to zero and the number of bootstraps to
 <span><span class="co">## </span></span>
 <span><span class="co">## Initializing Cpp (wspc) model</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## Context grouping levels: "liver"</span></span>
+<span><span class="co">## Species grouping levels: "arntl" "ass1" "dbp" "elovl3" "glul" "pck1"</span></span>
+<span><span class="co">## Random-effect grouping levels: "none" "1" "10" "2" "3" "4" "5" "6" "7" "8" "9"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Infinity handling:</span></span>
 <span><span class="co">## machine epsilon: (eps_): 2.22045e-16</span></span>
@@ -521,128 +583,68 @@ the number of MCMC steps to zero and the number of bootstraps to
 <span><span class="co">## implied pseudo-infinity for unbounded warp (inf_warp): 4.5036e+08</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Extracting variables and data information:</span></span>
-<span><span class="co">## Found max bin: 8.000000</span></span>
-<span><span class="co">## Fixed effects:</span></span>
-<span><span class="co">## "timeseries"</span></span>
-<span><span class="co">## Ref levels:</span></span>
-<span><span class="co">## "0"</span></span>
-<span><span class="co">## Time series detected:</span></span>
-<span><span class="co">## "0" "6" "12" "18"</span></span>
-<span><span class="co">## Created treatment levels:</span></span>
-<span><span class="co">## "ref" "6" "12" "18"</span></span>
-<span><span class="co">## Constructed weight_row matrix</span></span>
-<span><span class="co">## Context grouping levels:</span></span>
-<span><span class="co">## "liver"</span></span>
-<span><span class="co">## Species grouping levels:</span></span>
-<span><span class="co">## "arntl" "ass1" "dbp" "elovl3" "glul" "pck1"</span></span>
-<span><span class="co">## Random-effect grouping levels:</span></span>
-<span><span class="co">## "none" "1" "10" "2" "3" "4" "5" "6" "7" "8" "9"</span></span>
+<span><span class="co">## Max bin: 8</span></span>
+<span><span class="co">## Fixed effects: "timeseries"</span></span>
+<span><span class="co">## Ref levels: "0"</span></span>
+<span><span class="co">## Time series detected: "0" "6" "12" "18"</span></span>
+<span><span class="co">## Created treatment levels: "ref" "6" "12" "18"</span></span>
 <span><span class="co">## Total rows in summed count data table: 2112</span></span>
 <span><span class="co">## Number of rows with unique model components: 264</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## Creating summed-count data columns and weight matrix:</span></span>
-<span><span class="co">## Random level 0, 1/11 complete</span></span>
-<span><span class="co">## Random level 1, 2/11 complete</span></span>
-<span><span class="co">## Random level 2, 3/11 complete</span></span>
-<span><span class="co">## Random level 3, 4/11 complete</span></span>
-<span><span class="co">## Random level 4, 5/11 complete</span></span>
-<span><span class="co">## Random level 5, 6/11 complete</span></span>
-<span><span class="co">## Random level 6, 7/11 complete</span></span>
-<span><span class="co">## Random level 7, 8/11 complete</span></span>
-<span><span class="co">## Random level 8, 9/11 complete</span></span>
-<span><span class="co">## Random level 9, 10/11 complete</span></span>
-<span><span class="co">## Random level 10, 11/11 complete</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Making extrapolation pool:</span></span>
-<span><span class="co">## row: 38/192</span></span>
-<span><span class="co">## row: 76/192</span></span>
-<span><span class="co">## row: 114/192</span></span>
-<span><span class="co">## row: 152/192</span></span>
-<span><span class="co">## row: 190/192</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Wrapping up initialization:</span></span>
-<span><span class="co">## Extrapolated 'none' rows</span></span>
-<span><span class="co">## Took log of observed counts</span></span>
-<span><span class="co">## Estimated gamma dispersion of raw counts</span></span>
-<span><span class="co">## Found average log counts for each context-species combination</span></span>
-<span><span class="co">## Constructed grouping variable IDs</span></span>
-<span><span class="co">## </span></span>
 <span><span class="co">## Running LRO change-point detection and setting initial parameters</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
 <span><span class="co">## Estimated change points</span></span>
-<span><span class="co">## Estimated initial parameters for fixed-effect treatments</span></span>
-<span><span class="co">## Built initial beta (ref and fixed-effects) matrices</span></span>
-<span><span class="co">## Initialized random-effect warping factors</span></span>
-<span><span class="co">## Made and mapped parameter vector</span></span>
-<span><span class="co">## Number of parameters: 324</span></span>
-<span><span class="co">## Size of boundary vector: 1848</span></span>
+<span><span class="co">## Estimated initial parameters</span></span>
+<span><span class="co">## Number of parameters: 276</span></span>
+<span><span class="co">## Size of boundary vector: 1320</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Estimating model parameters</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Running bootstrap fits</span></span>
-<span><span class="co">## Checking feasibility of provided parameters</span></span>
-<span><span class="co">## ... no tpoints below buffer</span></span>
-<span><span class="co">## ... no NAN rates predicted</span></span>
-<span><span class="co">## ... no negative rates predicted</span></span>
-<span><span class="co">## Provided parameters are feasible</span></span>
-<span><span class="co">## Initial boundary distance (want &gt; 0): 0.206765</span></span>
 <span><span class="co">## Performing initial fit of full data</span></span>
-<span><span class="co">## Penalized neg_loglik: 1044.51</span></span>
-<span><span class="co">## Batch: 1/100, 0.163617 sec/bs</span></span>
-<span><span class="co">## Batch: 10/100, 0.143809 sec/bs</span></span>
-<span><span class="co">## Batch: 20/100, 0.142762 sec/bs</span></span>
-<span><span class="co">## Batch: 30/100, 0.137459 sec/bs</span></span>
-<span><span class="co">## Batch: 40/100, 0.145736 sec/bs</span></span>
-<span><span class="co">## Batch: 50/100, 0.158752 sec/bs</span></span>
-<span><span class="co">## Batch: 60/100, 0.152185 sec/bs</span></span>
-<span><span class="co">## Batch: 70/100, 0.152147 sec/bs</span></span>
-<span><span class="co">## Batch: 80/100, 0.190855 sec/bs</span></span>
-<span><span class="co">## Batch: 90/100, 0.156028 sec/bs</span></span>
+<span><span class="co">## Penalized nll: 1047.02</span></span>
+<span><span class="co">## Batch: 1/100, 0.0363976 sec/bs</span></span>
+<span><span class="co">## Batch: 10/100, 0.0379782 sec/bs</span></span>
+<span><span class="co">## Batch: 20/100, 0.0366889 sec/bs</span></span>
+<span><span class="co">## Batch: 30/100, 0.0321997 sec/bs</span></span>
+<span><span class="co">## Batch: 40/100, 0.0379793 sec/bs</span></span>
+<span><span class="co">## Batch: 50/100, 0.0334089 sec/bs</span></span>
+<span><span class="co">## Batch: 60/100, 0.0348776 sec/bs</span></span>
+<span><span class="co">## Batch: 70/100, 0.0361681 sec/bs</span></span>
+<span><span class="co">## Batch: 80/100, 0.0378 sec/bs</span></span>
+<span><span class="co">## Batch: 90/100, 0.0389041 sec/bs</span></span>
 <span><span class="co">## All complete!</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Bootstrap simulation complete... </span></span>
-<span><span class="co">## Bootstrap run time (total), minutes: 2.63</span></span>
-<span><span class="co">## Bootstrap run time (per sample), seconds: 0.158</span></span>
-<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 1.578</span></span>
+<span><span class="co">## Bootstrap run time (total), minutes: 0.631</span></span>
+<span><span class="co">## Bootstrap run time (per sample), seconds: 0.038</span></span>
+<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 0.378</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## Setting full-data fit as parameters... </span></span>
-<span><span class="co">## Checking feasibility of provided parameters</span></span>
-<span><span class="co">## ... no tpoints below buffer</span></span>
-<span><span class="co">## ... no NAN rates predicted</span></span>
-<span><span class="co">## ... no negative rates predicted</span></span>
-<span><span class="co">## Provided parameters are feasible</span></span>
-<span><span class="co">## Initial boundary distance (want &gt; 0): 0.378776</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Running stats on simulation results</span></span>
+<span><span class="co">## Computing p-values and CI for model parameters</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Grabbing sample results, only resamples with converged fit... </span></span>
-<span><span class="co">## Grabbing parameter values... </span></span>
 <span><span class="co">## Computing 95% confidence intervals... </span></span>
 <span><span class="co">## Estimating p-values from resampled parameters... </span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## Recommended resample size for alpha = 0.05, 108 tests</span></span>
-<span><span class="co">## with bootstrapping/MCMC: 2160</span></span>
-<span><span class="co">## Actual resample size: 1001</span></span>
+<span><span class="co">## Recommended resample size for alpha = 0.05, 72 tests</span></span>
+<span><span class="co">## with bootstrapping/MCMC: 1440</span></span>
+<span><span class="co">## Actual resample size: 1000</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Stat summary (head only):</span></span>
 <span><span class="co">## ------------------------------</span></span>
-<span><span class="co">##                           parameter    estimate    CI.low   CI.high     p.value p.value.adj    alpha.adj significance</span></span>
-<span><span class="co">## 1  baseline_liver_Rt_arntl_Tns/Blk1  2.52351157  2.147938 2.8419666          NA          NA           NA             </span></span>
-<span><span class="co">## 2  beta_Rt_liver_arntl_6_X_Tns/Blk1 -1.42987696 -2.578113 3.1579983 0.004995005  0.33466533 0.0007462687           ns</span></span>
-<span><span class="co">## 3 beta_Rt_liver_arntl_12_X_Tns/Blk1 -0.03715176 -1.591022 0.8591341 0.911088911  3.64435564 0.0125000000           ns</span></span>
-<span><span class="co">## 4 beta_Rt_liver_arntl_18_X_Tns/Blk1  0.13107595 -0.664336 1.8067587 0.742257742  6.68031968 0.0055555556           ns</span></span>
-<span><span class="co">## 5  baseline_liver_Rt_arntl_Tns/Blk2  1.96922136  1.593244 2.2705854          NA          NA           NA             </span></span>
-<span><span class="co">## 6  beta_Rt_liver_arntl_6_X_Tns/Blk2 -0.95957998 -1.478458 0.6556153 0.000999001  0.07592408 0.0006578947           ns</span></span>
+<span><span class="co">##                           parameter    estimate    CI.low   CI.high p.value p.value.adj    alpha.adj significance</span></span>
+<span><span class="co">## 1  baseline_liver_Rt_arntl_Tns/Blk1  2.52684863  2.220644 2.8326115      NA          NA           NA             </span></span>
+<span><span class="co">## 2  beta_Rt_liver_arntl_6_X_Tns/Blk1 -1.41889072 -2.231822 0.7150526   0.003       0.141 0.0010638298           ns</span></span>
+<span><span class="co">## 3 beta_Rt_liver_arntl_12_X_Tns/Blk1 -0.08184242 -1.491263 0.7511152   0.797       3.985 0.0100000000           ns</span></span>
+<span><span class="co">## 4 beta_Rt_liver_arntl_18_X_Tns/Blk1  0.15458139 -0.745237 1.5204742   0.657       6.570 0.0050000000           ns</span></span>
+<span><span class="co">## 5  baseline_liver_Rt_arntl_Tns/Blk2  1.97591238  1.597982 2.2438646      NA          NA           NA             </span></span>
+<span><span class="co">## 6  beta_Rt_liver_arntl_6_X_Tns/Blk2 -0.97127627 -1.553045 0.1792734   0.000       0.000 0.0006944444          ***</span></span>
 <span><span class="co">## ----</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## Computing 95% CI for predicated values by bin</span></span>
-<span><span class="co">## ----------------------------------------</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Grabbing sample results, only resamples with converged fit... </span></span>
-<span><span class="co">## Computing predicted values for each sampled parameter set... </span></span>
-<span><span class="co">## Computing 95% CIs... </span></span>
+<span><span class="co">## Computing 95% CI for predicated values by bin... </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Analyzing residuals</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
@@ -654,22 +656,20 @@ the number of MCMC steps to zero and the number of bootstraps to
 <span><span class="co">## Log-residual summary by grouping variables (head only):</span></span>
 <span><span class="co">## ------------------------------</span></span>
 <span><span class="co">##          group      mean        sd  variance</span></span>
-<span><span class="co">## 1          all 0.3761585 0.4347535 0.1890106</span></span>
-<span><span class="co">## 2 ran_lvl_none 0.3469852 0.3374680 0.1138847</span></span>
-<span><span class="co">## 3    ran_lvl_1 0.4181383 0.4768411 0.2273775</span></span>
-<span><span class="co">## 4   ran_lvl_10 0.4131620 0.5134598 0.2636409</span></span>
-<span><span class="co">## 5    ran_lvl_2 0.3451371 0.4303134 0.1851696</span></span>
-<span><span class="co">## 6    ran_lvl_3 0.4122882 0.5838509 0.3408819</span></span>
+<span><span class="co">## 1          all 0.3746902 0.4507157 0.2031447</span></span>
+<span><span class="co">## 2 ran_lvl_none 0.3441262 0.3702542 0.1370882</span></span>
+<span><span class="co">## 3    ran_lvl_1 0.4233707 0.4981900 0.2481933</span></span>
+<span><span class="co">## 4   ran_lvl_10 0.4186227 0.5533833 0.3062331</span></span>
+<span><span class="co">## 5    ran_lvl_2 0.3407059 0.4497382 0.2022644</span></span>
+<span><span class="co">## 6    ran_lvl_3 0.3925379 0.5294915 0.2803612</span></span>
 <span><span class="co">## ----</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Making plots</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Making effect parameter distribution plots... </span></span>
 <span><span class="co">## Making rate-count plots... </span></span>
 <span><span class="co">## Making time series plots... </span></span>
-<span><span class="co">## Making parameter plots... </span></span>
-<span><span class="co">## Making parameter plots... </span></span>
-<span><span class="co">## Making parameter plots... </span></span>
-<span><span class="co">## Making parameter plots... </span></span>
-<span><span class="co">## Making parameter plots... </span></span>
 <span><span class="co">## Making parameter plots...</span></span></code></pre>
 <h2>
 Examining results
@@ -681,8 +681,9 @@ for each gene, we can assess how well wisp has captured zonation and
 temporal rhythm. The below plots align with the expectations in the
 above table, and are a near match for the plots produced by the bespoke
 model of <a href="https://doi.org/10.1038/s42255-020-00323-1" class="external-link">Droin et
-al. (2021)</a> and shown in figure 1. (However, note that the colors
-used in the plots here differ from those used in the paper figure.)</p>
+al. (2021)</a> and shown in figure 1 of their paper. (However, note that
+the colors used in the plots here differ from those used in the paper
+figure.)</p>
 <h3>
 Zonated genes
 </h3>
@@ -692,9 +693,10 @@ and <span class="gene">ASS1</span> being higher in the portal region.
 Their respective spatial gradients are easy to see in the rate-count
 plot:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plt_glul</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_glul"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">plt_ass1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_ass1"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_glul</span>, <span class="va">plt_ass1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
+<code class="sourceCode R"><span><span class="va">rc_plots</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">plt_glul</span> <span class="op">&lt;-</span> <span class="va">rc_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_glul"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">plt_ass1</span> <span class="op">&lt;-</span> <span class="va">rc_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_ass1"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">g</span>        <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_glul</span>, <span class="va">plt_ass1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_zonation_space-1.png" class="r-plt" alt="" width="700"></p>
 <p>While the rate-count plots make clear the spatial gradients of <span class="gene">GLUL</span> and <span class="gene">ASS1</span>, temporal
@@ -705,17 +707,19 @@ the central region decreasing in expression as the portal region
 increases. These temporal patterns can be seen more clearly by looking
 at the time-series plots.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plt_glul</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_glul"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">plt_ass1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_ass1"</span><span class="op">]</span><span class="op">]</span></span>
+<code class="sourceCode R"><span><span class="va">ts_plots</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">plt_glul</span> <span class="op">&lt;-</span> <span class="va">ts_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_glul"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">plt_ass1</span> <span class="op">&lt;-</span> <span class="va">ts_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_ass1"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_glul</span>, <span class="va">plt_ass1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_zonation_time-1.png" class="r-plt" alt="" width="700"></p>
 <p>The time-series plot for <span class="gene">ASS1</span> shows some
-variation over time, but the magnitude of that variation is small
-compared to the difference in expression level <a href="tutorial_timeseries.html">between the blocks</a> (i.e., over
-space). The same holds true for <span class="gene">GLUL</span>, although
-again we see the more portal region (block 2) seeming to increase in
-expression while the more central region (block 1) decreases.</p>
+variation (generally downward) over time, but the magnitude of that
+variation is smaller and noisy compared to the difference in expression
+level between the blocks (i.e., over space). The same holds true for
+<span class="gene">GLUL</span>, although again we see the more portal
+region (block 2) seeming to increase in expression while the more
+central region (block 1) decreases.</p>
 <h3>
 Rhythmic genes
 </h3>
@@ -726,18 +730,18 @@ portal region of <span class="gene">ARNTL</span>, ZT0 and ZT18 are
 elevated (yellow and purple), while for <span class="gene">DBP</span>
 it’s ZT6 and ZT12 (green and blue) that are elevated.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plt_arntl</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_arntl"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">plt_dbp</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_dbp"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_arntl</span>, <span class="va">plt_dbp</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
+<code class="sourceCode R"><span><span class="va">plt_arntl</span> <span class="op">&lt;-</span> <span class="va">rc_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_arntl"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">plt_dbp</span>   <span class="op">&lt;-</span> <span class="va">rc_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_dbp"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">g</span>         <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_arntl</span>, <span class="va">plt_dbp</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_rhythm_space-1.png" class="r-plt" alt="" width="700"></p>
 <p>These temporal dynamics are made more clear in the time-series plots,
 which clearly show the mid-ZT dip in <span class="gene">ARNTL</span> and
 the mid-ZT bump in <span class="gene">DBP</span>.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plt_arntl</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_arntl"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">plt_dbp</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_dbp"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_arntl</span>, <span class="va">plt_dbp</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
+<code class="sourceCode R"><span><span class="va">plt_arntl</span> <span class="op">&lt;-</span> <span class="va">ts_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_arntl"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">plt_dbp</span>   <span class="op">&lt;-</span> <span class="va">ts_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_dbp"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">g</span>         <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_arntl</span>, <span class="va">plt_dbp</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_rhythm_time-1.png" class="r-plt" alt="" width="700"></p>
 <h3>
@@ -749,17 +753,17 @@ same profile as <span class="gene">GLUL</span>. Both are expressed more
 in the central region. <span class="gene">PCK1</span>, on the other
 hand, is expressed more in the portal region, just like <span class="gene">ASS1</span>.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plt_elovl3</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_elovl3"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">plt_pck1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_pck1"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_elovl3</span>, <span class="va">plt_pck1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
+<code class="sourceCode R"><span><span class="va">plt_elovl3</span> <span class="op">&lt;-</span> <span class="va">rc_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_elovl3"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">plt_pck1</span>   <span class="op">&lt;-</span> <span class="va">rc_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_pck1"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">g</span>          <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_elovl3</span>, <span class="va">plt_pck1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_both_space-1.png" class="r-plt" alt="" width="700"></p>
 <p>However, unlike <span class="gene">GLUL</span> and <span class="gene">PCK1</span>, <span class="gene">ELOVL3</span> and <span class="gene">PCK1</span> have notable temporal rhythm. <span class="gene">ELOVL3</span> is similar to <span class="gene">ARNTL</span>, with a mid-ZT dip. <span class="gene">PCK1</span> is similar to <span class="gene">DBP</span>,
 with a mid-ZT bump.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plt_elovl3</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_elovl3"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">plt_pck1</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_pck1"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_elovl3</span>, <span class="va">plt_pck1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
+<code class="sourceCode R"><span><span class="va">plt_elovl3</span> <span class="op">&lt;-</span> <span class="va">ts_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_elovl3"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">plt_pck1</span>   <span class="op">&lt;-</span> <span class="va">ts_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_pck1"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">g</span>          <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_elovl3</span>, <span class="va">plt_pck1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_both_time-1.png" class="r-plt" alt="" width="700"></p>
 <h2>
@@ -776,6 +780,7 @@ build new models for each of these effects. Wisp, on the other hand, can
 model other fixed-effects directly, without needing to change the model
 structure. In addition, wisp is not limited to the assumption that the
 random effect is linear.</p>
+
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>

@@ -1,7 +1,7 @@
 ---
 title: "Poisson processes and sigmoids"
 author: "Michael Barkasi"
-date: "`r Sys.Date()`"
+date: "July 2, 2026 (v2.4)"
 ---
 
 ```{r setup, include = FALSE}
@@ -25,7 +25,7 @@ Let's simulate a Poisson process with gamma-distributed variation with instances
 
 ```{r set_spatial_axis}
 n_bins <- 100
-x <- seq(1, n_bins)
+x      <- seq(1, n_bins)
 ```
 
 We will randomly distribute 10,000 process instances across the space, for an average of 100 instances per bin. The variable holding these positions will be called <span class = "code_variable">bin</span>:
@@ -33,18 +33,18 @@ We will randomly distribute 10,000 process instances across the space, for an av
 ```{r distribute_instances}
 set.seed(123) # for reproducibility
 n_instances <- 10000
-bin <- sample(x, n_instances, replace = TRUE)
+bin         <- sample(x, n_instances, replace = TRUE)
 ```
 
 Now suppose that the space is divided into four equal-sized blocks, each with a different constant process rate $\lambda$, and suppose there is a constant variance $\sigma_\gamma^2 = 2$ across the entire space. Suppose these rates $\lambda$ are $1$, $5$, $2$, and $7$. We can represent this as a vector <span class = "code_variable">lambda</span> of length $100$, with each block's rate repeated twenty-five times. The process counts can be simulated for each instance by pulling individual process rates from a gamma distribution and then drawing counts from a Poisson distribution with those rates:
 
 ```{r simulate_constant_rate}
-lambda <- rep(c(1, 5, 2, 7), each = length(x)/4)
+lambda    <- rep(c(1, 5, 2, 7), each = length(x)/4)
 var_gamma <- 2
 process_lambda <- rgamma(
     n_instances, 
     shape = lambda[bin]^2/var_gamma, 
-    rate = lambda[bin]/var_gamma
+    rate  = lambda[bin]  /var_gamma
   )
 count <- rpois(n_instances, process_lambda)
 ```
@@ -67,8 +67,8 @@ ggplot2::ggplot(countdata, ggplot2::aes(x = bin, y = count)) +
   ggplot2::geom_jitter(height = 0, width = 0.5, alpha = 0.1) +
   ggplot2::labs(
     title = "Simulated Poisson process",
-    x = "Spatial bin",
-    y = "Process count"
+    x     = "Spatial bin",
+    y     = "Process count"
   ) +
   ggplot2::theme_minimal() +
   ggplot2::theme(
@@ -85,8 +85,8 @@ ggplot2::ggplot(summed_counts, ggplot2::aes(x = bin, y = count)) +
   ggplot2::geom_point() +
   ggplot2::labs(
     title = "Simulated Poisson process",
-    x = "Spatial bin",
-    y = "Summed process count"
+    x     = "Spatial bin",
+    y     = "Summed process count"
   ) +
   ggplot2::theme_minimal() +
   ggplot2::theme(
@@ -99,7 +99,7 @@ ggplot2::ggplot(summed_counts, ggplot2::aes(x = bin, y = count)) +
 
 Wisps are mathematical models for describing gamma-distributed Poisson processes. The parameters used to create the dataframe <span class = "code_variable">countdata</span> can be recovered using a wisp. A wisp model is fit in two steps. 
 
-The first step is to find transition points $p$ in count rate by looking for outliers in the ratio between the likelihood of the neighborhood around $x$ having a constant rate and the likelihood of each side of the neighborhood around $x$ having different rates. If there are $n$ such transition points $p=\langle p_1,\ldots,p_n\rangle$, then a specific variety of sigmoid, the logistic function: 
+The first step is to find transition points $p$ in count rate by looking for outliers in the ratio between the likelihood of the neighborhood around $x$ having a constant rate and the likelihood of each side of the neighborhood around $x$ having different rates (LRO change-point detection). If there are $n$ such transition points $p=\langle p_1,\ldots,p_n\rangle$, then a specific variety of sigmoid, the logistic function: 
 \[\psi(x,r,s) = \frac{r}{1 + \exp({sx})}\]
 can be used to model the rate $\lambda$ across space by combining $n$ such sigmoids into a wisp function:
 \[\Psi(x,r,s,p) = r_1 + \sum_{i=1}^n \psi(x - p_i, r_{i+1} - r_{i}, -s_i)\]
@@ -112,15 +112,17 @@ with rate parameters $r=\langle r_1,\ldots,r_{n+1}\rangle$ and slope-scale param
 
 The second is to use gradient-based optimization or MCMC to find the parameters $r$, $s$ and $p$ which maximize the likelihood of the log transform $\log(y+1)$ of <span class = "code_variable">countdata$count</span>. 
 
-For this demonstration, the data in <span class = "code_variable">countdata</span> has been explicitly constructed with the statistical structure captured by wisp using known parameters $r$ and $p$. Thus, fitting a wisp model to <span class = "code_variable">countdata</span> should recover those parameters. (Note: The verbose progress reports from wisp show how the function adds columns to <span class = "code_variable">countdata</span> for <span class = "code_variable">context</span>, <span class = "code_variable">species</span>, <span class = "code_variable">ran</span>, <span class = "code_variable">timeseries</span>, and <span class = "code_variable">fixedeffects</span>; while not used here, these columns are used in more complex modeling scenarios.)
+For this demonstration, the data in <span class = "code_variable">countdata</span> has been explicitly constructed with the statistical structure captured by wisp using known parameters $r$ and $p$. Thus, fitting a wisp model to <span class = "code_variable">countdata</span> should recover those parameters.[^1]
+
+[^1]: Two notes. First, the verbose progress reports from wisp (printed below) show how the function adds columns to <span class = "code_variable">countdata</span> for <span class = "code_variable">context</span>, <span class = "code_variable">species</span>, <span class = "code_variable">ran</span>, <span class = "code_variable">timeseries</span>, and <span class = "code_variable">fixedeffects</span>; while not used here, these columns are used in more complex modeling scenarios. Second, the algorithm for detecting change points depends on two key settings, determining what counts as an outlier and neighborhood size. By default, these are set via a grid search which looks to minimize some cost metric (<span class = "code_variable">LRO_cost</span>), either AIC, BIC, or negative log-likelihood. For simplicity, this metric is here set to "none", triggering <span class = "function">wisp</span> to skip the grid search and use a set of default parameter values for the LRO algorithm. 
 
 ```{r model}
 library(wispack, quietly = TRUE)
 model <- wisp(
     countdata, 
-    fit_only = TRUE, 
+    fit_only       = TRUE, 
     model.settings = list(LRO_cost = "none"),
-    plot.settings = list(CI_style = FALSE)
+    plot.settings  = list(CI_style = FALSE)
   )
 ```
 
@@ -130,7 +132,7 @@ The recovered parameters can also be extracted as numerical values:
 
 ```{r extract_parameters}
 param_names <- names(model$fitted.parameters)
-est_param <- round(model$fitted.parameters, 3)
+est_param   <- round(model$fitted.parameters, 3)
 for (param_type in c("Rt", "tslope", "tpoint")) {
   cat(
   "\nRecovered", param_type, "parameters:", 
@@ -150,16 +152,16 @@ test_val <- est_param[grepl("tpoint", param_names)][2]
 if (test_val < 49 || test_val > 51) stop("failed check 2") 
 ```
 
-It is immediately clear from the three tpoint parameters (i.e., $p$) that wisp has recovered the transition points at bins $25$, $50$, and $75$. However, at first glance, the rates (Rt) look off. This is because wisp has predicted the log transform of the sum of the rates. To recover the original rates of $1$, $5$, $2$, and $7$, we need to exponentiate the recovered rates, subtract $1$, and divide by the mean number of tokens per bin within the block. 
+It is immediately clear from the three <span class = "code_variable">tpoint</span> parameters (i.e., $p$) that wisp has recovered the transition points at bins $25$, $50$, and $75$. However, at first glance, the rates (<span class = "code_variable">Rt</span>) look off. This is because wisp has predicted the log transform of the sum of the rates. To recover the original rates of $1$, $5$, $2$, and $7$, we need to exponentiate the recovered rates, subtract $1$, and divide by the mean number of tokens per bin within the block. 
 
 ```{r recover_rates}
 tokens_per_bin <- rep(NA, n_bins)
 for (b in 1:n_bins) tokens_per_bin[b] <- sum(countdata$bin == b)
 for (block in 1:4) {
-  start_bin <- (block - 1) * 25 + 1
-  end_bin <- block * 25
-  mean_tokens <- mean(tokens_per_bin[start_bin:end_bin])
-  rate_param <- model$fitted.parameters[block]
+  start_bin      <- (block - 1) * 25 + 1
+  end_bin        <- block * 25
+  mean_tokens    <- mean(tokens_per_bin[start_bin:end_bin])
+  rate_param     <- model$fitted.parameters[block]
   recovered_rate <- (exp(rate_param) - 1) / mean_tokens
   cat(
     paste0(

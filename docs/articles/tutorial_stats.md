@@ -9,19 +9,20 @@ parameterized in terms of expression rate, expression-rate transition
 points, and transition slopes. The true value of \beta\_\xi is estimated
 by resampling, either using a Markov chain Monte Carlo (MCMC) algorithm,
 or by refitting the model to resamples of the data (bootstrapping). This
-tutorial will not explain how the MCMC walk or bootstrap resampling is
+tutorial will not explain how the MCMC walk and bootstrap resampling are
 performed; these details are covered in the [paper introducing
 wisp](https://doi.org/10.1101/2025.06.11.659209). Instead, this tutorial
 will focus on how p-values and confidence intervals (CI) are computed
 from the sampling (i.e., hypothesis testing), how the MCMC and
 bootstrapping approaches compare, and how to adjust various key settings
-in wispack.
+in wispack.[^1]
 
 ## Hypothesis testing
 
 Suppose for each spatial parameter z, gene g, context c, and factor \xi
 we have some set of resamples of the associated effect \beta, either
-generated via MCMC walk or bootstrapping.
+generated via MCMC walk or bootstrapping. How do we compute p-values and
+confidence intervals?
 
 ### Computations
 
@@ -76,15 +77,15 @@ hundred-step burn-in, it also performs a thousand bootstrap resamples:
 ``` r
 
 model <- wisp(
-    count.data = countdata,
-    variables = data.variables,
-    plot.settings = list(
-        print.plots = FALSE, 
-        dim.bounds = colMeans(layer.boundary.bins)
-      ),
+    count.data     = countdata,
+    variables      = list(species = "gene", ran = "mouse", timeseries = "age"),
+    model.settings = list(LRO_cost = "none"), 
+    plot.settings  = list(
+      print.plots  = FALSE, 
+      dim.bounds   = colMeans(layer.boundary.bins)),
     bootstraps.num = 1000, 
-    max.fork = 5,
-    verbose = TRUE
+    max.fork       = 20,
+    verbose        = TRUE
   )
 ```
 
@@ -121,12 +122,12 @@ print(head(model$stats$parameters))
 
 ``` scroll-output
 ##                                  parameter      estimate      CI.low    CI.high   p.value p.value.adj    alpha.adj significance
-## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3874762662  3.30569175 3.40219340        NA          NA           NA             
-## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0002723492 -0.07161064 0.07342381 0.9920080    1.984016 0.0250000000           ns
-## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6059294086  0.53617581 0.74222905 0.0000000    0.000000 0.0002923977          ***
-## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0476934492 -0.09456036 0.16707228 0.2447552   13.951049 0.0008771930           ns
-## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786  1.99915464 2.53133579        NA          NA           NA             
-## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 -0.42595429 0.51137301 0.5404595   18.375624 0.0014705882           ns
+## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3880114451  3.30500897 3.40212815        NA          NA           NA             
+## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0003773747 -0.07507784 0.07339858 0.9890110    2.967033 0.0166666667           ns
+## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6072410701  0.51496657 0.72377372 0.0000000    0.000000 0.0002923977          ***
+## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0461743004 -0.08550940 0.14890972 0.2657343   13.818182 0.0009615385           ns
+## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2781929967  1.99837574 2.55129060        NA          NA           NA             
+## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.0822301676 -0.45766257 0.51713430 0.6013986   16.237762 0.0018518519           ns
 ```
 
 To customize the computations for p-values and CIs, we can use the
@@ -135,25 +136,31 @@ been generated, by either MCMC walk or bootstrapping. It itself does not
 run these resamples; it merely extracts p-values and CIs from them. The
 function sample.stats allows for setting a new alpha level and for
 switching between Holm-Bonferroni and Bonferroni corrections. It returns
-the data frame which populates model\$stats\$parameters:
+a copy of model with (1) a new or (if it already existed) re-written
+entry parameters under stats holding a data frame giving, for each
+parameter, its name, estimate, confidence interval (CI.low, CI.high),
+p-value, adjusted p-value (p.value.adj), adjusted alpha (alpha.adj), and
+significance level (significance), and also (2) new (or re-written) 95%
+confidence interval range columns in count.data.summed for predicted log
+count by bin.
 
 ``` r
 
-model$stats$parameters <- sample.stats(
+model <- sample.stats(
     model,
-    alpha = 0.01,
+    alpha      = 0.01,
     Bonferroni = TRUE,
-    verbose = TRUE
+    verbose    = TRUE
   )
 ```
 
 ``` scroll-output
 ## 
-## Running stats on simulation results
+## 
+## Computing p-values and CI for model parameters
 ## ----------------------------------------
 ## 
 ## Grabbing sample results, only resamples with converged fit... 
-## Grabbing parameter values... 
 ## Computing 95% confidence intervals... 
 ## Estimating p-values from resampled parameters... 
 ## 
@@ -163,14 +170,16 @@ model$stats$parameters <- sample.stats(
 ## 
 ## Stat summary (head only):
 ## ------------------------------
-##                                  parameter      estimate     CI.low    CI.high   p.value p.value.adj    alpha.adj significance
-## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3874762662  3.2789558 3.43808630        NA          NA 5.847953e-05             
-## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0002723492 -0.1249142 0.09502461 0.9920080   169.63337 5.847953e-05           ns
-## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6059294086  0.5361412 0.74281736 0.0000000     0.00000 5.847953e-05          ***
-## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0476934492 -0.1029796 0.16720287 0.2447552    41.85315 5.847953e-05           ns
-## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786  1.7743039 2.71545562        NA          NA 5.847953e-05             
-## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 -0.4328437 0.52219934 0.5404595    92.41858 5.847953e-05           ns
+##                                  parameter      estimate      CI.low    CI.high   p.value p.value.adj    alpha.adj significance
+## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3880114451  3.27271827 3.42939874        NA          NA 5.847953e-05             
+## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0003773747 -0.11319229 0.09238264 0.9890110   169.12088 5.847953e-05           ns
+## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6072410701  0.51454410 0.72512609 0.0000000     0.00000 5.847953e-05          ***
+## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0461743004 -0.09743408 0.15046710 0.2657343    45.44056 5.847953e-05           ns
+## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2781929967  1.72553705 2.65759197        NA          NA 5.847953e-05             
+## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.0822301676 -0.47422397 0.54076186 0.6013986   102.83916 5.847953e-05           ns
 ## ----
+## 
+## Computing 95% CI for predicated values by bin...
 ```
 
 Above we switched from \alpha = 0.05 to \alpha = 0.01 and from a
@@ -178,8 +187,8 @@ Holm-Bonferroni to a Bonferroni correction. As can be seen in the print
 out, if verbose is set to TRUE, sample.stats will print out both the
 head of model\$stats\$parameters and also information about the
 threshold \alpha and the number of hypothesis tests run. In this case,
-\alpha = 0.01 and 171 tests are fun. In addition, the function
-summary.stats estimates the number of resamples needed for threshold
+\alpha = 0.01 and 171 tests were run. In addition, the function
+sample.stats estimates the number of resamples needed for threshold
 \alpha and outputs both this number and the actual number of resamples
 used. In this case, it’s recommended that 17,100 resamples are used, but
 only 1,001 are given (the thousand bootstraps, plus the original fit of
@@ -201,25 +210,25 @@ argument of the wisp function:
 
 # Set new MCMC values 
 MCMC.settings.new <- list(
-      MCMC.burnin = 1e2,
-      MCMC.steps = 1e3,
-      MCMC.step.size = 0.5,
-      MCMC.prior = 1.0, 
+      MCMC.burnin          = 1e2,
+      MCMC.steps           = 1e3,
+      MCMC.step.size       = 0.5,
+      MCMC.prior           = 1.0, 
       MCMC.neighbor.filter = 1
     )
 
 # Use new settings in wisp
 model <- wisp(
-    count.data = countdata,
-    variables = data.variables,
-    MCMC.settings = MCMC.settings.new,
-    plot.settings = list(
+    count.data      = countdata,
+    variables       = data.variables,
+    MCMC.settings   = MCMC.settings.new,
+    plot.settings   = list(
         print.plots = FALSE, 
-        dim.bounds = colMeans(layer.boundary.bins)
+        dim.bounds  = colMeans(layer.boundary.bins)
       ),
-    bootstraps.num = 1000, 
-    max.fork = 5,
-    verbose = TRUE
+    bootstraps.num  = 1000, 
+    max.fork        = 5,
+    verbose         = TRUE
   )
 ```
 
@@ -260,7 +269,7 @@ walks.
 MCMC_walk_plots <- plot.MCMC.walks(
  model, 
  print.plots = FALSE, 
- verbose = FALSE, 
+ verbose     = FALSE, 
  low_samples = 10
 )
 ```
@@ -329,8 +338,9 @@ but the simplest wisp models, given the high autocorrelation and
 tendency to get trapped in local minima. MCMC walks are the default
 because they are computationally much faster and can be run on a single
 core. However, using them often requires throwing out the initial fit
-from L-BFGS. To see why, first note that the wisp function returns three
-matrices of parameter resamples:
+from L-BFGS. To see why, first note that the wisp function returns two
+matrices of parameter resamples plus a character string specifying the
+type of resamples to be used:
 
 ``` r
 
@@ -338,34 +348,33 @@ paste0(names(model)[grep("sample.params", names(model))], collapse = ", ")
 ```
 
 ``` scroll-output
-## [1] "sample.params, sample.params.bs, sample.params.MCMC"
+## [1] "sample.params.type, sample.params.bs, sample.params.MCMC"
 ```
 
 The matrices sample.params.bs and sample.params.MCMC contain the
-bootstrap and MCMC resamples, respectively. The matrix sample.params is
-used by the sample.stats function. If sample.params.bs is not present,
-then sample.params is a copy of sample.params.MCMC. If sample.params.bs
-is present, then sample.params is a copy of it. Thus, when both MCMC
-walks and bootstrap resamples are run, sample.params ignores the MCMC
-walks and uses the bootstrap resamples.
-
-Let’s make a copy of our model that uses the MCMC walks and re-run the
-statistical analysis on it:
+bootstrap and MCMC resamples, respectively. The matrix
+sample.params.\<sample.params.type\> is used by the sample.stats
+function. If sample.params.bs is present, then sample.params.type will
+be “bs”, otherwise it will be “MCMC”. Thus, when both MCMC walks and
+bootstrap resamples are run, sample.params ignores the MCMC walks and
+uses the bootstrap resamples. However, we can force a change by manually
+resetting sample.params.type to “MCMC”. Let’s make a copy of our model
+that uses the MCMC walks and re-run the statistical analysis on it:
 
 ``` r
 
-model_MCMC <- model
-model_MCMC$sample.params <- model_MCMC$sample.params.MCMC
-model_MCMC$stats$parameters <- sample.stats(model_MCMC)
+model_MCMC                    <- model
+model_MCMC$sample.params.type <- "MCMC"
+model_MCMC                    <- sample.stats(model_MCMC)
 ```
 
 ``` scroll-output
 ## 
-## Running stats on simulation results
+## 
+## Computing p-values and CI for model parameters
 ## ----------------------------------------
 ## 
-## Grabbing sample results, only resamples with converged fit... 
-## Grabbing parameter values... 
+## Grabbing sample results... 
 ## Computing 95% confidence intervals... 
 ## Estimating p-values from resampled parameters... 
 ## 
@@ -375,14 +384,16 @@ model_MCMC$stats$parameters <- sample.stats(model_MCMC)
 ## 
 ## Stat summary (head only):
 ## ------------------------------
-##                                  parameter      estimate       CI.low      CI.high     p.value p.value.adj    alpha.adj significance
-## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3874762662 3.2423579199 3.6060658268          NA          NA           NA             
-## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0002723492 0.0002701605 0.0009564635 0.000999001  0.04495504 0.0011111111            *
-## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6059294086 0.4971755126 0.6552261694 0.000000000  0.00000000 0.0002923977          ***
-## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0476934492 0.0324878078 0.0563049808 0.000000000  0.00000000 0.0002941176          ***
-## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786 1.9117544868 2.6135187197          NA          NA           NA             
-## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 0.0504651545 0.0951689705 0.000000000  0.00000000 0.0002958580          ***
+##                                  parameter      estimate      CI.low    CI.high  p.value p.value.adj    alpha.adj significance
+## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3880114451 3.257259190 3.57683057       NA          NA           NA             
+## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0003773747 0.009057961 0.01865859 0.957043    0.957043 0.0500000000           ns
+## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6072410701 0.387548476 0.60704006 0.000000    0.000000 0.0002923977          ***
+## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0461743004 0.032824337 0.06588826 0.000000    0.000000 0.0002941176          ***
+## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2781929967 1.923734236 2.64818473       NA          NA           NA             
+## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.0822301676 0.069129014 0.10433351 0.000000    0.000000 0.0002958580          ***
 ## ----
+## 
+## Computing 95% CI for predicated values by bin...
 ```
 
 Now, let’s plot the values \beta for RORB for the effect of age in the
@@ -396,7 +407,7 @@ plots.param <- plot.parameters(model, species = "Rorb", verbose = FALSE)
 print(
   plots.param$plot_treatment_18_cortex_Rorb + 
     scale_y_continuous(expand = expansion(mult = 0.1)) +
-    geom_point(aes(y = means), shape = 8, size = 4, stroke = 2, color = "black", na.rm = TRUE) + 
+    geom_point(aes(y = means), shape = 8, size = 4, stroke = 2, color = "black",  na.rm = TRUE) + 
     geom_point(aes(y = means), shape = 8, size = 4, stroke = 1, color = "yellow", na.rm = TRUE)
   )
 ```
@@ -420,7 +431,7 @@ plots.param_MCMC <- plot.parameters(model_MCMC, species = "Rorb", verbose = FALS
 print(
   plots.param_MCMC$plot_treatment_18_cortex_Rorb + 
     scale_y_continuous(expand = expansion(mult = 0.1)) +
-    geom_point(aes(y = means), shape = 8, size = 4, stroke = 2, color = "black", na.rm = TRUE) + 
+    geom_point(aes(y = means), shape = 8, size = 4, stroke = 2, color = "black",  na.rm = TRUE) + 
     geom_point(aes(y = means), shape = 8, size = 4, stroke = 1, color = "yellow", na.rm = TRUE)
   )
 ```
@@ -446,7 +457,7 @@ acceptance rates near (or at) zero. Option (2), interestingly, has the
 same problem, unless step size is so small that the acceptance rate is
 very high, leaving the space around the L-BFGS fit underexplored. (As to
 implementing this option, if the number of burn-in steps is set to zero,
-wispack will automatically switch to starting the walk at the L-BGGS
+wispack will automatically switch to starting the walk at the L-BFGS
 fit.) In both cases, the root issue is presumably the non-linearity of
 the model: small changes to viable parameters often produce large
 changes in predictions, leading to a worse fit with the data. The L-BFGS
@@ -473,24 +484,24 @@ countdata <- read.csv(
 
 # Specify variables for wisp
 data.variables <- list(
-    species = "gene",
-    ran = "mouse",
+    species    = "gene",
+    ran        = "mouse",
     timeseries = "age"
   )
 
 # Run with median
 model_median <- wisp(
-    count.data = countdata,
-    variables = data.variables,
-    use.median = TRUE,
-    plot.settings = list(print.plots = FALSE),
+    count.data     = countdata,
+    variables      = data.variables,
+    use.median     = TRUE,
+    model.settings = list(LRO_cost = "none"), 
+    plot.settings  = list(print.plots = FALSE),
     bootstraps.num = 0, 
-    verbose = TRUE
+    verbose        = TRUE
   )
 ```
 
 ``` scroll-output
-## 
 ## 
 ## Parsing data and settings for wisp model
 ## ----------------------------------------
@@ -499,6 +510,7 @@ model_median <- wisp(
 ##  buffer_factor: 0.05
 ##  ctol: 1e-06
 ##  max_penalty_at_distance_factor: 0.01
+##  LRO_cost: none
 ##  LROcutoff: 2
 ##  LROwindow_factor: 1.25
 ##  rise_threshold_factor: 0.8
@@ -516,6 +528,7 @@ model_median <- wisp(
 ##  log.scale: FALSE
 ##  splitting_factor: 
 ##  CI_style: TRUE
+##  splitting_factor_colors: 120, 240
 ##  label_size: 5.5
 ##  title_size: 20
 ##  axis_size: 12
@@ -556,6 +569,9 @@ model_median <- wisp(
 ## 
 ## Initializing Cpp (wspc) model
 ## ----------------------------------------
+## Context grouping levels: "cortex"
+## Species grouping levels: "Bcl11b" "Cux2" "Fezf2" "Nxph3" "Rorb" "Satb2"
+## Random-effect grouping levels: "none" "1" "2" "3" "4"
 ## 
 ## Infinity handling:
 ## machine epsilon: (eps_): 2.22045e-16
@@ -564,53 +580,19 @@ model_median <- wisp(
 ## implied pseudo-infinity for unbounded warp (inf_warp): 4.5036e+08
 ## 
 ## Extracting variables and data information:
-## Max bin: 100.000000
-## Fixed effects:
-## "hemisphere" "timeseries"
-## Ref levels:
-## "left" "12"
-## Time series detected:
-## "12" "18"
-## Created treatment levels:
-## "ref" "right" "18" "right18"
-## Constructed weight_row matrix
-## Context grouping levels:
-## "cortex"
-## Species grouping levels:
-## "Bcl11b" "Cux2" "Fezf2" "Nxph3" "Rorb" "Satb2"
-## Random-effect grouping levels:
-## "none" "1" "2" "3" "4"
+## Max bin: 100
+## Fixed effects: "hemisphere" "timeseries"
+## Ref levels: "left" "12"
+## Time series detected: "12" "18"
+## Created treatment levels: "ref" "right" "18" "right18"
 ## Total rows in summed count data table: 12000
 ## Number of rows with unique model components: 120
 ## 
-## Creating summed-count data columns and weight matrix:
-## Random level 0, 1/5 complete
-## Random level 1, 2/5 complete
-## Random level 2, 3/5 complete
-## Random level 3, 4/5 complete
-## Random level 4, 5/5 complete
-## 
-## Making extrapolation pool:
-## row: 480/2400
-## row: 960/2400
-## row: 1440/2400
-## row: 1920/2400
-## row: 2400/2400
-## 
-## Wrapping up initialization:
-## Extrapolated 'none' rows
-## Took log of observed counts
-## Estimated gamma dispersion of raw counts
-## Found average log counts for each context-species combination
-## Constructed grouping variable IDs
-## 
 ## Running LRO change-point detection and setting initial parameters
 ## ----------------------------------------
+## 
 ## Estimated change points
-## Estimated initial parameters for fixed-effect treatments
-## Built initial beta (ref and fixed-effects) matrices
-## Initialized random-effect warping factors
-## Made and mapped parameter vector
+## Estimated initial parameters
 ## Number of parameters: 300
 ## Size of boundary vector: 1260
 ## 
@@ -618,14 +600,6 @@ model_median <- wisp(
 ## ----------------------------------------
 ## 
 ## Running MCMC stimulations
-## Checking feasibility of provided parameters
-## ... no tpoints below buffer
-## ... no NAN rates predicted
-## ... no negative rates predicted
-## Provided parameters are feasible
-## Initial boundary distance (want > 0): 0.247647
-## Performing initial fit of full data
-## Penalized neg_loglik: 11975.6
 ## step: 1/1100
 ## step: 110/1100
 ## step: 220/1100
@@ -637,25 +611,17 @@ model_median <- wisp(
 ## step: 880/1100
 ## step: 990/1100
 ## All complete!
-## Acceptance rate (aim for 0.2-0.3): 0.283432
+## Acceptance rate (aim for 0.2-0.3): 0.246085
 ## 
 ## MCMC simulation complete... 
-## MCMC run time (total), minutes: 1.208
-## MCMC run time (per retained step), seconds: 0.066
-## MCMC run time (per step), seconds: 0.066
-## Setting median parameter samples as final parameters... 
-## Checking feasibility of provided parameters
-## ... no tpoints below buffer
-## ... no NAN rates predicted
-## ... no negative rates predicted
-## Provided parameters are feasible
-## Initial boundary distance (want > 0): 0.176668
+## MCMC run time (total), minutes: 0.406
+## MCMC run time (per retained step), seconds: 0.022
+## MCMC run time (per step), seconds: 0.022
 ## 
-## Running stats on simulation results
+## Computing p-values and CI for model parameters
 ## ----------------------------------------
 ## 
 ## Grabbing sample results... 
-## Grabbing parameter values... 
 ## Computing 95% confidence intervals... 
 ## Estimating p-values from resampled parameters... 
 ## 
@@ -665,21 +631,16 @@ model_median <- wisp(
 ## 
 ## Stat summary (head only):
 ## ------------------------------
-##                                  parameter     estimate       CI.low      CI.high     p.value p.value.adj    alpha.adj significance
-## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1 3.4171645316 3.2423579199 3.6060658268          NA          NA           NA             
-## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 0.0008409778 0.0001214079 0.0009566762 0.000999001  0.06193806 0.0008064516           ns
-## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1 0.5789275569 0.4971755126 0.6552261694 0.000000000  0.00000000 0.0002923977          ***
-## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1 0.0459829185 0.0324878078 0.0563049808 0.000000000  0.00000000 0.0002941176          ***
-## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2 2.2148115952 1.9117544868 2.6135187197          NA          NA           NA             
-## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2 0.0571963983 0.0504651545 0.0951689705 0.000000000  0.00000000 0.0002958580          ***
+##                                  parameter    estimate      CI.low    CI.high p.value p.value.adj    alpha.adj significance
+## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1 3.425420516 3.257259190 3.57683057      NA          NA           NA             
+## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 0.009900353 0.008899514 0.01985140       0           0 0.0002923977          ***
+## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1 0.484414278 0.387548976 0.60580230       0           0 0.0002941176          ***
+## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1 0.052372627 0.032824377 0.06588796       0           0 0.0002958580          ***
+## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2 2.193585848 1.923734236 2.64818473      NA          NA           NA             
+## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2 0.091021492 0.069129264 0.10433317       0           0 0.0002976190          ***
 ## ----
 ## 
-## Computing 95% CI for predicated values by bin
-## ----------------------------------------
-## 
-## Grabbing sample results... 
-## Computing predicted values for each sampled parameter set... 
-## Computing 95% CIs... 
+## Computing 95% CI for predicated values by bin... 
 ## 
 ## Analyzing residuals
 ## ----------------------------------------
@@ -690,24 +651,22 @@ model_median <- wisp(
 ## 
 ## Log-residual summary by grouping variables (head only):
 ## ------------------------------
-##          group         mean        sd  variance
-## 1          all  0.200397489 0.5218355 0.2723122
-## 2 ran_lvl_none  0.204318220 0.3651730 0.1333513
-## 3    ran_lvl_1 -0.238834690 0.4570011 0.2088500
-## 4    ran_lvl_2  0.009588838 0.4834547 0.2337285
-## 5    ran_lvl_3  0.544623373 0.5043003 0.2543188
-## 6    ran_lvl_4  0.478370970 0.4958014 0.2458191
+##          group        mean        sd  variance
+## 1          all  0.19688703 0.5245301 0.2751318
+## 2 ran_lvl_none  0.20263236 0.3713979 0.1379364
+## 3    ran_lvl_1 -0.24153966 0.4482183 0.2008997
+## 4    ran_lvl_2  0.01479666 0.5115663 0.2617001
+## 5    ran_lvl_3  0.53343585 0.5029123 0.2529208
+## 6    ran_lvl_4  0.46936460 0.4971271 0.2471353
 ## ----
+## 
+## Making plots
+## ----------------------------------------
 ## 
 ## Making MCMC walks plots... 
 ## Making effect parameter distribution plots... 
 ## Making rate-count plots... 
 ## Making time series plots... 
-## Making parameter plots... 
-## Making parameter plots... 
-## Making parameter plots... 
-## Making parameter plots... 
-## Making parameter plots... 
 ## Making parameter plots...
 ```
 
@@ -719,7 +678,7 @@ median estimate from the MCMC walk highlighted:
 print(
   model_median$plots$parameters$plot_treatment_18_cortex_Rorb + 
     scale_y_continuous(expand = expansion(mult = 0.1)) +
-    geom_point(aes(y = means), shape = 8, size = 4, stroke = 2, color = "black", na.rm = TRUE) + 
+    geom_point(aes(y = means), shape = 8, size = 4, stroke = 2, color = "black",  na.rm = TRUE) + 
     geom_point(aes(y = means), shape = 8, size = 4, stroke = 1, color = "yellow", na.rm = TRUE)
   )
 ```
@@ -845,3 +804,9 @@ A natural question to ask concerns the false-positive rate,
 false-discovery rate, and power of the bootstrap-based hypothesis
 testing. This question is addressed in the [benchmarking
 tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_benchmarks.md).
+
+[^1]: An earlier version of the comparison between MCMC and bootstrap
+    resampling, using v1.0 of wispack, is provided in the original
+    [preprint](https://doi.org/10.1101/2025.06.11.659209). It shows
+    essentially the same thing, albeit with slightly different
+    specifics.

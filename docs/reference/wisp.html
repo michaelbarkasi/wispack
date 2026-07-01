@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,7 +78,6 @@
 <span>  model.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  MCMC.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  plot.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  LRO.grid.search <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  ran.seed <span class="op">=</span> <span class="fl">1234</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -92,15 +91,15 @@
 
 
 <dt id="arg-variables">variables<a class="anchor" aria-label="anchor" href="#arg-variables"></a></dt>
-<dd><p>List, names of the columns in <code>count.data</code> that correspond to the model variables. The list should contain only (but not necessarily all) named elements: <code>count</code>, <code>bin</code>, <code>context</code>, <code>species</code>, <code>ran</code>, and <code>fixedeffects</code>.</p></dd>
+<dd><p>List, names of the columns in <code>count.data</code> that correspond to the model variables. The list should contain only (but not necessarily all) named elements: <code>count</code>, <code>bin</code>, <code>context</code>, <code>species</code>, <code>ran</code>, <code>timeseries</code>, and <code>fixedeffects</code>.</p></dd>
 
 
 <dt id="arg-fit-only">fit_only<a class="anchor" aria-label="anchor" href="#arg-fit-only"></a></dt>
-<dd><p>Logical, if TRUE, only fits the model to the full data set using L-BFGS and returns the fitted model without running MCMC or bootstrapping; if FALSE, runs MCMC and/or bootstrapping to estimate parameter uncertainty.</p></dd>
+<dd><p>Logical, if TRUE, only fits the model to the full data set using L-BFGS and returns the fitted model without running resampling (MCMC or bootstrapping); if FALSE, runs MCMC and/or bootstrapping to estimate parameter uncertainty.</p></dd>
 
 
 <dt id="arg-use-median">use.median<a class="anchor" aria-label="anchor" href="#arg-use-median"></a></dt>
-<dd><p>Logical, if TRUE, the median of the resamples is used as the final parameter estimates; if FALSE, the initial fit by L-BFGS is used.</p></dd>
+<dd><p>Logical, if TRUE, the median of the resamples is used as the final parameter estimates; if FALSE, the fit by L-BFGS on the full, original data is used.</p></dd>
 
 
 <dt id="arg-bootstraps-num">bootstraps.num<a class="anchor" aria-label="anchor" href="#arg-bootstraps-num"></a></dt>
@@ -112,7 +111,7 @@
 
 
 <dt id="arg-max-fork">max.fork<a class="anchor" aria-label="anchor" href="#arg-max-fork"></a></dt>
-<dd><p>Integer, maximum number of parallel processes to use for bootstrapping.</p></dd>
+<dd><p>Integer, maximum number of parallel processes to use for bootstrapping. Applies only on Mac and Linux. Must be 1 for windows.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
@@ -120,29 +119,68 @@
 
 
 <dt id="arg-model-settings">model.settings<a class="anchor" aria-label="anchor" href="#arg-model-settings"></a></dt>
-<dd><p>List, settings for the C++ model, including <code>buffer_factor</code>, <code>ctol</code>, <code>max_penalty_at_distance_factor</code>, <code>LROcutoff</code>, <code>LROwindow_factor</code>, <code>rise_threshold_factor</code>, <code>max_evals</code>, <code>rng_seed</code>, <code>warp_precision</code>, <code>round_none</code>, <code>trtKO</code>, and <code>max_bin</code>. Default values are provided.</p></dd>
+<dd><p>List, settings for the C++ model, including:</p><ul><li><p><code>buffer_factor</code> = 0.05: The minimum distance between t-points must be this proportion of <code>max_bin</code>.</p></li>
+<li><p><code>ctol</code> = 1e-6: Convergence tolerance for L-BFGS.</p></li>
+<li><p><code>max_penalty_at_distance_factor</code> = 0.01: Maximum penalty applied to negative log-likelihood when at a non-trivial distance from parameter bounds.</p></li>
+<li><p><code>LRO_cost</code> = "AIC": Character string giving cost function to use when evaluating likelihood-ratio outlier (LRO) parameters for testing for expression-rate transition points in the data ("AIC", "BIC", "NLL"; anything else defaults to the hand-specified LROcutoff and LROwindow_factor).</p></li>
+<li><p><code>LROcutoff</code> = 2.0: Cutoff used in the <code>LROcp_find</code> function, a multiple of standard deviation. Specifically, each point is evaluated as the ratio of the likelihood of the data on a model with a transition point to the likelihood of the data on a model without a change point. A point is taken to be a transition point only if this ratio is more than this number of standard deviations above the mean across all points.</p></li>
+<li><p><code>LROwindow_factor</code> = 1.25: controls size of window used in <code>LROcp_find</code> algorithm (window = LROwindow_factor X bin_num X buffer_factor)</p></li>
+<li><p><code>rise_threshold_factor</code> = 0.8: Amount of detected rise as fraction of total required to end run when making initial estimates of transition-point slopes.</p></li>
+<li><p><code>max_evals</code> = 1000: Maximum number of evaluations for optimization, when using L-BFGS.</p></li>
+<li><p><code>rng_seed</code> = 42: Seed for random number generator used internal to C++.</p></li>
+<li><p><code>warp_precision</code> = 1e-7: Decimal precision to retain when selecting really big number as pseudo infinity for unbound warping.</p></li>
+<li><p><code>round_none</code> = TRUE: Logical specifying whether to round extrapolated counts for "none" (no random effect) to nearest integer.</p></li>
+<li><p><code>trtKO</code> = c("none"): List of effect names to remove from the model, e.g., model without the Factor1 x Factor2 interaction. Must match one of the treatment levels of the full model.</p></li>
+<li><p><code>max_bin</code> = 0.0: Largest bin number; if left zero, will infer from count data</p></li>
+</ul></dd>
 
 
 <dt id="arg-mcmc-settings">MCMC.settings<a class="anchor" aria-label="anchor" href="#arg-mcmc-settings"></a></dt>
-<dd><p>List, settings for the MCMC simulation, including <code>MCMC.burnin</code>, <code>MCMC.steps</code>, <code>MCMC.step.size</code>, <code>MCMC.prior</code>, and <code>MCMC.neighbor.filter</code>. Default values are provided.</p></dd>
+<dd><p>List, settings for the MCMC simulation, including:</p><ul><li><p><code>MCMC.burnin</code> = 1e2: Number of random-walk steps to take to find the optimal parameters. If zero, will start the walk from the L-BFGS parameters.</p></li>
+<li><p><code>MCMC.steps</code> = 1e3: Number of random-walk steps to take when resampling parameters.</p></li>
+<li><p><code>MCMC.step.size</code> = 0.5: Standard deviation of the normal distribution controlling random-walk step size.</p></li>
+<li><p><code>MCMC.prior</code> = 1.0: Prior to compute the Bayesian update controlling step acceptance.</p></li>
+<li><p><code>MCMC.neighbor.filter</code> = 1: Will only save every this-many steps as a resample.</p></li>
+</ul></dd>
 
 
 <dt id="arg-plot-settings">plot.settings<a class="anchor" aria-label="anchor" href="#arg-plot-settings"></a></dt>
-<dd><p>List, settings for plots to make, including <code>print.plots</code>, <code>dim.bounds</code>, <code>log.scale</code>, <code>splitting_factor</code>, <code>CI_style</code>, <code>label_size</code>, <code>title_size</code>, <code>axis_size</code>, <code>legend_size</code>, <code>count_size</code>, <code>count_jitter</code>, <code>count.alpha.ran</code>, <code>count.alpha.none</code>, <code>pred.alpha.ran</code>, and <code>pred.alpha.none</code>. Default values are provided.</p></dd>
-
-
-<dt id="arg-lro-grid-search">LRO.grid.search<a class="anchor" aria-label="anchor" href="#arg-lro-grid-search"></a></dt>
-<dd><p>Logical, if TRUE, runs a grid search to find the optimal parameters for the LRO change-point detection algorithm and returns the results.</p></dd>
+<dd><p>List, settings for plots to make, including:</p><ul><li><p><code>print.plots</code> = TRUE: Logical indicating whether to print plots as they are produced during the model fit.</p></li>
+<li><p><code>dim.bounds</code> = Vector of bins; if non-empty, rate-count plots will plot vertical dot-dashed lines as these coordinates to indicate a prior-known boundary along the spatial dimension. Note that these values are not used in any way during the model fit itself.</p></li>
+<li><p><code>log.scale</code> = False: Logical indicating whether plots should show the log of expression-rate values (plus 1).</p></li>
+<li><p><code>splitting_factor</code> = c(): Name of a fixed-effect factor. Must be either empty or length 1. If provided, rate-count and time-series plots will determine the color hue of treatment levels by the value of this fixed-effect in that level. Within splitting factor levels, the other fixed-effect factor level determines color brightness. Note that this splitting-factor color scheme only has an effect if there are exactly two fixed-effect levels (one of which can be a time series, but the splitting factor itself cannot be a time series).</p></li>
+<li><p><code>CI_style</code> = TRUE: Logical indicating whether rate-count plots should show (TRUE:) predicted treatment-level expression rates free of individual effects plus shading showing 95% confidence invervals, or (FALSE:) observed data as points, plus fitted treatment-level expression rates for both individual samples and predictions free of individual effects.</p></li>
+<li><p><code>splitting_factor_colors</code> = c(120, 240): Vector of two integers (range 0:360) giving the hue of each level of the splitting factor.</p></li>
+<li><p><code>label_size</code>, <code>title_size</code>, <code>axis_size</code>, <code>legend_size</code>, <code>count_size</code>: Controls for plot element sizes.</p></li>
+<li><p><code>count_jitter</code> = 0.5: Scale of jitter to apply when plotting data for a given input.</p></li>
+<li><p><code>count.alpha.ran</code>, <code>count.alpha.none</code>, <code>pred.alpha.ran</code>, and <code>pred.alpha.none</code>: Controls for plot element alpha-levels.</p></li>
+</ul></dd>
 
 
 <dt id="arg-ran-seed">ran.seed<a class="anchor" aria-label="anchor" href="#arg-ran-seed"></a></dt>
-<dd><p>Integer, random seed for reproducibility. If NULL, no seed is set. Default is 1234.</p></dd>
+<dd><p>= 1234: Integer, random seed for reproducibility. Used within R. If NULL, no seed is set. Default is 1234.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>List giving the results of the fitted model, including: <code>model.component.list</code>, <code>count.data.summed</code>, <code>fitted.parameters</code>, <code>gamma.disperson</code>, <code>param.names</code>, <code>fix</code>, <code>treatment</code>, <code>grouping.variables</code>, <code>param.idx0</code>, <code>settings</code>, <code>sample.params</code>, <code>sample.params.bs</code>, <code>sample.params.MCMC</code>, <code>diagnostics.bs</code>, <code>diagnostics.MCMC</code>, <code>stats</code>, and <code>plots</code></p>
-    </div>
+    <p>List giving the results of the fitted model, including:</p><ul><li><p><code>model.component.list</code> = "Rt", "tslope", "tpoint": Character vector giving the main model components; always "Rt" = rate, "tslope" = transition-point slope, and "tpoint" = transition-point location.</p></li>
+<li><p><code>count.data.summed</code>: Data frame of the fitted data. There is one row per combination of spatial bin, fixed effects, and random effects. Contains columns for <code>bin</code>, <code>count</code> (sum of spots with a given species label), <code>pred</code> (predicted rate), <code>count.log</code> log of the count, plus one, <code>pred.log</code> (log of predicted rate plus one), <code>context</code>, <code>species</code>, <code>ran</code> (random-effect level), and <code>treatment</code> (treatment level).</p></li>
+<li><p><code>fitted.parameters</code>: Vector of all fitted model parameters.</p></li>
+<li><p><code>gamma.disperson</code>: Matrix giving the estimated gamma dispersion of the gamma-convolved Poisson model.</p></li>
+<li><p><code>param.names</code>: Names of the model parameters, matching the order of <code>fitted.parameters</code>.</p></li>
+<li><p><code>fix</code>: List containing four elements: <code>names</code> (names of fixed-effect factors), <code>lvls</code> (list, each element the names of the levels of a fixed-effect factor), <code>treat.lvl</code> (as before, but excluding reference levels), and <code>ref.lvl</code> (as before, but containing only the reference-level).</p></li>
+<li><p><code>treatment</code>: List with two elements: <code>names</code> (names of the treatment levels) and <code>components</code> (list, each element the names of the fixed-effect factor levels constituting that treatment level).</p></li>
+<li><p><code>grouping.variables</code>: List containing character vectors <code>context.lvls</code>, <code>species.lvls</code>, and <code>ran.lvls</code> holding, respectively, the grouping levels of the context, species, and random-effect grouping variabes.</p></li>
+<li><p><code>param.idx0</code>: List containing zero-indexed index values for <code>fitted.parameters</code> for different combinations of treatment levels and grouping factors.</p></li>
+<li><p><code>settings</code>: A copy of the original model settings provided to the <code>wisp</code> function.</p></li>
+<li><p><code>sample.params.type</code>: A character string, "bs" or "MCMC", specifies which type of resamples were used to compute stats.</p></li>
+<li><p><code>sample.params.bs</code>: A data frame giving the resampled parameters from bootstrapping (if any).</p></li>
+<li><p><code>sample.params.MCMC</code>: A data frame giving the resampled parameters from the MCMC resampling (if any).</p></li>
+<li><p><code>diagnostics.bs</code>: Diagnostic information for each bootstrap resample.</p></li>
+<li><p><code>diagnostics.MCMC</code>: Diagnostic information for each MCMC random-walk step (i.e., resample).</p></li>
+<li><p><code>stats</code>: List containing a main data frame <code>parameters</code> with the results (p-values, estimate, confidence intervals, etc) of the statistical analysis of the model parameters, plus data frames holding model residuals.</p></li>
+<li><p><code>plots</code>: List containing whatever plots where generated during the model fit.</p></li>
+</ul></div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

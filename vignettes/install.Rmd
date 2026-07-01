@@ -1,5 +1,7 @@
 ---
 title: "Installation instructions"
+author: "Michael Barkasi, Cody Nhan Pham"
+date: "July 3, 2026 (v2.4)"
 ---
 
 1. Clone and `cd` into this git repo

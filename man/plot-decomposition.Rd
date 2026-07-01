@@ -7,9 +7,9 @@
 plot.decomposition(
  wisp.results, 
  species, 
- log = FALSE, 
+ log            = FALSE, 
  dim.boundaries = c(), 
- y.lim = NULL
+ y.lim          = NULL
 )
 }
 \arguments{

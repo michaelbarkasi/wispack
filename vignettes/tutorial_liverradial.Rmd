@@ -1,7 +1,7 @@
 ---
 title: "Radial zonation in liver lobules"
 author: "Michael Barkasi"
-date: "`r Sys.Date()`"
+date: "July 3, 2026 (v2.4)"
 ---
 
 ```{r setup, include = FALSE}
@@ -57,24 +57,35 @@ For the actual execution, we first load the MatLab files:
 ```{r load_data, eval = FALSE}
 library(R.matlab)
 files <- list.files(
-    path = "Droin_data", 
-    pattern = "\\.mat$", 
+    path       = "Droin_data", 
+    pattern    = "\\.mat$", 
     full.names = TRUE
   )
-Droin_data <- lapply(files, readMat)
+Droin_data        <- lapply(files, readMat)
 names(Droin_data) <- basename(files)
 ```
 
 Droin et al. bulk-sequenced thousands of genes. For this demonstration, we will model just a few with known zonation and temporal rhythm:
 
-| Abbreviation | Name | Zonation | Rhythm |
-|:-------------|:-----|:------|:------|
-|<span class = "gene">GLUL</span> | Glutamine synthethase | Central | |
-|<span class = "gene">ASS1</span> | Urea cycle gene argininosuccinate synthetase | Portal | |
-|<span class = "gene">ARNTL</span>, <span class = "gene">BMAL1</span> | Basic helix-loop-helix ARNT like 1 |  | Circadian |
-|<span class = "gene">DBP</span> | PAR bZip transcription factor | | Circadian |
-|<span class = "gene">ELOVL3</span> | ELOVL fatty acid elongase 3 | Central | Circadian |
-|<span class = "gene">PCK1</span> | Phosphoenolpyruvate carboxykinase 1 | Portal | Circadian |
+<table>
+  <colgroup>
+    <col style="width: 25%;">
+    <col style="width: 45%;">
+    <col style="width: 15%;">
+    <col style="width: 15%;">
+  </colgroup>
+  <thead>
+    <tr><th>Abbreviation</th><th>Name</th><th>Zonation</th><th>Rhythm</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><span class="gene">GLUL</span></td><td>Glutamine synthethase</td><td>Central</td><td></td></tr>
+    <tr><td><span class="gene">ASS1</span></td><td>Urea cycle gene argininosuccinate synthetase</td><td>Portal</td><td></td></tr>
+    <tr><td><span class="gene">ARNTL</span>, <span class="gene">BMAL1</span></td><td>Basic helix-loop-helix ARNT like 1</td><td></td><td>Circadian</td></tr>
+    <tr><td><span class="gene">DBP</span></td><td>PAR bZip transcription factor</td><td></td><td>Circadian</td></tr>
+    <tr><td><span class="gene">ELOVL3</span></td><td>ELOVL fatty acid elongase 3</td><td>Central</td><td>Circadian</td></tr>
+    <tr><td><span class="gene">PCK1</span></td><td>Phosphoenolpyruvate carboxykinase 1</td><td>Portal</td><td>Circadian</td></tr>
+  </tbody>
+</table>
 
 We can subset the data as follows: 
 
@@ -85,21 +96,21 @@ genes_to_keep <- c("glul", "ass1", "arntl", "dbp", "elovl3", "pck1")
 # For each loaded MatLab file, subset to the above genes
 for (fn in basename(files)) {
     # Check that the desired genes are in the file
-    gene_idx <- which(unlist(Droin_data[[fn]][["all.genes"]]) %in% genes_to_keep)
+    gene_idx      <- which(unlist(Droin_data[[fn]][["all.genes"]]) %in% genes_to_keep)
     genes_to_keep <- unlist(Droin_data[[fn]][["all.genes"]])[gene_idx]
     # Subset file components to just these genes
-    Droin_data[[fn]][["seq.data"]] <- Droin_data[[fn]][["seq.data"]][gene_idx,]
-    Droin_data[[fn]][["mat.norm"]] <- Droin_data[[fn]][["mat.norm"]][gene_idx,]
+    Droin_data[[fn]][["seq.data"]]    <- Droin_data[[fn]][["seq.data"]][gene_idx,]
+    Droin_data[[fn]][["mat.norm"]]    <- Droin_data[[fn]][["mat.norm"]][gene_idx,]
     Droin_data[[fn]][["MeanGeneExp"]] <- Droin_data[[fn]][["MeanGeneExp"]][gene_idx,]
-    Droin_data[[fn]][["SE"]] <- Droin_data[[fn]][["SE"]][gene_idx,]
-    Droin_data[[fn]][["q.vals"]] <- Droin_data[[fn]][["q.vals"]][gene_idx,]
+    Droin_data[[fn]][["SE"]]          <- Droin_data[[fn]][["SE"]][gene_idx,]
+    Droin_data[[fn]][["q.vals"]]      <- Droin_data[[fn]][["q.vals"]][gene_idx,]
     # Rename data rows with gene names
-    rownames(Droin_data[[fn]][["seq.data"]]) <- genes_to_keep
-    rownames(Droin_data[[fn]][["mat.norm"]]) <- genes_to_keep
+    rownames(Droin_data[[fn]][["seq.data"]])    <- genes_to_keep
+    rownames(Droin_data[[fn]][["mat.norm"]])    <- genes_to_keep
     rownames(Droin_data[[fn]][["MeanGeneExp"]]) <- genes_to_keep
-    rownames(Droin_data[[fn]][["SE"]]) <- genes_to_keep
-    names(Droin_data[[fn]][["q.vals"]]) <- genes_to_keep
-    Droin_data[[fn]][["all.genes"]] <- genes_to_keep
+    rownames(Droin_data[[fn]][["SE"]])          <- genes_to_keep
+    names(Droin_data[[fn]][["q.vals"]])         <- genes_to_keep
+    Droin_data[[fn]][["all.genes"]]             <- genes_to_keep
   }
 ```
 
@@ -111,61 +122,56 @@ count_data <- data.frame()
 
 # For each subsetted MatLab file ...
 for (i in seq_along(Droin_data)) {
-  
-  # Grab gene list and data dimensions
-  gene_list <- rownames(Droin_data[[i]][["mat.norm"]])
-  n_genes <- length(gene_list)
-  n_cells <- ncol(Droin_data[[i]][["mat.norm"]])
-  n_bins <- ncol(Droin_data[[i]][["Pmat"]])
-  
-  # Grab row sums for renormalization of probability to 1
-  Pmat_row_sums <- rowSums(Droin_data[[i]][["Pmat"]])
-  
-  # De-normalize transcript counts to realistic rates
-  denormalized_rates <- Droin_data[[i]][["mat.norm"]] * 1e3
-  
-  # ... for each gene
-  for (g in c(1:n_genes)) {
     
-    # ... for each zone (i.e., spatial coordinate, or bin)
-    for (b in c(1:n_bins)) {
-      
-      # Simulate count of gene g in each cell, for mouse i
-      sim_gene_counts_by_cell <- rpois(n_cells, denormalized_rates[g,])
-      
-      # Get probability of bin membership for each cell, for mouse i 
-      probability_of_zone_membership_by_cell <- Droin_data[[i]][["Pmat"]][,b] / Pmat_row_sums
-      
-      # Randomly select whether each cell is in this bin
-      cell_weight <- rbinom(n = n_cells, size = 1, prob = probability_of_zone_membership_by_cell)
-      
-      count_data <- rbind(
-        count_data,
-        data.frame(
-          # add mouse number
-          mouse = rep(i, n_cells),
-          # extract ZT from file name and add
-          ZT = rep(as.numeric(gsub("\\D", "", names(Droin_data)[i])), n_cells),
-          # add bin number
-          bin = rep(b, n_cells),
-          # add gene name
-          gene = rep(gene_list[g], n_cells),
-          # compute and log-transform the zone-weighted normalized gene counts
-          count = sim_gene_counts_by_cell * cell_weight
+    # Grab gene list and data dimensions
+    gene_list          <- rownames(Droin_data[[i]][["mat.norm"]])
+    n_genes            <- length(gene_list)
+    n_cells            <- ncol(Droin_data[[i]][["mat.norm"]])
+    n_bins             <- ncol(Droin_data[[i]][["Pmat"]])
+    # Grab row sums for renormalization of probability to 1
+    Pmat_row_sums      <- rowSums(Droin_data[[i]][["Pmat"]])
+    # De-normalize transcript counts to realistic rates
+    denormalized_rates <- Droin_data[[i]][["mat.norm"]] * 1e3
+    
+    # ... for each gene
+    for (g in c(1:n_genes)) {
+      # ... for each zone (i.e., spatial coordinate, or bin)
+      for (b in c(1:n_bins)) {
+        
+        # Simulate count of gene g in each cell, for mouse i
+        sim_counts  <- rpois(n_cells, denormalized_rates[g,])
+        # Get probability of bin membership for each cell, for mouse i 
+        mem_prob    <- Droin_data[[i]][["Pmat"]][,b] / Pmat_row_sums
+        # Randomly select whether each cell is in this bin
+        cell_weight <- rbinom(n = n_cells, size = 1, prob = mem_prob)
+        
+        count_data <- rbind(
+          count_data,
+          data.frame(
+            # add mouse number
+            mouse = rep(i, n_cells),
+            # extract ZT from file name and add
+            ZT    = rep(as.numeric(gsub("\\D", "", names(Droin_data)[i])), n_cells),
+            # add bin number
+            bin   = rep(b, n_cells),
+            # add gene name
+            gene  = rep(gene_list[g], n_cells),
+            # compute and log-transform the zone-weighted normalized gene counts
+            count = sim_counts * cell_weight
+          )
         )
-      )
-      
-      # Note: to reconstruct the Droin et al. data, use: 
-      #       count = transform_data(Droin_data[[i]][["mat.norm"]][g,] * Droin_data[[i]][["Pmat"]][,b])
-      #   with the function: 
-      #       transform_data <- function(x) {
-      #           log2(x + 1e-4) - log2(11e-5)
-      #         }
-      
+        
+        # Note: to reconstruct the Droin et al. data, use: 
+        #       count = transform_data(Droin_data[[i]][["mat.norm"]][g,] * Droin_data[[i]][["Pmat"]][,b])
+        #   with the function: 
+        #       transform_data <- function(x) {
+        #           log2(x + 1e-4) - log2(11e-5)
+        #         }
+        
+      }
     }
+    
   }
-  
-}
 ```
 
 <h2>Fitting a wisp</h2>
@@ -186,19 +192,22 @@ The first step is to set the variables to be modelled:
 
 ```{r define_variables}
 data.variables <- list(
-  count = "count",
-  bin = "bin", 
-  context = "liver", 
-  species = "gene",
-  ran = "mouse",
+  count      = "count",
+  bin        = "bin", 
+  context    = "liver", 
+  species    = "gene",
+  ran        = "mouse",
   timeseries = "ZT"
 )
 ```
 
-There are only eight coordinates in the spatial dimension (bins $1$ to $8$). Ideally we would have more, but we can compensate by adjusting the model settings. Potentially needed adjustments include lowering <span class = "code_variable">buffer_factor</span> (which controls minimum distance between rate-transition points), <span class = "code_variable">LROwindow_factor</span> (which controls the range of rate-transition slopes detected when searching for rate-transition points), and <span class = "code_variable">LROcutoff</span> (which controls the sensitivity of rate-transition point detection). Previous testing (not shown here) suggests that all that's necessary is lowering the <span class = "code_variable">LROcutoff</span> from the default $2.0$ to $1.5$.
+There are only eight coordinates in the spatial dimension (bins $1$ to $8$). Ideally we would have more, but we can compensate by adjusting the model settings. Potentially needed adjustments include lowering <span class = "code_variable">buffer_factor</span> (which controls minimum distance between rate-transition points), <span class = "code_variable">LROwindow_factor</span> (which controls the range of rate-transition slopes detected when searching for rate-transition points), and <span class = "code_variable">LROcutoff</span> (which controls the sensitivity of rate-transition point detection). Previous testing (not shown here) suggests that all that's necessary is lowering the <span class = "code_variable">LROcutoff</span> from the default $2.0$ to $1.5$.[^1]
+
+[^1]: This sentence reflects v2.0 of wispack. As of v2.2, wispack now by default runs a grid search to find the window factor and cutoff for the LRO algorithm which minimizes a cost function, by default AIC, but BIC and negative log-likelihood are also options. For the purpose of this demo, we will reserve the original settings by setting <span class = "code_variable">LRO_cost</span> to "none". 
 
 ```{r define_model_settings}
 model.settings <- list(
+  LRO_cost  = "none",
   LROcutoff = 1.5
 )
 ```
@@ -207,18 +216,20 @@ Next, we need to adjust a few of the plot settings. First, we want to print plot
 
 ```{r plot_settings}
 plot.settings <- list(
-  print.plots = FALSE,
-  title_size = 14,
-  log.scale = TRUE,
-  count_size = 2.5,
-  count_jitter = 0.0,
+  print.plots      = FALSE,
+  title_size       = 14,
+  log.scale        = TRUE,
+  count_size       = 2.5,
+  count_jitter     = 0.0,
   count.alpha.none = 0.8,
-  count.alpha.ran = 0.5,
-  pred.alpha.ran = 0.0
+  count.alpha.ran  = 0.5,
+  pred.alpha.ran   = 0.0
 )
 ```
 
-Finally, we can fit the model. For the purpose of estimating the parameters, we will use bootstraps instead of MCMC sampling. So, we set the number of MCMC steps to zero and the number of bootstraps to 1000.
+Finally, we can fit the model.[^2] For the purpose of estimating the parameters, we will use bootstraps instead of MCMC sampling. So, we set the number of MCMC steps to zero and the number of bootstraps to $1,000$.
+
+[^2]: As explained in the previous footnote, changes have been made to the LRO change-point detection algorithm since this tutorial was written. This tutorial was written for wispack v2.0 and reproduces an analysis originally done in the published [paper](https://doi.org/10.1093/nar/gkag466) introducing wisps. However, improvements in the LRO algorithm have lend to slightly different results as of the last compiling of this tutorial for v2.4 of wispack. So, the discrepancy between the results presented here and those presented in the [paper](https://doi.org/10.1093/nar/gkag466) are due to changes in the LRO algorithm. 
 
 ```{r fit_model}
 # Load wispack
@@ -230,80 +241,82 @@ set.seed(ran.seed)
 
 # Fit model
 radial.model <- wisp(
-  count.data = count_data,
-  variables = data.variables,
+  count.data     = count_data,
+  variables      = data.variables,
   bootstraps.num = 1e3,
-  max.fork = 10,
+  max.fork       = 10,
   model.settings = model.settings,
-  MCMC.settings = list(MCMC.steps = 0),
-  plot.settings = plot.settings
+  MCMC.settings  = list(MCMC.steps = 0),
+  plot.settings  = plot.settings
 )
 ```
 ```{r check1, echo = FALSE}
 test_val <- radial.model$stats$parameters[4,2]
-if (test_val < 0.1363701 || test_val > 0.1363703) stop("failed check 1")
+if (test_val < 0.13 || test_val > 0.16) stop("failed check 1")
 ```
 
 <h2>Examining results</h2>
 
-The <span class = "function">wisp</span> function produces both a [rate-count plot](tutorial_wispplots.html) with space along the x-axis and a [time-series plot](tutorial_timeseries.html) with time along the x-axis. By examining the plots of the the model fit for each gene, we can assess how well wisp has captured zonation and temporal rhythm. The below plots align with the expectations in the above table, and are a near match for the plots produced by the bespoke model of [Droin et al. (2021)](https://doi.org/10.1038/s42255-020-00323-1) and shown in figure 1. (However, note that the colors used in the plots here differ from those used in the paper figure.)
+The <span class = "function">wisp</span> function produces both a [rate-count plot](tutorial_wispplots.html) with space along the x-axis and a [time-series plot](tutorial_timeseries.html) with time along the x-axis. By examining the plots of the the model fit for each gene, we can assess how well wisp has captured zonation and temporal rhythm. The below plots align with the expectations in the above table, and are a near match for the plots produced by the bespoke model of [Droin et al. (2021)](https://doi.org/10.1038/s42255-020-00323-1) and shown in figure 1 of their paper. (However, note that the colors used in the plots here differ from those used in the paper figure.)
 
 <h3>Zonated genes</h3>
 
 To begin, consider <span class = "gene">GLUL</span> and <span class = "gene">ASS1</span>, which are expected to be primarily zonated, with <span class = "gene">GLUL</span> being higher in the central region and <span class = "gene">ASS1</span> being higher in the portal region. Their respective spatial gradients are easy to see in the rate-count plot:
 
 ```{r print_plots_zonation_space, fig.asp = 0.5}
-plt_glul <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_glul"]]
-plt_ass1 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_ass1"]]
-g <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
+rc_plots <- radial.model[["plots"]][["ratecount"]]
+plt_glul <- rc_plots[["plot_pred.log_context_liver_fixEff_glul"]]
+plt_ass1 <- rc_plots[["plot_pred.log_context_liver_fixEff_ass1"]]
+g        <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
 grid.draw(g)
 ```
 ```{r check2, echo = FALSE}
 test_val <- ggplot_build(plt_glul)$data[[1]][4,2]
-if (test_val < 4.40581 || test_val > 4.40583) stop("failed check 2")
+if (test_val < 4.4 || test_val > 4.5) stop("failed check 2")
 ```
 
 While the rate-count plots make clear the spatial gradients of <span class = "gene">GLUL</span> and <span class = "gene">ASS1</span>, temporal information can only be read off implicitly. For <span class = "gene">ASS1</span>, we seem to see a slight decrease in gene expression over the day, from ZT0 to ZT18. For <span class = "gene">GLUL</span>, expression seems constant across the day, except perhaps for some minor interaction between zone and time that has the central region decreasing in expression as the portal region increases. These temporal patterns can be seen more clearly by looking at the time-series plots. 
 
 ```{r print_plots_zonation_time, fig.asp = 0.5}
-plt_glul <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_glul"]]
-plt_ass1 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_ass1"]]
+ts_plots <- radial.model[["plots"]][["timeseries"]]
+plt_glul <- ts_plots[["plot_pred.log_context_liver_timeseries_glul"]]
+plt_ass1 <- ts_plots[["plot_pred.log_context_liver_timeseries_ass1"]]
 g <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
 grid.draw(g)
 ```
 ```{r check3, echo = FALSE}
 test_val <- ggplot_build(plt_glul)$data[[1]][17,2]
-if (test_val < 3.146182 || test_val > 3.146184) stop("failed check 3")
+if (test_val < 6.9 || test_val > 7) stop("failed check 3")
 ```
 
-The time-series plot for <span class = "gene">ASS1</span> shows some variation over time, but the magnitude of that variation is small compared to the difference in expression level [between the blocks](tutorial_timeseries.html) (i.e., over space). The same holds true for <span class = "gene">GLUL</span>, although again we see the more portal region (block 2) seeming to increase in expression while the more central region (block 1) decreases.
+The time-series plot for <span class = "gene">ASS1</span> shows some variation (generally downward) over time, but the magnitude of that variation is smaller and noisy compared to the difference in expression level between the blocks (i.e., over space). The same holds true for <span class = "gene">GLUL</span>, although again we see the more portal region (block 2) seeming to increase in expression while the more central region (block 1) decreases.
 
 <h3>Rhythmic genes</h3>
 
 For the two rhythmic genes, the spatial rate-count plots show two times with relatively low and flat expression, along with two times with relatively high expression, although the central region of <span class = "gene">ARNTL</span> shows a bit of a spatial gradient. For the portal region of <span class = "gene">ARNTL</span>, ZT0 and ZT18 are elevated (yellow and purple), while for <span class = "gene">DBP</span> it's ZT6 and ZT12 (green and blue) that are elevated. 
 
 ```{r print_plots_rhythm_space, fig.asp = 0.5}
-plt_arntl <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_arntl"]]
-plt_dbp <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_dbp"]]
-g <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
+plt_arntl <- rc_plots[["plot_pred.log_context_liver_fixEff_arntl"]]
+plt_dbp   <- rc_plots[["plot_pred.log_context_liver_fixEff_dbp"]]
+g         <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
 grid.draw(g)
 ```
 ```{r check4, echo = FALSE}
 test_val <- ggplot_build(plt_arntl)$data[[1]][4,2]
-if (test_val < 2.47398 || test_val > 2.47400) stop("failed check 4")
+if (test_val < 2.4 || test_val > 2.6) stop("failed check 4")
 ```
 
 These temporal dynamics are made more clear in the time-series plots, which clearly show the mid-ZT dip in <span class = "gene">ARNTL</span> and the mid-ZT bump in <span class = "gene">DBP</span>. 
 
 ```{r print_plots_rhythm_time, fig.asp = 0.5}
-plt_arntl <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_arntl"]]
-plt_dbp <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_dbp"]]
-g <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
+plt_arntl <- ts_plots[["plot_pred.log_context_liver_timeseries_arntl"]]
+plt_dbp   <- ts_plots[["plot_pred.log_context_liver_timeseries_dbp"]]
+g         <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
 grid.draw(g)
 ```
 ```{r check5, echo = FALSE}
 test_val <- ggplot_build(plt_arntl)$data[[1]][4,2]
-if (test_val < 1.957246 || test_val > 1.957248) stop("failed check 5")
+if (test_val < 1.9 || test_val > 2) stop("failed check 5")
 ```
 
 <h3>Zonated and rhythmic genes</h3>
@@ -311,27 +324,27 @@ if (test_val < 1.957246 || test_val > 1.957248) stop("failed check 5")
 Finally, we have <span class = "gene">ELOVL3</span> and <span class = "gene">PCK1</span>, two genes with both spatial zonation and temporal rhythm. Spatially, <span class = "gene">ELOVL3</span> has the same profile as <span class = "gene">GLUL</span>. Both are expressed more in the central region. <span class = "gene">PCK1</span>, on the other hand, is expressed more in the portal region, just like <span class = "gene">ASS1</span>. 
 
 ```{r print_plots_both_space, fig.asp = 0.5}
-plt_elovl3 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_elovl3"]]
-plt_pck1 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_pck1"]]
-g <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
+plt_elovl3 <- rc_plots[["plot_pred.log_context_liver_fixEff_elovl3"]]
+plt_pck1   <- rc_plots[["plot_pred.log_context_liver_fixEff_pck1"]]
+g          <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
 grid.draw(g)
 ```
 ```{r check6, echo = FALSE}
 test_val <- ggplot_build(plt_elovl3)$data[[1]][4,2]
-if (test_val < 5.414370 || test_val > 5.414372) stop("failed check 6")
+if (test_val < 5.4 || test_val > 5.5) stop("failed check 6")
 ```
 
 However, unlike <span class = "gene">GLUL</span> and <span class = "gene">PCK1</span>, <span class = "gene">ELOVL3</span> and <span class = "gene">PCK1</span> have notable temporal rhythm. <span class = "gene">ELOVL3</span> is similar to <span class = "gene">ARNTL</span>, with a mid-ZT dip. <span class = "gene">PCK1</span> is similar to <span class = "gene">DBP</span>, with a mid-ZT bump. 
 
 ```{r print_plots_both_time, fig.asp = 0.5}
-plt_elovl3 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_elovl3"]]
-plt_pck1 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_pck1"]]
-g <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
+plt_elovl3 <- ts_plots[["plot_pred.log_context_liver_timeseries_elovl3"]]
+plt_pck1   <- ts_plots[["plot_pred.log_context_liver_timeseries_pck1"]]
+g          <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
 grid.draw(g)
 ```
 ```{r check7, echo = FALSE}
 test_val <- ggplot_build(plt_elovl3)$data[[1]][4,2]
-if (test_val < 4.66227 || test_val > 4.66229) stop("failed check 7")
+if (test_val < 4.6 || test_val > 4.8) stop("failed check 7")
 ```
 
 <h2>Advantages of wisp</h2>

@@ -322,6 +322,13 @@ dVec series_loglik(
     // Assumes points are normally distributed about their process rate
     
     int n = series0.size();
+    
+    // Guard: ws must be >= 2 (the algorithm splits the window into halves)
+    // and must not exceed n; return zeros if the window is degenerate.
+    if (ws < 2 || ws > n) {
+      return dVec(n, 0.0);
+    }
+    
     dVec series = series0; 
     dVec loglik(n); // length out should equal length in
     
@@ -525,8 +532,8 @@ IntegerMatrix LROcp_array(
       
       // Find the likelihood ratios of change points for this series
       dVec loglik_ratio_highpass = LROcp_logRatio(series, ws);
-      dVec loglik_ratio_midpass = LROcp_logRatio(series, ws*2);
-      dVec loglik_ratio_lowpass = LROcp_logRatio(series, ws*4);
+      dVec loglik_ratio_midpass  = LROcp_logRatio(series, ws*2);
+      dVec loglik_ratio_lowpass  = LROcp_logRatio(series, ws*4);
       
       // Save in array 
       loglik_ratio_array_highpass.column(s) = to_NumVec(loglik_ratio_highpass);
@@ -552,6 +559,7 @@ IntegerMatrix LROcp_array(
       Function project_cp("project_cp");
       IntegerMatrix found_cp_array = project_cp(found_cp, centroid.column(1), loglik_ratio_array_midpass);
       // ... ^ in this matrix, rows are change points (by deg), columns are trt x ran interactions
+      if (found_cp_array(0,0) == -1) {Rcpp::stop("Problem running project_cp");}
      
       // Ensure change points are separated by at least cp_buffer (and correct indexes to zero-indexing)
       IntegerVector collision_rows;

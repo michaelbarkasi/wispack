@@ -7,7 +7,7 @@
 plot.MCMC.walks(
  wisp.results, 
  print.plots = FALSE, 
- verbose = TRUE, 
+ verbose     = TRUE, 
  low_samples = 10
 )
 }

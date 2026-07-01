@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,11 +68,11 @@
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">plot.timeseries</span><span class="op">(</span></span>
 <span> <span class="va">wisp.results</span>, </span>
-<span> splitting_factor <span class="op">=</span> <span class="cn">NULL</span>, </span>
-<span> log.scale <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span> print.plots <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span> species <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span> verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span> splitting_factor <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>, </span>
+<span> log.scale        <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span> print.plots      <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span> species          <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span> verbose          <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -85,7 +85,7 @@
 
 
 <dt id="arg-splitting-factor">splitting_factor<a class="anchor" aria-label="anchor" href="#arg-splitting-factor"></a></dt>
-<dd><p>Character string, the name of the fixed effect by which to split the timeseries. If NULL, the first non-timeseries fixed effect is used. If "none", will not split.</p></dd>
+<dd><p>Character string, the name of the fixed effect by which to split the timeseries. If empty, c(), the first non-timeseries fixed effect is used. If "none", will not split.</p></dd>
 
 
 <dt id="arg-log-scale">log.scale<a class="anchor" aria-label="anchor" href="#arg-log-scale"></a></dt>

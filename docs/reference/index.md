@@ -16,8 +16,6 @@
 
 - [`analyze.residuals()`](https://michaelbarkasi.github.io/wispack/reference/analyze.residuals.md)
   : Analyze residuals from wisp fit
-- [`pvalues.samples()`](https://michaelbarkasi.github.io/wispack/reference/pvalues.samples.md)
-  : Compute p-values using ecdf from parameter resamples
 - [`sample.stats()`](https://michaelbarkasi.github.io/wispack/reference/sample.stats.md)
   : Estimate p-values and confidence intervals from resampled parameters
 

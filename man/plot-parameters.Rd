@@ -6,11 +6,11 @@
 \usage{
 plot.parameters(
  wisp.results, 
- species = c(), 
- violin = TRUE, 
- print.plots = FALSE, 
+ species         = c(), 
+ violin          = TRUE, 
+ print.plots     = FALSE, 
  species.classes = NULL, 
- verbose = TRUE
+ verbose         = TRUE
 )
 }
 \arguments{

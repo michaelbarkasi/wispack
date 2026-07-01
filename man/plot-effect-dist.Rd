@@ -7,7 +7,7 @@
 plot.effect.dist(
  wisp.results, 
  print.plots = FALSE, 
- verbose = TRUE
+ verbose     = TRUE
 )
 }
 \arguments{

@@ -26,6 +26,46 @@
   distribution, and so any attempt to model them with wisp needs to
   account for this.
 
+## Version 2.4 (July 3, 2026)
+
+- Part 2 of a major code refactor/optimization.
+- Finished refactoring wspc object class and its initialization method
+  into a more organized structure.
+- Fixed issue in extrapolate_none.
+- Added option to level preprocessing coordinate transform (the
+  cortical_coordinate_transform function) based on different layers.
+- Updated Roxygen2 descriptions for user-facing R functions.
+- Checked all tutorials to ensure they work with current version and
+  removed auto-dating, so their current working version is properly
+  documented. Included footnotes on saved and pre-processed code chunks.
+- Substantial code cleaning.
+
+## Version 2.3 (June 16, 2026)
+
+- Part 1 of a major code refactor/optimization.
+- Improved algorithm in check_parameter_feasibility for finding nearby
+  feasible initial parameters.
+- Improved placement of check_parameter_feasibility within the various
+  fit, MCMC, and bootstrap pipelines.
+- Converted several large-signature stand-alone functions into wspc
+  methods: compute_gamma_dispersion, make_extrapolation_pool,
+  find_count_log_means, estimate_change_points, and
+  estimate_initial_parameters.
+- Simplified parameter vector handling.
+- Wrote checks into tutorials, to ensure code changes do not change
+  results.
+- Replaced some R Lists with std::vector.
+- Improved weight-matrix construction.
+- Replaced pcg with std rng, to ease licensing issues.
+- Removed stan variables from wspc objects.
+- Replaced R-style masking with numeric indexing for summed count data.
+- Added print.settings argument splitting_factor_colors to wisp to allow
+  users to specify colors for the splitting factor in ratecount and
+  timeseries plots.
+- Performed extensive optimization of the code, leading to a x2 or x3
+  speedup in running wisp.
+- Documentation updated, but not yet rebuilt.
+
 ## Version 2.2 (June 5, 2026)
 
 - Added model.settings argument max_bin to wisp which allows users to

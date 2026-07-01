@@ -1,5 +1,11 @@
 # Wispack: An R package for warped sigmoidal Poisson-process mixed-effects modeling
 
+Michael Barkasi
+
+July 3, 2026 (v2.5)
+
+## Introduction
+
 Wispack (pronounced “wisp package” or “wisp pack”) is an R package for
 testing for between-group effects on spatial variation in spatial
 transcriptomics data. As such variation is often functional, these can
@@ -12,9 +18,9 @@ True-color image of fluorescing probes bound to mRNA molecules in
 cortical cells, the raw data of spatial transcriptomics.
 
 Unlike testing for spatially variable genes (SVGs), which only involves
-testing for spatial variation of gene expression within a group, and
+testing for spatial variation of gene expression *within* a group, and
 unlike differential expression (DE) analysis which tests for
-between-group effects without regard to spatial distribution, testing
+*between-group* effects without regard to spatial distribution, testing
 for FSEs involves testing whether a factor such as age or rearing
 conditions has a nonzero effect on spatial variation between groups
 differing on that factor.
@@ -39,7 +45,9 @@ parameters. Random (within group) effects are modeled as further
 nonlinear warping of the poly-sigmoid. Significance testing is performed
 on the effects through either bootstrapping or MCMC resampling. A
 complete mathematical description of wisp models can be found in this
-[preprint](https://doi.org/10.1101/2025.06.11.659209).
+[paper](https://doi.org/10.1093/nar/gkag466), with more applied details
+covered in the tutorials on this site. (See the “Articles” link in the
+navigation bar.)
 
 ![Demo plots of functions involved in
 wisp](reference/figures/fig_WSPfunctions.png)
@@ -60,7 +68,10 @@ models (e.g.,
 and runs the complete test for FSEs. Preprocessing of the data is
 generally required before passing it to wisp, after which wisp executes
 a pipeline involving parameter estimates, prediction, model fitting, and
-hypothesis testing.
+hypothesis testing. Note that as of version 2.2, wisp includes the
+option (LRO_cost, under model.settings) to perform a grid search for the
+best settings for the change-point detection (LRO) search, where “best”
+is defined as either lowest AIC, BIC, or negative log-likelihood.
 
 ![Diagram of top-level of wisp modeling
 pipeline](reference/figures/fig_modelpipeline_simple.png)
@@ -107,34 +118,34 @@ View(laminar.model)
 ```
 
 No model formula is required. By default, wisp models include all
-possible effect interactions. However, effect interactions can be
-removed from the model using the trtKO argument in model.settings.
-Further, if not a set of defaults, column names from the data must be
-associated with model variables using the variables argument. For
-example:
+possible effect interactions. However, as of version 2.1, effect
+interactions can be removed from the model using the trtKO argument in
+model.settings. Further, if not a set of defaults, column names from the
+data must be associated with model variables using the variables
+argument. For example:
 
 ``` r
 
 # Define variables in the dataframe for the model
 data.variables <- list(
-    count = "count",
-    bin = "bin", 
-    context = "cortex", 
-    species = "gene",
-    ran = "mouse",
-    timeseries = "age",
+    count        = "count",
+    bin          = "bin", 
+    context      = "cortex", 
+    species      = "gene",
+    ran          = "mouse",
+    timeseries   = "age",
     fixedeffects = c("hemisphere", "age")
   )
   
 # Remove the hemisphere x age interaction from the model
 model.settings <- list(
-    trtKO = c("right12")
+    trtKO = c("right18")
   )
   
 # Fit model
 laminar.model <- wisp(
-    count.data = countdata,
-    variables = data.variables,
+    count.data     = countdata,
+    variables      = data.variables,
     model.settings = model.settings
   )
 ```
@@ -144,7 +155,7 @@ be run using the demo() command:
 
 ``` r
 
-demo("quick_start", package = "wispack")  
+demo("quick_start",  package = "wispack")  
 demo("full_options", package = "wispack")
 ```
 
@@ -174,8 +185,8 @@ options:
 6.  [*Modeling cell
     types:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_multicontext.md)
     An extension of the RORB example showing how to model not only
-    Poisson-process species (i.e., genes), but also the broader
-    biological context (i.e., cell type).
+    Poisson-process species (e.g., genes), but also the broader
+    biological context (e.g., cell type).
 7.  [*Plotting wisp
     models:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_wispplots.md)
     An explanation of the various kinds of plots available through
@@ -183,8 +194,7 @@ options:
 8.  [*Customizing statistical
     analyses:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md)
     A walkthrough of the various options for customizing the statistical
-    analyses performed by wisp, including bootstrapping and MCMC
-    resampling.
+    analyses performed by wisp, bootstrapping and MCMC resampling.
 9.  [*Benchmarks and
     comparisons:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_benchmarks.md)
     Development of a simulation framework (attractor simulations) for

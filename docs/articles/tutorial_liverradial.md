@@ -125,11 +125,11 @@ For the actual execution, we first load the MatLab files:
 
 library(R.matlab)
 files <- list.files(
-    path = "Droin_data", 
-    pattern = "\\.mat$", 
+    path       = "Droin_data", 
+    pattern    = "\\.mat$", 
     full.names = TRUE
   )
-Droin_data <- lapply(files, readMat)
+Droin_data        <- lapply(files, readMat)
 names(Droin_data) <- basename(files)
 ```
 
@@ -137,7 +137,7 @@ Droin et al. bulk-sequenced thousands of genes. For this demonstration,
 we will model just a few with known zonation and temporal rhythm:
 
 | Abbreviation | Name | Zonation | Rhythm |
-|:---|:---|:---|:---|
+|----|----|----|----|
 | GLUL | Glutamine synthethase | Central |  |
 | ASS1 | Urea cycle gene argininosuccinate synthetase | Portal |  |
 | ARNTL, BMAL1 | Basic helix-loop-helix ARNT like 1 |  | Circadian |
@@ -155,21 +155,21 @@ genes_to_keep <- c("glul", "ass1", "arntl", "dbp", "elovl3", "pck1")
 # For each loaded MatLab file, subset to the above genes
 for (fn in basename(files)) {
     # Check that the desired genes are in the file
-    gene_idx <- which(unlist(Droin_data[[fn]][["all.genes"]]) %in% genes_to_keep)
+    gene_idx      <- which(unlist(Droin_data[[fn]][["all.genes"]]) %in% genes_to_keep)
     genes_to_keep <- unlist(Droin_data[[fn]][["all.genes"]])[gene_idx]
     # Subset file components to just these genes
-    Droin_data[[fn]][["seq.data"]] <- Droin_data[[fn]][["seq.data"]][gene_idx,]
-    Droin_data[[fn]][["mat.norm"]] <- Droin_data[[fn]][["mat.norm"]][gene_idx,]
+    Droin_data[[fn]][["seq.data"]]    <- Droin_data[[fn]][["seq.data"]][gene_idx,]
+    Droin_data[[fn]][["mat.norm"]]    <- Droin_data[[fn]][["mat.norm"]][gene_idx,]
     Droin_data[[fn]][["MeanGeneExp"]] <- Droin_data[[fn]][["MeanGeneExp"]][gene_idx,]
-    Droin_data[[fn]][["SE"]] <- Droin_data[[fn]][["SE"]][gene_idx,]
-    Droin_data[[fn]][["q.vals"]] <- Droin_data[[fn]][["q.vals"]][gene_idx,]
+    Droin_data[[fn]][["SE"]]          <- Droin_data[[fn]][["SE"]][gene_idx,]
+    Droin_data[[fn]][["q.vals"]]      <- Droin_data[[fn]][["q.vals"]][gene_idx,]
     # Rename data rows with gene names
-    rownames(Droin_data[[fn]][["seq.data"]]) <- genes_to_keep
-    rownames(Droin_data[[fn]][["mat.norm"]]) <- genes_to_keep
+    rownames(Droin_data[[fn]][["seq.data"]])    <- genes_to_keep
+    rownames(Droin_data[[fn]][["mat.norm"]])    <- genes_to_keep
     rownames(Droin_data[[fn]][["MeanGeneExp"]]) <- genes_to_keep
-    rownames(Droin_data[[fn]][["SE"]]) <- genes_to_keep
-    names(Droin_data[[fn]][["q.vals"]]) <- genes_to_keep
-    Droin_data[[fn]][["all.genes"]] <- genes_to_keep
+    rownames(Droin_data[[fn]][["SE"]])          <- genes_to_keep
+    names(Droin_data[[fn]][["q.vals"]])         <- genes_to_keep
+    Droin_data[[fn]][["all.genes"]]             <- genes_to_keep
   }
 ```
 
@@ -192,61 +192,56 @@ count_data <- data.frame()
 
 # For each subsetted MatLab file ...
 for (i in seq_along(Droin_data)) {
-  
-  # Grab gene list and data dimensions
-  gene_list <- rownames(Droin_data[[i]][["mat.norm"]])
-  n_genes <- length(gene_list)
-  n_cells <- ncol(Droin_data[[i]][["mat.norm"]])
-  n_bins <- ncol(Droin_data[[i]][["Pmat"]])
-  
-  # Grab row sums for renormalization of probability to 1
-  Pmat_row_sums <- rowSums(Droin_data[[i]][["Pmat"]])
-  
-  # De-normalize transcript counts to realistic rates
-  denormalized_rates <- Droin_data[[i]][["mat.norm"]] * 1e3
-  
-  # ... for each gene
-  for (g in c(1:n_genes)) {
     
-    # ... for each zone (i.e., spatial coordinate, or bin)
-    for (b in c(1:n_bins)) {
-      
-      # Simulate count of gene g in each cell, for mouse i
-      sim_gene_counts_by_cell <- rpois(n_cells, denormalized_rates[g,])
-      
-      # Get probability of bin membership for each cell, for mouse i 
-      probability_of_zone_membership_by_cell <- Droin_data[[i]][["Pmat"]][,b] / Pmat_row_sums
-      
-      # Randomly select whether each cell is in this bin
-      cell_weight <- rbinom(n = n_cells, size = 1, prob = probability_of_zone_membership_by_cell)
-      
-      count_data <- rbind(
-        count_data,
-        data.frame(
-          # add mouse number
-          mouse = rep(i, n_cells),
-          # extract ZT from file name and add
-          ZT = rep(as.numeric(gsub("\\D", "", names(Droin_data)[i])), n_cells),
-          # add bin number
-          bin = rep(b, n_cells),
-          # add gene name
-          gene = rep(gene_list[g], n_cells),
-          # compute and log-transform the zone-weighted normalized gene counts
-          count = sim_gene_counts_by_cell * cell_weight
+    # Grab gene list and data dimensions
+    gene_list          <- rownames(Droin_data[[i]][["mat.norm"]])
+    n_genes            <- length(gene_list)
+    n_cells            <- ncol(Droin_data[[i]][["mat.norm"]])
+    n_bins             <- ncol(Droin_data[[i]][["Pmat"]])
+    # Grab row sums for renormalization of probability to 1
+    Pmat_row_sums      <- rowSums(Droin_data[[i]][["Pmat"]])
+    # De-normalize transcript counts to realistic rates
+    denormalized_rates <- Droin_data[[i]][["mat.norm"]] * 1e3
+    
+    # ... for each gene
+    for (g in c(1:n_genes)) {
+      # ... for each zone (i.e., spatial coordinate, or bin)
+      for (b in c(1:n_bins)) {
+        
+        # Simulate count of gene g in each cell, for mouse i
+        sim_counts  <- rpois(n_cells, denormalized_rates[g,])
+        # Get probability of bin membership for each cell, for mouse i 
+        mem_prob    <- Droin_data[[i]][["Pmat"]][,b] / Pmat_row_sums
+        # Randomly select whether each cell is in this bin
+        cell_weight <- rbinom(n = n_cells, size = 1, prob = mem_prob)
+        
+        count_data <- rbind(
+          count_data,
+          data.frame(
+            # add mouse number
+            mouse = rep(i, n_cells),
+            # extract ZT from file name and add
+            ZT    = rep(as.numeric(gsub("\\D", "", names(Droin_data)[i])), n_cells),
+            # add bin number
+            bin   = rep(b, n_cells),
+            # add gene name
+            gene  = rep(gene_list[g], n_cells),
+            # compute and log-transform the zone-weighted normalized gene counts
+            count = sim_counts * cell_weight
+          )
         )
-      )
-      
-      # Note: to reconstruct the Droin et al. data, use: 
-      #       count = transform_data(Droin_data[[i]][["mat.norm"]][g,] * Droin_data[[i]][["Pmat"]][,b])
-      #   with the function: 
-      #       transform_data <- function(x) {
-      #           log2(x + 1e-4) - log2(11e-5)
-      #         }
-      
+        
+        # Note: to reconstruct the Droin et al. data, use: 
+        #       count = transform_data(Droin_data[[i]][["mat.norm"]][g,] * Droin_data[[i]][["Pmat"]][,b])
+        #   with the function: 
+        #       transform_data <- function(x) {
+        #           log2(x + 1e-4) - log2(11e-5)
+        #         }
+        
+      }
     }
+    
   }
-  
-}
 ```
 
 ## Fitting a wisp
@@ -271,11 +266,11 @@ The first step is to set the variables to be modelled:
 ``` r
 
 data.variables <- list(
-  count = "count",
-  bin = "bin", 
-  context = "liver", 
-  species = "gene",
-  ran = "mouse",
+  count      = "count",
+  bin        = "bin", 
+  context    = "liver", 
+  species    = "gene",
+  ran        = "mouse",
   timeseries = "ZT"
 )
 ```
@@ -288,11 +283,12 @@ LROwindow_factor (which controls the range of rate-transition slopes
 detected when searching for rate-transition points), and LROcutoff
 (which controls the sensitivity of rate-transition point detection).
 Previous testing (not shown here) suggests that all that’s necessary is
-lowering the LROcutoff from the default 2.0 to 1.5.
+lowering the LROcutoff from the default 2.0 to 1.5.[^1]
 
 ``` r
 
 model.settings <- list(
+  LRO_cost  = "none",
   LROcutoff = 1.5
 )
 ```
@@ -307,20 +303,20 @@ than the random-effect predictions.
 ``` r
 
 plot.settings <- list(
-  print.plots = FALSE,
-  title_size = 14,
-  log.scale = TRUE,
-  count_size = 2.5,
-  count_jitter = 0.0,
+  print.plots      = FALSE,
+  title_size       = 14,
+  log.scale        = TRUE,
+  count_size       = 2.5,
+  count_jitter     = 0.0,
   count.alpha.none = 0.8,
-  count.alpha.ran = 0.5,
-  pred.alpha.ran = 0.0
+  count.alpha.ran  = 0.5,
+  pred.alpha.ran   = 0.0
 )
 ```
 
-Finally, we can fit the model. For the purpose of estimating the
+Finally, we can fit the model.[^2] For the purpose of estimating the
 parameters, we will use bootstraps instead of MCMC sampling. So, we set
-the number of MCMC steps to zero and the number of bootstraps to 1000.
+the number of MCMC steps to zero and the number of bootstraps to 1,000.
 
 ``` r
 
@@ -333,18 +329,17 @@ set.seed(ran.seed)
 
 # Fit model
 radial.model <- wisp(
-  count.data = count_data,
-  variables = data.variables,
+  count.data     = count_data,
+  variables      = data.variables,
   bootstraps.num = 1e3,
-  max.fork = 10,
+  max.fork       = 10,
   model.settings = model.settings,
-  MCMC.settings = list(MCMC.steps = 0),
-  plot.settings = plot.settings
+  MCMC.settings  = list(MCMC.steps = 0),
+  plot.settings  = plot.settings
 )
 ```
 
 ``` scroll-output
-## 
 ## 
 ## Parsing data and settings for wisp model
 ## ----------------------------------------
@@ -353,6 +348,7 @@ radial.model <- wisp(
 ##  buffer_factor: 0.05
 ##  ctol: 1e-06
 ##  max_penalty_at_distance_factor: 0.01
+##  LRO_cost: none
 ##  LROcutoff: 1.5
 ##  LROwindow_factor: 1.25
 ##  rise_threshold_factor: 0.8
@@ -370,6 +366,7 @@ radial.model <- wisp(
 ##  log.scale: TRUE
 ##  splitting_factor: 
 ##  CI_style: TRUE
+##  splitting_factor_colors: 120, 240
 ##  label_size: 5.5
 ##  title_size: 14
 ##  axis_size: 12
@@ -410,6 +407,9 @@ radial.model <- wisp(
 ## 
 ## Initializing Cpp (wspc) model
 ## ----------------------------------------
+## Context grouping levels: "liver"
+## Species grouping levels: "arntl" "ass1" "dbp" "elovl3" "glul" "pck1"
+## Random-effect grouping levels: "none" "1" "10" "2" "3" "4" "5" "6" "7" "8" "9"
 ## 
 ## Infinity handling:
 ## machine epsilon: (eps_): 2.22045e-16
@@ -418,128 +418,68 @@ radial.model <- wisp(
 ## implied pseudo-infinity for unbounded warp (inf_warp): 4.5036e+08
 ## 
 ## Extracting variables and data information:
-## Found max bin: 8.000000
-## Fixed effects:
-## "timeseries"
-## Ref levels:
-## "0"
-## Time series detected:
-## "0" "6" "12" "18"
-## Created treatment levels:
-## "ref" "6" "12" "18"
-## Constructed weight_row matrix
-## Context grouping levels:
-## "liver"
-## Species grouping levels:
-## "arntl" "ass1" "dbp" "elovl3" "glul" "pck1"
-## Random-effect grouping levels:
-## "none" "1" "10" "2" "3" "4" "5" "6" "7" "8" "9"
+## Max bin: 8
+## Fixed effects: "timeseries"
+## Ref levels: "0"
+## Time series detected: "0" "6" "12" "18"
+## Created treatment levels: "ref" "6" "12" "18"
 ## Total rows in summed count data table: 2112
 ## Number of rows with unique model components: 264
 ## 
-## Creating summed-count data columns and weight matrix:
-## Random level 0, 1/11 complete
-## Random level 1, 2/11 complete
-## Random level 2, 3/11 complete
-## Random level 3, 4/11 complete
-## Random level 4, 5/11 complete
-## Random level 5, 6/11 complete
-## Random level 6, 7/11 complete
-## Random level 7, 8/11 complete
-## Random level 8, 9/11 complete
-## Random level 9, 10/11 complete
-## Random level 10, 11/11 complete
-## 
-## Making extrapolation pool:
-## row: 38/192
-## row: 76/192
-## row: 114/192
-## row: 152/192
-## row: 190/192
-## 
-## Wrapping up initialization:
-## Extrapolated 'none' rows
-## Took log of observed counts
-## Estimated gamma dispersion of raw counts
-## Found average log counts for each context-species combination
-## Constructed grouping variable IDs
-## 
 ## Running LRO change-point detection and setting initial parameters
 ## ----------------------------------------
+## 
 ## Estimated change points
-## Estimated initial parameters for fixed-effect treatments
-## Built initial beta (ref and fixed-effects) matrices
-## Initialized random-effect warping factors
-## Made and mapped parameter vector
-## Number of parameters: 324
-## Size of boundary vector: 1848
+## Estimated initial parameters
+## Number of parameters: 276
+## Size of boundary vector: 1320
 ## 
 ## Estimating model parameters
 ## ----------------------------------------
 ## 
 ## Running bootstrap fits
-## Checking feasibility of provided parameters
-## ... no tpoints below buffer
-## ... no NAN rates predicted
-## ... no negative rates predicted
-## Provided parameters are feasible
-## Initial boundary distance (want > 0): 0.206765
 ## Performing initial fit of full data
-## Penalized neg_loglik: 1044.51
-## Batch: 1/100, 0.163617 sec/bs
-## Batch: 10/100, 0.143809 sec/bs
-## Batch: 20/100, 0.142762 sec/bs
-## Batch: 30/100, 0.137459 sec/bs
-## Batch: 40/100, 0.145736 sec/bs
-## Batch: 50/100, 0.158752 sec/bs
-## Batch: 60/100, 0.152185 sec/bs
-## Batch: 70/100, 0.152147 sec/bs
-## Batch: 80/100, 0.190855 sec/bs
-## Batch: 90/100, 0.156028 sec/bs
+## Penalized nll: 1047.02
+## Batch: 1/100, 0.0363976 sec/bs
+## Batch: 10/100, 0.0379782 sec/bs
+## Batch: 20/100, 0.0366889 sec/bs
+## Batch: 30/100, 0.0321997 sec/bs
+## Batch: 40/100, 0.0379793 sec/bs
+## Batch: 50/100, 0.0334089 sec/bs
+## Batch: 60/100, 0.0348776 sec/bs
+## Batch: 70/100, 0.0361681 sec/bs
+## Batch: 80/100, 0.0378 sec/bs
+## Batch: 90/100, 0.0389041 sec/bs
 ## All complete!
 ## 
 ## Bootstrap simulation complete... 
-## Bootstrap run time (total), minutes: 2.63
-## Bootstrap run time (per sample), seconds: 0.158
-## Bootstrap run time (per sample, per thread), seconds: 1.578
+## Bootstrap run time (total), minutes: 0.631
+## Bootstrap run time (per sample), seconds: 0.038
+## Bootstrap run time (per sample, per thread), seconds: 0.378
 ## 
-## Setting full-data fit as parameters... 
-## Checking feasibility of provided parameters
-## ... no tpoints below buffer
-## ... no NAN rates predicted
-## ... no negative rates predicted
-## Provided parameters are feasible
-## Initial boundary distance (want > 0): 0.378776
-## 
-## Running stats on simulation results
+## Computing p-values and CI for model parameters
 ## ----------------------------------------
 ## 
 ## Grabbing sample results, only resamples with converged fit... 
-## Grabbing parameter values... 
 ## Computing 95% confidence intervals... 
 ## Estimating p-values from resampled parameters... 
 ## 
-## Recommended resample size for alpha = 0.05, 108 tests
-## with bootstrapping/MCMC: 2160
-## Actual resample size: 1001
+## Recommended resample size for alpha = 0.05, 72 tests
+## with bootstrapping/MCMC: 1440
+## Actual resample size: 1000
 ## 
 ## Stat summary (head only):
 ## ------------------------------
-##                           parameter    estimate    CI.low   CI.high     p.value p.value.adj    alpha.adj significance
-## 1  baseline_liver_Rt_arntl_Tns/Blk1  2.52351157  2.147938 2.8419666          NA          NA           NA             
-## 2  beta_Rt_liver_arntl_6_X_Tns/Blk1 -1.42987696 -2.578113 3.1579983 0.004995005  0.33466533 0.0007462687           ns
-## 3 beta_Rt_liver_arntl_12_X_Tns/Blk1 -0.03715176 -1.591022 0.8591341 0.911088911  3.64435564 0.0125000000           ns
-## 4 beta_Rt_liver_arntl_18_X_Tns/Blk1  0.13107595 -0.664336 1.8067587 0.742257742  6.68031968 0.0055555556           ns
-## 5  baseline_liver_Rt_arntl_Tns/Blk2  1.96922136  1.593244 2.2705854          NA          NA           NA             
-## 6  beta_Rt_liver_arntl_6_X_Tns/Blk2 -0.95957998 -1.478458 0.6556153 0.000999001  0.07592408 0.0006578947           ns
+##                           parameter    estimate    CI.low   CI.high p.value p.value.adj    alpha.adj significance
+## 1  baseline_liver_Rt_arntl_Tns/Blk1  2.52684863  2.220644 2.8326115      NA          NA           NA             
+## 2  beta_Rt_liver_arntl_6_X_Tns/Blk1 -1.41889072 -2.231822 0.7150526   0.003       0.141 0.0010638298           ns
+## 3 beta_Rt_liver_arntl_12_X_Tns/Blk1 -0.08184242 -1.491263 0.7511152   0.797       3.985 0.0100000000           ns
+## 4 beta_Rt_liver_arntl_18_X_Tns/Blk1  0.15458139 -0.745237 1.5204742   0.657       6.570 0.0050000000           ns
+## 5  baseline_liver_Rt_arntl_Tns/Blk2  1.97591238  1.597982 2.2438646      NA          NA           NA             
+## 6  beta_Rt_liver_arntl_6_X_Tns/Blk2 -0.97127627 -1.553045 0.1792734   0.000       0.000 0.0006944444          ***
 ## ----
 ## 
-## Computing 95% CI for predicated values by bin
-## ----------------------------------------
-## 
-## Grabbing sample results, only resamples with converged fit... 
-## Computing predicted values for each sampled parameter set... 
-## Computing 95% CIs... 
+## Computing 95% CI for predicated values by bin... 
 ## 
 ## Analyzing residuals
 ## ----------------------------------------
@@ -551,22 +491,20 @@ radial.model <- wisp(
 ## Log-residual summary by grouping variables (head only):
 ## ------------------------------
 ##          group      mean        sd  variance
-## 1          all 0.3761585 0.4347535 0.1890106
-## 2 ran_lvl_none 0.3469852 0.3374680 0.1138847
-## 3    ran_lvl_1 0.4181383 0.4768411 0.2273775
-## 4   ran_lvl_10 0.4131620 0.5134598 0.2636409
-## 5    ran_lvl_2 0.3451371 0.4303134 0.1851696
-## 6    ran_lvl_3 0.4122882 0.5838509 0.3408819
+## 1          all 0.3746902 0.4507157 0.2031447
+## 2 ran_lvl_none 0.3441262 0.3702542 0.1370882
+## 3    ran_lvl_1 0.4233707 0.4981900 0.2481933
+## 4   ran_lvl_10 0.4186227 0.5533833 0.3062331
+## 5    ran_lvl_2 0.3407059 0.4497382 0.2022644
+## 6    ran_lvl_3 0.3925379 0.5294915 0.2803612
 ## ----
+## 
+## Making plots
+## ----------------------------------------
 ## 
 ## Making effect parameter distribution plots... 
 ## Making rate-count plots... 
 ## Making time series plots... 
-## Making parameter plots... 
-## Making parameter plots... 
-## Making parameter plots... 
-## Making parameter plots... 
-## Making parameter plots... 
 ## Making parameter plots...
 ```
 
@@ -582,8 +520,8 @@ temporal rhythm. The below plots align with the expectations in the
 above table, and are a near match for the plots produced by the bespoke
 model of [Droin et
 al. (2021)](https://doi.org/10.1038/s42255-020-00323-1) and shown in
-figure 1. (However, note that the colors used in the plots here differ
-from those used in the paper figure.)
+figure 1 of their paper. (However, note that the colors used in the
+plots here differ from those used in the paper figure.)
 
 ### Zonated genes
 
@@ -594,9 +532,10 @@ to see in the rate-count plot:
 
 ``` r
 
-plt_glul <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_glul"]]
-plt_ass1 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_ass1"]]
-g <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
+rc_plots <- radial.model[["plots"]][["ratecount"]]
+plt_glul <- rc_plots[["plot_pred.log_context_liver_fixEff_glul"]]
+plt_ass1 <- rc_plots[["plot_pred.log_context_liver_fixEff_ass1"]]
+g        <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
 grid.draw(g)
 ```
 
@@ -613,21 +552,21 @@ time-series plots.
 
 ``` r
 
-plt_glul <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_glul"]]
-plt_ass1 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_ass1"]]
+ts_plots <- radial.model[["plots"]][["timeseries"]]
+plt_glul <- ts_plots[["plot_pred.log_context_liver_timeseries_glul"]]
+plt_ass1 <- ts_plots[["plot_pred.log_context_liver_timeseries_ass1"]]
 g <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
 grid.draw(g)
 ```
 
 ![](tutorial_liverradial_files/figure-html/print_plots_zonation_time-1.png)
 
-The time-series plot for ASS1 shows some variation over time, but the
-magnitude of that variation is small compared to the difference in
-expression level [between the
-blocks](https://michaelbarkasi.github.io/wispack/articles/tutorial_timeseries.md)
-(i.e., over space). The same holds true for GLUL, although again we see
-the more portal region (block 2) seeming to increase in expression while
-the more central region (block 1) decreases.
+The time-series plot for ASS1 shows some variation (generally downward)
+over time, but the magnitude of that variation is smaller and noisy
+compared to the difference in expression level between the blocks (i.e.,
+over space). The same holds true for GLUL, although again we see the
+more portal region (block 2) seeming to increase in expression while the
+more central region (block 1) decreases.
 
 ### Rhythmic genes
 
@@ -640,9 +579,9 @@ and blue) that are elevated.
 
 ``` r
 
-plt_arntl <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_arntl"]]
-plt_dbp <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_dbp"]]
-g <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
+plt_arntl <- rc_plots[["plot_pred.log_context_liver_fixEff_arntl"]]
+plt_dbp   <- rc_plots[["plot_pred.log_context_liver_fixEff_dbp"]]
+g         <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
 grid.draw(g)
 ```
 
@@ -653,9 +592,9 @@ which clearly show the mid-ZT dip in ARNTL and the mid-ZT bump in DBP.
 
 ``` r
 
-plt_arntl <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_arntl"]]
-plt_dbp <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_dbp"]]
-g <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
+plt_arntl <- ts_plots[["plot_pred.log_context_liver_timeseries_arntl"]]
+plt_dbp   <- ts_plots[["plot_pred.log_context_liver_timeseries_dbp"]]
+g         <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
 grid.draw(g)
 ```
 
@@ -670,9 +609,9 @@ is expressed more in the portal region, just like ASS1.
 
 ``` r
 
-plt_elovl3 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_elovl3"]]
-plt_pck1 <- radial.model[["plots"]][["ratecount"]][["plot_pred.log_context_liver_fixEff_pck1"]]
-g <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
+plt_elovl3 <- rc_plots[["plot_pred.log_context_liver_fixEff_elovl3"]]
+plt_pck1   <- rc_plots[["plot_pred.log_context_liver_fixEff_pck1"]]
+g          <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
 grid.draw(g)
 ```
 
@@ -684,9 +623,9 @@ to DBP, with a mid-ZT bump.
 
 ``` r
 
-plt_elovl3 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_elovl3"]]
-plt_pck1 <- radial.model[["plots"]][["timeseries"]][["plot_pred.log_context_liver_timeseries_pck1"]]
-g <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
+plt_elovl3 <- ts_plots[["plot_pred.log_context_liver_timeseries_elovl3"]]
+plt_pck1   <- ts_plots[["plot_pred.log_context_liver_timeseries_pck1"]]
+g          <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
 grid.draw(g)
 ```
 
@@ -705,3 +644,22 @@ build new models for each of these effects. Wisp, on the other hand, can
 model other fixed-effects directly, without needing to change the model
 structure. In addition, wisp is not limited to the assumption that the
 random effect is linear.
+
+[^1]: This sentence reflects v2.0 of wispack. As of v2.2, wispack now by
+    default runs a grid search to find the window factor and cutoff for
+    the LRO algorithm which minimizes a cost function, by default AIC,
+    but BIC and negative log-likelihood are also options. For the
+    purpose of this demo, we will reserve the original settings by
+    setting LRO_cost to “none”.
+
+[^2]: As explained in the previous footnote, changes have been made to
+    the LRO change-point detection algorithm since this tutorial was
+    written. This tutorial was written for wispack v2.0 and reproduces
+    an analysis originally done in the published
+    [paper](https://doi.org/10.1093/nar/gkag466) introducing wisps.
+    However, improvements in the LRO algorithm have lend to slightly
+    different results as of the last compiling of this tutorial for v2.4
+    of wispack. So, the discrepancy between the results presented here
+    and those presented in the
+    [paper](https://doi.org/10.1093/nar/gkag466) are due to changes in
+    the LRO algorithm.

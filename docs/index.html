@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,25 +82,30 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="wispack-an-r-package-for-warped-sigmoidal-poisson-process-mixed-effects-modeling">Wispack: An R package for warped sigmoidal Poisson-process mixed-effects modeling<a class="anchor" aria-label="anchor" href="#wispack-an-r-package-for-warped-sigmoidal-poisson-process-mixed-effects-modeling"></a>
 </h1></div>
+<p>Michael Barkasi</p>
+<p>July 3, 2026 (v2.5)</p>
+<div class="section level2">
+<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
+</h2>
 <p>Wispack (pronounced “wisp package” or “wisp pack”) is an R package for testing for between-group effects on spatial variation in spatial transcriptomics data. As such variation is often functional, these can be thought of as <em>functional spatial effects</em> (FSE).</p>
 <div class="figure">
 <img src="reference/figures/stack_0_1475_L1_truecolor.png" alt="True-color MERFISH image" width="90%"><p class="caption">
 True-color image of fluorescing probes bound to mRNA molecules in cortical cells, the raw data of spatial transcriptomics.
 </p>
 </div>
-<p>Unlike testing for spatially variable genes (SVGs), which only involves testing for spatial variation of gene expression within a group, and unlike differential expression (DE) analysis which tests for between-group effects without regard to spatial distribution, testing for FSEs involves testing whether a factor such as age or rearing conditions has a nonzero effect on spatial variation between groups differing on that factor.</p>
+<p>Unlike testing for spatially variable genes (SVGs), which only involves testing for spatial variation of gene expression <em>within</em> a group, and unlike differential expression (DE) analysis which tests for <em>between-group</em> effects without regard to spatial distribution, testing for FSEs involves testing whether a factor such as age or rearing conditions has a nonzero effect on spatial variation between groups differing on that factor.</p>
 <div class="figure">
 <img src="reference/figures/fig_FSE.png" alt="DE vs SVG vs FSE" width="90%"><p class="caption">
 Comparison between testing for differentially expressed genes, spatially variable genes, and genes with function spatial effects. For visualization purposes, mouse brain slices represent the tissue sample and laterality (left vs right hemisphere) represents a fixed effect (i.e., covariate).
 </p>
 </div>
-<p>Wispack performs FSE testing by first using change-point detection to find spatial variation in samples, then fitting a nonlinear mixed-effect model to the detected change points. The core of the nonlinear model is a parameterization of the found change-points as inflections in logistic functions representing gradients of gene expression change. Multiple change-points are handled by summing the component logistic functions into a “poly-sigmoid” function. Fixed effects (such as age or rearing conditions) are then modeled as effects on the underlying logistic parameters. Random (within group) effects are modeled as further nonlinear warping of the poly-sigmoid. Significance testing is performed on the effects through either bootstrapping or MCMC resampling. A complete mathematical description of wisp models can be found in this <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">preprint</a>.</p>
+<p>Wispack performs FSE testing by first using change-point detection to find spatial variation in samples, then fitting a nonlinear mixed-effect model to the detected change points. The core of the nonlinear model is a parameterization of the found change-points as inflections in logistic functions representing gradients of gene expression change. Multiple change-points are handled by summing the component logistic functions into a “poly-sigmoid” function. Fixed effects (such as age or rearing conditions) are then modeled as effects on the underlying logistic parameters. Random (within group) effects are modeled as further nonlinear warping of the poly-sigmoid. Significance testing is performed on the effects through either bootstrapping or MCMC resampling. A complete mathematical description of wisp models can be found in this <a href="https://doi.org/10.1093/nar/gkag466" class="external-link">paper</a>, with more applied details covered in the tutorials on this site. (See the “Articles” link in the navigation bar.)</p>
 <div class="figure">
 <img src="reference/figures/fig_WSPfunctions.png" alt="Demo plots of functions involved in wisp" width="90%"><p class="caption">
 Demo plots of the functions involved in wisp. (A) The logistic function, used to model a single change point in gene expression. (B) The wisp poly-sigmoid function, built from three logistic components, representing three change points. (C) The warping function used to represent random effects, e.g., variation due to differences between individual animals or due to measurement noise. (D) The wisp poly-sigmoid from (B) with warping function applied.
 </p>
 </div>
-<p>Wispack provides a user-facing function, <span class="function">wisp</span>, which takes a data frame in the familiar format expected by standard R functions for linear models (e.g., <a href="https://cran.r-project.org/web/packages/lme4/index.html" class="external-link"><span class="function">lme4::lmer</span></a> or <a href="https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html" class="external-link"><span class="function">stats::lm</span></a>) and runs the complete test for FSEs. Preprocessing of the data is generally required before passing it to <span class="function">wisp</span>, after which <span class="function">wisp</span> executes a pipeline involving parameter estimates, prediction, model fitting, and hypothesis testing.</p>
+<p>Wispack provides a user-facing function, <span class="function">wisp</span>, which takes a data frame in the familiar format expected by standard R functions for linear models (e.g., <a href="https://cran.r-project.org/web/packages/lme4/index.html" class="external-link"><span class="function">lme4::lmer</span></a> or <a href="https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html" class="external-link"><span class="function">stats::lm</span></a>) and runs the complete test for FSEs. Preprocessing of the data is generally required before passing it to <span class="function">wisp</span>, after which <span class="function">wisp</span> executes a pipeline involving parameter estimates, prediction, model fitting, and hypothesis testing. Note that as of version 2.2, <span class="function">wisp</span> includes the option (<span class="code_variable">LRO_cost</span>, under <span class="code_variable">model.settings</span>) to perform a grid search for the best settings for the change-point detection (LRO) search, where “best” is defined as either lowest AIC, BIC, or negative log-likelihood.</p>
 <div class="figure">
 <img src="reference/figures/fig_modelpipeline_simple.png" alt="Diagram of top-level of wisp modeling pipeline" width="90%"><p class="caption">
 Top-level overview of wisp modeling pipeline.
@@ -134,33 +139,33 @@ Full modeling pipeline for wisp. Boxes represent variables in the model, or oper
 <span></span>
 <span><span class="co"># View model </span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/View.html" class="external-link">View</a></span><span class="op">(</span><span class="va">laminar.model</span><span class="op">)</span></span></code></pre></div>
-<p>No model formula is required. By default, wisp models include all possible effect interactions. However, effect interactions can be removed from the model using the <span class="code_variable">trtKO</span> argument in <span class="code_variable">model.settings</span>. Further, if not a set of defaults, column names from the data must be associated with model variables using the <span class="code_variable">variables</span> argument. For example:</p>
+<p>No model formula is required. By default, wisp models include all possible effect interactions. However, as of version 2.1, effect interactions can be removed from the model using the <span class="code_variable">trtKO</span> argument in <span class="code_variable">model.settings</span>. Further, if not a set of defaults, column names from the data must be associated with model variables using the <span class="code_variable">variables</span> argument. For example:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Define variables in the dataframe for the model</span></span>
 <span><span class="va">data.variables</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    count <span class="op">=</span> <span class="st">"count"</span>,</span>
-<span>    bin <span class="op">=</span> <span class="st">"bin"</span>, </span>
-<span>    context <span class="op">=</span> <span class="st">"cortex"</span>, </span>
-<span>    species <span class="op">=</span> <span class="st">"gene"</span>,</span>
-<span>    ran <span class="op">=</span> <span class="st">"mouse"</span>,</span>
-<span>    timeseries <span class="op">=</span> <span class="st">"age"</span>,</span>
+<span>    count        <span class="op">=</span> <span class="st">"count"</span>,</span>
+<span>    bin          <span class="op">=</span> <span class="st">"bin"</span>, </span>
+<span>    context      <span class="op">=</span> <span class="st">"cortex"</span>, </span>
+<span>    species      <span class="op">=</span> <span class="st">"gene"</span>,</span>
+<span>    ran          <span class="op">=</span> <span class="st">"mouse"</span>,</span>
+<span>    timeseries   <span class="op">=</span> <span class="st">"age"</span>,</span>
 <span>    fixedeffects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"hemisphere"</span>, <span class="st">"age"</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span>  </span>
 <span><span class="co"># Remove the hemisphere x age interaction from the model</span></span>
 <span><span class="va">model.settings</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    trtKO <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"right12"</span><span class="op">)</span></span>
+<span>    trtKO <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"right18"</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span>  </span>
 <span><span class="co"># Fit model</span></span>
 <span><span class="va">laminar.model</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/wisp.html">wisp</a></span><span class="op">(</span></span>
-<span>    count.data <span class="op">=</span> <span class="va">countdata</span>,</span>
-<span>    variables <span class="op">=</span> <span class="va">data.variables</span>,</span>
+<span>    count.data     <span class="op">=</span> <span class="va">countdata</span>,</span>
+<span>    variables      <span class="op">=</span> <span class="va">data.variables</span>,</span>
 <span>    model.settings <span class="op">=</span> <span class="va">model.settings</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p>Both the quick-start demo and another demo showing all model options can be run using the demo() command:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/demo.html" class="external-link">demo</a></span><span class="op">(</span><span class="st">"quick_start"</span>, package <span class="op">=</span> <span class="st">"wispack"</span><span class="op">)</span>  </span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/demo.html" class="external-link">demo</a></span><span class="op">(</span><span class="st">"quick_start"</span>,  package <span class="op">=</span> <span class="st">"wispack"</span><span class="op">)</span>  </span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/demo.html" class="external-link">demo</a></span><span class="op">(</span><span class="st">"full_options"</span>, package <span class="op">=</span> <span class="st">"wispack"</span><span class="op">)</span></span></code></pre></div>
 <p>The tutorials provide more detailed walkthroughs of the package and its options:</p>
 <ol style="list-style-type: decimal">
@@ -175,11 +180,11 @@ Full modeling pipeline for wisp. Boxes represent variables in the model, or oper
 <li>
 <a href="articles/tutorial_liverradial.html"><em>Radial zonation in liver lobules:</em></a> A second example application from a different biological dataset, with an emphasis on time series and temporal-spatial interactions.</li>
 <li>
-<a href="articles/tutorial_multicontext.html"><em>Modeling cell types:</em></a> An extension of the <span class="gene">RORB</span> example showing how to model not only Poisson-process species (i.e., genes), but also the broader biological context (i.e., cell type).</li>
+<a href="articles/tutorial_multicontext.html"><em>Modeling cell types:</em></a> An extension of the <span class="gene">RORB</span> example showing how to model not only Poisson-process species (e.g., genes), but also the broader biological context (e.g., cell type).</li>
 <li>
 <a href="articles/tutorial_wispplots.html"><em>Plotting wisp models:</em></a> An explanation of the various kinds of plots available through wispack.</li>
 <li>
-<a href="articles/tutorial_stats.html"><em>Customizing statistical analyses:</em></a> A walkthrough of the various options for customizing the statistical analyses performed by wisp, including bootstrapping and MCMC resampling.</li>
+<a href="articles/tutorial_stats.html"><em>Customizing statistical analyses:</em></a> A walkthrough of the various options for customizing the statistical analyses performed by wisp, bootstrapping and MCMC resampling.</li>
 <li>
 <a href="articles/tutorial_benchmarks.html"><em>Benchmarks and comparisons:</em></a> Development of a simulation framework (attractor simulations) for benchmarking wispack and two other packages for analyzing transcriptomics data.</li>
 </ol>
@@ -189,6 +194,7 @@ Artistic rendering of a wisp model. See <a href="articles/tutorial_wispplots.htm
 </p>
 </div>
 <p>Copyright (C) 2026, Michael Barkasi <a href="mailto:barkasi@wustl.edu" class="email">barkasi@wustl.edu</a></p>
+</div>
 </div>
   </main><aside class="col-md-3"><div class="license">
 <h2 data-toc-skip>License</h2>

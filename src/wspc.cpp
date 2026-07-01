@@ -41,12 +41,9 @@ void wspc::init_gv(
     // ... add "none" to represent no random effect (reference level)
     if (grouping_lvls.ran.size() > 1) {grouping_lvls.ran.push_front("none");} 
     // ... print extracted grouping variables
-    vprint("Context grouping levels:", verbose);
-    vprintV(grouping_lvls.context, verbose);
-    vprint("Species grouping levels:", verbose);
-    vprintV(grouping_lvls.species, verbose);
-    vprint("Random-effect grouping levels:", verbose);
-    vprintV(grouping_lvls.ran, verbose);
+    vprintMV("Context grouping levels",       grouping_lvls.context, verbose);
+    vprintMV("Species grouping levels",       grouping_lvls.species, verbose);
+    vprintMV("Random-effect grouping levels", grouping_lvls.ran,     verbose);
     // ... grab factor sizes
     n_.ran        = grouping_lvls.ran.size();
     n_.context    = grouping_lvls.context.size();
@@ -114,7 +111,7 @@ void wspc::extract_fixeff(
       if (ev.fix_names[i] == "timeseries") {                      // make it easy to access time-series element rank from the element name
         ev.timeseries_rank         = seq(1, lvls.size());
         ev.timeseries_rank.names() = lvls;
-        time_series_names = lvls;
+        time_series_names          = lvls;
         for (String l : lvls) {
           ev.is_time.push_back(true);
           is_time_name.push_back(l);
@@ -130,16 +127,13 @@ void wspc::extract_fixeff(
     
     // Report
     if (ev.fix_names.size() == 0) {
-      vprint("No fixed effects detected.", verbose);
+      vprint("No fixed effects detected.",    verbose);
     } else {
-      vprint("Fixed effects:", verbose);
-      vprintV(ev.fix_names, verbose);
-      vprint("Ref levels:", verbose);
-      vprintV(ev.fix_ref, verbose);
+      vprintMV("Fixed effects", ev.fix_names, verbose);
+      vprintMV("Ref levels",    ev.fix_ref,   verbose);
     }
-    vprint("No time series detected.", verbose && !any_true(ev.is_time));
-    vprint("Time series detected:", verbose && any_true(ev.is_time));
-    vprintV(time_series_names, verbose && any_true(ev.is_time));
+    vprint("No time series detected.",                  verbose && !any_true(ev.is_time));
+    vprintMV("Time series detected", time_series_names, verbose &&  any_true(ev.is_time));
     
   }
 
@@ -166,8 +160,7 @@ CharacterMatrix wspc::set_treatment_levels(
         n_.treatments--;  // ... decrease
       }
     }
-    vprint("Created treatment levels:", verbose);
-    vprintV(ev.trt_lvls, verbose);
+    vprintMV("Created treatment levels", ev.trt_lvls, verbose);
     
     // Create matrix to translate between treatment levels and fixed-effects columns
     // ... for making summed-count fixed-effect column 
@@ -274,8 +267,6 @@ void wspc::init_summed_count(
     sc.not_na_mask.fill(false);
     vprint("Number of rows with unique model components: " + std::to_string(sc.idx_mc_unique.size()), verbose);
     
-    vprint_header("Wrapping up initialization", verbose);
-    
     // Extract tokenized-count columns from input data frame
     IntegerVector    binT     = Rcpp::as<IntegerVector>(count_data["bin"]);
     CharacterVector  contextT = Rcpp::as<CharacterVector>(count_data["context"]);
@@ -305,7 +296,6 @@ void wspc::init_summed_count(
     }
     
     // Fill summed count columns and weight matrix
-    vprint("Creating summed-count data columns and weight matrix", verbose);
     int idx = 0;
     for (int r = 0; r < n_.ran; r++) {
       bool is_none = (grouping_lvls.ran[r] == "none");
@@ -658,15 +648,15 @@ void wspc::estimate_change_points() {
 // Estimate change points and initial parameters for model fitting
 void wspc::LRO_initial_param_ests(
     bool verbose,
-    double LROwf,
-    double LROco
+    double LROwf, // ... for loading *new* window factor
+    double LROco  // ... ibid
   ) {
    
     if (LROwf != 0.0) {cp.LROwindow_factor = LROwf;}
     if (LROco != 0.0) {cp.LROcutoff = LROco;} // ... LROcutoff used in estimate_change_points, so set before calling
     
     // Compute running and filter window sizes for LRO change-point detection
-    cp.ws = static_cast<int>(std::round(cp.LROwindow_factor * (double)n_.bin * cp.buffer_factor));
+    cp.ws = std::max(2, static_cast<int>(std::round(cp.LROwindow_factor * (double)n_.bin * cp.buffer_factor)));
     
     // Estimate degree of each context-species combination at baseline using LRO change-point detection 
     estimate_change_points();
@@ -1100,7 +1090,6 @@ Eigen::VectorXd wspc::grad_min_boundary_dist(
 void wspc::fit(const bool verbose) { 
     
     // Set boundary-penalty coefficients 
-    vprint("Setting boundary penalty coefficients", verbose);
     sVec   initial_params_var      = to_sVec(mf.params);
     double max_penalty_at_distance = compute_nll(initial_params_var).val() * mf.max_penalty_at_distance_factor;
     double coefs                   = std::sqrt(static_cast<double>(mf.boundary_vec_size)/max_penalty_at_distance);
@@ -1205,8 +1194,8 @@ void wspc::resample(
 
 // Fit model to bootstrap resample
 dVec wspc::bs_fit(
-    int  bs_num,                    // A unique number for this resample
-    bool clear_stan                 // Recover stan memory at end?
+    int  bs_num,               // A unique number for this resample
+    bool clear_stan            // Recover stan memory at end?
   ) {
     resample(mf.rng_seed + bs_num); // Resample counts 
     estimate_initial_parameters();  // Find initial parameter estimates, for new re-sampled data
@@ -1227,8 +1216,8 @@ dVec wspc::bs_fit(
 
 // Fork bootstraps (parallel processing)
 Rcpp::NumericMatrix wspc::bs_batch(
-    int bs_num_max,           // Number of bootstraps to perform
-    int max_fork,             // Maximum number of forked processes per batch
+    int  bs_num_max,           // Number of bootstraps to perform
+    int  max_fork,             // Maximum number of forked processes per batch
     bool use_median,
     bool verbose
   ) {
@@ -1239,8 +1228,8 @@ Rcpp::NumericMatrix wspc::bs_batch(
     if (verbose) {vprint("Penalized nll: ", mf.bnll);}
     
     // Initiate variables to hold results
-    const int c_num = mf.params.size() + 4;
-    const int r_num = bs_num_max + 1;
+    const int     c_num = mf.params.size() + 4;
+    const int     r_num = bs_num_max + 1;
     NumericMatrix bs_results(r_num, c_num);
     
     // Save results from initial full fit
@@ -1256,9 +1245,9 @@ Rcpp::NumericMatrix wspc::bs_batch(
     
     // Perform bootstrap fits in batches
     if (max_fork < 1) {max_fork = 1;} 
-    const int batch_num = std::round((double)bs_num_max / (double)max_fork);
-    int tracker_steps = 10;
-    IntegerVector tracker = iseq(batch_num/tracker_steps, batch_num, tracker_steps);
+    const int     batch_num     = std::round((double)bs_num_max / (double)max_fork);
+    int           tracker_steps = 10;
+    IntegerVector tracker       = iseq(batch_num/tracker_steps, batch_num, tracker_steps);
     for (int b = 0; b < batch_num; b++) {
       
       // Initiate timer and grab start time
@@ -1365,20 +1354,20 @@ Rcpp::NumericMatrix wspc::bs_batch(
 
 // Markov-chain Monte Carlo (MCMC) simulation
 Rcpp::NumericMatrix wspc::MCMC(
-    int n_burnin,             // Number of initial steps to take (to find optimal parameters)
-    int n_steps,              // Number of steps to take in random walk (post-burnin)
-    int neighbor_filter,      // Keep only ever neighbor_filter step
-    double step_size,         // Step size for random walk
-    double prior_sd,          // standard deviation to use in prior
-    bool start_from_fit,      // Start from parameters found with gradient descent? 
-    bool use_median,
-    bool verbose
+    int    n_burnin,           // Number of initial steps to take (to find optimal parameters)
+    int    n_steps,            // Number of steps to take in random walk (post-burnin)
+    int    neighbor_filter,    // Keep only ever neighbor_filter step
+    double step_size,          // Step size for random walk
+    double prior_sd,           // standard deviation to use in prior
+    bool   start_from_fit,     // Start from parameters found with gradient descent? 
+    bool   use_median,
+    bool   verbose
   ) {
     
     // Initiate variables to hold results
     const int n_params = mf.params.size();
-    const int c_num = n_params + 4;
-    const int r_num = n_steps + 1;
+    const int c_num    = n_params + 4;
+    const int r_num    = n_steps + 1;
     NumericMatrix RMW_steps(r_num, c_num);
     n_steps += n_burnin;
     
@@ -1398,11 +1387,10 @@ Rcpp::NumericMatrix wspc::MCMC(
       RMW_steps.row(r_num - 1) = to_NumVec(res);
     } else {
       // Set boundary-penalty coefficients 
-      vprint("Setting boundary penalty coefficients", verbose);
-      sVec initial_params_var = to_sVec(mf.params);
+      sVec   initial_params_var      = to_sVec(mf.params);
       double max_penalty_at_distance = compute_nll(initial_params_var).val() * mf.max_penalty_at_distance_factor;
-      double coefs = std::sqrt(static_cast<double>(mf.boundary_vec_size)/max_penalty_at_distance);
-      mf.bp_coefs = to_eVec(boundary_dist(initial_params_var));
+      double coefs                   = std::sqrt(static_cast<double>(mf.boundary_vec_size)/max_penalty_at_distance);
+      mf.bp_coefs                    = to_eVec(boundary_dist(initial_params_var));
       for (int i = 0; i < mf.boundary_vec_size - 1; i++) {mf.bp_coefs(i) = coefs/mf.bp_coefs(i);} 
     }
     
@@ -1417,25 +1405,25 @@ Rcpp::NumericMatrix wspc::MCMC(
     for (int i : param_idx.beta_Rt) {beta_Rt_mask(i) = true;} 
     
     // Run MCMC simulation
-    int step = 0;
-    int ctr = 0;
-    int inf_loop_ctr = 0;
-    int last_viable_step = 0;
-    double acceptance_rate = 1.0;
-    int tracker_steps = 10;
+    int           step                   = 0;
+    int           ctr                    = 0;
+    int           inf_loop_ctr           = 0;
+    int           last_viable_step       = 0;
+    double        acceptance_rate        = 1.0;
+    int           tracker_steps          = 10;
     if (tracker_steps > n_steps/2) {tracker_steps = (int)n_steps/2;}
-    IntegerVector tracker = iseq(n_steps/10, n_steps, tracker_steps);
-    bool printed_step1 = false;
+    IntegerVector tracker                = iseq(n_steps/10, n_steps, tracker_steps);
+    bool          printed_step1          = false;
     // Grab current point (model parameters) in random walk
-    NumericVector params_initial = mf.params;
-    NumericVector params_current = mf.params;
-    NumericVector last_viable_parameters = params_current;
+    NumericVector params_initial         = Rcpp::clone(mf.params);
+    NumericVector params_current         = Rcpp::clone(mf.params);
+    NumericVector last_viable_parameters = Rcpp::clone(mf.params);
     
     // Initialize neighbor counter
-    int neighbor_counter = 0;
+    int           neighbor_counter       = 0;
     
     // Set random number generator with seed
-    unsigned int seed = mf.rng_seed + n_steps;
+    unsigned int  seed                   = mf.rng_seed + n_steps;
     std::mt19937 walk_rng(seed);
     
     // Take steps, Random-walk Metropolois algorithm
@@ -1443,7 +1431,7 @@ Rcpp::NumericMatrix wspc::MCMC(
       
       // Initialize priors 
       double prior_current = 0.0;
-      double prior_next = 0.0;
+      double prior_next    = 0.0;
       
       // Generate random step
       // ... initiate vector to hold new parameters

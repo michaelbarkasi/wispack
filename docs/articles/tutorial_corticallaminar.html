@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -87,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-06-05</h4>
+            <h4 data-toc-skip class="date">July 2, 2026 (v2.4)</h4>
       
 
       <div class="d-none name"><code>tutorial_corticallaminar.Rmd</code></div>
@@ -135,26 +135,23 @@ molecules in red and laminar and columnar axes labeled.
 Coordinate transform
 </h3>
 <p>As wisp can only model one dimension of spatial variation (at least,
-as of v2.1), this axis must be identified and the <span class="gene">RORB</span> molecule coordinates must be transformed into
+as of v2.4), this axis must be identified and the <span class="gene">RORB</span> molecule coordinates must be transformed into
 it. As the primary concern is with how <span class="gene">RORB</span> is
 distributed across cortical layers, the laminar axis is the obvious
 candidate. Coordinate transformation into an axis of interest must be
 done outside of wispack. For this case, a custom coordinate
-transformation, described in this <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">preprint</a> (and
-available as code via the wispack function
-<span class="function">cortical_coordinate_transform&lt;&gt;), was
-written.</span></p>
+transformation, described in this <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">preprint</a> and <a href="https://doi.org/10.1093/nar/gkag466" class="external-link">paper</a> (and available as
+code via the wispack function <span class="function">cortical_coordinate_transform</span>), was written.</p>
 <div class="figure">
 <img src="fig_coordtrans.png" alt="Image showing the steps to transform coordinates from the CCFv3 registration to laminar and columnar axes" width="90%"><p class="caption">
 Visualization of coordinate transform steps from initial CCFv3
 registration to laminar and columnar axes.
 </p>
 </div>
-<p>Note that the laminar axis is encoded as <em>y</em>, with 0 being the
-bottom of L6b, 100 the top of L2/3. The columnar axis is encoded as
-<em>x</em>, with 0 being the most posterior point, 100 the most anterior
-point. L1 was removed from the analysis, as it contains very few
-cells.</p>
+<p>Note that the laminar axis is encoded as <span class="math inline">y</span>, with 0 being the bottom of L6b, 100 the
+top of L2/3. The columnar axis is encoded as <span class="math inline">x</span>, with 0 being the most posterior point, 100
+the most anterior point. L1 was removed from the analysis, as it
+contains very few cells.</p>
 <h2>
 Model setup
 </h2>
@@ -197,47 +194,87 @@ L4, the other genes are also known to be localized to specific
 layers.</p>
 <table class="table">
 <colgroup>
-<col width="51%">
-<col width="22%">
-<col width="25%">
+<col style="width: 25%;">
+<col style="width: 50%;">
+<col style="width: 25%;">
 </colgroup>
-<thead><tr class="header">
-<th align="left">Abbreviation</th>
-<th align="left">Name</th>
-<th align="left">Layer</th>
+<thead><tr>
+<th>
+Abbreviation
+</th>
+<th>
+Name
+</th>
+<th>
+Layer
+</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
-<td align="left">
+<tr>
+<td>
 <span class="gene">BCL11B</span>, <span class="gene">CTIP2</span>
 </td>
-<td align="left">B-cell CLL/lymphoma 11b</td>
-<td align="left">5/6</td>
+<td>
+B-cell CLL/lymphoma 11b
+</td>
+<td>
+5/6
+</td>
 </tr>
-<tr class="even">
-<td align="left"><span class="gene">FEZF2</span></td>
-<td align="left">FEZ Family Zinc Finger 2</td>
-<td align="left">5</td>
+<tr>
+<td>
+<span class="gene">FEZF2</span>
+</td>
+<td>
+FEZ Family Zinc Finger 2
+</td>
+<td>
+5
+</td>
 </tr>
-<tr class="odd">
-<td align="left"><span class="gene">SATB2</span></td>
-<td align="left">SATB Homeobox 2</td>
-<td align="left">2/3</td>
+<tr>
+<td>
+<span class="gene">SATB2</span>
+</td>
+<td>
+SATB Homeobox 2
+</td>
+<td>
+2/3
+</td>
 </tr>
-<tr class="even">
-<td align="left"><span class="gene">NXPH3</span></td>
-<td align="left">Neurexophilin 3</td>
-<td align="left">6</td>
+<tr>
+<td>
+<span class="gene">NXPH3</span>
+</td>
+<td>
+Neurexophilin 3
+</td>
+<td>
+6
+</td>
 </tr>
-<tr class="odd">
-<td align="left"><span class="gene">CUX2</span></td>
-<td align="left">Cut like homeobox 2</td>
-<td align="left">2/3/4</td>
+<tr>
+<td>
+<span class="gene">CUX2</span>
+</td>
+<td>
+Cut like homeobox 2
+</td>
+<td>
+2/3/4
+</td>
 </tr>
-<tr class="even">
-<td align="left"><span class="gene">RORB</span></td>
-<td align="left">Retinoic acid-related orphan receptor beta</td>
-<td align="left">4</td>
+<tr>
+<td>
+<span class="gene">RORB</span>
+</td>
+<td>
+Retinoic acid-related orphan receptor beta
+</td>
+<td>
+4
+</td>
 </tr>
 </tbody>
 </table>
@@ -261,48 +298,52 @@ dividing the number of rows by the number of genes.</p>
 <code class="sourceCode R"><span><span class="va">num_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">)</span><span class="op">/</span><span class="va">num_genes</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Number of cells:"</span>, <span class="va">num_cells</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## Number of cells: 54116</span></span></code></pre>
-<p>The count column thus gives the number of molecules of the RNA
-species listed in the gene column, found in the cell represented by a
-given row. Each cell, of course, comes from a specific mouse and brain
-hemisphere, information given in the correspondingly named columns. The
-age column gives the age of the mouse.</p>
-<p>This leaves two columns to explain: context and bin. “Context” refers
-to the biological context of the cell. In this case, all the cells are
-simply labeled as “cortex”, thus making context a dummy variable. An
-obvious use of the context variable would be to label the type of each
-cell, e.g., glutamatergic vs. GABAergic neurons (see <a href="tutorial_multicontext.html">Modeling celltypes</a>).</p>
-<p>The bin column gives the position of the cell along the axis of
-interest (in this case, the laminar axis), in units of “bins”. Any
-position coordinates could be used, including ones with non-integer
-values such as microns. However, we have binned the position coordinates
-into 100 (roughly) equal-width bins to allow for bootstrapping (see <a href="tutorial_stats.html">Customizing statistical analyses</a>).</p>
+<p>The <span class="code_variable">count</span> column thus gives the
+number of molecules of the RNA species listed in the <span class="code_variable">gene</span> column, found in the cell represented
+by a given row. Each cell, of course, comes from a specific mouse and
+brain hemisphere, information given in the correspondingly named
+columns. The <span class="code_variable">age</span> column gives the age
+of the mouse.</p>
+<p>This leaves two columns to explain: <span class="code_variable">context</span> and <span class="code_variable">bin</span>. “Context” refers to the biological
+context of the cell. In this case, all the cells are simply labeled as
+“cortex”, thus making context a dummy variable. An obvious use of the
+context variable would be to label the type of each cell, e.g.,
+glutamatergic vs. GABAergic neurons (see <a href="tutorial_multicontext.html">Modeling celltypes</a>).</p>
+<p>The <span class="code_variable">bin</span> column gives the position
+of the cell along the axis of interest (in this case, the laminar axis),
+in units of “bins”. Any position coordinates could be used, including
+ones with non-integer values such as microns. However, we have binned
+the position coordinates into 100 (roughly) equal-width bins to allow
+for bootstrapping (see <a href="tutorial_stats.html">Customizing
+statistical analyses</a>).</p>
 <h2>
 Effects structure
 </h2>
-<p>The goal is to test for interacting effects of age and laterality,
-with mouse as a random-effect grouping factor. A linear model from the
-well-known R package lme4 with the appropriate effects structure could
-be gotten with the following call:</p>
+<p>The goal is to test for interacting effects of <span class="code_variable">age</span> and laterality (i.e., variable <span class="code_variable">hemisphere</span>), with <span class="code_variable">mouse</span> as a random-effect grouping factor. A
+linear model from the well-known R package lme4 with the appropriate
+effects structure could be gotten with the following call:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu">lme4</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lmer</a></span><span class="op">(</span></span>
 <span>    <span class="va">count</span> <span class="op">~</span> <span class="va">age</span> <span class="op">*</span> <span class="va">hemisphere</span> <span class="op">+</span> <span class="op">(</span><span class="va">age</span> <span class="op">*</span> <span class="va">hemisphere</span><span class="op">|</span><span class="va">mouse</span><span class="op">)</span>, </span>
 <span>    data <span class="op">=</span> <span class="va">countdata</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p>The problem with this linear model is that it makes no use of the bin
-variable and thus loses all spatial information. A second problem is
-that the model makes no use of the gene variable, although this problem
-could be addressed by subsetting countdata to just a single gene of
-interest. (Gene should not be treated as another fixed-effect factor
-along with age and hemisphere, as there’s no reason to think age or
-hemisphere have any effect independent of RNA species.) Nevertheless,
-this model shows the basic effects structure wisp aims to capture.</p>
+<p>The problem with this linear model is that it makes no use of the
+<span class="code_variable">bin</span> variable and thus loses all
+spatial information. A second problem is that the model makes no use of
+the <span class="code_variable">gene</span> variable, although this
+problem could be addressed by subsetting <span class="code_variable">countdata</span> to just a single gene of
+interest. (<span class="code_variable">Gene</span> should not be treated
+as another fixed-effect factor along with <span class="code_variable">age</span> and <span class="code_variable">hemisphere</span>, as there’s no reason to think
+<span class="code_variable">age</span> or <span class="code_variable">hemisphere</span> have any effect independent of
+RNA species.) Nevertheless, this model shows the basic effects structure
+wisp aims to capture.</p>
 <p>A wisp captures this effects structure without discarding spatial
-information, and while segregating counts by gene. Unlike a
-mixed-effects linear model from the lme4 package, there is no model
-formula to specify in wispack. Instead of using a syntactic description
-(a formula), the effects structure in wispack is set semantically, i.e.,
-by specifying which variables in the data frame correspond to which
-roles in the model. The roles are:</p>
+information, and while segregating <span class="code_variable">count</span> by <span class="code_variable">gene</span>. Unlike a mixed-effects linear model
+from the lme4 package, there is no model formula to specify in wispack.
+Instead of using a syntactic description (a formula), the effects
+structure in wispack is set semantically, i.e., by specifying which
+variables in the data frame correspond to which roles in the model. The
+roles are:</p>
 <ol style="list-style-type: decimal">
 <li>
 <span class="code_variable">count</span>: either a non-negative
@@ -348,12 +389,12 @@ the data frame, and thus wispack needs to know which data columns carry
 these variables. While wispack has no default names for fixed effects,
 if no fixed effects are specified, all columns not identified as one of
 the other roles will be treated as fixed effects. Unless flagged as a
-time series, all fixed effects must have at most two levels.</p>
+time series, fixed effects can have no more than two levels.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Specify variables for wisp</span></span>
 <span><span class="va">data.variables</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    species <span class="op">=</span> <span class="st">"gene"</span>,</span>
-<span>    ran <span class="op">=</span> <span class="st">"mouse"</span>,</span>
+<span>    species    <span class="op">=</span> <span class="st">"gene"</span>,</span>
+<span>    ran        <span class="op">=</span> <span class="st">"mouse"</span>,</span>
 <span>    timeseries <span class="op">=</span> <span class="st">"age"</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p>As the data contains only two ages, it’s not technically necessary to
@@ -364,12 +405,12 @@ follows:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Specify all variables for wisp</span></span>
 <span><span class="va">data.variables</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    count <span class="op">=</span> <span class="st">"count"</span>,</span>
-<span>    bin <span class="op">=</span> <span class="st">"bin"</span>, </span>
-<span>    context <span class="op">=</span> <span class="st">"context"</span>, </span>
-<span>    species <span class="op">=</span> <span class="st">"gene"</span>,</span>
-<span>    ran <span class="op">=</span> <span class="st">"mouse"</span>,</span>
-<span>    timeseries <span class="op">=</span> <span class="st">"age"</span>,</span>
+<span>    count        <span class="op">=</span> <span class="st">"count"</span>,</span>
+<span>    bin          <span class="op">=</span> <span class="st">"bin"</span>, </span>
+<span>    context      <span class="op">=</span> <span class="st">"context"</span>, </span>
+<span>    species      <span class="op">=</span> <span class="st">"gene"</span>,</span>
+<span>    ran          <span class="op">=</span> <span class="st">"mouse"</span>,</span>
+<span>    timeseries   <span class="op">=</span> <span class="st">"age"</span>,</span>
 <span>    fixedeffects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"hemisphere"</span>, <span class="st">"age"</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <h3>
@@ -394,7 +435,9 @@ removed from the model using the <span class="code_variable">trtKO</span> argume
 <img src="fig_logisticpolysig.png" alt="Demo plots of functions involved in wisp, the logistic function" width="90%"><p class="caption">
 (Top) The logistic function, used to model a single change point in gene
 expression. (Bottom) The wisp poly-sigmoid function, built from three
-logistic components, representing three change points.
+logistic components, representing three change points. Note that “WSP”
+was older parlance for “wisp”, from when this figure was originally
+made.
 </p>
 </div>
 <p>Random effects from the random-effect grouping factor are a <a href="tutorial_warping.html">nonlinear warping</a> of the three spatial
@@ -404,7 +447,8 @@ parameters.</p>
 (Top) The warping function used to represent random effects, e.g.,
 variation due to differences between individual animals or due to
 measurement noise. (Bottom) The wisp poly-sigmoid with warping function
-applied.
+applied. Note that “WSP” was older parlance for “wisp”, from when this
+figure was originally made.
 </p>
 </div>
 <h2>
@@ -433,6 +477,12 @@ in the fitting process. As noted above, layer boundaries are provided to
 the model, but are used only in making plots so that the model fit and
 parameter estimates can be compared to the laminar boundaries estimated
 by the CCFv3 registration.</p>
+<p>Note that the <span class="code_variable">LRO_cost</span> variable
+under <span class="code_variable">model.settings</span> is set to
+“none”. The default (as of v2.4) is “AIC”, which will trigger a
+time-consuming grid search of parameters (minimizing model AIC) to use
+in the initial LRO change-point detection algorithm. Setting to “none”
+skips this search and defaults to reasonably robust LRO options.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Set random seed for reproducibility</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
@@ -440,16 +490,16 @@ by the CCFv3 registration.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co"># Fit model</span></span>
 <span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
-<span>    count.data <span class="op">=</span> <span class="va">countdata</span>,</span>
-<span>    variables <span class="op">=</span> <span class="va">data.variables</span>,</span>
-<span>    plot.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    count.data      <span class="op">=</span> <span class="va">countdata</span>,</span>
+<span>    variables       <span class="op">=</span> <span class="va">data.variables</span>,</span>
+<span>    model.settings  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>LRO_cost <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span>,</span>
+<span>    plot.settings   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>        print.plots <span class="op">=</span> <span class="cn">FALSE</span>, </span>
-<span>        dim.bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span></span>
+<span>        dim.bounds  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span></span>
 <span>      <span class="op">)</span>,</span>
-<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>    verbose         <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## </span></span>
-<span><span class="co">## </span></span>
 <span><span class="co">## Parsing data and settings for wisp model</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
@@ -457,6 +507,7 @@ by the CCFv3 registration.</p>
 <span><span class="co">##  buffer_factor: 0.05</span></span>
 <span><span class="co">##  ctol: 1e-06</span></span>
 <span><span class="co">##  max_penalty_at_distance_factor: 0.01</span></span>
+<span><span class="co">##  LRO_cost: none</span></span>
 <span><span class="co">##  LROcutoff: 2</span></span>
 <span><span class="co">##  LROwindow_factor: 1.25</span></span>
 <span><span class="co">##  rise_threshold_factor: 0.8</span></span>
@@ -474,6 +525,7 @@ by the CCFv3 registration.</p>
 <span><span class="co">##  log.scale: FALSE</span></span>
 <span><span class="co">##  splitting_factor: </span></span>
 <span><span class="co">##  CI_style: TRUE</span></span>
+<span><span class="co">##  splitting_factor_colors: 120, 240</span></span>
 <span><span class="co">##  label_size: 5.5</span></span>
 <span><span class="co">##  title_size: 20</span></span>
 <span><span class="co">##  axis_size: 12</span></span>
@@ -514,6 +566,9 @@ by the CCFv3 registration.</p>
 <span><span class="co">## </span></span>
 <span><span class="co">## Initializing Cpp (wspc) model</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## Context grouping levels: "cortex"</span></span>
+<span><span class="co">## Species grouping levels: "Bcl11b" "Cux2" "Fezf2" "Nxph3" "Rorb" "Satb2"</span></span>
+<span><span class="co">## Random-effect grouping levels: "none" "1" "2" "3" "4"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Infinity handling:</span></span>
 <span><span class="co">## machine epsilon: (eps_): 2.22045e-16</span></span>
@@ -522,53 +577,19 @@ by the CCFv3 registration.</p>
 <span><span class="co">## implied pseudo-infinity for unbounded warp (inf_warp): 4.5036e+08</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Extracting variables and data information:</span></span>
-<span><span class="co">## Found max bin: 100.000000</span></span>
-<span><span class="co">## Fixed effects:</span></span>
-<span><span class="co">## "hemisphere" "timeseries"</span></span>
-<span><span class="co">## Ref levels:</span></span>
-<span><span class="co">## "left" "12"</span></span>
-<span><span class="co">## Time series detected:</span></span>
-<span><span class="co">## "12" "18"</span></span>
-<span><span class="co">## Created treatment levels:</span></span>
-<span><span class="co">## "ref" "right" "18" "right18"</span></span>
-<span><span class="co">## Constructed weight_row matrix</span></span>
-<span><span class="co">## Context grouping levels:</span></span>
-<span><span class="co">## "cortex"</span></span>
-<span><span class="co">## Species grouping levels:</span></span>
-<span><span class="co">## "Bcl11b" "Cux2" "Fezf2" "Nxph3" "Rorb" "Satb2"</span></span>
-<span><span class="co">## Random-effect grouping levels:</span></span>
-<span><span class="co">## "none" "1" "2" "3" "4"</span></span>
+<span><span class="co">## Max bin: 100</span></span>
+<span><span class="co">## Fixed effects: "hemisphere" "timeseries"</span></span>
+<span><span class="co">## Ref levels: "left" "12"</span></span>
+<span><span class="co">## Time series detected: "12" "18"</span></span>
+<span><span class="co">## Created treatment levels: "ref" "right" "18" "right18"</span></span>
 <span><span class="co">## Total rows in summed count data table: 12000</span></span>
 <span><span class="co">## Number of rows with unique model components: 120</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## Creating summed-count data columns and weight matrix:</span></span>
-<span><span class="co">## Random level 0, 1/5 complete</span></span>
-<span><span class="co">## Random level 1, 2/5 complete</span></span>
-<span><span class="co">## Random level 2, 3/5 complete</span></span>
-<span><span class="co">## Random level 3, 4/5 complete</span></span>
-<span><span class="co">## Random level 4, 5/5 complete</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Making extrapolation pool:</span></span>
-<span><span class="co">## row: 480/2400</span></span>
-<span><span class="co">## row: 960/2400</span></span>
-<span><span class="co">## row: 1440/2400</span></span>
-<span><span class="co">## row: 1920/2400</span></span>
-<span><span class="co">## row: 2400/2400</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Wrapping up initialization:</span></span>
-<span><span class="co">## Extrapolated 'none' rows</span></span>
-<span><span class="co">## Took log of observed counts</span></span>
-<span><span class="co">## Estimated gamma dispersion of raw counts</span></span>
-<span><span class="co">## Found average log counts for each context-species combination</span></span>
-<span><span class="co">## Constructed grouping variable IDs</span></span>
-<span><span class="co">## </span></span>
 <span><span class="co">## Running LRO change-point detection and setting initial parameters</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
 <span><span class="co">## Estimated change points</span></span>
-<span><span class="co">## Estimated initial parameters for fixed-effect treatments</span></span>
-<span><span class="co">## Built initial beta (ref and fixed-effects) matrices</span></span>
-<span><span class="co">## Initialized random-effect warping factors</span></span>
-<span><span class="co">## Made and mapped parameter vector</span></span>
+<span><span class="co">## Estimated initial parameters</span></span>
 <span><span class="co">## Number of parameters: 300</span></span>
 <span><span class="co">## Size of boundary vector: 1260</span></span>
 <span><span class="co">## </span></span>
@@ -576,14 +597,6 @@ by the CCFv3 registration.</p>
 <span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Running MCMC stimulations</span></span>
-<span><span class="co">## Checking feasibility of provided parameters</span></span>
-<span><span class="co">## ... no tpoints below buffer</span></span>
-<span><span class="co">## ... no NAN rates predicted</span></span>
-<span><span class="co">## ... no negative rates predicted</span></span>
-<span><span class="co">## Provided parameters are feasible</span></span>
-<span><span class="co">## Initial boundary distance (want &gt; 0): 0.247647</span></span>
-<span><span class="co">## Performing initial fit of full data</span></span>
-<span><span class="co">## Penalized neg_loglik: 11975.6</span></span>
 <span><span class="co">## step: 1/1100</span></span>
 <span><span class="co">## step: 110/1100</span></span>
 <span><span class="co">## step: 220/1100</span></span>
@@ -595,26 +608,18 @@ by the CCFv3 registration.</p>
 <span><span class="co">## step: 880/1100</span></span>
 <span><span class="co">## step: 990/1100</span></span>
 <span><span class="co">## All complete!</span></span>
-<span><span class="co">## Acceptance rate (aim for 0.2-0.3): 0.283432</span></span>
+<span><span class="co">## Acceptance rate (aim for 0.2-0.3): 0.246085</span></span>
+<span><span class="co">## Penalized nll: 11976.4</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## MCMC simulation complete... </span></span>
-<span><span class="co">## MCMC run time (total), minutes: 1.178</span></span>
-<span><span class="co">## MCMC run time (per retained step), seconds: 0.064</span></span>
-<span><span class="co">## MCMC run time (per step), seconds: 0.064</span></span>
+<span><span class="co">## MCMC run time (total), minutes: 0.43</span></span>
+<span><span class="co">## MCMC run time (per retained step), seconds: 0.023</span></span>
+<span><span class="co">## MCMC run time (per step), seconds: 0.023</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## Setting full-data fit as parameters... </span></span>
-<span><span class="co">## Checking feasibility of provided parameters</span></span>
-<span><span class="co">## ... no tpoints below buffer</span></span>
-<span><span class="co">## ... no NAN rates predicted</span></span>
-<span><span class="co">## ... no negative rates predicted</span></span>
-<span><span class="co">## Provided parameters are feasible</span></span>
-<span><span class="co">## Initial boundary distance (want &gt; 0): 0.164251</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Running stats on simulation results</span></span>
+<span><span class="co">## Computing p-values and CI for model parameters</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Grabbing sample results... </span></span>
-<span><span class="co">## Grabbing parameter values... </span></span>
 <span><span class="co">## Computing 95% confidence intervals... </span></span>
 <span><span class="co">## Estimating p-values from resampled parameters... </span></span>
 <span><span class="co">## </span></span>
@@ -624,21 +629,16 @@ by the CCFv3 registration.</p>
 <span><span class="co">## </span></span>
 <span><span class="co">## Stat summary (head only):</span></span>
 <span><span class="co">## ------------------------------</span></span>
-<span><span class="co">##                                  parameter      estimate       CI.low      CI.high     p.value p.value.adj    alpha.adj significance</span></span>
-<span><span class="co">## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3874762662 3.2423579199 3.6060658268          NA          NA           NA             </span></span>
-<span><span class="co">## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0002723492 0.0002701605 0.0009564635 0.000999001  0.04495504 0.0011111111            *</span></span>
-<span><span class="co">## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6059294086 0.4971755126 0.6552261694 0.000000000  0.00000000 0.0002923977          ***</span></span>
-<span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0476934492 0.0324878078 0.0563049808 0.000000000  0.00000000 0.0002941176          ***</span></span>
-<span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786 1.9117544868 2.6135187197          NA          NA           NA             </span></span>
-<span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 0.0504651545 0.0951689705 0.000000000  0.00000000 0.0002958580          ***</span></span>
+<span><span class="co">##                                  parameter      estimate      CI.low    CI.high  p.value p.value.adj    alpha.adj significance</span></span>
+<span><span class="co">## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3880114451 3.257259190 3.57683057       NA          NA           NA             </span></span>
+<span><span class="co">## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0003773747 0.009057961 0.01865859 0.957043    0.957043 0.0500000000           ns</span></span>
+<span><span class="co">## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6072410701 0.387548476 0.60704006 0.000000    0.000000 0.0002923977          ***</span></span>
+<span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0461743004 0.032824337 0.06588826 0.000000    0.000000 0.0002941176          ***</span></span>
+<span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2781929967 1.923734236 2.64818473       NA          NA           NA             </span></span>
+<span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.0822301676 0.069129014 0.10433351 0.000000    0.000000 0.0002958580          ***</span></span>
 <span><span class="co">## ----</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## Computing 95% CI for predicated values by bin</span></span>
-<span><span class="co">## ----------------------------------------</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Grabbing sample results... </span></span>
-<span><span class="co">## Computing predicted values for each sampled parameter set... </span></span>
-<span><span class="co">## Computing 95% CIs... </span></span>
+<span><span class="co">## Computing 95% CI for predicated values by bin... </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Analyzing residuals</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
@@ -649,24 +649,22 @@ by the CCFv3 registration.</p>
 <span><span class="co">## </span></span>
 <span><span class="co">## Log-residual summary by grouping variables (head only):</span></span>
 <span><span class="co">## ------------------------------</span></span>
-<span><span class="co">##          group      mean        sd   variance</span></span>
-<span><span class="co">## 1          all 0.2387532 0.3908161 0.15273719</span></span>
-<span><span class="co">## 2 ran_lvl_none 0.2323705 0.3161788 0.09996903</span></span>
-<span><span class="co">## 3    ran_lvl_1 0.2381996 0.3967808 0.15743503</span></span>
-<span><span class="co">## 4    ran_lvl_2 0.2130804 0.3931356 0.15455562</span></span>
-<span><span class="co">## 5    ran_lvl_3 0.2747967 0.4583713 0.21010427</span></span>
-<span><span class="co">## 6    ran_lvl_4 0.2417013 0.4391963 0.19289335</span></span>
+<span><span class="co">##          group      mean        sd  variance</span></span>
+<span><span class="co">## 1          all 0.2389661 0.3918609 0.1535550</span></span>
+<span><span class="co">## 2 ran_lvl_none 0.2321238 0.3174750 0.1007903</span></span>
+<span><span class="co">## 3    ran_lvl_1 0.2384415 0.3968682 0.1575043</span></span>
+<span><span class="co">## 4    ran_lvl_2 0.2132537 0.3938506 0.1551183</span></span>
+<span><span class="co">## 5    ran_lvl_3 0.2751780 0.4605209 0.2120795</span></span>
+<span><span class="co">## 6    ran_lvl_4 0.2426757 0.4399106 0.1935213</span></span>
 <span><span class="co">## ----</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Making plots</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Making MCMC walks plots... </span></span>
 <span><span class="co">## Making effect parameter distribution plots... </span></span>
 <span><span class="co">## Making rate-count plots... </span></span>
 <span><span class="co">## Making time series plots... </span></span>
-<span><span class="co">## Making parameter plots... </span></span>
-<span><span class="co">## Making parameter plots... </span></span>
-<span><span class="co">## Making parameter plots... </span></span>
-<span><span class="co">## Making parameter plots... </span></span>
-<span><span class="co">## Making parameter plots... </span></span>
 <span><span class="co">## Making parameter plots...</span></span></code></pre>
 <h2>
 Results
@@ -685,6 +683,7 @@ a list with the following named components:</p>
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">n</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">n</span>, <span class="st">": "</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">model</span><span class="op">[[</span><span class="va">n</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span>, sep <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## model.component.list: character</span></span>
 <span><span class="co">## count.data.summed: data.frame</span></span>
+<span><span class="co">## LRO.grid.search.results: matrix, array</span></span>
 <span><span class="co">## fitted.parameters: numeric</span></span>
 <span><span class="co">## gamma.dispersion: matrix, array</span></span>
 <span><span class="co">## param.names: character</span></span>
@@ -695,55 +694,54 @@ a list with the following named components:</p>
 <span><span class="co">## param.idx0: list</span></span>
 <span><span class="co">## token.pool: list</span></span>
 <span><span class="co">## settings: list</span></span>
-<span><span class="co">## Cpp_model: Rcpp_wspc</span></span>
-<span><span class="co">## sample.params: matrix, array</span></span>
+<span><span class="co">## plot.settings: list</span></span>
+<span><span class="co">## sample.params.type: character</span></span>
 <span><span class="co">## sample.params.MCMC: matrix, array</span></span>
 <span><span class="co">## diagnostics.MCMC: data.frame</span></span>
-<span><span class="co">## variables: list</span></span>
-<span><span class="co">## plot.settings: list</span></span>
+<span><span class="co">## pred_values: matrix, array</span></span>
 <span><span class="co">## stats: list</span></span>
-<span><span class="co">## plots: list</span></span></code></pre>
-<p>Within the <span class="code_variable">stats</span> object (another
-list itself), the following is found:</p>
+<span><span class="co">## plots: list</span></span>
+<span><span class="co">## variables: list</span></span></code></pre>
+<p>These components are described in more detail in the <span class="function">wisp</span> entry of the “Package Functions” section of
+this site. Within the <span class="code_variable">stats</span> object
+(another list itself), the following is found:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">n</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">n</span>, <span class="st">": "</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">[[</span><span class="va">n</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span>, sep <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## parameters: data.frame</span></span>
-<span><span class="co">## tps: data.frame</span></span>
 <span><span class="co">## residuals: data.frame</span></span>
-<span><span class="co">## residuals.log: data.frame</span></span>
-<span><span class="co">## variance: data.frame</span></span></code></pre>
+<span><span class="co">## residuals.log: data.frame</span></span></code></pre>
 <p>The parameter object <span class="code_variable">stats$parameter</span> is a data frame the rows of
 which are the model parameters, the columns of which are various
 statistical results of interest, e.g., confidence intervals and <span class="math inline">p</span>-values:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameter</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre class="scroll-output"><code><span><span class="co">##                                  parameter      estimate       CI.low      CI.high     p.value p.value.adj    alpha.adj significance</span></span>
-<span><span class="co">## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3874762662 3.2423579199 3.6060658268          NA          NA           NA             </span></span>
-<span><span class="co">## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0002723492 0.0002701605 0.0009564635 0.000999001  0.04495504 0.0011111111            *</span></span>
-<span><span class="co">## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6059294086 0.4971755126 0.6552261694 0.000000000  0.00000000 0.0002923977          ***</span></span>
-<span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0476934492 0.0324878078 0.0563049808 0.000000000  0.00000000 0.0002941176          ***</span></span>
-<span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786 1.9117544868 2.6135187197          NA          NA           NA             </span></span>
-<span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 0.0504651545 0.0951689705 0.000000000  0.00000000 0.0002958580          ***</span></span></code></pre>
-<p>All fixed-effects of hemisphere (i.e., laterality) on the expression
-rate of <span class="gene">RORB</span> can be extracted by masking with
-the treatment variable name for the factor <span class="code_variable">hemisphere</span> (which is “right”, with “left”
+<pre class="scroll-output"><code><span><span class="co">##                                  parameter      estimate      CI.low    CI.high  p.value p.value.adj    alpha.adj significance</span></span>
+<span><span class="co">## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3880114451 3.257259190 3.57683057       NA          NA           NA             </span></span>
+<span><span class="co">## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0003773747 0.009057961 0.01865859 0.957043    0.957043 0.0500000000           ns</span></span>
+<span><span class="co">## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6072410701 0.387548476 0.60704006 0.000000    0.000000 0.0002923977          ***</span></span>
+<span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0461743004 0.032824337 0.06588826 0.000000    0.000000 0.0002941176          ***</span></span>
+<span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2781929967 1.923734236 2.64818473       NA          NA           NA             </span></span>
+<span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.0822301676 0.069129014 0.10433351 0.000000    0.000000 0.0002958580          ***</span></span></code></pre>
+<p>All fixed-effects of <span class="code_variable">hemisphere</span>
+(i.e., laterality) on the expression rate of <span class="gene">RORB</span> can be extracted by masking with the treatment
+variable name for the factor <span class="code_variable">hemisphere</span> (which is “right”, with “left”
 as the reference level), the name of the gene of interest (“<span class="gene">RORB</span>”), and the type of parameter (fixed effect on
 rate, which is “beta” on “Rt”):</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mask</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Rorb"</span>, <span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">parameter</span><span class="op">)</span> <span class="op">&amp;</span>    <span class="co"># just this gene</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"right"</span>, <span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">parameter</span><span class="op">)</span> <span class="op">&amp;</span>         <span class="co"># just the effect of hemisphere</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">parameter</span><span class="op">)</span> <span class="op">&amp;</span>          <span class="co"># just the fixed effects of the above factor</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Rt"</span>, <span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">parameter</span><span class="op">)</span>              <span class="co"># just the effects on rate</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"right"</span>,      <span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">parameter</span><span class="op">)</span> <span class="op">&amp;</span>    <span class="co"># just the effect of hemisphere</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"beta"</span>,       <span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">parameter</span><span class="op">)</span> <span class="op">&amp;</span>    <span class="co"># just the fixed effects of the above factor</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Rt"</span>,         <span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">parameter</span><span class="op">)</span>      <span class="co"># just the effects on rate</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameter</span><span class="op">[</span><span class="va">mask</span>, <span class="op">]</span><span class="op">)</span></span></code></pre></div>
-<pre class="scroll-output"><code><span><span class="co">##                                 parameter   estimate        CI.low     CI.high     p.value p.value.adj    alpha.adj significance</span></span>
-<span><span class="co">## 66   beta_Rt_cortex_Rorb_right_X_Tns/Blk1  0.3675538  0.2549638213 0.405098281 0.000000000  0.00000000 0.0003472222          ***</span></span>
-<span><span class="co">## 68 beta_Rt_cortex_Rorb_right18_X_Tns/Blk1 -0.1202368  0.0226205964 0.057872150 0.000999001  0.02897103 0.0017241379            *</span></span>
-<span><span class="co">## 70   beta_Rt_cortex_Rorb_right_X_Tns/Blk2  0.3366749  0.1872820676 0.342245184 0.000000000  0.00000000 0.0003521127          ***</span></span>
-<span><span class="co">## 72 beta_Rt_cortex_Rorb_right18_X_Tns/Blk2 -0.2536468 -0.0264334049 0.002955359 0.000999001  0.02797203 0.0017857143            *</span></span>
-<span><span class="co">## 74   beta_Rt_cortex_Rorb_right_X_Tns/Blk3  0.2557962  0.2014214573 0.367680590 0.000000000  0.00000000 0.0003571429          ***</span></span>
-<span><span class="co">## 76 beta_Rt_cortex_Rorb_right18_X_Tns/Blk3 -0.4326966 -0.0001465364 0.050469691 0.000999001  0.02697303 0.0018518519            *</span></span>
-<span><span class="co">## 78   beta_Rt_cortex_Rorb_right_X_Tns/Blk4  0.1952882  0.1495461129 0.327293014 0.000000000  0.00000000 0.0003623188          ***</span></span>
-<span><span class="co">## 80 beta_Rt_cortex_Rorb_right18_X_Tns/Blk4 -0.5650512  0.0045191349 0.041503420 0.000999001  0.02597403 0.0019230769            *</span></span></code></pre>
+<pre class="scroll-output"><code><span><span class="co">##                                 parameter   estimate      CI.low      CI.high     p.value p.value.adj    alpha.adj significance</span></span>
+<span><span class="co">## 66   beta_Rt_cortex_Rorb_right_X_Tns/Blk1  0.3542878  0.29575520 0.5817378023 0.000000000  0.00000000 0.0003496503          ***</span></span>
+<span><span class="co">## 68 beta_Rt_cortex_Rorb_right18_X_Tns/Blk1 -0.1004888  0.01281358 0.0507603189 0.000999001  0.02797203 0.0017857143            *</span></span>
+<span><span class="co">## 70   beta_Rt_cortex_Rorb_right_X_Tns/Blk2  0.3255307  0.32983321 0.4904189120 0.000000000  0.00000000 0.0003546099          ***</span></span>
+<span><span class="co">## 72 beta_Rt_cortex_Rorb_right18_X_Tns/Blk2 -0.2427069 -0.01771349 0.0005267267 0.000999001  0.02697303 0.0018518519            *</span></span>
+<span><span class="co">## 74   beta_Rt_cortex_Rorb_right_X_Tns/Blk3  0.2572398  0.16865627 0.3684502226 0.000000000  0.00000000 0.0003597122          ***</span></span>
+<span><span class="co">## 76 beta_Rt_cortex_Rorb_right18_X_Tns/Blk3 -0.3952781  0.05777799 0.0948408947 0.000999001  0.02597403 0.0019230769            *</span></span>
+<span><span class="co">## 78   beta_Rt_cortex_Rorb_right_X_Tns/Blk4  0.2136000  0.17765346 0.3884743571 0.000000000  0.00000000 0.0003649635          ***</span></span>
+<span><span class="co">## 80 beta_Rt_cortex_Rorb_right18_X_Tns/Blk4 -0.6081176  0.08597708 0.1059236005 0.000999001  0.02497502 0.0020000000            *</span></span></code></pre>
 <p>Notice that all of the parameter names end in “Tns/Blk1”, “Tns/Blk2”,
 “Tns/Blk3”, or “Tns/Blk4”. This is because the model fit found three
 transition points, thus dividing the laminar axis into four blocks of
@@ -753,7 +751,10 @@ reference age (P12), and one for the interaction of <span class="code_variable">
 can be seen, <span class="gene">RORB</span> expression is up-regulated
 in the right hemisphere (compared to left) across all blocks, but the
 interaction of <span class="code_variable">hemisphere</span> with <span class="code_variable">age</span> decreases that up-regulation, i.e., the
-laterality effect is less pronounced at P18 than at P12.</p>
+laterality effect is less pronounced at P18 than at P12. In blocks 3 and
+4, that negative interaction seems to more than cancel out the positive
+effect of the right hemisphere itself (meaning that the left has a
+higher expression rate), although the uncertainty ranges are large.</p>
 <h3>
 Plotting results
 </h3>

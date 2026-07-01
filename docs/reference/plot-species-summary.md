@@ -9,8 +9,8 @@ species level on one plot.
 plot.species.summary(
  wisp.results, 
  contexts = c(), 
- species = c(), 
- verbose = TRUE
+ species  = c(), 
+ verbose  = TRUE
 )
 ```
 

@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -87,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-06-05</h4>
+            <h4 data-toc-skip class="date">July 3, 2026 (v2.4)</h4>
       
 
       <div class="d-none name"><code>tutorial_stats.Rmd</code></div>
@@ -104,19 +104,23 @@ of expression rate, expression-rate transition points, and transition
 slopes. The true value of <span class="math inline">\beta_\xi</span> is
 estimated by resampling, either using a Markov chain Monte Carlo (MCMC)
 algorithm, or by refitting the model to resamples of the data
-(bootstrapping). This tutorial will not explain how the MCMC walk or
-bootstrap resampling is performed; these details are covered in the <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">paper introducing
+(bootstrapping). This tutorial will not explain how the MCMC walk and
+bootstrap resampling are performed; these details are covered in the <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">paper introducing
 wisp</a>. Instead, this tutorial will focus on how <span class="math inline">p</span>-values and confidence intervals (CI) are
 computed from the sampling (i.e., hypothesis testing), how the MCMC and
 bootstrapping approaches compare, and how to adjust various key settings
-in wispack.</p>
+in wispack.<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;An earlier version of the comparison between MCMC and
+bootstrap resampling, using v1.0 of wispack, is provided in the original
+&lt;a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link"&gt;preprint&lt;/a&gt;. It
+shows essentially the same thing, albeit with slightly different
+specifics.&lt;/p&gt;'><sup>1</sup></a></p>
 <h2>
 Hypothesis testing
 </h2>
 <p>Suppose for each spatial parameter <span class="math inline">z</span>, gene <span class="math inline">g</span>,
 context <span class="math inline">c</span>, and factor <span class="math inline">\xi</span> we have some set of resamples of the
 associated effect <span class="math inline">\beta</span>, either
-generated via MCMC walk or bootstrapping.</p>
+generated via MCMC walk or bootstrapping. How do we compute <span class="math inline">p</span>-values and confidence intervals?</p>
 <h3>
 Computations
 </h3>
@@ -166,15 +170,15 @@ addition to the default thousand-step MCMC walk with a hundred-step
 burn-in, it also performs a thousand bootstrap resamples:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
-<span>    count.data <span class="op">=</span> <span class="va">countdata</span>,</span>
-<span>    variables <span class="op">=</span> <span class="va">data.variables</span>,</span>
-<span>    plot.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>        print.plots <span class="op">=</span> <span class="cn">FALSE</span>, </span>
-<span>        dim.bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span></span>
-<span>      <span class="op">)</span>,</span>
+<span>    count.data     <span class="op">=</span> <span class="va">countdata</span>,</span>
+<span>    variables      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>species <span class="op">=</span> <span class="st">"gene"</span>, ran <span class="op">=</span> <span class="st">"mouse"</span>, timeseries <span class="op">=</span> <span class="st">"age"</span><span class="op">)</span>,</span>
+<span>    model.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>LRO_cost <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span>, </span>
+<span>    plot.settings  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      print.plots  <span class="op">=</span> <span class="cn">FALSE</span>, </span>
+<span>      dim.bounds   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>    bootstraps.num <span class="op">=</span> <span class="fl">1000</span>, </span>
-<span>    max.fork <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>    max.fork       <span class="op">=</span> <span class="fl">20</span>,</span>
+<span>    verbose        <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p>The result of this run comes with wispack and can be loaded as
 follows:</p>
@@ -201,12 +205,12 @@ Holm-Bonferroni correction.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameters</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">##                                  parameter      estimate      CI.low    CI.high   p.value p.value.adj    alpha.adj significance</span></span>
-<span><span class="co">## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3874762662  3.30569175 3.40219340        NA          NA           NA             </span></span>
-<span><span class="co">## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0002723492 -0.07161064 0.07342381 0.9920080    1.984016 0.0250000000           ns</span></span>
-<span><span class="co">## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6059294086  0.53617581 0.74222905 0.0000000    0.000000 0.0002923977          ***</span></span>
-<span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0476934492 -0.09456036 0.16707228 0.2447552   13.951049 0.0008771930           ns</span></span>
-<span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786  1.99915464 2.53133579        NA          NA           NA             </span></span>
-<span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 -0.42595429 0.51137301 0.5404595   18.375624 0.0014705882           ns</span></span></code></pre>
+<span><span class="co">## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3880114451  3.30500897 3.40212815        NA          NA           NA             </span></span>
+<span><span class="co">## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0003773747 -0.07507784 0.07339858 0.9890110    2.967033 0.0166666667           ns</span></span>
+<span><span class="co">## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6072410701  0.51496657 0.72377372 0.0000000    0.000000 0.0002923977          ***</span></span>
+<span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0461743004 -0.08550940 0.14890972 0.2657343   13.818182 0.0009615385           ns</span></span>
+<span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2781929967  1.99837574 2.55129060        NA          NA           NA             </span></span>
+<span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.0822301676 -0.45766257 0.51713430 0.6013986   16.237762 0.0018518519           ns</span></span></code></pre>
 <p>To customize the computations for <span class="math inline">p</span>-values and CIs, we can use the function
 <span class="function">sample.stats</span>. This function assumes that
 resamples have already been generated, by either MCMC walk or
@@ -214,20 +218,27 @@ bootstrapping. It itself does not run these resamples; it merely
 extracts <span class="math inline">p</span>-values and CIs from them.
 The function <span class="function">sample.stats</span> allows for
 setting a new alpha level and for switching between Holm-Bonferroni and
-Bonferroni corrections. It returns the data frame which populates <span class="code_variable">model$stats$parameters</span>:</p>
+Bonferroni corrections. It returns a copy of <span class="code_variable">model</span> with (1) a new or (if it already
+existed) re-written entry <span class="code_variable">parameters</span>
+under <span class="code_variable">stats</span> holding a data frame
+giving, for each parameter, its name, estimate, confidence interval
+(CI.low, CI.high), p-value, adjusted p-value (p.value.adj), adjusted
+alpha (alpha.adj), and significance level (significance), and also (2)
+new (or re-written) 95% confidence interval range columns in <span class="code_variable">count.data.summed</span> for predicted log count
+by bin.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">model</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameters</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.stats.html">sample.stats</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.stats.html">sample.stats</a></span><span class="op">(</span></span>
 <span>    <span class="va">model</span>,</span>
-<span>    alpha <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>    alpha      <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>    Bonferroni <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>    verbose    <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## </span></span>
-<span><span class="co">## Running stats on simulation results</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Computing p-values and CI for model parameters</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Grabbing sample results, only resamples with converged fit... </span></span>
-<span><span class="co">## Grabbing parameter values... </span></span>
 <span><span class="co">## Computing 95% confidence intervals... </span></span>
 <span><span class="co">## Estimating p-values from resampled parameters... </span></span>
 <span><span class="co">## </span></span>
@@ -237,22 +248,24 @@ Bonferroni corrections. It returns the data frame which populates <span class="c
 <span><span class="co">## </span></span>
 <span><span class="co">## Stat summary (head only):</span></span>
 <span><span class="co">## ------------------------------</span></span>
-<span><span class="co">##                                  parameter      estimate     CI.low    CI.high   p.value p.value.adj    alpha.adj significance</span></span>
-<span><span class="co">## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3874762662  3.2789558 3.43808630        NA          NA 5.847953e-05             </span></span>
-<span><span class="co">## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0002723492 -0.1249142 0.09502461 0.9920080   169.63337 5.847953e-05           ns</span></span>
-<span><span class="co">## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6059294086  0.5361412 0.74281736 0.0000000     0.00000 5.847953e-05          ***</span></span>
-<span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0476934492 -0.1029796 0.16720287 0.2447552    41.85315 5.847953e-05           ns</span></span>
-<span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786  1.7743039 2.71545562        NA          NA 5.847953e-05             </span></span>
-<span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 -0.4328437 0.52219934 0.5404595    92.41858 5.847953e-05           ns</span></span>
-<span><span class="co">## ----</span></span></code></pre>
+<span><span class="co">##                                  parameter      estimate      CI.low    CI.high   p.value p.value.adj    alpha.adj significance</span></span>
+<span><span class="co">## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3880114451  3.27271827 3.42939874        NA          NA 5.847953e-05             </span></span>
+<span><span class="co">## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0003773747 -0.11319229 0.09238264 0.9890110   169.12088 5.847953e-05           ns</span></span>
+<span><span class="co">## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6072410701  0.51454410 0.72512609 0.0000000     0.00000 5.847953e-05          ***</span></span>
+<span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0461743004 -0.09743408 0.15046710 0.2657343    45.44056 5.847953e-05           ns</span></span>
+<span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2781929967  1.72553705 2.65759197        NA          NA 5.847953e-05             </span></span>
+<span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.0822301676 -0.47422397 0.54076186 0.6013986   102.83916 5.847953e-05           ns</span></span>
+<span><span class="co">## ----</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Computing 95% CI for predicated values by bin...</span></span></code></pre>
 <p>Above we switched from <span class="math inline">\alpha = 0.05</span>
 to <span class="math inline">\alpha = 0.01</span> and from a
 Holm-Bonferroni to a Bonferroni correction. As can be seen in the print
 out, if <span class="code_variable">verbose</span> is set to <span class="code_variable">TRUE</span>, <span class="function">sample.stats</span> will print out both the head of
 <span class="code_variable">model$stats$parameters</span> and also
 information about the threshold <span class="math inline">\alpha</span>
-and the number of hypothesis tests run. In this case, <span class="math inline">\alpha = 0.01</span> and 171 tests are fun. In
-addition, the function <span class="function">summary.stats</span>
+and the number of hypothesis tests run. In this case, <span class="math inline">\alpha = 0.01</span> and 171 tests were run. In
+addition, the function <span class="function">sample.stats</span>
 estimates the number of resamples needed for threshold <span class="math inline">\alpha</span> and outputs both this number and the
 actual number of resamples used. In this case, it’s recommended that
 17,100 resamples are used, but only 1,001 are given (the thousand
@@ -271,25 +284,25 @@ Adjusting settings
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Set new MCMC values </span></span>
 <span><span class="va">MCMC.settings.new</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>      MCMC.burnin <span class="op">=</span> <span class="fl">1e2</span>,</span>
-<span>      MCMC.steps <span class="op">=</span> <span class="fl">1e3</span>,</span>
-<span>      MCMC.step.size <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>      MCMC.prior <span class="op">=</span> <span class="fl">1.0</span>, </span>
+<span>      MCMC.burnin          <span class="op">=</span> <span class="fl">1e2</span>,</span>
+<span>      MCMC.steps           <span class="op">=</span> <span class="fl">1e3</span>,</span>
+<span>      MCMC.step.size       <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>      MCMC.prior           <span class="op">=</span> <span class="fl">1.0</span>, </span>
 <span>      MCMC.neighbor.filter <span class="op">=</span> <span class="fl">1</span></span>
 <span>    <span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Use new settings in wisp</span></span>
 <span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
-<span>    count.data <span class="op">=</span> <span class="va">countdata</span>,</span>
-<span>    variables <span class="op">=</span> <span class="va">data.variables</span>,</span>
-<span>    MCMC.settings <span class="op">=</span> <span class="va">MCMC.settings.new</span>,</span>
-<span>    plot.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    count.data      <span class="op">=</span> <span class="va">countdata</span>,</span>
+<span>    variables       <span class="op">=</span> <span class="va">data.variables</span>,</span>
+<span>    MCMC.settings   <span class="op">=</span> <span class="va">MCMC.settings.new</span>,</span>
+<span>    plot.settings   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>        print.plots <span class="op">=</span> <span class="cn">FALSE</span>, </span>
-<span>        dim.bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span></span>
+<span>        dim.bounds  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span></span>
 <span>      <span class="op">)</span>,</span>
-<span>    bootstraps.num <span class="op">=</span> <span class="fl">1000</span>, </span>
-<span>    max.fork <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>    bootstraps.num  <span class="op">=</span> <span class="fl">1000</span>, </span>
+<span>    max.fork        <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>    verbose         <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p>This code chunk is just for demonstration; it is not run. Also, the
 values shown are the defaults.</p>
@@ -329,7 +342,7 @@ Plotting walks
 <code class="sourceCode R"><span><span class="va">MCMC_walk_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-MCMC-walks.html">plot.MCMC.walks</a></span><span class="op">(</span></span>
 <span> <span class="va">model</span>, </span>
 <span> print.plots <span class="op">=</span> <span class="cn">FALSE</span>, </span>
-<span> verbose <span class="op">=</span> <span class="cn">FALSE</span>, </span>
+<span> verbose     <span class="op">=</span> <span class="cn">FALSE</span>, </span>
 <span> low_samples <span class="op">=</span> <span class="fl">10</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>This function returns three plots: one showing the walks taken by
@@ -381,28 +394,34 @@ but the simplest wisp models, given the high autocorrelation and
 tendency to get trapped in local minima. MCMC walks are the default
 because they are computationally much faster and can be run on a single
 core. However, using them often requires throwing out the initial fit
-from L-BFGS. To see why, first note that the <span class="function">wisp</span> function returns three matrices of
-parameter resamples:</p>
+from L-BFGS. To see why, first note that the <span class="function">wisp</span> function returns two matrices of parameter
+resamples plus a character string specifying the type of resamples to be
+used:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"sample.params"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span><span class="op">)</span><span class="op">]</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span></span></code></pre></div>
-<pre class="scroll-output"><code><span><span class="co">## [1] "sample.params, sample.params.bs, sample.params.MCMC"</span></span></code></pre>
+<pre class="scroll-output"><code><span><span class="co">## [1] "sample.params.type, sample.params.bs, sample.params.MCMC"</span></span></code></pre>
 <p>The matrices <span class="code_variable">sample.params.bs</span> and
 <span class="code_variable">sample.params.MCMC</span> contain the
-bootstrap and MCMC resamples, respectively. The matrix <span class="code_variable">sample.params</span> is used by the <span class="function">sample.stats</span> function. If <span class="code_variable">sample.params.bs</span> is not present, then <span class="code_variable">sample.params</span> is a copy of <span class="code_variable">sample.params.MCMC</span>. If <span class="code_variable">sample.params.bs</span> is present, then <span class="code_variable">sample.params</span> is a copy of it. Thus, when
-both MCMC walks and bootstrap resamples are run, <span class="code_variable">sample.params</span> ignores the MCMC walks and
-uses the bootstrap resamples.</p>
-<p>Let’s make a copy of our model that uses the MCMC walks and re-run
-the statistical analysis on it:</p>
+bootstrap and MCMC resamples, respectively. The matrix <span class="code_variable">sample.params.&lt;sample.params.type&gt;</span> is
+used by the <span class="function">sample.stats</span> function. If
+<span class="code_variable">sample.params.bs</span> is present, then
+<span class="code_variable">sample.params.type</span> will be “bs”,
+otherwise it will be “MCMC”. Thus, when both MCMC walks and bootstrap
+resamples are run, <span class="code_variable">sample.params</span>
+ignores the MCMC walks and uses the bootstrap resamples. However, we can
+force a change by manually resetting <span class="code_variable">sample.params.type</span> to “MCMC”. Let’s make a
+copy of our model that uses the MCMC walks and re-run the statistical
+analysis on it:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">model_MCMC</span> <span class="op">&lt;-</span> <span class="va">model</span></span>
-<span><span class="va">model_MCMC</span><span class="op">$</span><span class="va">sample.params</span> <span class="op">&lt;-</span> <span class="va">model_MCMC</span><span class="op">$</span><span class="va">sample.params.MCMC</span></span>
-<span><span class="va">model_MCMC</span><span class="op">$</span><span class="va">stats</span><span class="op">$</span><span class="va">parameters</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.stats.html">sample.stats</a></span><span class="op">(</span><span class="va">model_MCMC</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">model_MCMC</span>                    <span class="op">&lt;-</span> <span class="va">model</span></span>
+<span><span class="va">model_MCMC</span><span class="op">$</span><span class="va">sample.params.type</span> <span class="op">&lt;-</span> <span class="st">"MCMC"</span></span>
+<span><span class="va">model_MCMC</span>                    <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.stats.html">sample.stats</a></span><span class="op">(</span><span class="va">model_MCMC</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## </span></span>
-<span><span class="co">## Running stats on simulation results</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Computing p-values and CI for model parameters</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## Grabbing sample results, only resamples with converged fit... </span></span>
-<span><span class="co">## Grabbing parameter values... </span></span>
+<span><span class="co">## Grabbing sample results... </span></span>
 <span><span class="co">## Computing 95% confidence intervals... </span></span>
 <span><span class="co">## Estimating p-values from resampled parameters... </span></span>
 <span><span class="co">## </span></span>
@@ -412,14 +431,16 @@ the statistical analysis on it:</p>
 <span><span class="co">## </span></span>
 <span><span class="co">## Stat summary (head only):</span></span>
 <span><span class="co">## ------------------------------</span></span>
-<span><span class="co">##                                  parameter      estimate       CI.low      CI.high     p.value p.value.adj    alpha.adj significance</span></span>
-<span><span class="co">## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3874762662 3.2423579199 3.6060658268          NA          NA           NA             </span></span>
-<span><span class="co">## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0002723492 0.0002701605 0.0009564635 0.000999001  0.04495504 0.0011111111            *</span></span>
-<span><span class="co">## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6059294086 0.4971755126 0.6552261694 0.000000000  0.00000000 0.0002923977          ***</span></span>
-<span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0476934492 0.0324878078 0.0563049808 0.000000000  0.00000000 0.0002941176          ***</span></span>
-<span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786 1.9117544868 2.6135187197          NA          NA           NA             </span></span>
-<span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 0.0504651545 0.0951689705 0.000000000  0.00000000 0.0002958580          ***</span></span>
-<span><span class="co">## ----</span></span></code></pre>
+<span><span class="co">##                                  parameter      estimate      CI.low    CI.high  p.value p.value.adj    alpha.adj significance</span></span>
+<span><span class="co">## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3880114451 3.257259190 3.57683057       NA          NA           NA             </span></span>
+<span><span class="co">## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0003773747 0.009057961 0.01865859 0.957043    0.957043 0.0500000000           ns</span></span>
+<span><span class="co">## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6072410701 0.387548476 0.60704006 0.000000    0.000000 0.0002923977          ***</span></span>
+<span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0461743004 0.032824337 0.06588826 0.000000    0.000000 0.0002941176          ***</span></span>
+<span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2781929967 1.923734236 2.64818473       NA          NA           NA             </span></span>
+<span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.0822301676 0.069129014 0.10433351 0.000000    0.000000 0.0002958580          ***</span></span>
+<span><span class="co">## ----</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Computing 95% CI for predicated values by bin...</span></span></code></pre>
 <p>Now, let’s plot the values <span class="math inline">\beta</span> for
 <span class="gene">RORB</span> for the effect of age in the left
 hemisphere. We will highlight the value found by the L-BFGS fit with a
@@ -430,7 +451,7 @@ resamples:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span></span>
 <span>  <span class="va">plots.param</span><span class="op">$</span><span class="va">plot_treatment_18_cortex_Rorb</span> <span class="op">+</span> </span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/expansion.html" class="external-link">expansion</a></span><span class="op">(</span>mult <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">means</span><span class="op">)</span>, shape <span class="op">=</span> <span class="fl">8</span>, size <span class="op">=</span> <span class="fl">4</span>, stroke <span class="op">=</span> <span class="fl">2</span>, color <span class="op">=</span> <span class="st">"black"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">means</span><span class="op">)</span>, shape <span class="op">=</span> <span class="fl">8</span>, size <span class="op">=</span> <span class="fl">4</span>, stroke <span class="op">=</span> <span class="fl">2</span>, color <span class="op">=</span> <span class="st">"black"</span>,  na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">means</span><span class="op">)</span>, shape <span class="op">=</span> <span class="fl">8</span>, size <span class="op">=</span> <span class="fl">4</span>, stroke <span class="op">=</span> <span class="fl">1</span>, color <span class="op">=</span> <span class="st">"yellow"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_stats_files/figure-html/plot_RORB_bootstrap-1.png" class="r-plt" alt="" width="700"></p>
@@ -448,7 +469,7 @@ results, the L-BFGS fit is often an outlier.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span></span>
 <span>  <span class="va">plots.param_MCMC</span><span class="op">$</span><span class="va">plot_treatment_18_cortex_Rorb</span> <span class="op">+</span> </span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/expansion.html" class="external-link">expansion</a></span><span class="op">(</span>mult <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">means</span><span class="op">)</span>, shape <span class="op">=</span> <span class="fl">8</span>, size <span class="op">=</span> <span class="fl">4</span>, stroke <span class="op">=</span> <span class="fl">2</span>, color <span class="op">=</span> <span class="st">"black"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">means</span><span class="op">)</span>, shape <span class="op">=</span> <span class="fl">8</span>, size <span class="op">=</span> <span class="fl">4</span>, stroke <span class="op">=</span> <span class="fl">2</span>, color <span class="op">=</span> <span class="st">"black"</span>,  na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">means</span><span class="op">)</span>, shape <span class="op">=</span> <span class="fl">8</span>, size <span class="op">=</span> <span class="fl">4</span>, stroke <span class="op">=</span> <span class="fl">1</span>, color <span class="op">=</span> <span class="st">"yellow"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_stats_files/figure-html/plot_RORB_MCMC-1.png" class="r-plt" alt="" width="700"></p>
@@ -471,7 +492,7 @@ acceptance rates near (or at) zero. Option (2), interestingly, has the
 same problem, unless step size is so small that the acceptance rate is
 very high, leaving the space around the L-BFGS fit underexplored. (As to
 implementing this option, if the number of burn-in steps is set to zero,
-wispack will automatically switch to starting the walk at the L-BGGS
+wispack will automatically switch to starting the walk at the L-BFGS
 fit.) In both cases, the root issue is presumably the non-linearity of
 the model: small changes to viable parameters often produce large
 changes in predictions, leading to a worse fit with the data. The L-BFGS
@@ -495,22 +516,22 @@ example, we can re-run the model:</p>
 <span></span>
 <span><span class="co"># Specify variables for wisp</span></span>
 <span><span class="va">data.variables</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    species <span class="op">=</span> <span class="st">"gene"</span>,</span>
-<span>    ran <span class="op">=</span> <span class="st">"mouse"</span>,</span>
+<span>    species    <span class="op">=</span> <span class="st">"gene"</span>,</span>
+<span>    ran        <span class="op">=</span> <span class="st">"mouse"</span>,</span>
 <span>    timeseries <span class="op">=</span> <span class="st">"age"</span></span>
 <span>  <span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Run with median</span></span>
 <span><span class="va">model_median</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
-<span>    count.data <span class="op">=</span> <span class="va">countdata</span>,</span>
-<span>    variables <span class="op">=</span> <span class="va">data.variables</span>,</span>
-<span>    use.median <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>    plot.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print.plots <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>    count.data     <span class="op">=</span> <span class="va">countdata</span>,</span>
+<span>    variables      <span class="op">=</span> <span class="va">data.variables</span>,</span>
+<span>    use.median     <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    model.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>LRO_cost <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span>, </span>
+<span>    plot.settings  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>print.plots <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>,</span>
 <span>    bootstraps.num <span class="op">=</span> <span class="fl">0</span>, </span>
-<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>    verbose        <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## </span></span>
-<span><span class="co">## </span></span>
 <span><span class="co">## Parsing data and settings for wisp model</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
@@ -518,6 +539,7 @@ example, we can re-run the model:</p>
 <span><span class="co">##  buffer_factor: 0.05</span></span>
 <span><span class="co">##  ctol: 1e-06</span></span>
 <span><span class="co">##  max_penalty_at_distance_factor: 0.01</span></span>
+<span><span class="co">##  LRO_cost: none</span></span>
 <span><span class="co">##  LROcutoff: 2</span></span>
 <span><span class="co">##  LROwindow_factor: 1.25</span></span>
 <span><span class="co">##  rise_threshold_factor: 0.8</span></span>
@@ -535,6 +557,7 @@ example, we can re-run the model:</p>
 <span><span class="co">##  log.scale: FALSE</span></span>
 <span><span class="co">##  splitting_factor: </span></span>
 <span><span class="co">##  CI_style: TRUE</span></span>
+<span><span class="co">##  splitting_factor_colors: 120, 240</span></span>
 <span><span class="co">##  label_size: 5.5</span></span>
 <span><span class="co">##  title_size: 20</span></span>
 <span><span class="co">##  axis_size: 12</span></span>
@@ -575,6 +598,9 @@ example, we can re-run the model:</p>
 <span><span class="co">## </span></span>
 <span><span class="co">## Initializing Cpp (wspc) model</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## Context grouping levels: "cortex"</span></span>
+<span><span class="co">## Species grouping levels: "Bcl11b" "Cux2" "Fezf2" "Nxph3" "Rorb" "Satb2"</span></span>
+<span><span class="co">## Random-effect grouping levels: "none" "1" "2" "3" "4"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Infinity handling:</span></span>
 <span><span class="co">## machine epsilon: (eps_): 2.22045e-16</span></span>
@@ -583,53 +609,19 @@ example, we can re-run the model:</p>
 <span><span class="co">## implied pseudo-infinity for unbounded warp (inf_warp): 4.5036e+08</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Extracting variables and data information:</span></span>
-<span><span class="co">## Max bin: 100.000000</span></span>
-<span><span class="co">## Fixed effects:</span></span>
-<span><span class="co">## "hemisphere" "timeseries"</span></span>
-<span><span class="co">## Ref levels:</span></span>
-<span><span class="co">## "left" "12"</span></span>
-<span><span class="co">## Time series detected:</span></span>
-<span><span class="co">## "12" "18"</span></span>
-<span><span class="co">## Created treatment levels:</span></span>
-<span><span class="co">## "ref" "right" "18" "right18"</span></span>
-<span><span class="co">## Constructed weight_row matrix</span></span>
-<span><span class="co">## Context grouping levels:</span></span>
-<span><span class="co">## "cortex"</span></span>
-<span><span class="co">## Species grouping levels:</span></span>
-<span><span class="co">## "Bcl11b" "Cux2" "Fezf2" "Nxph3" "Rorb" "Satb2"</span></span>
-<span><span class="co">## Random-effect grouping levels:</span></span>
-<span><span class="co">## "none" "1" "2" "3" "4"</span></span>
+<span><span class="co">## Max bin: 100</span></span>
+<span><span class="co">## Fixed effects: "hemisphere" "timeseries"</span></span>
+<span><span class="co">## Ref levels: "left" "12"</span></span>
+<span><span class="co">## Time series detected: "12" "18"</span></span>
+<span><span class="co">## Created treatment levels: "ref" "right" "18" "right18"</span></span>
 <span><span class="co">## Total rows in summed count data table: 12000</span></span>
 <span><span class="co">## Number of rows with unique model components: 120</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## Creating summed-count data columns and weight matrix:</span></span>
-<span><span class="co">## Random level 0, 1/5 complete</span></span>
-<span><span class="co">## Random level 1, 2/5 complete</span></span>
-<span><span class="co">## Random level 2, 3/5 complete</span></span>
-<span><span class="co">## Random level 3, 4/5 complete</span></span>
-<span><span class="co">## Random level 4, 5/5 complete</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Making extrapolation pool:</span></span>
-<span><span class="co">## row: 480/2400</span></span>
-<span><span class="co">## row: 960/2400</span></span>
-<span><span class="co">## row: 1440/2400</span></span>
-<span><span class="co">## row: 1920/2400</span></span>
-<span><span class="co">## row: 2400/2400</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Wrapping up initialization:</span></span>
-<span><span class="co">## Extrapolated 'none' rows</span></span>
-<span><span class="co">## Took log of observed counts</span></span>
-<span><span class="co">## Estimated gamma dispersion of raw counts</span></span>
-<span><span class="co">## Found average log counts for each context-species combination</span></span>
-<span><span class="co">## Constructed grouping variable IDs</span></span>
-<span><span class="co">## </span></span>
 <span><span class="co">## Running LRO change-point detection and setting initial parameters</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
 <span><span class="co">## Estimated change points</span></span>
-<span><span class="co">## Estimated initial parameters for fixed-effect treatments</span></span>
-<span><span class="co">## Built initial beta (ref and fixed-effects) matrices</span></span>
-<span><span class="co">## Initialized random-effect warping factors</span></span>
-<span><span class="co">## Made and mapped parameter vector</span></span>
+<span><span class="co">## Estimated initial parameters</span></span>
 <span><span class="co">## Number of parameters: 300</span></span>
 <span><span class="co">## Size of boundary vector: 1260</span></span>
 <span><span class="co">## </span></span>
@@ -637,14 +629,6 @@ example, we can re-run the model:</p>
 <span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Running MCMC stimulations</span></span>
-<span><span class="co">## Checking feasibility of provided parameters</span></span>
-<span><span class="co">## ... no tpoints below buffer</span></span>
-<span><span class="co">## ... no NAN rates predicted</span></span>
-<span><span class="co">## ... no negative rates predicted</span></span>
-<span><span class="co">## Provided parameters are feasible</span></span>
-<span><span class="co">## Initial boundary distance (want &gt; 0): 0.247647</span></span>
-<span><span class="co">## Performing initial fit of full data</span></span>
-<span><span class="co">## Penalized neg_loglik: 11975.6</span></span>
 <span><span class="co">## step: 1/1100</span></span>
 <span><span class="co">## step: 110/1100</span></span>
 <span><span class="co">## step: 220/1100</span></span>
@@ -656,25 +640,17 @@ example, we can re-run the model:</p>
 <span><span class="co">## step: 880/1100</span></span>
 <span><span class="co">## step: 990/1100</span></span>
 <span><span class="co">## All complete!</span></span>
-<span><span class="co">## Acceptance rate (aim for 0.2-0.3): 0.283432</span></span>
+<span><span class="co">## Acceptance rate (aim for 0.2-0.3): 0.246085</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## MCMC simulation complete... </span></span>
-<span><span class="co">## MCMC run time (total), minutes: 1.208</span></span>
-<span><span class="co">## MCMC run time (per retained step), seconds: 0.066</span></span>
-<span><span class="co">## MCMC run time (per step), seconds: 0.066</span></span>
-<span><span class="co">## Setting median parameter samples as final parameters... </span></span>
-<span><span class="co">## Checking feasibility of provided parameters</span></span>
-<span><span class="co">## ... no tpoints below buffer</span></span>
-<span><span class="co">## ... no NAN rates predicted</span></span>
-<span><span class="co">## ... no negative rates predicted</span></span>
-<span><span class="co">## Provided parameters are feasible</span></span>
-<span><span class="co">## Initial boundary distance (want &gt; 0): 0.176668</span></span>
+<span><span class="co">## MCMC run time (total), minutes: 0.406</span></span>
+<span><span class="co">## MCMC run time (per retained step), seconds: 0.022</span></span>
+<span><span class="co">## MCMC run time (per step), seconds: 0.022</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## Running stats on simulation results</span></span>
+<span><span class="co">## Computing p-values and CI for model parameters</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Grabbing sample results... </span></span>
-<span><span class="co">## Grabbing parameter values... </span></span>
 <span><span class="co">## Computing 95% confidence intervals... </span></span>
 <span><span class="co">## Estimating p-values from resampled parameters... </span></span>
 <span><span class="co">## </span></span>
@@ -684,21 +660,16 @@ example, we can re-run the model:</p>
 <span><span class="co">## </span></span>
 <span><span class="co">## Stat summary (head only):</span></span>
 <span><span class="co">## ------------------------------</span></span>
-<span><span class="co">##                                  parameter     estimate       CI.low      CI.high     p.value p.value.adj    alpha.adj significance</span></span>
-<span><span class="co">## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1 3.4171645316 3.2423579199 3.6060658268          NA          NA           NA             </span></span>
-<span><span class="co">## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 0.0008409778 0.0001214079 0.0009566762 0.000999001  0.06193806 0.0008064516           ns</span></span>
-<span><span class="co">## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1 0.5789275569 0.4971755126 0.6552261694 0.000000000  0.00000000 0.0002923977          ***</span></span>
-<span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1 0.0459829185 0.0324878078 0.0563049808 0.000000000  0.00000000 0.0002941176          ***</span></span>
-<span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2 2.2148115952 1.9117544868 2.6135187197          NA          NA           NA             </span></span>
-<span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2 0.0571963983 0.0504651545 0.0951689705 0.000000000  0.00000000 0.0002958580          ***</span></span>
+<span><span class="co">##                                  parameter    estimate      CI.low    CI.high p.value p.value.adj    alpha.adj significance</span></span>
+<span><span class="co">## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1 3.425420516 3.257259190 3.57683057      NA          NA           NA             </span></span>
+<span><span class="co">## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 0.009900353 0.008899514 0.01985140       0           0 0.0002923977          ***</span></span>
+<span><span class="co">## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1 0.484414278 0.387548976 0.60580230       0           0 0.0002941176          ***</span></span>
+<span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1 0.052372627 0.032824377 0.06588796       0           0 0.0002958580          ***</span></span>
+<span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2 2.193585848 1.923734236 2.64818473      NA          NA           NA             </span></span>
+<span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2 0.091021492 0.069129264 0.10433317       0           0 0.0002976190          ***</span></span>
 <span><span class="co">## ----</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## Computing 95% CI for predicated values by bin</span></span>
-<span><span class="co">## ----------------------------------------</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Grabbing sample results... </span></span>
-<span><span class="co">## Computing predicted values for each sampled parameter set... </span></span>
-<span><span class="co">## Computing 95% CIs... </span></span>
+<span><span class="co">## Computing 95% CI for predicated values by bin... </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Analyzing residuals</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
@@ -709,24 +680,22 @@ example, we can re-run the model:</p>
 <span><span class="co">## </span></span>
 <span><span class="co">## Log-residual summary by grouping variables (head only):</span></span>
 <span><span class="co">## ------------------------------</span></span>
-<span><span class="co">##          group         mean        sd  variance</span></span>
-<span><span class="co">## 1          all  0.200397489 0.5218355 0.2723122</span></span>
-<span><span class="co">## 2 ran_lvl_none  0.204318220 0.3651730 0.1333513</span></span>
-<span><span class="co">## 3    ran_lvl_1 -0.238834690 0.4570011 0.2088500</span></span>
-<span><span class="co">## 4    ran_lvl_2  0.009588838 0.4834547 0.2337285</span></span>
-<span><span class="co">## 5    ran_lvl_3  0.544623373 0.5043003 0.2543188</span></span>
-<span><span class="co">## 6    ran_lvl_4  0.478370970 0.4958014 0.2458191</span></span>
+<span><span class="co">##          group        mean        sd  variance</span></span>
+<span><span class="co">## 1          all  0.19688703 0.5245301 0.2751318</span></span>
+<span><span class="co">## 2 ran_lvl_none  0.20263236 0.3713979 0.1379364</span></span>
+<span><span class="co">## 3    ran_lvl_1 -0.24153966 0.4482183 0.2008997</span></span>
+<span><span class="co">## 4    ran_lvl_2  0.01479666 0.5115663 0.2617001</span></span>
+<span><span class="co">## 5    ran_lvl_3  0.53343585 0.5029123 0.2529208</span></span>
+<span><span class="co">## 6    ran_lvl_4  0.46936460 0.4971271 0.2471353</span></span>
 <span><span class="co">## ----</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Making plots</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Making MCMC walks plots... </span></span>
 <span><span class="co">## Making effect parameter distribution plots... </span></span>
 <span><span class="co">## Making rate-count plots... </span></span>
 <span><span class="co">## Making time series plots... </span></span>
-<span><span class="co">## Making parameter plots... </span></span>
-<span><span class="co">## Making parameter plots... </span></span>
-<span><span class="co">## Making parameter plots... </span></span>
-<span><span class="co">## Making parameter plots... </span></span>
-<span><span class="co">## Making parameter plots... </span></span>
 <span><span class="co">## Making parameter plots...</span></span></code></pre>
 <p>Now, let’s plot the age-effect parameters again, this time with the
 median estimate from the MCMC walk highlighted:</p>
@@ -734,7 +703,7 @@ median estimate from the MCMC walk highlighted:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span></span>
 <span>  <span class="va">model_median</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">plot_treatment_18_cortex_Rorb</span> <span class="op">+</span> </span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/expansion.html" class="external-link">expansion</a></span><span class="op">(</span>mult <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">means</span><span class="op">)</span>, shape <span class="op">=</span> <span class="fl">8</span>, size <span class="op">=</span> <span class="fl">4</span>, stroke <span class="op">=</span> <span class="fl">2</span>, color <span class="op">=</span> <span class="st">"black"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">means</span><span class="op">)</span>, shape <span class="op">=</span> <span class="fl">8</span>, size <span class="op">=</span> <span class="fl">4</span>, stroke <span class="op">=</span> <span class="fl">2</span>, color <span class="op">=</span> <span class="st">"black"</span>,  na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">means</span><span class="op">)</span>, shape <span class="op">=</span> <span class="fl">8</span>, size <span class="op">=</span> <span class="fl">4</span>, stroke <span class="op">=</span> <span class="fl">1</span>, color <span class="op">=</span> <span class="st">"yellow"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_stats_files/figure-html/plot_RORB_median-1.png" class="r-plt" alt="" width="700"></p>
@@ -836,6 +805,7 @@ plotting a few randomly chosen distributions:</p>
 <p>A natural question to ask concerns the false-positive rate,
 false-discovery rate, and power of the bootstrap-based hypothesis
 testing. This question is addressed in the <a href="tutorial_benchmarks.html">benchmarking tutorial</a>.</p>
+
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>

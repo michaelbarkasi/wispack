@@ -4,12 +4,24 @@
 \alias{model_attractor_simulation_wisp}
 \title{Function to model simulation with wisp}
 \usage{
-model_attractor_simulation_wisp(sim, sim_num, bs_num = 1000, max_fork = 1)
+model_attractor_simulation_wisp(
+  sim,
+  sim_num,
+  LRO_cost = "none",
+  bs_num = 1000,
+  max_fork = 1
+)
 }
 \arguments{
 \item{sim}{A list object returned by the \code{attractor_simulation} function, containing the simulation data and parameters.}
 
 \item{sim_num}{An integer specifying the simulation number for setting the random seed and labeling results.}
+
+\item{LRO_cost}{Passed to the \code{wisp} function. Character string giving cost function to use when evaluating likelihood-ratio outlier (LRO) parameters for testing for expression-rate transition points in the data ("AIC", "BIC", "NLL"; anything else defaults to the hand-specified LROcutoff and LROwindow_factor).}
+
+\item{bs_num}{An integer specifying the number of bootstrap resamples to run.}
+
+\item{max_fork}{An integer specifying the number of forks to run when computing bootstraps in parallel. For Windows, must be 1.}
 }
 \value{
 A data frame containing the estimated values (\code{est}), ground-truth values (\code{true}), parameter types (\code{param}), parameter-associated gene or replicate (\code{id}), modeling method used (\code{method}), and simulation number (\code{sim}).

@@ -153,3 +153,14 @@ void vprintV(
       Rcpp::Rcout << std::endl;
     } 
   }
+
+// Function for printing vectors, with leading message
+void vprintMV(
+    const std::string& lead, 
+    const CharacterVector& message,
+    bool verbose
+  ) {
+    if (verbose) {
+      Rcpp::Rcout << lead << ": " << message << std::endl;
+    }
+  }

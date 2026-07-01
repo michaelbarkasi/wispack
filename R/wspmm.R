@@ -18,18 +18,66 @@ NULL
 #' This function takes a data frame of wisp variables (as columns) and fits a wisp model to it. Statistical analyses and plots are generated from the fitted model.
 #'
 #' @param count.data Data.frame, data to be modeled, with columns for model variables (count, bin, context, species, ran, fixedeffects), or equivalent variables as specified in the \code{variables} argument.
-#' @param variables List, names of the columns in \code{count.data} that correspond to the model variables. The list should contain only (but not necessarily all) named elements: \code{count}, \code{bin}, \code{context}, \code{species}, \code{ran}, and \code{fixedeffects}.
-#' @param fit_only Logical, if TRUE, only fits the model to the full data set using L-BFGS and returns the fitted model without running MCMC or bootstrapping; if FALSE, runs MCMC and/or bootstrapping to estimate parameter uncertainty.
-#' @param use.median Logical, if TRUE, the median of the resamples is used as the final parameter estimates; if FALSE, the initial fit by L-BFGS is used.
+#' @param variables List, names of the columns in \code{count.data} that correspond to the model variables. The list should contain only (but not necessarily all) named elements: \code{count}, \code{bin}, \code{context}, \code{species}, \code{ran}, \code{timeseries}, and \code{fixedeffects}.
+#' @param fit_only Logical, if TRUE, only fits the model to the full data set using L-BFGS and returns the fitted model without running resampling (MCMC or bootstrapping); if FALSE, runs MCMC and/or bootstrapping to estimate parameter uncertainty.
+#' @param use.median Logical, if TRUE, the median of the resamples is used as the final parameter estimates; if FALSE, the fit by L-BFGS on the full, original data is used.
 #' @param bootstraps.num Integer, number of bootstrap resamples to perform. If 0, only MCMC is run.
 #' @param converged.resamples.only Logical, if TRUE, only resamples with a converged fit are used for statistical analysis; if FALSE, all resamples are used. Applies only to bootstraps. 
-#' @param max.fork Integer, maximum number of parallel processes to use for bootstrapping.
+#' @param max.fork Integer, maximum number of parallel processes to use for bootstrapping. Applies only on Mac and Linux. Must be 1 for windows.
 #' @param verbose Logical, if TRUE, prints information during the fitting process.
-#' @param model.settings List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LRO_cost}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, \code{warp_precision}, \code{round_none}, \code{trtKO}, and \code{max_bin}. Default values are provided.
-#' @param MCMC.settings List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.
-#' @param plot.settings List, settings for plots to make, including \code{print.plots}, \code{dim.bounds}, \code{log.scale}, \code{splitting_factor}, \code{CI_style}, \code{splitting_factor_colors}, \code{label_size}, \code{title_size}, \code{axis_size}, \code{legend_size}, \code{count_size}, \code{count_jitter}, \code{count.alpha.ran}, \code{count.alpha.none}, \code{pred.alpha.ran}, and \code{pred.alpha.none}. Default values are provided.
-#' @param ran.seed Integer, random seed for reproducibility. If NULL, no seed is set. Default is 1234.
-#' @return List giving the results of the fitted model, including: \code{model.component.list}, \code{count.data.summed}, \code{fitted.parameters}, \code{gamma.disperson}, \code{param.names}, \code{fix}, \code{treatment}, \code{grouping.variables}, \code{param.idx0}, \code{settings}, \code{sample.params.type}, \code{sample.params.bs}, \code{sample.params.MCMC}, \code{diagnostics.bs}, \code{diagnostics.MCMC}, \code{stats}, and \code{plots}
+#' @param model.settings List, settings for the C++ model, including: \itemize{
+#'    \item \code{buffer_factor} = 0.05: The minimum distance between t-points must be this proportion of \code{max_bin}.
+#'    \item \code{ctol} = 1e-6: Convergence tolerance for L-BFGS.
+#'    \item \code{max_penalty_at_distance_factor} = 0.01: Maximum penalty applied to negative log-likelihood when at a non-trivial distance from parameter bounds.
+#'    \item \code{LRO_cost} = "AIC": Character string giving cost function to use when evaluating likelihood-ratio outlier (LRO) parameters for testing for expression-rate transition points in the data ("AIC", "BIC", "NLL"; anything else defaults to the hand-specified LROcutoff and LROwindow_factor).
+#'    \item \code{LROcutoff} = 2.0: Cutoff used in the \code{LROcp_find} function, a multiple of standard deviation. Specifically, each point is evaluated as the ratio of the likelihood of the data on a model with a transition point to the likelihood of the data on a model without a change point. A point is taken to be a transition point only if this ratio is more than this number of standard deviations above the mean across all points.  
+#'    \item \code{LROwindow_factor} = 1.25: controls size of window used in \code{LROcp_find} algorithm (window = LROwindow_factor X bin_num X buffer_factor)
+#'    \item \code{rise_threshold_factor} = 0.8: Amount of detected rise as fraction of total required to end run when making initial estimates of transition-point slopes. 
+#'    \item \code{max_evals} = 1000: Maximum number of evaluations for optimization, when using L-BFGS. 
+#'    \item \code{rng_seed} = 42: Seed for random number generator used internal to C++.
+#'    \item \code{warp_precision} = 1e-7: Decimal precision to retain when selecting really big number as pseudo infinity for unbound warping.
+#'    \item \code{round_none} = TRUE: Logical specifying whether to round extrapolated counts for "none" (no random effect) to nearest integer. 
+#'    \item \code{trtKO} = c("none"): List of effect names to remove from the model, e.g., model without the Factor1 x Factor2 interaction. Must match one of the treatment levels of the full model. 
+#'    \item \code{max_bin} = 0.0: Largest bin number; if left zero, will infer from count data
+#'    }
+#' @param MCMC.settings List, settings for the MCMC simulation, including: \itemize{
+#'    \item \code{MCMC.burnin} = 1e2: Number of random-walk steps to take to find the optimal parameters. If zero, will start the walk from the L-BFGS parameters.
+#'    \item \code{MCMC.steps} = 1e3: Number of random-walk steps to take when resampling parameters. 
+#'    \item \code{MCMC.step.size} = 0.5: Standard deviation of the normal distribution controlling random-walk step size. 
+#'    \item \code{MCMC.prior} = 1.0: Prior to compute the Bayesian update controlling step acceptance. 
+#'    \item \code{MCMC.neighbor.filter} = 1: Will only save every this-many steps as a resample. 
+#'    }
+#' @param plot.settings List, settings for plots to make, including: \itemize{
+#'    \item \code{print.plots} = TRUE: Logical indicating whether to print plots as they are produced during the model fit. 
+#'    \item \code{dim.bounds} = Vector of bins; if non-empty, rate-count plots will plot vertical dot-dashed lines as these coordinates to indicate a prior-known boundary along the spatial dimension. Note that these values are not used in any way during the model fit itself. 
+#'    \item \code{log.scale} = False: Logical indicating whether plots should show the log of expression-rate values (plus 1). 
+#'    \item \code{splitting_factor} = c(): Name of a fixed-effect factor. Must be either empty or length 1. If provided, rate-count and time-series plots will determine the color hue of treatment levels by the value of this fixed-effect in that level. Within splitting factor levels, the other fixed-effect factor level determines color brightness. Note that this splitting-factor color scheme only has an effect if there are exactly two fixed-effect levels (one of which can be a time series, but the splitting factor itself cannot be a time series). 
+#'    \item \code{CI_style} = TRUE: Logical indicating whether rate-count plots should show (TRUE:) predicted treatment-level expression rates free of individual effects plus shading showing 95% confidence invervals, or (FALSE:) observed data as points, plus fitted treatment-level expression rates for both individual samples and predictions free of individual effects. 
+#'    \item \code{splitting_factor_colors} = c(120, 240): Vector of two integers (range 0:360) giving the hue of each level of the splitting factor. 
+#'    \item \code{label_size}, \code{title_size}, \code{axis_size}, \code{legend_size}, \code{count_size}: Controls for plot element sizes. 
+#'    \item \code{count_jitter} = 0.5: Scale of jitter to apply when plotting data for a given input. 
+#'    \item \code{count.alpha.ran}, \code{count.alpha.none}, \code{pred.alpha.ran}, and \code{pred.alpha.none}: Controls for plot element alpha-levels. 
+#'    }
+#' @param ran.seed = 1234: Integer, random seed for reproducibility. Used within R. If NULL, no seed is set. Default is 1234.
+#' @return List giving the results of the fitted model, including: \itemize{
+#'    \item \code{model.component.list} = {"Rt", "tslope", "tpoint"}: Character vector giving the main model components; always "Rt" = rate, "tslope" = transition-point slope, and "tpoint" = transition-point location. 
+#'    \item \code{count.data.summed}: Data frame of the fitted data. There is one row per combination of spatial bin, fixed effects, and random effects. Contains columns for \code{bin}, \code{count} (sum of spots with a given species label), \code{pred} (predicted rate), \code{count.log} log of the count, plus one, \code{pred.log} (log of predicted rate plus one), \code{context}, \code{species}, \code{ran} (random-effect level), and \code{treatment} (treatment level). 
+#'    \item \code{fitted.parameters}: Vector of all fitted model parameters. 
+#'    \item \code{gamma.disperson}: Matrix giving the estimated gamma dispersion of the gamma-convolved Poisson model. 
+#'    \item \code{param.names}: Names of the model parameters, matching the order of \code{fitted.parameters}. 
+#'    \item \code{fix}: List containing four elements: \code{names} (names of fixed-effect factors), \code{lvls} (list, each element the names of the levels of a fixed-effect factor), \code{treat.lvl} (as before, but excluding reference levels), and \code{ref.lvl} (as before, but containing only the reference-level).
+#'    \item \code{treatment}: List with two elements: \code{names} (names of the treatment levels) and \code{components} (list, each element the names of the fixed-effect factor levels constituting that treatment level).
+#'    \item \code{grouping.variables}: List containing character vectors \code{context.lvls}, \code{species.lvls}, and \code{ran.lvls} holding, respectively, the grouping levels of the context, species, and random-effect grouping variabes. 
+#'    \item \code{param.idx0}: List containing zero-indexed index values for \code{fitted.parameters} for different combinations of treatment levels and grouping factors. 
+#'    \item \code{settings}: A copy of the original model settings provided to the \code{wisp} function. 
+#'    \item \code{sample.params.type}: A character string, "bs" or "MCMC", specifies which type of resamples were used to compute stats. 
+#'    \item \code{sample.params.bs}: A data frame giving the resampled parameters from bootstrapping (if any). 
+#'    \item \code{sample.params.MCMC}: A data frame giving the resampled parameters from the MCMC resampling (if any). 
+#'    \item \code{diagnostics.bs}: Diagnostic information for each bootstrap resample. 
+#'    \item \code{diagnostics.MCMC}: Diagnostic information for each MCMC random-walk step (i.e., resample). 
+#'    \item \code{stats}: List containing a main data frame \code{parameters} with the results (p-values, estimate, confidence intervals, etc) of the statistical analysis of the model parameters, plus data frames holding model residuals. 
+#'    \item \code{plots}: List containing whatever plots where generated during the model fit.
+#'    }
 #' @export
 wisp <- function(
     count.data, 
@@ -84,21 +132,21 @@ wisp <- function(
     
     # Parse variable names
     # ... names of columns in count.data giving each model variable
-    variables.internal <- list( 
-      count = "count",
-      bin = "bin", 
-      context = "context", 
-      species = "species",
-      ran = "ran",
-      timeseries = "timeseries", 
+    vars <- list( 
+      count        = "count",
+      bin          = "bin", 
+      context      = "context", 
+      species      = "species",
+      ran          = "ran",
+      timeseries   = "timeseries", 
       fixedeffects = c()
     )
     # ... check that provided variables is a list with valid names
-    variables.names <- check_list(variables, variables.internal)
+    variables.names <- check_list(variables, vars)
     variables.names <- variables.names[variables.names != "fixedeffects" & variables.names != "timeseries"] 
     # ... load 
     for (v in names(variables)) {
-      variables.internal[[v]] <- variables[[v]]
+      vars[[v]] <- variables[[v]]
     }
     
     # Relabel and rearrange data columns 
@@ -108,31 +156,31 @@ wisp <- function(
     }
     # ... check for context, species, and ran in data frame
     check_col <- function(c_name, var, dat) {
-      oldn <- colnames(dat)
+      coln <- colnames(dat)
       # if column name provided ...
       if (c_name %in% names(var)) {
         # ... but not in dataframe
-        if (!(var[[c_name]] %in% oldn)) {
+        if (!(var[[c_name]] %in% coln)) {
           # ... then add column repping the provided name
-          oldn <- c(oldn, var[[c_name]])
-          dat <- cbind(dat, rep(var[[c_name]], nrow(dat)))
+          coln <- c(coln, var[[c_name]])
+          dat  <- cbind(dat, rep(var[[c_name]], nrow(dat)))
         }
       } else { # if no column name provided ...
         # ... and the default name is not in dataframe
-        if (!(c_name %in% oldn)) {
+        if (!(c_name %in% coln)) {
           # ... then add the default as a column repping c_name
-          oldn <- c(oldn, c_name)
-          dat <- cbind(dat, rep(c_name, nrow(dat)))
+          coln <- c(coln, c_name)
+          dat  <- cbind(dat, rep(c_name, nrow(dat)))
         }
       }
-      colnames(dat) <- oldn
+      colnames(dat) <- coln
       return(dat)
     }
     for (cn in c("context", "species", "ran")) {
       count.data <- check_col(cn, variables, count.data)
-      old_names <- colnames(count.data)
+      old_names  <- colnames(count.data)
     }
-    ordered_cols <- unlist(variables.internal[variables.names])
+    ordered_cols <- unlist(vars[variables.names])
     # ... check for count and bin columns
     if (!all(ordered_cols %in% old_names)) {
       stop(
@@ -143,53 +191,53 @@ wisp <- function(
       )
     }
     # ... parse fixed effects
-    if (length(variables.internal$fixedeffects) == 0) {
+    if (length(vars$fixedeffects) == 0) {
       # ... extract fixed effect names (if any), if not given
       fe_cols <- !(old_names %in% ordered_cols)
       if (sum(fe_cols) > 0) {
-        variables.internal$fixedeffects <- old_names[fe_cols]
+        vars$fixedeffects <- old_names[fe_cols]
       } 
     } else {
       # ... if fixed effects name given, load
-      fe_cols <- old_names %in% variables.internal$fixedeffects
-      if (!all(variables.internal$fixedeffects %in% old_names)) {
+      fe_cols <- old_names %in% vars$fixedeffects
+      if (!all(vars$fixedeffects %in% old_names)) {
         stop(
           paste0(
             "Not all fixed effect names found as column names in count.data, missing: ", 
-            paste(variables.internal$fixedeffects[!(variables.internal$fixedeffects %in% old_names)], collapse = ", ")
+            paste(vars$fixedeffects[!(vars$fixedeffects %in% old_names)], collapse = ", ")
           )
         )
       }
     } 
     
     # Update the time series column, if any
-    timeseries_mask <- old_names == variables.internal$timeseries
+    timeseries_mask <- old_names == vars$timeseries
     # ... if timeseries is null, mask has length zero and nothing will happen on next line
     old_names[timeseries_mask] <- "timeseries"
     # Update count data 
-    new_names <- c(variables.names, old_names[fe_cols])
-    data <- cbind(count.data[,ordered_cols], count.data[,fe_cols])
+    new_names      <- c(variables.names, old_names[fe_cols])
+    data           <- cbind(count.data[,ordered_cols], count.data[,fe_cols])
     colnames(data) <- new_names
     
     # Parse model settings 
     # ... define default values
-    model.settings.internal <- list(
-      buffer_factor = 0.05,                       # buffer factor for minimum distance between t-points
-      ctol = 1e-6,                                # convergence tolerance
-      max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from parameter bounds
-      LRO_cost = "AIC",                           # character string giving cost to use when evaluating LRO parameters ("AIC", "BIC", "NLL"; anything else defaults to LROcutoff and LROwindow_factor)
-      LROcutoff = 2.0,                            # cutoff for LROcp, a multiple of standard deviation
-      LROwindow_factor = 1.25,                    # controls size of window used in LROcp algorithm (window = LROwindow_factor * bin_num * buffer_factor)
-      rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
-      max_evals = 1000,                           # maximum number of evaluations for optimization
-      rng_seed = 42,                              # seed for random number generator
-      warp_precision = 1e-7,                      # decimal precision to retain when selecting really big number as pseudo infinity for unbound warping
-      round_none = TRUE,                          # round extrapoloted counts for "none" (no random effect) to nearest integer? 
-      trtKO = c("none"),                          # list of effect names to remove from the model, e.g., model without the Factor1 x Factor2 interaction.
-      max_bin = 0.0                               # Largest bin number; if left zero, will infer from count data
+    sets <- list(
+      buffer_factor                  = 0.05,                       
+      ctol                           = 1e-6,                                
+      max_penalty_at_distance_factor = 0.01,      
+      LRO_cost                       = "AIC",                           
+      LROcutoff                      = 2.0,                            
+      LROwindow_factor               = 1.25,                    
+      rise_threshold_factor          = 0.8,                
+      max_evals                      = 1000,                           
+      rng_seed                       = 42,                              
+      warp_precision                 = 1e-7,                      
+      round_none                     = TRUE,                          
+      trtKO                          = c("none"),                          
+      max_bin                        = 0.0                               
     )
     # ... check that provided model.settings is a list with valid names
-    model.settings.names <- check_list(model.settings, model.settings.internal)
+    model.settings.names <- check_list(model.settings, sets)
     # ... check and load values
     for (s in names(model.settings)) {
       ms <- model.settings[[s]]
@@ -218,44 +266,44 @@ wisp <- function(
         }
       }
       # ... load value 
-      model.settings.internal[[s]] <- ms
+      sets[[s]] <- ms
     }
     
     # Add inf_warp 
-    model.settings.internal$inf_warp <- model.settings.internal$warp_precision / .Machine$double.eps
+    sets$inf_warp <- sets$warp_precision / .Machine$double.eps
     
     # Parse plot settings 
-    plot.settings.internal <- list(
-      print.plots = TRUE,
-      dim.bounds = c(), 
-      log.scale = FALSE,
-      splitting_factor = NULL,
-      CI_style = TRUE,
+    plotset <- list(
+      print.plots             = TRUE,
+      dim.bounds              = c(), 
+      log.scale               = FALSE,
+      splitting_factor        = c(),
+      CI_style                = TRUE,
       splitting_factor_colors = c(120, 240), 
-      label_size = 5.5,
-      title_size = 20,
-      axis_size = 12, 
-      legend_size = 10,
-      count_size = 1.5,
-      count_jitter = 0.5,
-      count.alpha.ran = 0.25,
-      count.alpha.none = 0.25,
-      pred.alpha.ran = 0.9,
-      pred.alpha.none = 1.0
+      label_size              = 5.5,
+      title_size              = 20,
+      axis_size               = 12, 
+      legend_size             = 10,
+      count_size              = 1.5,
+      count_jitter            = 0.5,
+      count.alpha.ran         = 0.25,
+      count.alpha.none        = 0.25,
+      pred.alpha.ran          = 0.9,
+      pred.alpha.none         = 1.0
     )
     # ... check that provided plot.settings is a list with valid names 
-    plot.settings.names <- check_list(plot.settings, plot.settings.internal)
+    plot.settings.names <- check_list(plot.settings, plotset)
     # ... check and load values 
     for (s in names(plot.settings)) {
-      plot.settings.internal[[s]] <- plot.settings[[s]]
+      plotset[[s]] <- plot.settings[[s]]
     }
     
     # Parse MCMC settings
-    MCMC.settings.internal <- list(
-      MCMC.burnin = 1e2,
-      MCMC.steps = 1e3,
-      MCMC.step.size = 0.5,
-      MCMC.prior = 1.0, 
+    MCMCset <- list(
+      MCMC.burnin          = 1e2,
+      MCMC.steps           = 1e3,
+      MCMC.step.size       = 0.5,
+      MCMC.prior           = 1.0, 
       MCMC.neighbor.filter = 1
     )
     if (!fit_only) {
@@ -269,7 +317,7 @@ wisp <- function(
       } 
       
       # ... check that provided MCMC.settings is a list with valid names
-      MCMC.settings.names <- check_list(MCMC.settings, MCMC.settings.internal)
+      MCMC.settings.names <- check_list(MCMC.settings, MCMCset)
       # ... check and load values
       for (s in names(MCMC.settings)) {
         ms <- MCMC.settings[[s]]
@@ -281,28 +329,28 @@ wisp <- function(
           warning(paste0("Consider setting MCMC.settings$", s, " below 2.0"))
         } 
         # ... load value 
-        MCMC.settings.internal[[s]] <- ms
+        MCMCset[[s]] <- ms
       }
       
       if (verbose) {
-        snk.report("Parsing data and settings for wisp model")
-        snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 1)
-        snk.print_var_list("Model settings", model.settings.internal, vert = TRUE, end_breaks = 1)
-        snk.print_var_list("Plot settings", plot.settings.internal, vert = TRUE, end_breaks = 1)
-        snk.print_var_list("MCMC settings", MCMC.settings.internal, vert = TRUE, end_breaks = 1)
-        snk.print_var_list("Variable dictionary", variables.internal, vert = TRUE, end_breaks = 1)
-        snk.print_table("Parsed data", data, end_breaks = 0)
+        snk.report("Parsing data and settings for wisp model", initial_breaks = 1)
+        snk.horizontal_rule(reps = snk.simple_break_reps,                end_breaks = 1)
+        snk.print_var_list("Model settings",      sets,     vert = TRUE, end_breaks = 1)
+        snk.print_var_list("Plot settings",       plotset,  vert = TRUE, end_breaks = 1)
+        snk.print_var_list("MCMC settings",       MCMCset,  vert = TRUE, end_breaks = 1)
+        snk.print_var_list("Variable dictionary", vars,     vert = TRUE, end_breaks = 1)
+        snk.print_table("Parsed data",            data,                  end_breaks = 0)
       }
       
     } else {
       
       if (verbose) {
-        snk.report("Parsing data and settings for wisp model")
-        snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 1)
-        snk.print_var_list("Model settings", model.settings.internal, vert = TRUE, end_breaks = 1)
-        snk.print_var_list("Plot settings", plot.settings.internal, vert = TRUE, end_breaks = 1)
-        snk.print_var_list("Variable dictionary", variables.internal, vert = TRUE, end_breaks = 1)
-        snk.print_table("Parsed data", data, end_breaks = 0)
+        snk.report("Parsing data and settings for wisp model", initial_breaks = 1)
+        snk.horizontal_rule(reps = snk.simple_break_reps,                end_breaks = 1)
+        snk.print_var_list("Model settings",      sets,     vert = TRUE, end_breaks = 1)
+        snk.print_var_list("Plot settings",       plotset,  vert = TRUE, end_breaks = 1)
+        snk.print_var_list("Variable dictionary", vars,     vert = TRUE, end_breaks = 1)
+        snk.print_table("Parsed data",            data,                  end_breaks = 0)
       }
       
     }
@@ -312,7 +360,7 @@ wisp <- function(
       snk.report("Initializing Cpp (wspc) model")
       snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 1)
     }
-    cpp_model <- new(wspc, data, model.settings.internal, verbose)
+    cpp_model <- new(wspc, data, sets, verbose)
     
     if (verbose) {
       snk.report("Running LRO change-point detection and setting initial parameters", initial_breaks = 1)
@@ -336,21 +384,20 @@ wisp <- function(
       
       # Fit model and grab results
       cpp_model$fit(verbose)
-      results <- cpp_model$results()
-      results[["Cpp_model"]] <- cpp_model
-      results[["plot.settings"]] <- plot.settings.internal
+      results                    <- cpp_model$results()
+      results[["plot.settings"]] <- plotset
       
       # Make rate plots 
       plots.ratecount <- plot.ratecount(
         wisp.results       = results,
-        log.scale          = plot.settings.internal$log.scale,
-        print.plots        = plot.settings.internal$print.plots,
-        CI_style           = plot.settings.internal$CI_style,
-        dim.boundaries     = plot.settings.internal$dim.bounds,
-        count.alpha.none   = plot.settings.internal$count.alpha.none,
-        count.alpha.ran    = plot.settings.internal$count.alpha.ran,
-        pred.alpha.none    = plot.settings.internal$pred.alpha.none,
-        pred.alpha.ran     = plot.settings.internal$pred.alpha.ran,
+        log.scale          = plotset$log.scale,
+        print.plots        = plotset$print.plots,
+        CI_style           = plotset$CI_style,
+        dim.boundaries     = plotset$dim.bounds,
+        count.alpha.none   = plotset$count.alpha.none,
+        count.alpha.ran    = plotset$count.alpha.ran,
+        pred.alpha.none    = plotset$pred.alpha.none,
+        pred.alpha.ran     = plotset$pred.alpha.ran,
         verbose            = verbose
       )
       
@@ -358,9 +405,9 @@ wisp <- function(
       if (any(timeseries_mask)) {
         plots.timeseries <- plot.timeseries(
           wisp.results     = results,
-          splitting_factor = plot.settings.internal$splitting_factor,
-          log.scale        = plot.settings.internal$log.scale,
-          print.plots      = plot.settings.internal$print.plots,
+          splitting_factor = plotset$splitting_factor,
+          log.scale        = plotset$log.scale,
+          print.plots      = plotset$print.plots,
           verbose          = verbose
         )
       } else {
@@ -382,26 +429,26 @@ wisp <- function(
       }
       
       # Run MCMC simulation
-      if (MCMC.settings.internal$MCMC.steps > 0) {
+      if (MCMCset$MCMC.steps > 0) {
         
         if (verbose) snk.report("Running MCMC stimulations", end_breaks = 1)
         start_time_MCMC <- Sys.time()
         MCMC_walk <- cpp_model$MCMC(
-          MCMC.settings.internal$MCMC.burnin,
-          MCMC.settings.internal$MCMC.steps, 
-          MCMC.settings.internal$MCMC.neighbor.filter,
-          MCMC.settings.internal$MCMC.step.size,
-          MCMC.settings.internal$MCMC.prior,
-          MCMC.settings.internal$MCMC.burnin == 0, # If no burnin, start from parameters found with gradient descent
+          MCMCset$MCMC.burnin,
+          MCMCset$MCMC.steps, 
+          MCMCset$MCMC.neighbor.filter,
+          MCMCset$MCMC.step.size,
+          MCMCset$MCMC.prior,
+          MCMCset$MCMC.burnin == 0, # If no burnin, start from parameters found with gradient descent
           use.median,
           verbose 
         )
-        run_time_MCMC <- Sys.time() - start_time_MCMC
+        rtMCMC <- Sys.time() - start_time_MCMC
         if (verbose) {
           snk.report...("MCMC simulation complete")
-          snk.print_vec("MCMC run time (total), minutes", c(as.numeric(run_time_MCMC, units = "mins")))
-          snk.print_vec("MCMC run time (per retained step), seconds", c(as.numeric(run_time_MCMC, units = "secs") / (MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin)))
-          snk.print_vec("MCMC run time (per step), seconds", c((as.numeric(run_time_MCMC, units = "secs") / (MCMC.settings.internal$MCMC.steps + MCMC.settings.internal$MCMC.burnin))/MCMC.settings.internal$MCMC.neighbor.filter), end_breaks = 0)
+          snk.print_vec("MCMC run time (total), minutes",             c( as.numeric(rtMCMC, units = "mins")))
+          snk.print_vec("MCMC run time (per retained step), seconds", c( as.numeric(rtMCMC, units = "secs") / (MCMCset$MCMC.steps + MCMCset$MCMC.burnin)))
+          snk.print_vec("MCMC run time (per step), seconds",          c((as.numeric(rtMCMC, units = "secs") / (MCMCset$MCMC.steps + MCMCset$MCMC.burnin)) / MCMCset$MCMC.neighbor.filter), end_breaks = 0)
         }
         
         # Save MCMC estimates and diagnostics
@@ -416,11 +463,16 @@ wisp <- function(
         
       } else {
         sample.params.MCMC <- NULL
-        diagnostics.MCMC <- NULL
+        diagnostics.MCMC   <- NULL
       }
       
       # Run bootstrap fits
       if (bootstraps.num > 0) {
+        
+        # Check if MCMC was run, and, if so, reset initial parameters
+        if (MCMCset$MCMC.steps > 0) {
+          cpp_model$LRO_initial_param_ests(FALSE, 0.0, 0.0)
+        }
         
         start_time_bs <- Sys.time()
         if (verbose) snk.report("Running bootstrap fits", end_breaks = 1)
@@ -430,12 +482,12 @@ wisp <- function(
           use.median,
           verbose
         )
-        run_time_bs <- Sys.time() - start_time_bs
+        rtbs <- Sys.time() - start_time_bs
         if (verbose) {
           snk.report...("Bootstrap simulation complete")
-          snk.print_vec("Bootstrap run time (total), minutes", c(as.numeric(run_time_bs, units = "mins")))
-          snk.print_vec("Bootstrap run time (per sample), seconds", c(as.numeric(run_time_bs, units = "secs") / bootstraps.num))
-          snk.print_vec("Bootstrap run time (per sample, per thread), seconds", c(as.numeric(run_time_bs, units = "secs") * max.fork / bootstraps.num), end_breaks = 0)
+          snk.print_vec("Bootstrap run time (total), minutes",                  c(as.numeric(rtbs, units = "mins")))
+          snk.print_vec("Bootstrap run time (per sample), seconds",             c(as.numeric(rtbs, units = "secs") / bootstraps.num))
+          snk.print_vec("Bootstrap run time (per sample, per thread), seconds", c(as.numeric(rtbs, units = "secs") * max.fork / bootstraps.num), end_breaks = 0)
         }
         
         # Save bs estimates and diagnostics
@@ -453,24 +505,26 @@ wisp <- function(
         diagnostics.bs   <- NULL
       }
       
-      # Set resamples for analysis 
+      # Set resamples for analysis and take predicted values
       if (is.null(sample.params.bs) && !is.null(sample.params.MCMC)) {
         sample.params.type <- "MCMC"
+        pred_values <- cpp_model$predict_rates_batch(as.matrix(sample.params.MCMC))
       } else if (!is.null(sample.params.bs)) {
         sample.params.type <- "bs"
+        pred_values <- cpp_model$predict_rates_batch(as.matrix(sample.params.bs))
       } else {
         stop("If not running MCMC or bootstrapping, set fit_only = TRUE")
       }
       
       # Grab model results and add samples
       results <- cpp_model$results()
-      results[["plot.settings"]] <- plot.settings.internal
-      results[["Cpp_model"]] <- cpp_model
+      results[["plot.settings"]]      <- plotset
       results[["sample.params.type"]] <- sample.params.type
       results[["sample.params.bs"]]   <- sample.params.bs
       results[["sample.params.MCMC"]] <- sample.params.MCMC
       results[["diagnostics.bs"]]     <- diagnostics.bs
       results[["diagnostics.MCMC"]]   <- diagnostics.MCMC
+      results[["pred_values"]]        <- pred_values
       
       # Run statistical analysis ####
       
@@ -492,12 +546,17 @@ wisp <- function(
       
       # Make plots of results ####
       
+      if (verbose) {
+        snk.report("Making plots", initial_breaks = 1)
+        snk.horizontal_rule(reps = snk.simple_break_reps)
+      }
+      
       # Plot MCMC walks, both parameters and negloglik
       if (!is.null(diagnostics.MCMC)) {
         
         plots.MCMC <- plot.MCMC.walks(
           wisp.results   = results,
-          print.plots    = plot.settings.internal$print.plots,
+          print.plots    = plotset$print.plots,
           verbose        = verbose
         )
         
@@ -505,7 +564,7 @@ wisp <- function(
         if (bootstraps.num != 0) {
           plots.MCMC.bs.comparison <- plot.MCMC.bs.comparison(
             wisp.results = results,
-            print.plots  = plot.settings.internal$print.plots,
+            print.plots  = plotset$print.plots,
             verbose      = verbose
           )
         } else {
@@ -520,21 +579,21 @@ wisp <- function(
       # Plot effect parameter distribution
       plots.effect.dist <- plot.effect.dist(
         wisp.results     = results,
-        print.plots      = plot.settings.internal$print.plots,
+        print.plots      = plotset$print.plots,
         verbose          = verbose
       )
       
       # Make rate plots 
       plots.ratecount <- plot.ratecount(
         wisp.results     = results,
-        log.scale        = plot.settings.internal$log.scale,
-        print.plots      = plot.settings.internal$print.plots,
-        CI_style         = plot.settings.internal$CI_style,
-        dim.boundaries   = plot.settings.internal$dim.bounds,
-        count.alpha.none = plot.settings.internal$count.alpha.none,
-        count.alpha.ran  = plot.settings.internal$count.alpha.ran,
-        pred.alpha.none  = plot.settings.internal$pred.alpha.none,
-        pred.alpha.ran   = plot.settings.internal$pred.alpha.ran,
+        log.scale        = plotset$log.scale,
+        print.plots      = plotset$print.plots,
+        CI_style         = plotset$CI_style,
+        dim.boundaries   = plotset$dim.bounds,
+        count.alpha.none = plotset$count.alpha.none,
+        count.alpha.ran  = plotset$count.alpha.ran,
+        pred.alpha.none  = plotset$pred.alpha.none,
+        pred.alpha.ran   = plotset$pred.alpha.ran,
         verbose          = verbose
       )
       
@@ -542,9 +601,9 @@ wisp <- function(
       if (any(timeseries_mask)) {
         plots.timeseries <- plot.timeseries(
           wisp.results     = results,
-          splitting_factor = plot.settings.internal$splitting_factor,
-          log.scale        = plot.settings.internal$log.scale,
-          print.plots      = plot.settings.internal$print.plots,
+          splitting_factor = plotset$splitting_factor,
+          log.scale        = plotset$log.scale,
+          print.plots      = plotset$print.plots,
           verbose          = verbose
         )
       } else {
@@ -552,6 +611,7 @@ wisp <- function(
       }
       
       # Make parameter plots 
+      if (verbose) snk.report...("Making parameter plots")
       plots.parameters <- do.call(
         c, 
         lapply(
@@ -560,7 +620,7 @@ wisp <- function(
             plot.parameters(
               wisp.results = results,
               species      = sps,
-              verbose      = verbose
+              verbose      = FALSE
             )
           }
         )
@@ -578,7 +638,7 @@ wisp <- function(
       )
       
       # Print summary plots
-      if (plot.settings.internal$print.plots) {
+      if (plotset$print.plots) {
         plot.species.summary(
           wisp.results = results,
           contexts     = c(),
@@ -590,8 +650,8 @@ wisp <- function(
     }
     
     # Add plots and metadata to results
-    results[["plots"]]         <- plots
-    results[["variables"]]     <- variables
+    results[["plots"]]     <- plots
+    results[["variables"]] <- variables
     
     cpp_model$clear_stan_mem()
     return(results)
@@ -615,21 +675,18 @@ pvalues.samples <- function(
   }
 
 # Helper function to remove non-converging bootstrap resamples prior to stat analysis
-prune_samples_by_convergence <- function(
+convergence_mask <- function(
     wisp.results,
-    threshold = 0.9,
-    verbose   = TRUE
+    threshold = 0.9
   ) {
-    n_conv  <- sum(wisp.results$diagnostics.bs$success.code == 3)
+    mask    <- wisp.results$diagnostics.bs$success.code == 3
+    n_conv  <- sum(mask)
     n_total <- nrow(wisp.results$diagnostics.bs)
-    if (n_conv / n_total < 0.9) {
+    if (n_conv / n_total < threshold) {
       warning_message <- paste0("Warning: Only ", n_conv, " out of ", n_total, " resamples converged to fit. Results may be unreliable.")
-      if (verbose) snk.report...(warning_message)
       warning(warning_message)
     } 
-    if (verbose) snk.report...("Grabbing sample results, only resamples with converged fit")
-    sampled_params <- wisp.results[[paste0("sample.params.", wisp.results$sample.params.type)]]
-    return(sampled_params[wisp.results$diagnostics.bs$success.code == 3,])
+    return(mask)
   }
 
 #' Estimate p-values and confidence intervals from resampled parameters
@@ -660,16 +717,17 @@ sample.stats <- function(
     
     # Run stats on results
     if (verbose) {
-      snk.report("Computing p-values and CI for model parameters", initial_breaks = 1)
+      snk.report("Computing p-values and CI for model parameters", initial_breaks = 2)
       snk.horizontal_rule(reps = snk.simple_break_reps)
     }
    
     # Grab results
-    if (conv.resamples.only) {
-      sampled_params <- prune_samples_by_convergence(wisp.results, verbose = verbose)
+    sampled_params <- wisp.results[[paste0("sample.params.", wisp.results$sample.params.type)]]
+    if (conv.resamples.only && wisp.results$sample.params.type == "bs") {
+      if (verbose) snk.report...("Grabbing sample results, only resamples with converged fit")
+      sampled_params <- sampled_params[convergence_mask(wisp.results),]
     } else {
       if (verbose) snk.report...("Grabbing sample results")
-      sampled_params <- wisp.results[[paste0("sample.params.", wisp.results$sample.params.type)]]
     }
     # ... check they exist
     if (length(sampled_params) == 0 || is.null(dim(sampled_params))) {
@@ -750,11 +808,9 @@ sample.stats <- function(
     if (verbose) snk.print_table("Stat summary", wisp.results[["stats"]][["parameters"]], head = TRUE, initial_breaks = 1)
     
     # Compute 95% CI for predicated values by bin 
-    if (verbose) {
-      snk.report("Computing 95% CI for predicated values by bin", initial_breaks = 1)
-      snk.horizontal_rule(reps = snk.simple_break_reps)
-    }
-    pred_values <- wisp.results[["Cpp_model"]]$predict_rates_batch(as.matrix(sampled_params))
+    if (verbose) {snk.report...("Computing 95% CI for predicated values by bin", initial_breaks = 1)}
+    pred_values <- wisp.results$pred_values
+    if (conv.resamples.only && wisp.results$sample.params.type == "bs") pred_values <- pred_values[,convergence_mask(wisp.results)]
     # ... ^^ columns contain predicted values for a given sampled parameter set, rows are bins interacting with covariates.
     # ... note: It doesn't make sense to "adjust" these CIs for multiple comparisons using Holm-Bonferroni, as there's
     #      no conversion from the number of parameters (which provide a basis for such adjustments) to the number of
@@ -905,16 +961,18 @@ analyze.residuals <- function(
     }
     
     if (verbose) snk.report...("Making plots and saving stats")
-    plots.residuals     <- list()
-    length(plots.residuals) <- 3 * length(mask_list)
-    names(plots.residuals) <- c(paste0(names(mask_list),"_qq"), paste0(names(mask_list),"_hist"), paste0(names(mask_list),"_resid"))
-    stats.residuals     <- as.data.frame(matrix(NA, nrow = length(mask_list), ncol = 4))
-    stats.residuals.log <- as.data.frame(matrix(NA, nrow = length(mask_list), ncol = 4))
+    plots.residuals               <- list()
+    length(plots.residuals)       <- 3 * length(mask_list)
+    names(plots.residuals)        <- c(paste0(names(mask_list),"_qq"), paste0(names(mask_list),"_hist"), paste0(names(mask_list),"_resid"))
+    stats.residuals               <- as.data.frame(matrix(NA, nrow = length(mask_list), ncol = 4))
+    stats.residuals.log           <- as.data.frame(matrix(NA, nrow = length(mask_list), ncol = 4))
+    colnames(stats.residuals)     <- c("group", "mean", "sd", "variance") 
+    colnames(stats.residuals.log) <- c("group", "mean", "sd", "variance") 
     for (gpi in seq_along(mask_list)) {
       gp <- names(mask_list)[gpi]
       
       # Basic histogram
-      df_wide <- na.omit(wisp.results$count.data.summed[mask_list[[gp]],])
+      df_wide          <- na.omit(wisp.results$count.data.summed[mask_list[[gp]],])
       hist_resids_plot <- ggplot(df_wide, aes(x=residuals.log)) +
         geom_histogram(bins = 50, fill = "steelblue", color = "black", na.rm = TRUE) + 
         labs(x = "Log-residual Value", y = "Frequency", title = paste0("Histogram of Log-residuals (",gp,")")) +
@@ -992,17 +1050,17 @@ analyze.residuals <- function(
 #' @rdname plot-ratecount
 #' @usage plot.ratecount(
 #'  wisp.results, 
-#'  log.scale = FALSE,
-#'  dim.boundaries = c(), 
-#'  print.plots = FALSE, 
-#'  y.lim = NA, 
+#'  log.scale        = FALSE,
+#'  dim.boundaries   = c(), 
+#'  print.plots      = FALSE, 
+#'  y.lim            = NA, 
 #'  count.alpha.none = NA, 
-#'  count.alpha.ran = NA, 
-#'  pred.alpha.none = NA, 
-#'  pred.alpha.ran = NA, 
-#'  rans.to.print = c(), 
-#'  species = c(), 
-#'  verbose = TRUE
+#'  count.alpha.ran  = NA, 
+#'  pred.alpha.none  = NA, 
+#'  pred.alpha.ran   = NA, 
+#'  rans.to.print    = c(), 
+#'  species          = c(), 
+#'  verbose          = TRUE
 #' )
 #' @param wisp.results List, output of the wisp function.
 #' @param log.scale Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.
@@ -1053,7 +1111,7 @@ plot.ratecount <- function(
     if (pred.type == "pred.log") {
       y_lab      <- "Rate (log scale)"
     }
-    if (sum(colnames(df) == pred.type) == 0) stop("pred.type not found in count.data.summed")
+    if (sum(colnames(df) == pred.type)  == 0) stop("pred.type not found in count.data.summed")
     if (sum(colnames(df) == count.type) == 0) stop("count.type not found in count.data.summed")
     
     # Convert CI, if needed
@@ -1105,10 +1163,10 @@ plot.ratecount <- function(
     )
     
     # Make color palettes for treatments
-    n_fe <- length(wisp.results$fix$names)
-    treatment_levels = wisp.results$treatment$names
+    n_fe                 <- length(wisp.results$fix$names)
+    treatment_levels     <- wisp.results$treatment$names
     treatment_components <- wisp.results$treatment$components
-    n_trt <- length(treatment_components)
+    n_trt                <- length(treatment_components)
     treatment_components[[1]] <- wisp.results$fix$ref.lvl
     if (n_trt > 1) {
       for (trt in c(2:n_trt)) {
@@ -1133,7 +1191,7 @@ plot.ratecount <- function(
           this_trt <- c()
           for (lvl in seq_along(fix_lvls_ordered)) {
             this_trt_mask <- fix_lvls_ordered[[lvl]] %in% treatment_components[[trt]]
-            this_trt <- c(this_trt, fix_lvls_ordered[[lvl]][this_trt_mask])
+            this_trt      <- c(this_trt, fix_lvls_ordered[[lvl]][this_trt_mask])
           }
           treatment_components[[trt]] <- this_trt
         }
@@ -1529,14 +1587,14 @@ plot.ratecount <- function(
 #' @rdname plot-timeseries
 #' @usage plot.timeseries(
 #'  wisp.results, 
-#'  splitting_factor = NULL, 
-#'  log.scale = FALSE,
-#'  print.plots = FALSE,
-#'  species = c(),
-#'  verbose = TRUE
+#'  splitting_factor = c(), 
+#'  log.scale        = FALSE,
+#'  print.plots      = FALSE,
+#'  species          = c(),
+#'  verbose          = TRUE
 #' )
 #' @param wisp.results List, output of the wisp function.
-#' @param splitting_factor Character string, the name of the fixed effect by which to split the timeseries. If NULL, the first non-timeseries fixed effect is used. If "none", will not split.
+#' @param splitting_factor Character string, the name of the fixed effect by which to split the timeseries. If empty, c(), the first non-timeseries fixed effect is used. If "none", will not split.
 #' @param log.scale Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.
 #' @param print.plots Logical, if TRUE, prints plots; if FALSE, only returns plots in list without printing any. 
 #' @param species Character vector, list of species levels to plot. If c(), all species levels are plotted.
@@ -1545,7 +1603,7 @@ plot.ratecount <- function(
 #' @export
 plot.timeseries <- function(
     wisp.results, 
-    splitting_factor = NULL,
+    splitting_factor = c(),
     log.scale        = FALSE,
     print.plots      = FALSE,
     species          = c(),
@@ -1566,7 +1624,7 @@ plot.timeseries <- function(
     if (!("timeseries" %in% wisp.results[["fix"]][["names"]])) {
       stop("No timeseries found in wisp results")
     } 
-    if (!is.null(splitting_factor)) {
+    if (length(splitting_factor) == 1) {
       if (!(splitting_factor %in% c(wisp.results[["fix"]][["names"]], "none"))) {
         stop("Splitting factor not found in wisp results")
       }
@@ -1575,18 +1633,18 @@ plot.timeseries <- function(
     # Find splitting effect 
     splitting_lvl  <- NULL
     splitting_name <- ""
-    if (is.null(splitting_factor) && length(wisp.results[["fix"]][["names"]]) > 1) {
+    if (length(splitting_factor) != 1 && length(wisp.results[["fix"]][["names"]]) > 1) {
       splitting_idx    <- min(which(wisp.results[["fix"]][["names"]] != "timeseries"))
       splitting_name   <- wisp.results[["fix"]][["names"]][[splitting_idx]]
       splitting_lvl    <- wisp.results[["fix"]][["lvls"]][[splitting_idx]]
       splitting_factor <- wisp.results[["fix"]][["treat.lvl"]][[splitting_idx]]
-    } else if (!is.null(splitting_factor)) {
+    } else if (length(splitting_factor) == 1) {
       if (splitting_factor != "none") {
         splitting_name   <- splitting_factor
         splitting_lvl    <- wisp.results[["fix"]][["lvls"]][[splitting_factor]]
         splitting_factor <- wisp.results[["fix"]][["treat.lvl"]][[splitting_factor]]
       }
-    } else if (is.null(splitting_factor) || isTRUE(splitting_factor == "none")) {
+    } else if (length(splitting_factor) != 1 || isTRUE(splitting_factor == "none")) {
       splitting_factor <- "none"
       splitting_name   <- splitting_factor
       splitting_lvl    <- c("all", "all")
@@ -1596,7 +1654,7 @@ plot.timeseries <- function(
     # Get treatment components and make mask for those with splitting factor
     trt_comps <- wisp.results[["treatment"]][["components"]]
     split_mask <- rep(TRUE, length(trt_comps))
-    if (!is.null(splitting_factor) && splitting_name != "none") {
+    if (length(splitting_factor) == 1 && splitting_name != "none") {
       for (t in seq_along(trt_comps)) {
         if (!any(trt_comps[[t]] == splitting_factor)) {
           split_mask[t] <- FALSE
@@ -1677,10 +1735,10 @@ plot.timeseries <- function(
           rownames(tpoints) <- rownames(wm)
         }
         
-        split_lvl_ref_rates   <- rates[!split_mask, ]
-        split_lvl_trt_rates   <- rates[split_mask, ]
-        split_lvl_ref_tpoints <- tpoints[!split_mask, ]
-        split_lvl_trt_tpoints <- tpoints[split_mask, ]
+        split_lvl_ref_rates   <- rates[!split_mask,]
+        split_lvl_trt_rates   <- rates[split_mask,]
+        split_lvl_ref_tpoints <- tpoints[!split_mask,]
+        split_lvl_trt_tpoints <- tpoints[split_mask,]
         split_mask_ref        <- species_context_mask & !df_count_split_mask
         split_mask_trt        <- species_context_mask & df_count_split_mask
         
@@ -1961,11 +2019,11 @@ plot.timeseries <- function(
 #' @rdname plot-parameters
 #' @usage plot.parameters(
 #'  wisp.results, 
-#'  species = c(), 
-#'  violin = TRUE, 
-#'  print.plots = FALSE, 
+#'  species         = c(), 
+#'  violin          = TRUE, 
+#'  print.plots     = FALSE, 
 #'  species.classes = NULL, 
-#'  verbose = TRUE
+#'  verbose         = TRUE
 #' )
 #' @param wisp.results List, output of the wisp function.
 #' @param species Character string, the species level to be plotted. If c(), all species levels are plotted.
@@ -2014,12 +2072,12 @@ plot.parameters <- function(
     
     # Grab masks and set legend position
     param_names <- wisp.results$param.names
-    point_mask  <- grepl("tpoint", param_names)
-    rate_mask   <- grepl("Rt", param_names)
-    slope_mask  <- grepl("tslope", param_names)
-    pointR_mask <- grepl("wfactor_point", param_names) # for random effect on point
-    rateR_mask  <- grepl("wfactor_rate", param_names)   # for random effect on rate
-    slopeR_mask <- grepl("wfactor_slope", param_names) # for random effect on slope
+    point_mask  <- grepl("tpoint",        param_names)
+    rate_mask   <- grepl("Rt",            param_names)
+    slope_mask  <- grepl("tslope",        param_names)
+    pointR_mask <- grepl("wfactor_point", param_names)  # for random effect on point
+    rateR_mask  <- grepl("wfactor_rate",  param_names)  # for random effect on rate
+    slopeR_mask <- grepl("wfactor_slope", param_names)  # for random effect on slope
     legpos      <- "none"
     
     # Format parameter names for nice printing
@@ -2032,10 +2090,10 @@ plot.parameters <- function(
       param_names <- gsub(paste0("_", sps_lvl, "_"), "_", param_names)
     }
     param_names         <- gsub(paste0("wfactor_point_"), "level_", param_names)
-    param_names         <- gsub(paste0("wfactor_rate_"), "level_", param_names)
+    param_names         <- gsub(paste0("wfactor_rate_"), "level_",  param_names)
     param_names         <- gsub(paste0("wfactor_slope_"), "level_", param_names)
-    param_names         <- gsub(paste0("_X"), "", param_names)
-    param_names         <- gsub(paste0("beta_"), "", param_names)
+    param_names         <- gsub(paste0("_X"), "",         param_names)
+    param_names         <- gsub(paste0("beta_"), "",      param_names)
     param_names         <- gsub(paste0("Tns/Blk"), "T/B", param_names)
     treatment_names_rev <- as.character(wisp.results$treatment$names)
     treatment_names_rev <- treatment_names_rev[length(treatment_names_rev):1]
@@ -2089,29 +2147,29 @@ plot.parameters <- function(
           # Baseline tpoint parameters
           if (violin) {
             baseline_fitted_tpoint <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), baseline_mask & point_mask]))
-            params <- rep(param_names[baseline_mask & point_mask], each = downsample_size)
-            means <- rep(fitted_params[baseline_mask & point_mask], each = downsample_size)
+            params <- rep(param_names[baseline_mask & point_mask],   each = downsample_size)
+            means  <- rep(fitted_params[baseline_mask & point_mask], each = downsample_size)
           } else {
             baseline_fitted_tpoint <- fitted_params[baseline_mask & point_mask]
-            params <- param_names[baseline_mask & point_mask]
-            means <- fitted_params[baseline_mask & point_mask]
+            params <- param_names[baseline_mask   & point_mask]
+            means  <- fitted_params[baseline_mask & point_mask]
           }
           baseline_fitted_tpoint_df <- data.frame(
-            means = means,
-            value = baseline_fitted_tpoint, 
+            means     = means,
+            value     = baseline_fitted_tpoint, 
             parameter = params,
-            type = rep("tpoint", length(baseline_fitted_tpoint)),
-            species = rep(sps_lvl, length(baseline_fitted_tpoint))
+            type      = rep("tpoint", length(baseline_fitted_tpoint)),
+            species   = rep(sps_lvl, length(baseline_fitted_tpoint))
           )
           if (print_stats) {
             if (violin) {
-              baseline_fitted_tpoint_df$value_low <- rep(sample_ci[1,baseline_mask & point_mask], each = downsample_size)
+              baseline_fitted_tpoint_df$value_low  <- rep(sample_ci[1,baseline_mask & point_mask], each = downsample_size)
               baseline_fitted_tpoint_df$value_high <- rep(sample_ci[2,baseline_mask & point_mask], each = downsample_size)
-              baseline_fitted_tpoint_df$sig_marks <- rep(sig_marks[baseline_mask & point_mask], each = downsample_size)
+              baseline_fitted_tpoint_df$sig_marks  <- rep(sig_marks[baseline_mask   & point_mask], each = downsample_size)
             } else {
-              baseline_fitted_tpoint_df$value_low <- sample_ci[1,baseline_mask & point_mask]
+              baseline_fitted_tpoint_df$value_low  <- sample_ci[1,baseline_mask & point_mask]
               baseline_fitted_tpoint_df$value_high <- sample_ci[2,baseline_mask & point_mask] 
-              baseline_fitted_tpoint_df$sig_marks <- sig_marks[baseline_mask & point_mask]
+              baseline_fitted_tpoint_df$sig_marks  <- sig_marks[baseline_mask   & point_mask]
             }
           }
           baseline_df <- rbind(baseline_df, baseline_fitted_tpoint_df) 
@@ -2119,29 +2177,29 @@ plot.parameters <- function(
           # Baseline rate parameters
           if (violin) {
             baseline_fitted_rate <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), baseline_mask & rate_mask]))
-            params <- rep(param_names[baseline_mask & rate_mask], each = downsample_size)
-            means <- rep(fitted_params[baseline_mask & rate_mask], each = downsample_size)
+            params               <- rep(param_names[baseline_mask & rate_mask],   each = downsample_size)
+            means                <- rep(fitted_params[baseline_mask & rate_mask], each = downsample_size)
           } else {
             baseline_fitted_rate <- fitted_params[baseline_mask & rate_mask]
-            params <- param_names[baseline_mask & rate_mask]
-            means <- fitted_params[baseline_mask & rate_mask]
+            params               <- param_names[baseline_mask   & rate_mask]
+            means                <- fitted_params[baseline_mask & rate_mask]
           }
           baseline_fitted_rate_df <- data.frame(
-            means = means, 
-            value = baseline_fitted_rate, 
+            means     = means, 
+            value     = baseline_fitted_rate, 
             parameter = params,
-            type = rep("rate", length(baseline_fitted_rate)),
-            species = rep(sps_lvl, length(baseline_fitted_rate))
+            type      = rep("rate",  length(baseline_fitted_rate)),
+            species   = rep(sps_lvl, length(baseline_fitted_rate))
           )
           if (print_stats) {
             if (violin) {
-              baseline_fitted_rate_df$value_low <- rep(sample_ci[1,baseline_mask & rate_mask], each = downsample_size)
+              baseline_fitted_rate_df$value_low  <- rep(sample_ci[1,baseline_mask & rate_mask], each = downsample_size)
               baseline_fitted_rate_df$value_high <- rep(sample_ci[2,baseline_mask & rate_mask], each = downsample_size)
-              baseline_fitted_rate_df$sig_marks <- rep(sig_marks[baseline_mask & rate_mask], each = downsample_size)
+              baseline_fitted_rate_df$sig_marks  <- rep(sig_marks[baseline_mask   & rate_mask], each = downsample_size)
             } else {
-              baseline_fitted_rate_df$value_low <- sample_ci[1,baseline_mask & rate_mask]
+              baseline_fitted_rate_df$value_low  <- sample_ci[1,baseline_mask & rate_mask]
               baseline_fitted_rate_df$value_high <- sample_ci[2,baseline_mask & rate_mask]
-              baseline_fitted_rate_df$sig_marks <- sig_marks[baseline_mask & rate_mask]
+              baseline_fitted_rate_df$sig_marks  <- sig_marks[baseline_mask   & rate_mask]
             }
           }
           baseline_df <- rbind(baseline_df, baseline_fitted_rate_df) 
@@ -2149,29 +2207,29 @@ plot.parameters <- function(
           # Baseline tslope parameters 
           if (violin) {
             baseline_fitted_slope <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), baseline_mask & slope_mask]))
-            params <- rep(param_names[baseline_mask & slope_mask], each = downsample_size)
-            means <- rep(fitted_params[baseline_mask & slope_mask], each = downsample_size)
+            params <- rep(param_names[baseline_mask   & slope_mask], each = downsample_size)
+            means  <- rep(fitted_params[baseline_mask & slope_mask], each = downsample_size)
           } else {
             baseline_fitted_slope <- fitted_params[baseline_mask & slope_mask]
-            params <- param_names[baseline_mask & slope_mask]
-            means <- fitted_params[baseline_mask & slope_mask]
+            params <- param_names[baseline_mask   & slope_mask]
+            means  <- fitted_params[baseline_mask & slope_mask]
           }
           baseline_fitted_slope_df <- data.frame(
-            means = means, 
-            value = baseline_fitted_slope, 
+            means     = means, 
+            value     = baseline_fitted_slope, 
             parameter = params,
-            type = rep("tslope", length(baseline_fitted_slope)),
-            species = rep(sps_lvl, length(baseline_fitted_slope))
+            type      = rep("tslope", length(baseline_fitted_slope)),
+            species   = rep(sps_lvl, length(baseline_fitted_slope))
           )
           if (print_stats) {
             if (violin) {
-              baseline_fitted_slope_df$value_low <- rep(sample_ci[1,baseline_mask & slope_mask], each = downsample_size)
+              baseline_fitted_slope_df$value_low  <- rep(sample_ci[1,baseline_mask & slope_mask], each = downsample_size)
               baseline_fitted_slope_df$value_high <- rep(sample_ci[2,baseline_mask & slope_mask], each = downsample_size)
-              baseline_fitted_slope_df$sig_marks <- rep(sig_marks[baseline_mask & slope_mask], each = downsample_size)
+              baseline_fitted_slope_df$sig_marks  <- rep(sig_marks[baseline_mask   & slope_mask], each = downsample_size)
             } else {
-              baseline_fitted_slope_df$value_low <- sample_ci[1,baseline_mask & slope_mask]
+              baseline_fitted_slope_df$value_low  <- sample_ci[1,baseline_mask & slope_mask]
               baseline_fitted_slope_df$value_high <- sample_ci[2,baseline_mask & slope_mask]
-              baseline_fitted_slope_df$sig_marks <- sig_marks[baseline_mask & slope_mask]
+              baseline_fitted_slope_df$sig_marks  <- sig_marks[baseline_mask   & slope_mask]
             }
           }
           baseline_df <- rbind(baseline_df, baseline_fitted_slope_df) 
@@ -2182,31 +2240,31 @@ plot.parameters <- function(
           # Random effects on tpoints
           if (violin) {
             ranEff_fitted_point <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), ranEff_mask & pointR_mask]))
-            params <- rep(param_names[ranEff_mask & pointR_mask], each = downsample_size)
-            means <- rep(fitted_params[ranEff_mask & pointR_mask], each = downsample_size)
+            params <- rep(param_names[ranEff_mask & pointR_mask],   each = downsample_size)
+            means  <- rep(fitted_params[ranEff_mask & pointR_mask], each = downsample_size)
           } else {
             ranEff_fitted_point <- fitted_params[ranEff_mask & pointR_mask]
-            params <- param_names[ranEff_mask & pointR_mask]
-            means <- fitted_params[ranEff_mask & pointR_mask]
+            params <- param_names[ranEff_mask   & pointR_mask]
+            means  <- fitted_params[ranEff_mask & pointR_mask]
           }
           if (sum(ranEff_fitted_point, na.rm = TRUE) != 0) {
             # If zero, this was a degree-zero species, and we don't want to plot it
             ranEff_fitted_point_df <- data.frame(
-              means = means, 
-              value = ranEff_fitted_point, 
+              means     = means, 
+              value     = ranEff_fitted_point, 
               parameter = params, 
-              type = rep("point", length(ranEff_fitted_point)),
-              species = rep(sps_lvl, length(ranEff_fitted_point))
+              type      = rep("point", length(ranEff_fitted_point)),
+              species   = rep(sps_lvl, length(ranEff_fitted_point))
             )
             if (print_stats) {
               if (violin) {
-                ranEff_fitted_point_df$value_low <- rep(sample_ci[1,ranEff_mask & pointR_mask], each = downsample_size)
+                ranEff_fitted_point_df$value_low  <- rep(sample_ci[1,ranEff_mask & pointR_mask], each = downsample_size)
                 ranEff_fitted_point_df$value_high <- rep(sample_ci[2,ranEff_mask & pointR_mask], each = downsample_size)
-                ranEff_fitted_point_df$sig_marks <- rep(sig_marks[ranEff_mask & pointR_mask], each = downsample_size)
+                ranEff_fitted_point_df$sig_marks  <- rep(sig_marks[ranEff_mask   & pointR_mask], each = downsample_size)
               } else {
-                ranEff_fitted_point_df$value_low <- sample_ci[1,ranEff_mask & pointR_mask]
+                ranEff_fitted_point_df$value_low  <- sample_ci[1,ranEff_mask & pointR_mask]
                 ranEff_fitted_point_df$value_high <- sample_ci[2,ranEff_mask & pointR_mask]
-                ranEff_fitted_point_df$sig_marks <-sig_marks[ranEff_mask & pointR_mask]
+                ranEff_fitted_point_df$sig_marks  <- sig_marks[ranEff_mask   & pointR_mask]
               }
             }
             ranEff_df <- rbind(ranEff_df, ranEff_fitted_point_df) 
@@ -2215,29 +2273,29 @@ plot.parameters <- function(
           # Random effects on rates
           if (violin) {
             ranEff_fitted_rate <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), ranEff_mask & rateR_mask]))
-            params <- rep(param_names[ranEff_mask & rateR_mask], each = downsample_size)
-            means <- rep(fitted_params[ranEff_mask & rateR_mask], each = downsample_size)
+            params             <- rep(param_names[ranEff_mask   & rateR_mask], each = downsample_size)
+            means              <- rep(fitted_params[ranEff_mask & rateR_mask], each = downsample_size)
           } else {
             ranEff_fitted_rate <- fitted_params[ranEff_mask & rateR_mask]
-            params <- param_names[ranEff_mask & rateR_mask]
-            means <- fitted_params[ranEff_mask & rateR_mask]
+            params             <- param_names[ranEff_mask   & rateR_mask]
+            means              <- fitted_params[ranEff_mask & rateR_mask]
           }
           ranEff_fitted_rate_df <- data.frame(
-            means = means, 
-            value = ranEff_fitted_rate, 
+            means     = means, 
+            value     = ranEff_fitted_rate, 
             parameter = params, 
-            type = rep("rate", length(ranEff_fitted_rate)),
-            species = rep(sps_lvl, length(ranEff_fitted_rate))
+            type      = rep("rate", length(ranEff_fitted_rate)),
+            species   = rep(sps_lvl, length(ranEff_fitted_rate))
           )
           if (print_stats) {
             if (violin) {
-              ranEff_fitted_rate_df$value_low <- rep(sample_ci[1,ranEff_mask & rateR_mask], each = downsample_size)
+              ranEff_fitted_rate_df$value_low  <- rep(sample_ci[1,ranEff_mask & rateR_mask], each = downsample_size)
               ranEff_fitted_rate_df$value_high <- rep(sample_ci[2,ranEff_mask & rateR_mask], each = downsample_size)
-              ranEff_fitted_rate_df$sig_marks <- rep(sig_marks[ranEff_mask & rateR_mask], each = downsample_size)
+              ranEff_fitted_rate_df$sig_marks  <- rep(sig_marks[ranEff_mask   & rateR_mask], each = downsample_size)
             } else {
-              ranEff_fitted_rate_df$value_low <- sample_ci[1,ranEff_mask & rateR_mask]
+              ranEff_fitted_rate_df$value_low  <- sample_ci[1,ranEff_mask & rateR_mask]
               ranEff_fitted_rate_df$value_high <- sample_ci[2,ranEff_mask & rateR_mask]
-              ranEff_fitted_rate_df$sig_marks <- sig_marks[ranEff_mask & rateR_mask]
+              ranEff_fitted_rate_df$sig_marks  <- sig_marks[ranEff_mask   & rateR_mask]
             }
           }
           ranEff_df <- rbind(ranEff_df, ranEff_fitted_rate_df) 
@@ -2245,29 +2303,29 @@ plot.parameters <- function(
           # Random effects on slopes
           if (violin) {
             ranEff_fitted_slope <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), ranEff_mask & slopeR_mask]))
-            params <- rep(param_names[ranEff_mask & slopeR_mask], each = downsample_size)
-            means <- rep(fitted_params[ranEff_mask & slopeR_mask], each = downsample_size)
+            params <- rep(param_names[ranEff_mask   & slopeR_mask], each = downsample_size)
+            means  <- rep(fitted_params[ranEff_mask & slopeR_mask], each = downsample_size)
           } else {
             ranEff_fitted_slope <- fitted_params[ranEff_mask & slopeR_mask]
-            params <- param_names[ranEff_mask & slopeR_mask]
-            means <- fitted_params[ranEff_mask & slopeR_mask]
+            params <- param_names[ranEff_mask   & slopeR_mask]
+            means  <- fitted_params[ranEff_mask & slopeR_mask]
           }
           ranEff_fitted_slope_df <- data.frame(
-            means = means, 
-            value = ranEff_fitted_slope, 
+            means     = means, 
+            value     = ranEff_fitted_slope, 
             parameter = params, 
-            type = rep("slope", length(ranEff_fitted_slope)),
-            species = rep(sps_lvl, length(ranEff_fitted_slope))
+            type      = rep("slope", length(ranEff_fitted_slope)),
+            species   = rep(sps_lvl, length(ranEff_fitted_slope))
           )
           if (print_stats) {
             if (violin) {
-              ranEff_fitted_slope_df$value_low <- rep(sample_ci[1,ranEff_mask & slopeR_mask], each = downsample_size)
+              ranEff_fitted_slope_df$value_low  <- rep(sample_ci[1,ranEff_mask & slopeR_mask], each = downsample_size)
               ranEff_fitted_slope_df$value_high <- rep(sample_ci[2,ranEff_mask & slopeR_mask], each = downsample_size)
-              ranEff_fitted_slope_df$sig_marks <- rep(sig_marks[ranEff_mask & slopeR_mask], each = downsample_size)
+              ranEff_fitted_slope_df$sig_marks  <- rep(sig_marks[ranEff_mask   & slopeR_mask], each = downsample_size)
             } else {
-              ranEff_fitted_slope_df$value_low <- sample_ci[1,ranEff_mask & slopeR_mask]
+              ranEff_fitted_slope_df$value_low  <- sample_ci[1,ranEff_mask & slopeR_mask]
               ranEff_fitted_slope_df$value_high <- sample_ci[2,ranEff_mask & slopeR_mask]
-              ranEff_fitted_slope_df$sig_marks <- sig_marks[ranEff_mask & slopeR_mask]
+              ranEff_fitted_slope_df$sig_marks  <- sig_marks[ranEff_mask   & slopeR_mask]
             }
           }
           ranEff_df <- rbind(ranEff_df, ranEff_fitted_slope_df)
@@ -2275,12 +2333,12 @@ plot.parameters <- function(
         }
         
         # Make character columns into factors
-        baseline_df$species <- as.factor(baseline_df$species)
+        baseline_df$species   <- as.factor(baseline_df$species)
         baseline_df$parameter <- as.factor(baseline_df$parameter)
-        baseline_df$type <- as.factor(baseline_df$type)
-        ranEff_df$species <- as.factor(ranEff_df$species)
-        ranEff_df$parameter <- as.factor(ranEff_df$parameter)
-        ranEff_df$type <- as.factor(ranEff_df$type)
+        baseline_df$type      <- as.factor(baseline_df$type)
+        ranEff_df$species     <- as.factor(ranEff_df$species)
+        ranEff_df$parameter   <- as.factor(ranEff_df$parameter)
+        ranEff_df$type        <- as.factor(ranEff_df$type)
         
         # Make baseline plots ####
         
@@ -2365,7 +2423,7 @@ plot.parameters <- function(
           labs(title = title_ran) +
           theme(
             plot.title       = element_text(size = wisp.results$plot.settings$title_size, hjust = 0.5),
-            axis.title.      = element_text(size = wisp.results$plot.settings$axis_size),
+            axis.title       = element_text(size = wisp.results$plot.settings$axis_size),
             axis.text        = element_text(size = wisp.results$plot.settings$axis_size),
             legend.title     = element_text(size = wisp.results$plot.settings$legend_size),
             legend.text      = element_text(size = wisp.results$plot.settings$legend_size),
@@ -2417,7 +2475,7 @@ plot.parameters <- function(
             # Add rows for rate effects
             if (violin) {
               treatment_fitted <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), treatment_mask & rate_mask]))
-              params           <- rep(param_names[treatment_mask & rate_mask],   each = downsample_size)
+              params           <- rep(param_names[treatment_mask   & rate_mask], each = downsample_size)
               means            <- rep(fitted_params[treatment_mask & rate_mask], each = downsample_size)
             } else {
               treatment_fitted <- fitted_params[treatment_mask & rate_mask]
@@ -2435,7 +2493,7 @@ plot.parameters <- function(
               if (violin) {
                 treatment_fitted_df$value_low  <- rep(sample_ci[1,treatment_mask & rate_mask], each = downsample_size)
                 treatment_fitted_df$value_high <- rep(sample_ci[2,treatment_mask & rate_mask], each = downsample_size)
-                treatment_fitted_df$sig_marks  <- rep(sig_marks[treatment_mask & rate_mask],   each = downsample_size)
+                treatment_fitted_df$sig_marks  <- rep(sig_marks[treatment_mask   & rate_mask], each = downsample_size)
               } else {
                 treatment_fitted_df$value_low  <- sample_ci[1,treatment_mask & rate_mask]
                 treatment_fitted_df$value_high <- sample_ci[2,treatment_mask & rate_mask]
@@ -2447,7 +2505,7 @@ plot.parameters <- function(
             # Add rows for slope effects
             if (violin) {
               treatment_fitted <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), treatment_mask & slope_mask]))
-              params           <- rep(param_names[treatment_mask & slope_mask],   each = downsample_size)
+              params           <- rep(param_names[treatment_mask   & slope_mask], each = downsample_size)
               means            <- rep(fitted_params[treatment_mask & slope_mask], each = downsample_size)
             } else {
               treatment_fitted <- fitted_params[treatment_mask & slope_mask]
@@ -2465,7 +2523,7 @@ plot.parameters <- function(
               if (violin) {
                 treatment_fitted_df$value_low  <- rep(sample_ci[1,treatment_mask & slope_mask], each = downsample_size)
                 treatment_fitted_df$value_high <- rep(sample_ci[2,treatment_mask & slope_mask], each = downsample_size)
-                treatment_fitted_df$sig_marks  <- rep(sig_marks[treatment_mask & slope_mask],   each = downsample_size)
+                treatment_fitted_df$sig_marks  <- rep(sig_marks[treatment_mask   & slope_mask], each = downsample_size)
               } else {
                 treatment_fitted_df$value_low  <- sample_ci[1,treatment_mask & slope_mask]
                 treatment_fitted_df$value_high <- sample_ci[2,treatment_mask & slope_mask]
@@ -2477,7 +2535,7 @@ plot.parameters <- function(
             # Add rows for point effects
             if (violin) {
               treatment_fitted <- c(as.matrix(sample.params[sample(1:nrow(sample.params), downsample_size, replace = FALSE), treatment_mask & point_mask]))
-              params           <- rep(param_names[treatment_mask & point_mask],   each = downsample_size)
+              params           <- rep(param_names[treatment_mask   & point_mask], each = downsample_size)
               means            <- rep(fitted_params[treatment_mask & point_mask], each = downsample_size)
             } else {
               treatment_fitted <- fitted_params[treatment_mask & point_mask]
@@ -2495,7 +2553,7 @@ plot.parameters <- function(
               if (violin) {
                 treatment_fitted_df$value_low  <- rep(sample_ci[1,treatment_mask & point_mask], each = downsample_size)
                 treatment_fitted_df$value_high <- rep(sample_ci[2,treatment_mask & point_mask], each = downsample_size)
-                treatment_fitted_df$sig_marks  <- rep(sig_marks[treatment_mask & point_mask],   each = downsample_size)
+                treatment_fitted_df$sig_marks  <- rep(sig_marks[treatment_mask   & point_mask], each = downsample_size)
               } else {
                 treatment_fitted_df$value_low  <- sample_ci[1,treatment_mask & point_mask]
                 treatment_fitted_df$value_high <- sample_ci[2,treatment_mask & point_mask]
@@ -2593,7 +2651,7 @@ plot.parameters <- function(
 #' @usage plot.effect.dist(
 #'  wisp.results, 
 #'  print.plots = FALSE, 
-#'  verbose = TRUE
+#'  verbose     = TRUE
 #' )
 #' @param wisp.results List, output of the wisp function.
 #' @param print.plots Logical, if TRUE, prints the plots to the current device.
@@ -2766,8 +2824,8 @@ plot.effect.dist <- function(
 #' @usage plot.species.summary(
 #'  wisp.results, 
 #'  contexts = c(), 
-#'  species = c(), 
-#'  verbose = TRUE
+#'  species  = c(), 
+#'  verbose  = TRUE
 #' )
 #' @param wisp.results List, output of the wisp function.
 #' @param contexts Character vector, optional, specifies which context levels to summarize. Defaults to all. 
@@ -2784,9 +2842,9 @@ plot.species.summary <- function(
     
     # Check for needed plots
     if (
-      length(wisp.results$plots$ratecount) == 0 || 
+      length(wisp.results$plots$ratecount)  == 0 || 
       length(wisp.results$plots$parameters) == 0 ||
-      length(wisp.results$plots$residuals) == 0
+      length(wisp.results$plots$residuals)  == 0
       ) {
       stop("No rate, parameter, or residual plots found in wisp.results")
     }
@@ -2812,9 +2870,9 @@ plot.species.summary <- function(
         }
         wisp.results$plots$parameters <- plot.parameters(
           wisp.results = wisp.results,
-          species = sps_lvl, 
-          print.plots = FALSE, 
-          verbose = FALSE 
+          species      = sps_lvl, 
+          print.plots  = FALSE, 
+          verbose      = FALSE 
         )
         
         # Grab / make plots
@@ -2833,30 +2891,30 @@ plot.species.summary <- function(
         c_mask3 <- grepl(sps_lvl, names(p3))
         
         # Find residual hist and qq plots 
-        histqq <- grepl("hist|qq", names(p3))
+        histqq  <- grepl("hist|qq", names(p3))
         
         # Find treatment plots
         iX_mask <- grepl("treatment", names(p2))
         
         # Subset
-        p_rates <- p1[p_mask1 & c_mask1]
-        p_treatment <- p2[p_mask2 & c_mask2 & iX_mask]
+        p_rates       <- p1[p_mask1 & c_mask1]
+        p_treatment   <- p2[p_mask2 & c_mask2 & iX_mask]
         p_otherparams <- p2[p_mask2 & c_mask2 & !iX_mask]
-        p_residuals <- p3[p_mask3 & c_mask3 & histqq]
+        p_residuals   <- p3[p_mask3 & c_mask3 & histqq]
         
         # Combine and print
         if (
-          length(p_rates) > 0 && 
-          length(p_treatment) > 0 &&
+          length(p_rates)       > 0 && 
+          length(p_treatment)   > 0 &&
           length(p_otherparams) > 0 &&
-          length(p_residuals) > 0
+          length(p_residuals)   > 0
         ) {
-          resids <- do.call(arrangeGrob, c(p_residuals, ncol = length(p_residuals)))
-          rates_and_residuals <- arrangeGrob(ggplotGrob(p_rates[[1]]), resids, ncol = 1)
-          treatments <- do.call(arrangeGrob, c(as.list(p_treatment), ncol = length(p_treatment)))
-          other_params <- do.call(arrangeGrob, c(as.list(p_otherparams), ncol = length(p_otherparams)))
-          params <- arrangeGrob(treatments, other_params, ncol = 1)
-          p <- arrangeGrob(rates_and_residuals, params, ncol = 2, widths = c(0.4,0.6))
+          resids              <- do.call(arrangeGrob, c(p_residuals,            ncol = length(p_residuals)))
+          rates_and_residuals <- arrangeGrob(ggplotGrob(p_rates[[1]]), resids,  ncol = 1)
+          treatments          <- do.call(arrangeGrob, c(as.list(p_treatment),   ncol = length(p_treatment)))
+          other_params        <- do.call(arrangeGrob, c(as.list(p_otherparams), ncol = length(p_otherparams)))
+          params              <- arrangeGrob(treatments, other_params,          ncol = 1)
+          p                   <- arrangeGrob(rates_and_residuals, params,       ncol = 2, widths = c(0.4,0.6))
           grid.arrange(p)
         }
         
@@ -2875,7 +2933,7 @@ plot.species.summary <- function(
 #' @usage plot.MCMC.walks(
 #'  wisp.results, 
 #'  print.plots = FALSE, 
-#'  verbose = TRUE, 
+#'  verbose     = TRUE, 
 #'  low_samples = 10
 #' )
 #' @param wisp.results List, output of the wisp function.
@@ -3070,9 +3128,9 @@ plot.MCMC.walks <- function(
 #' @usage plot.decomposition(
 #'  wisp.results, 
 #'  species, 
-#'  log = FALSE, 
+#'  log            = FALSE, 
 #'  dim.boundaries = c(), 
-#'  y.lim = NULL
+#'  y.lim          = NULL
 #' )
 #' @param wisp.results List, output of the wisp function.
 #' @param species Character string, the species level to plot. Must be provided, and only one at a time. 
@@ -3120,10 +3178,10 @@ plot.decomposition <- function(
     # Set alpha levels
     input_rows <- 6 + length(ran_lvls)
     input <- data.frame(
-      count.alpha.none = as.numeric(rep(NA, input_rows)),
-      count.alpha.ran  = as.numeric(rep(NA, input_rows)),
-      pred.alpha.none  = as.numeric(rep(NA, input_rows)),
-      pred.alpha.ran   = as.numeric(rep(NA, input_rows)),
+      count.alpha.none = as.numeric(rep(NA,   input_rows)),
+      count.alpha.ran  = as.numeric(rep(NA,   input_rows)),
+      pred.alpha.none  = as.numeric(rep(NA,   input_rows)),
+      pred.alpha.ran   = as.numeric(rep(NA,   input_rows)),
       rans.to.print    = as.character(rep(NA, input_rows)),
       stringsAsFactors = FALSE
     )
@@ -3184,7 +3242,8 @@ plot.decomposition <- function(
         pred.alpha.none  = input$pred.alpha.none[r],
         pred.alpha.ran   = input$pred.alpha.ran[r],
         rans.to.print    = rans.to.print,
-        species          = c(species)
+        species          = c(species),
+        verbose          = FALSE
       )
       for (c in c(1:n_contexts)) {
         c_name     <- wisp.results$grouping.variables$context.lvls[c]
@@ -3211,8 +3270,8 @@ plot.decomposition <- function(
 #' @usage plot.MCMC.bs.comparison(
 #'  wisp.results, 
 #'  print.plots = FALSE, 
-#'  verbose = TRUE,
-#'  ran.seed = 1234
+#'  verbose     = TRUE,
+#'  ran.seed    = 1234
 #' )
 #' @param wisp.results List, output of the wisp function.
 #' @param print.plots Logical, if TRUE, prints the plots to the current graphics device.
@@ -3253,29 +3312,29 @@ plot.MCMC.bs.comparison <- function(
     dens_list <- lapply(
       1:ncol(param_mcmc), 
       function(pnum) {
-        mcmc_vals <- param_mcmc[, pnum]
-        bs_vals   <- param_bs[, pnum]
-        n_resamples <- 100
+        mcmc_vals    <- param_mcmc[, pnum]
+        bs_vals      <- param_bs[,   pnum]
+        n_resamples  <- 100
         mcmc_sw_stat <- rep(NA, n_resamples)
         bs_sw_stat   <- rep(NA, n_resamples)
         
-        sample_size <- 35
-        throw_bs_warning <- FALSE
-        throw_MCMC_warning <- FALSE
+        sample_size            <- 35
+        throw_bs_warning       <- FALSE
+        throw_MCMC_warning     <- FALSE
         for (i in 1:n_resamples) {
-          mcmc_vals_sample <- sample(mcmc_vals, sample_size, replace = TRUE)
-          bs_vals_sample   <- sample(bs_vals, sample_size, replace = TRUE)
+          mcmc_vals_sample     <- sample(mcmc_vals, sample_size, replace = TRUE)
+          bs_vals_sample       <- sample(bs_vals,   sample_size, replace = TRUE)
           if (length(unique(mcmc_vals_sample)) > 1) {
-            mcmc_sw_stat[i] <- shapiro.test(mcmc_vals_sample)$p.value
+            mcmc_sw_stat[i]    <- shapiro.test(mcmc_vals_sample)$p.value
           } else {
-            mcmc_sw_stat[i] <- NA
+            mcmc_sw_stat[i]    <- NA
             throw_MCMC_warning <- TRUE
           }
           if (length(unique(bs_vals_sample)) > 1) {
-            bs_sw_stat[i]   <- shapiro.test(bs_vals_sample)$p.value
+            bs_sw_stat[i]      <- shapiro.test(bs_vals_sample)$p.value
           } else {
-            bs_sw_stat[i] <- NA
-            throw_bs_warning <- TRUE
+            bs_sw_stat[i]      <- NA
+            throw_bs_warning   <- TRUE
           }
         }
         if (throw_bs_warning) {
@@ -3351,8 +3410,8 @@ plot.MCMC.bs.comparison <- function(
         bs_vals   <- param_bs[, bs_pvals_order[pnum]]
         
         # Density and centering
-        d_mcmc <- density(mcmc_vals)
-        d_bs   <- density(bs_vals)
+        d_mcmc    <- density(mcmc_vals)
+        d_bs      <- density(bs_vals)
         mcmc_peak <- d_mcmc$x[which.max(d_mcmc$y)]
         bs_peak   <- d_bs$x[which.max(d_bs$y)]
         
@@ -3510,9 +3569,15 @@ project_cp <- function(
     #   in IEEE Transactions on Acoustics, Speech, and Signal Processing, vol. 26, no. 1, pp. 43-49, February 1978, doi: 10.1109/TASSP.1978.1163055. 
     #   This step pattern chosen to enforce a very shallow slope. 
     
+    # Check input
+    if (is.null(dim(X_lik))) return(-1)
+    if (length(found_cp) == 0) return(-1)
+    if (length(centroid) == 0) return(-1)
+    
     # Get alignment indices
     # ... take transpose, as dtwclust::DBA expects columns as time points
     X  <- t(X_lik)
+    if (ncol(X_lik) == 0) return(-1)
     # ... initialize list to store alignment indices
     aX <- list()
     # ... for each row of X (i.e., each trt x ran interaction), find the indices to align it to the centroid
@@ -3695,7 +3760,7 @@ demo.warp.plots <- function(
       labs(
         x     = "z",
         y     = expression(omega * "(z, " * rho * ", b)"),
-        title = "WSP Warping Function",
+        title = "Wisp Warping Function",
         color = "Direction"
       ) +
       scale_color_manual(
@@ -3828,24 +3893,24 @@ demo.warp.plots <- function(
       coord_fixed() +
       geom_segment(
         data  = def_segments_rates,
-        aes(x = x0, xend = x1, y = y0, yend = y1),
-        color = "darkgray", linetype = "dashed", linewidth = 1) +
+        aes(x = x0,              xend = x1,               y = y0,              yend = y1),
+        color = "darkgray",  linetype = "dashed", linewidth = 1) +
       geom_segment(
         data  = def_segments_ratesw,
-        aes(x = x0, xend = x1, y = y0, yend = y1),
-        color = "gray", linetype = "dashed", linewidth = 1) +
+        aes(x = x0,              xend = x1,               y = y0,              yend = y1),
+        color = "gray",      linetype = "dashed", linewidth = 1) +
       geom_segment(
         data  = def_segments_slopes,
-        aes(x = slope_seg_neg_x, xend = slope_seg_pos_x, y = slope_seg_neg_y, yend = slope_seg_pos_y),
-        color = "blue4", linetype = "dashed", linewidth = 0.75) + 
+        aes(x = slope_seg_neg_x, xend = slope_seg_pos_x,  y = slope_seg_neg_y, yend = slope_seg_pos_y),
+        color = "blue4",     linetype = "dashed", linewidth = 0.75) + 
       geom_segment(
         data  = def_segments_slopesw,
-        aes(x = slope_seg_neg_x, xend = slope_seg_pos_x, y = slope_seg_neg_y, yend = slope_seg_pos_y),
-        color = "blue", linetype = "dashed", linewidth = 0.75) +
+        aes(x = slope_seg_neg_x, xend = slope_seg_pos_x,  y = slope_seg_neg_y, yend = slope_seg_pos_y),
+        color = "blue",      linetype = "dashed", linewidth = 0.75) +
       labs(
         x     = "x",
         y     = expression(Psi * "(x, r, s, p)"),
-        title = "WSP Sigmoid Function, Warped",
+        title = "Wisp Sigmoid Function, Warped",
         color = "Type"
       )  +
       scale_color_manual(
@@ -4060,7 +4125,7 @@ demo.sigmoid.plots <- function(
       labs(
         x     = "x",
         y     = expression(Psi * "(x, r, s, p)"),
-        title = "The WSP Sigmoid Function"
+        title = "The Wisp Sigmoid Function"
       )  +
       theme_minimal(base_size = 16) +
       theme(

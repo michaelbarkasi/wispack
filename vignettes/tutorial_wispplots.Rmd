@@ -1,7 +1,7 @@
 ---
 title: "Plotting wisp models"
 author: "Michael Barkasi"
-date: "`r Sys.Date()`"
+date: "July 3, 2026 (v2.4)"
 ---
 
 ```{r setup, include = FALSE}
@@ -11,15 +11,15 @@ knitr::opts_chunk$set(class.output = "scroll-output", cache = TRUE)
 
 <h2>Introduction</h2>
 
-Wisp models can include thousands of parameters, each with their own intuitive physical interpretation. At bottom, wisp models are parameterized by a handful of [fixed-effect spatial parameters](tutorial_Poisson.html) -- block rates, transition points, and transition slopes -- plus [random-effect scalars](tutorial_warping.html) for each of these fixed-effect spatial parameters. However, the fixed-effect spatial parameters multiply with the number of species, the number of [contexts](tutorial_multicontext.html), and the number of treatment conditions. The random-effect scalars multiply by replicate count and species. The upshot is that a wisp model includes a dizzying array of parameter estimates and hypothesis test results. To help with interpretation, wispack includes a number of intuitive plotting methods for visualizing wisp model results. 
+Wisp models can have thousands of parameters, each with their own intuitive physical interpretation. Schematically, the picture is more simple. At bottom, wisp models are parameterized by a handful of [fixed-effect spatial parameter types](tutorial_Poisson.html) -- block rates, transition points, and transition slopes -- plus [random-effect scalars](tutorial_warping.html) for each of these fixed-effect spatial parameter types. However, the fixed-effect spatial parameters multiply with the number of species, the number of [contexts](tutorial_multicontext.html), and the number of treatment conditions. The random-effect scalars multiply by replicate count and species. The upshot is that a wisp model includes a dizzying array of parameter estimates and hypothesis test results. To help with interpretation, wispack includes a number of intuitive plotting methods for visualizing wisp model results. 
 
 <h2>Rate-count plots</h2>
 
-The backbone of wisp visualization is the rate-count plot, as in "predicted rate, observed count". Rate-count plots come in two forms, one giving confidence-intervals (CI) and the other giving a scatter plot of observations. Both forms give predicted rates across the spatial axis for all treatment conditions. 
+The backbone of wisp visualization is the _rate-count plot_, as in "predicted rate, observed count". Rate-count plots come in two forms, one giving confidence-intervals (CI) and the other giving a scatter plot of observations. Both forms give predicted rates across the spatial axis for all treatment conditions. 
 
 <h3>Confidence intervals</h3>
 
-The CI rate-count plot is a simplified line plot showing predicted rate as a function of spatial position, along with a 95\% confidence interval for the rate at each spatial location. As a demonstration, let's grab the model of the laminar axis of somatosensory cortex from the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html): 
+The CI rate-count plot is a simplified line plot showing predicted rate as a function of spatial position, along with a 95\% confidence interval for the rate at each spatial location. As a demonstration, let's use a re-done version of the model of the laminar axis of somatosensory cortex from the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html): 
 
 ```{r load_model}
 # Set random seed for reproducibility
@@ -36,19 +36,19 @@ model <- readRDS(
   )
 ```
 
-Note that the saved model just loaded was made under exactly the same conditions as the original from the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html), except that the <span class = "function">wisp</span> function was set, as in the following code chunk, to also run a thousand bootstraps in addition to the default MCMC walk. We want bootstraps because we will be plotting the model parameters below, and bootstraps generate more reliable [parameter estimates](tutorial_stats.html) than the MCMC walk.
+The saved model just loaded was made for the [stats tutorial](tutorial_stats.html) under the same settings used in the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html), except that the <span class = "function">wisp</span> function was set, as in the following code chunk, to also run a thousand bootstraps in addition to the default MCMC walk. We want bootstraps because we will be plotting the model parameters below, and bootstraps generate more reliable [parameter estimates](tutorial_stats.html) than the MCMC walk. As will be visible in the first rate-count plot below (at least, when compared to the same plot in the RORB tutorial), this change has a big effect on the CI and parameter estimates. 
 
 ```{r wisp_model_fit, eval = FALSE}
 model <- wisp(
-    count.data = countdata,
-    variables = data.variables,
-    plot.settings = list(
-        print.plots = FALSE, 
-        dim.bounds = colMeans(layer.boundary.bins)
-      ),
+    count.data     = countdata,
+    variables      = list(species = "gene", ran = "mouse", timeseries = "age"),
+    model.settings = list(LRO_cost = "none"), 
+    plot.settings  = list(
+      print.plots  = FALSE, 
+      dim.bounds   = colMeans(layer.boundary.bins)),
     bootstraps.num = 1000, 
-    max.fork = 5,
-    verbose = TRUE
+    max.fork       = 20,
+    verbose        = TRUE
   )
 ```
 
@@ -64,26 +64,28 @@ layer.boundary.bins <- read.csv(
   )
 ```
 
-Let's use the <span class = "function">plot.ratecount</span> function to reproduce the <span class = "gene">RORB</span> plot that was made and shown in the previous tutorial: 
+Let's use the <span class = "function">plot.ratecount</span> function to remake the <span class = "gene">RORB</span> plot that was made and shown in the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html), this time using the bootstrap resamples for the CI instead of MCMC resamples: 
 
 ```{r RORB_CI, results = "hide"}
 plot.ratecount(
-  model,
-  dim.boundaries = colMeans(layer.boundary.bins),
-  species = "Rorb" 
+    model,
+    dim.boundaries = colMeans(layer.boundary.bins),
+    species        = "Rorb",
+    verbose        = FALSE
   )
 ```
 ```{r check1, echo = FALSE}
 gb <- plot.ratecount(
-  model,
-  dim.boundaries = colMeans(layer.boundary.bins),
-  species = "Rorb" 
+    model,
+    dim.boundaries = colMeans(layer.boundary.bins),
+    species        = "Rorb",
+    verbose        = FALSE
   )
 test_val <- ggplot_build(gb$plot_pred_context_cortex_fixEff_Rorb)$data[[1]][4,2]
-if (test_val < 9.374682 || test_val > 9.374684) stop("failed check 1")
+if (test_val < 9.2 || test_val > 9.3) stop("failed check 1")
 ```
 
-CI rate-count plots are straightforward to interpret: The horizontal ($x$) axis shows spatial position along the modeled spatial dimension, the vertical ($y$) axis shows predicated rate. The solid line represents predicated rate, after random effects have been filtered out. The shaded ribbons show the 95\% confidence interval around the predicated rate. As explained in the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html), this confidence interval is computed without any multiple comparison correction (unlike $p$-values, which are corrected for multiple comparisons). Note that the different ribbon sizes in this plot compared to the plot from the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html) are due to using bootstraps instead of MCMC samples.
+CI rate-count plots are straightforward to interpret: The horizontal ($x$) axis shows spatial position along the modeled spatial dimension, the vertical ($y$) axis shows predicated rate. The solid line represents predicated rate, after random effects have been filtered out. The shaded ribbons show the 95\% confidence interval around the predicated rate. As explained in the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html), this confidence interval is computed without any multiple comparison correction (unlike $p$-values, which are corrected for multiple comparisons). As noted above, the different ribbon sizes in this plot compared to the plot from the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html) are due to using bootstraps instead of MCMC samples.
 
 Both kinds of rate-count plots separate treatment conditions. In this data, we have two covariates, <span class = "code_variable">hemisphere</span> and <span class = "code_variable">age</span>, each with two levels (left vs right for <span class = "code_variable">hemisphere</span>, P12 vs P18 for <span class = "code_variable">age</span>). Thus, the plot shows the predications for the four possible combinations of covariates (i.e., the reference condition of left-12, plus three treatment conditions). 
 
@@ -91,23 +93,25 @@ By default, both kinds of rate-count plots show rate as a raw value. However, it
 
 ```{r RORB_CI_log, results = "hide"}
 plot.ratecount(
-  model,
-  dim.boundaries = colMeans(layer.boundary.bins),
-  species = "Rorb",
-  log.scale = TRUE
+    model,
+    dim.boundaries = colMeans(layer.boundary.bins),
+    species        = "Rorb",
+    log.scale      = TRUE,
+    verbose        = FALSE
   )
 ```
 
 <h3>Scatter plots</h3>
 
-The second kind of rate-count plot, the scatter rate-count plot, is a more complex plot showing predicted rate without random effects as a line, model fit to individual replicates as dashed lines, and observed counts as scatter points. It's accessed via the <span class = "code_variable">CI_style</span> argument in <span class = "function">plot.ratecount</span>: 
+The second kind of rate-count plot, the _scatter rate-count plot_, is a more complex plot showing predicted rate without random effects as a line, model fit to individual replicates (i.e., predicted rates with random effects) as dashed lines, and observed counts (plus interpolations for random-effect-free counts) as scatter points. It's accessed via the <span class = "code_variable">CI_style</span> argument in <span class = "function">plot.ratecount</span>: 
 
 ```{r RORB_ran, results = "hide"}
 plot.ratecount(
-  model,
-  dim.boundaries = colMeans(layer.boundary.bins),
-  CI_style = FALSE,
-  species = "Rorb" 
+    model,
+    dim.boundaries = colMeans(layer.boundary.bins),
+    CI_style       = FALSE,
+    species        = "Rorb",
+    verbose        = FALSE
   )
 ```
 
@@ -117,15 +121,15 @@ The main advantages of scatter rate-count plots are that they show how well the 
 
 ```{r RORB_ran_decomposed, results = "hide"}
 plots.decomp <- plot.decomposition(
-  model,
-  dim.boundaries = colMeans(layer.boundary.bins),
-  species = "Rorb"
+    model,
+    dim.boundaries = colMeans(layer.boundary.bins),
+    species        = "Rorb"
   )
 ```
 ```{r check2, echo = FALSE}
 layer_data <- ggplot_build(plots.decomp[[3]])$data[[1]]
-test_val <- layer_data[, c("x", "y")][4,2]
-if (test_val < 9.374682 || test_val > 9.374684) stop("failed check 2")
+test_val   <- layer_data[, c("x", "y")][43,2]
+if (test_val < 16.3 || test_val > 16.4) stop("failed check 2")
 ```
 
 First, let's look at separate plots of counts (observed vs extrapolated without random effets) and predicted rates (fit of observed counts vs predicted rates without random effects):
@@ -142,7 +146,7 @@ Next, let's look at observed counts (points) and their fits (dashed lines) on th
 grid.arrange(grobs = plots.decomp[7:length(plots.decomp)], ncol = 2)
 ```
 
-Notice how each plot has two dashed lines which fit the observed counts well, and two which do not. This is because the model is fit to each sample in all treatment conditions. The treatment conditions are got by the interaction of covariates <span class = "code_variable">hemisphere</span> and <span class = "code_variable">age</span>. Although each sample includes both hemispheres, it can only include one age. The model pulls information across samples to extrapolate the fit for the missing treatment conditions. Thus, some of the dashed lines represent fits to observed counts in treatment conditions that were not actually observed in that sample.
+Notice how each plot has two dashed lines which fit the observed counts well, and two which do not. This is because the model is fit to each sample in all treatment conditions. The treatment conditions are got by the interaction of covariates <span class = "code_variable">hemisphere</span> and <span class = "code_variable">age</span>. Although each sample includes both hemispheres, it can only include one age. The model pools information across samples to extrapolate the fit for the missing treatment conditions. Thus, some of the dashed lines represent fits to observed counts in treatment conditions that were not actually observed in that sample.
 
 <h2>Time-series plots</h2>
 
@@ -150,14 +154,16 @@ For models fit with a covariate specified as a [time series](tutorial_timeseries
 
 ```{r RORB_timeseries, results = "hide"}
 plot.timeseries(
-  model, 
-  species = "Rorb"
+    model, 
+    species = "Rorb",
+    verbose = FALSE
   )
 ```
 ```{r check3, echo = FALSE}
 gb <- plot.timeseries(
-  model, 
-  species = "Rorb"
+    model, 
+    species = "Rorb",
+    verbose = FALSE
   )
 test_val <- gb$plot_pred_context_cortex_timeseries_Rorb$data[2,3]
 if (test_val < 11.11764 || test_val > 11.11766) stop("failed check 3")
@@ -171,8 +177,9 @@ Rate-count and time-series plots show observed and predicted gene expression rat
 
 ```{r RORB_parameters, results = "hide"}
 plots.param <- plot.parameters(
-  model,
-  species = "Rorb"
+    model,
+    species = "Rorb",
+    verbose = FALSE
   )
 ```
 
@@ -211,7 +218,7 @@ plots.param$plot_ranEff_cortex_Rorb
 ```
 ```{r check4, echo = FALSE}
 test_val <- plots.param$plot_ranEff_cortex_Rorb$data[2,2]
-if (test_val < 0.2469396 || test_val > 0.2469398) stop("failed check 4")
+if (test_val < 0.17 || test_val > 0.18) stop("failed check 4")
 ```
 
 There is one scalar for each parameter type (rate, transition point, transition slope), with each sample (i.e., replicate) having its own set of scalars. For example, in the above plot we can see at a glance that samples 1 and 2 have rates that are higher than expected while samples 3 and 4 have rates that are lower than expected. The exact interpretation of the random-effect parameters is discussed in the [warping tutorial](tutorial_warping.html).

@@ -1,7 +1,7 @@
 ---
 title: "RORB along the cortical laminar axis"
 author: "Michael Barkasi"
-date: "`r Sys.Date()`"
+date: "July 2, 2026 (v2.4)"
 ---
 
 ```{r setup, include = FALSE}
@@ -30,14 +30,14 @@ Before using any functions from wispack, S1 was identified in each sample by man
 
 <h3>Coordinate transform</h3>
 
-As wisp can only model one dimension of spatial variation (at least, as of v2.1), this axis must be identified and the <span class = "gene">RORB</span> molecule coordinates must be transformed into it. As the primary concern is with how <span class = "gene">RORB</span> is distributed across cortical layers, the laminar axis is the obvious candidate. Coordinate transformation into an axis of interest must be done outside of wispack. For this case, a custom coordinate transformation, described in this [preprint](https://doi.org/10.1101/2025.06.11.659209) (and available as code via the wispack function <span class = "function">cortical_coordinate_transform<\span>), was written. 
+As wisp can only model one dimension of spatial variation (at least, as of v2.4), this axis must be identified and the <span class = "gene">RORB</span> molecule coordinates must be transformed into it. As the primary concern is with how <span class = "gene">RORB</span> is distributed across cortical layers, the laminar axis is the obvious candidate. Coordinate transformation into an axis of interest must be done outside of wispack. For this case, a custom coordinate transformation, described in this [preprint](https://doi.org/10.1101/2025.06.11.659209) and [paper](https://doi.org/10.1093/nar/gkag466) (and available as code via the wispack function <span class = "function">cortical_coordinate_transform</span>), was written. 
 
 <div class="figure">
   <img src="fig_coordtrans.png" alt="Image showing the steps to transform coordinates from the CCFv3 registration to laminar and columnar axes" width="90%">
   <p class="caption">Visualization of coordinate transform steps from initial CCFv3 registration to laminar and columnar axes.</p>
 </div>
 
-Note that the laminar axis is encoded as _y_, with 0 being the bottom of L6b, 100 the top of L2/3. The columnar axis is encoded as _x_, with 0 being the most posterior point, 100 the most anterior point. L1 was removed from the analysis, as it contains very few cells.
+Note that the laminar axis is encoded as $y$, with 0 being the bottom of L6b, 100 the top of L2/3. The columnar axis is encoded as $x$, with 0 being the most posterior point, 100 the most anterior point. L1 was removed from the analysis, as it contains very few cells.
 
 <h2>Model setup</h2>
 
@@ -80,14 +80,24 @@ if (unique(countdata$gene)[2] != "Fezf2") stop("failed check 2")
 
 Just as <span class = "gene">RORB</span> is known to be localized to L4, the other genes are also known to be localized to specific layers. 
 
-| Abbreviation | Name | Layer |
-|:-------------|:-----|:------|
-|<span class = "gene">BCL11B</span>, <span class = "gene">CTIP2</span> | B-cell CLL/lymphoma 11b | 5/6 |
-|<span class = "gene">FEZF2</span> | FEZ Family Zinc Finger 2 | 5 |
-|<span class = "gene">SATB2</span> | SATB Homeobox 2 | 2/3 |
-|<span class = "gene">NXPH3</span> | Neurexophilin 3 | 6 |
-|<span class = "gene">CUX2</span> | Cut like homeobox 2 | 2/3/4 |
-|<span class = "gene">RORB</span> | Retinoic acid-related orphan receptor beta | 4 |
+<table>
+  <colgroup>
+    <col style="width: 25%;">
+    <col style="width: 50%;">
+    <col style="width: 25%;">
+  </colgroup>
+  <thead>
+    <tr><th>Abbreviation</th><th>Name</th><th>Layer</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><span class="gene">BCL11B</span>, <span class="gene">CTIP2</span></td><td>B-cell CLL/lymphoma 11b</td><td>5/6</td></tr>
+    <tr><td><span class="gene">FEZF2</span></td><td>FEZ Family Zinc Finger 2</td><td>5</td></tr>
+    <tr><td><span class="gene">SATB2</span></td><td>SATB Homeobox 2</td><td>2/3</td></tr>
+    <tr><td><span class="gene">NXPH3</span></td><td>Neurexophilin 3</td><td>6</td></tr>
+    <tr><td><span class="gene">CUX2</span></td><td>Cut like homeobox 2</td><td>2/3/4</td></tr>
+    <tr><td><span class="gene">RORB</span></td><td>Retinoic acid-related orphan receptor beta</td><td>4</td></tr>
+  </tbody>
+</table>
 
 So, the modeling results can be compared to known biology in all cases. To facilitate this comparison, we can load the layer boundaries gotten from the CCFv3 registration for use later. Note that these boundaries are only used for this comparison, not to fit the model.
 
@@ -111,15 +121,15 @@ cat("Number of cells:", num_cells, "\n")
 if (num_cells != 54116) stop("failed check 3")
 ```
 
-The count column thus gives the number of molecules of the RNA species listed in the gene column, found in the cell represented by a given row. Each cell, of course, comes from a specific mouse and brain hemisphere, information given in the correspondingly named columns. The age column gives the age of the mouse. 
+The <span class = "code_variable">count</span> column thus gives the number of molecules of the RNA species listed in the <span class = "code_variable">gene</span> column, found in the cell represented by a given row. Each cell, of course, comes from a specific mouse and brain hemisphere, information given in the correspondingly named columns. The <span class = "code_variable">age</span> column gives the age of the mouse. 
 
-This leaves two columns to explain: context and bin. "Context" refers to the biological context of the cell. In this case, all the cells are simply labeled as "cortex", thus making context a dummy variable. An obvious use of the context variable would be to label the type of each cell, e.g., glutamatergic vs. GABAergic neurons (see [Modeling celltypes](tutorial_multicontext.html)).
+This leaves two columns to explain: <span class = "code_variable">context</span> and <span class = "code_variable">bin</span>. "Context" refers to the biological context of the cell. In this case, all the cells are simply labeled as "cortex", thus making context a dummy variable. An obvious use of the context variable would be to label the type of each cell, e.g., glutamatergic vs. GABAergic neurons (see [Modeling celltypes](tutorial_multicontext.html)).
 
-The bin column gives the position of the cell along the axis of interest (in this case, the laminar axis), in units of "bins". Any position coordinates could be used, including ones with non-integer values such as microns. However, we have binned the position coordinates into 100 (roughly) equal-width bins to allow for bootstrapping (see [Customizing statistical analyses](tutorial_stats.html)). 
+The <span class = "code_variable">bin</span> column gives the position of the cell along the axis of interest (in this case, the laminar axis), in units of "bins". Any position coordinates could be used, including ones with non-integer values such as microns. However, we have binned the position coordinates into 100 (roughly) equal-width bins to allow for bootstrapping (see [Customizing statistical analyses](tutorial_stats.html)). 
 
 <h2>Effects structure</h2>
 
-The goal is to test for interacting effects of age and laterality, with mouse as a random-effect grouping factor. A linear model from the well-known R package lme4 with the appropriate effects structure could be gotten with the following call:
+The goal is to test for interacting effects of <span class = "code_variable">age</span> and laterality (i.e., variable <span class = "code_variable">hemisphere</span>), with <span class = "code_variable">mouse</span> as a random-effect grouping factor. A linear model from the well-known R package lme4 with the appropriate effects structure could be gotten with the following call:
 
 ```{r lmer_formula, eval = FALSE}
 model <- lme4::lmer(
@@ -128,9 +138,9 @@ model <- lme4::lmer(
   )
 ```
 
-The problem with this linear model is that it makes no use of the bin variable and thus loses all spatial information. A second problem is that the model makes no use of the gene variable, although this problem could be addressed by subsetting countdata to just a single gene of interest. (Gene should not be treated as another fixed-effect factor along with age and hemisphere, as there's no reason to think age or hemisphere have any effect independent of RNA species.) Nevertheless, this model shows the basic effects structure wisp aims to capture. 
+The problem with this linear model is that it makes no use of the <span class = "code_variable">bin</span> variable and thus loses all spatial information. A second problem is that the model makes no use of the <span class = "code_variable">gene</span> variable, although this problem could be addressed by subsetting <span class = "code_variable">countdata</span> to just a single gene of interest. (<span class = "code_variable">Gene</span> should not be treated as another fixed-effect factor along with <span class = "code_variable">age</span> and <span class = "code_variable">hemisphere</span>, as there's no reason to think <span class = "code_variable">age</span> or <span class = "code_variable">hemisphere</span> have any effect independent of RNA species.) Nevertheless, this model shows the basic effects structure wisp aims to capture. 
 
-A wisp captures this effects structure without discarding spatial information, and while segregating counts by gene. Unlike a mixed-effects linear model from the lme4 package, there is no model formula to specify in wispack. Instead of using a syntactic description (a formula), the effects structure in wispack is set semantically, i.e., by specifying which variables in the data frame correspond to which roles in the model. The roles are: 
+A wisp captures this effects structure without discarding spatial information, and while segregating <span class = "code_variable">count</span> by <span class = "code_variable">gene</span>. Unlike a mixed-effects linear model from the lme4 package, there is no model formula to specify in wispack. Instead of using a syntactic description (a formula), the effects structure in wispack is set semantically, i.e., by specifying which variables in the data frame correspond to which roles in the model. The roles are: 
 
 1. <span class = "code_variable">count</span>: either a non-negative integer giving the number of RNA molecules of a given species in a given cell, or a non-negative real number giving normalized or log-transformed expression values.
 2. <span class = "code_variable">bin</span>: the position of the cell along the axis of interest (whether or not the actual unit is "bin"). 
@@ -144,13 +154,13 @@ Note that wisps are intended to model [Poisson processes](tutorial_Poisson.html)
 
 The timeseries variable is optional. If none is provided, wisp will not treat any fixed effects as time series. However, if a variable is flagged as a time series, wisp will model it as a [discrete additive effect](tutorial_timeseries.html).
 
-In the data frame loaded above, the <span class = "code_variable">count</span>, <span class = "code_variable">bin</span>, and <span class = "code_variable">context</span> columns match the names of the roles to which they correspond. Wispack will find those columns automatically. However, the <span class = "code_variable">species</span> and <span class = "code_variable">ran</span> roles have different names in the data frame, and thus wispack needs to know which data columns carry these variables. While wispack has no default names for fixed effects, if no fixed effects are specified, all columns not identified as one of the other roles will be treated as fixed effects. Unless flagged as a time series, all fixed effects must have at most two levels. 
+In the data frame loaded above, the <span class = "code_variable">count</span>, <span class = "code_variable">bin</span>, and <span class = "code_variable">context</span> columns match the names of the roles to which they correspond. Wispack will find those columns automatically. However, the <span class = "code_variable">species</span> and <span class = "code_variable">ran</span> roles have different names in the data frame, and thus wispack needs to know which data columns carry these variables. While wispack has no default names for fixed effects, if no fixed effects are specified, all columns not identified as one of the other roles will be treated as fixed effects. Unless flagged as a time series, fixed effects can have no more than two levels. 
 
 ```{r wisp_setup}
 # Specify variables for wisp
 data.variables <- list(
-    species = "gene",
-    ran = "mouse",
+    species    = "gene",
+    ran        = "mouse",
     timeseries = "age"
   )
 ```
@@ -162,12 +172,12 @@ It would be redundant, but all roles would be specified as follows:
 ```{r all_roles, eval=FALSE}
 # Specify all variables for wisp
 data.variables <- list(
-    count = "count",
-    bin = "bin", 
-    context = "context", 
-    species = "gene",
-    ran = "mouse",
-    timeseries = "age",
+    count        = "count",
+    bin          = "bin", 
+    context      = "context", 
+    species      = "gene",
+    ran          = "mouse",
+    timeseries   = "age",
     fixedeffects = c("hemisphere", "age")
   )
 ```
@@ -178,14 +188,14 @@ In wisp, a semantic specification of the variable roles suffices because, with r
 
 <div class="figure">
   <img src="fig_logisticpolysig.png" alt="Demo plots of functions involved in wisp, the logistic function" width="90%">
-  <p class="caption">(Top) The logistic function, used to model a single change point in gene expression. (Bottom) The wisp poly-sigmoid function, built from three logistic components, representing three change points.</p>
+  <p class="caption">(Top) The logistic function, used to model a single change point in gene expression. (Bottom) The wisp poly-sigmoid function, built from three logistic components, representing three change points.  Note that "WSP" was older parlance for "wisp", from when this figure was originally made.</p>
 </div>
 
 Random effects from the random-effect grouping factor are a [nonlinear warping](tutorial_warping.html) of the three spatial parameters. 
 
 <div class="figure">
   <img src="fig_warped.png" alt="Demo plots of functions involved in wisp, warping function" width="90%">
-  <p class="caption">(Top) The warping function used to represent random effects, e.g., variation due to differences between individual animals or due to measurement noise. (Bottom) The wisp poly-sigmoid with warping function applied.</p>
+  <p class="caption">(Top) The warping function used to represent random effects, e.g., variation due to differences between individual animals or due to measurement noise. (Bottom) The wisp poly-sigmoid with warping function applied. Note that "WSP" was older parlance for "wisp", from when this figure was originally made.</p>
 </div>
 
 <h2>Fitting a wisp</h2>
@@ -201,6 +211,8 @@ Although wispack includes many settings for fine-tuning the modeling process, fi
 
 The following code fits a wisp model to the data loaded above, with verbose output. Plots are suppressed, as by default many are generated in the fitting process. As noted above, layer boundaries are provided to the model, but are used only in making plots so that the model fit and parameter estimates can be compared to the laminar boundaries estimated by the CCFv3 registration.
 
+Note that the <span class = "code_variable">LRO_cost</span> variable under <span class = "code_variable">model.settings</span> is set to "none". The default (as of v2.4) is "AIC", which will trigger a time-consuming grid search of parameters (minimizing model AIC) to use in the initial LRO change-point detection algorithm. Setting to "none" skips this search and defaults to reasonably robust LRO options. 
+
 ```{r fit_wisp}
 # Set random seed for reproducibility
 set.seed(123)
@@ -208,14 +220,14 @@ set.seed(123)
 library(wispack, quietly = TRUE)
 # Fit model
 model <- wisp(
-    count.data = countdata,
-    variables = data.variables,
-    model.settings = list(LRO_cost = "none"),
-    plot.settings = list(
+    count.data      = countdata,
+    variables       = data.variables,
+    model.settings  = list(LRO_cost = "none"),
+    plot.settings   = list(
         print.plots = FALSE, 
-        dim.bounds = colMeans(layer.boundary.bins)
+        dim.bounds  = colMeans(layer.boundary.bins)
       ),
-    verbose = TRUE
+    verbose         = TRUE
   )
 ```
 
@@ -231,7 +243,7 @@ The most flat-footed way to extract desired results is to hunt through the outpu
 for (n in names(model)) cat(n, ": ", paste0(class(model[[n]]), collapse = ", "), "\n", sep = "")
 ```
 
-Within the <span class = "code_variable">stats</span> object (another list itself), the following is found: 
+These components are described in more detail in the <span class = "function">wisp</span> entry of the "Package Functions" section of this site. Within the <span class = "code_variable">stats</span> object (another list itself), the following is found: 
 
 ```{r stats_components}
 for (n in names(model$stats)) cat(n, ": ", paste0(class(model$stats[[n]]), collapse = ", "), "\n", sep = "")
@@ -247,13 +259,13 @@ test_val <- model$stats$parameter[1,2]
 if (test_val < 3.38 || test_val > 3.4) stop("failed check 4")
 ```
 
-All fixed-effects of hemisphere (i.e., laterality) on the expression rate of <span class = "gene">RORB</span> can be extracted by masking with the treatment variable name for the factor <span class = "code_variable">hemisphere</span> (which is "right", with "left" as the reference level), the name of the gene of interest ("<span class = "gene">RORB</span>"), and the type of parameter (fixed effect on rate, which is "beta" on "Rt"):
+All fixed-effects of <span class = "code_variable">hemisphere</span> (i.e., laterality) on the expression rate of <span class = "gene">RORB</span> can be extracted by masking with the treatment variable name for the factor <span class = "code_variable">hemisphere</span> (which is "right", with "left" as the reference level), the name of the gene of interest ("<span class = "gene">RORB</span>"), and the type of parameter (fixed effect on rate, which is "beta" on "Rt"):
 
 ```{r hemisphere_effects_RORB}
 mask <- grepl("Rorb", model$stats$parameters$parameter) &    # just this gene
-  grepl("right", model$stats$parameters$parameter) &         # just the effect of hemisphere
-  grepl("beta", model$stats$parameters$parameter) &          # just the fixed effects of the above factor
-  grepl("Rt", model$stats$parameters$parameter)              # just the effects on rate
+  grepl("right",      model$stats$parameters$parameter) &    # just the effect of hemisphere
+  grepl("beta",       model$stats$parameters$parameter) &    # just the fixed effects of the above factor
+  grepl("Rt",         model$stats$parameters$parameter)      # just the effects on rate
 print(model$stats$parameter[mask, ])
 ```
 ```{r check5, echo = FALSE}
@@ -261,7 +273,7 @@ test_val <- model$stats$parameter[mask, ][2,3]
 if (test_val < -0.01 || test_val > 0.1) stop("failed check 5")
 ```
 
-Notice that all of the parameter names end in "Tns/Blk1", "Tns/Blk2", "Tns/Blk3", or "Tns/Blk4". This is because the model fit found three transition points, thus dividing the laminar axis into four blocks of roughly constant expression rate. The estimated effect of <span class = "code_variable">hemisphere</span> on rate is given for each of the four blocks. Each block lists two estimates, one for the effect at the reference age (P12), and one for the interaction of <span class = "code_variable">hemisphere</span> with <span class = "code_variable">age</span> (the effect of laterality at P18). As can be seen, <span class = "gene">RORB</span> expression is up-regulated in the right hemisphere (compared to left) across all blocks, but the interaction of <span class = "code_variable">hemisphere</span> with <span class = "code_variable">age</span> decreases that up-regulation, i.e., the laterality effect is less pronounced at P18 than at P12.
+Notice that all of the parameter names end in "Tns/Blk1", "Tns/Blk2", "Tns/Blk3", or "Tns/Blk4". This is because the model fit found three transition points, thus dividing the laminar axis into four blocks of roughly constant expression rate. The estimated effect of <span class = "code_variable">hemisphere</span> on rate is given for each of the four blocks. Each block lists two estimates, one for the effect at the reference age (P12), and one for the interaction of <span class = "code_variable">hemisphere</span> with <span class = "code_variable">age</span> (the effect of laterality at P18). As can be seen, <span class = "gene">RORB</span> expression is up-regulated in the right hemisphere (compared to left) across all blocks, but the interaction of <span class = "code_variable">hemisphere</span> with <span class = "code_variable">age</span> decreases that up-regulation, i.e., the laterality effect is less pronounced at P18 than at P12. In blocks 3 and 4, that negative interaction seems to more than cancel out the positive effect of the right hemisphere itself (meaning that the left has a higher expression rate), although the uncertainty ranges are large. 
 
 <h3>Plotting results</h3>
 

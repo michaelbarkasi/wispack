@@ -9,7 +9,13 @@ comparison.
 ## Usage
 
 ``` r
-model_attractor_simulation_wisp(sim, sim_num, bs_num = 1000, max_fork = 1)
+model_attractor_simulation_wisp(
+  sim,
+  sim_num,
+  LRO_cost = "none",
+  bs_num = 1000,
+  max_fork = 1
+)
 ```
 
 ## Arguments
@@ -23,6 +29,23 @@ model_attractor_simulation_wisp(sim, sim_num, bs_num = 1000, max_fork = 1)
 
   An integer specifying the simulation number for setting the random
   seed and labeling results.
+
+- LRO_cost:
+
+  Passed to the `wisp` function. Character string giving cost function
+  to use when evaluating likelihood-ratio outlier (LRO) parameters for
+  testing for expression-rate transition points in the data ("AIC",
+  "BIC", "NLL"; anything else defaults to the hand-specified LROcutoff
+  and LROwindow_factor).
+
+- bs_num:
+
+  An integer specifying the number of bootstrap resamples to run.
+
+- max_fork:
+
+  An integer specifying the number of forks to run when computing
+  bootstraps in parallel. For Windows, must be 1.
 
 ## Value
 

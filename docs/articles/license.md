@@ -1,10 +1,9 @@
 # Dependency licenses
 
-The GPLv2 of Rcpp, the Apache 2.0 of the oneTBB and package compiled
-with Stan, and the Apache 2.0 of the pcg package are incompatible when
-bundled together as a single binary, which is why these scripts are
-being provided as a buildable R package on GitHub but not as a
-precompiled binary ready for installation.
+The GPLv2 of Rcpp and the Apache 2.0 of the oneTBB package compiled with
+Stan are incompatible when bundled together as a single binary, which is
+why these scripts are being provided as a buildable R package on GitHub
+but not as a precompiled binary ready for installation.
 
 See: <https://github.com/stan-dev/stan/wiki/Stan-Licensing>
 
@@ -113,16 +112,6 @@ The NLopt nonlinear-optimization package
 
 GNU Lesser General Public License (LGPL)  
 <https://nlopt.readthedocs.io/en/latest/NLopt_License_and_Copyright/>
-
-# pcg
-
-Melissa E. O’Neill  
-<https://www.cs.hmc.edu/~oneill/index.html>
-
-<https://www.pcg-random.org/>  
-<https://github.com/imneme/pcg-cpp>
-
-Apache 2.0 and The MIT License
 
 # unistd.h, part of the C POSIX library
 

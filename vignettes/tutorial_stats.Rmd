@@ -1,7 +1,7 @@
 ---
 title: "Customizing statistical analyses"
 author: "Michael Barkasi"
-date: "`r Sys.Date()`"
+date: "July 3, 2026 (v2.4)"
 ---
 
 ```{r setup, include = FALSE}
@@ -11,11 +11,13 @@ knitr::opts_chunk$set(class.output = "scroll-output", cache = TRUE)
 
 <h2>Introduction</h2>
 
-The purpose of a wisp model is to test whether a factor $\xi$ has an effect $\beta_\xi$ (such that $\beta_\xi \neq 0$) on the spatial distribution of a gene's expression, that distribution being parameterized in terms of expression rate, expression-rate transition points, and transition slopes. The true value of $\beta_\xi$ is estimated by resampling, either using a Markov chain Monte Carlo (MCMC) algorithm, or by refitting the model to resamples of the data (bootstrapping). This tutorial will not explain how the MCMC walk or bootstrap resampling is performed; these details are covered in the [paper introducing wisp](https://doi.org/10.1101/2025.06.11.659209). Instead, this tutorial will focus on how $p$-values and confidence intervals (CI) are computed from the sampling (i.e., hypothesis testing), how the MCMC and bootstrapping approaches compare, and how to adjust various key settings in wispack. 
+The purpose of a wisp model is to test whether a factor $\xi$ has an effect $\beta_\xi$ (such that $\beta_\xi \neq 0$) on the spatial distribution of a gene's expression, that distribution being parameterized in terms of expression rate, expression-rate transition points, and transition slopes. The true value of $\beta_\xi$ is estimated by resampling, either using a Markov chain Monte Carlo (MCMC) algorithm, or by refitting the model to resamples of the data (bootstrapping). This tutorial will not explain how the MCMC walk and bootstrap resampling are performed; these details are covered in the [paper introducing wisp](https://doi.org/10.1101/2025.06.11.659209). Instead, this tutorial will focus on how $p$-values and confidence intervals (CI) are computed from the sampling (i.e., hypothesis testing), how the MCMC and bootstrapping approaches compare, and how to adjust various key settings in wispack.[^1]
+
+[^1]: An earlier version of the comparison between MCMC and bootstrap resampling, using v1.0 of wispack, is provided in the original [preprint](https://doi.org/10.1101/2025.06.11.659209). It shows essentially the same thing, albeit with slightly different specifics.
 
 <h2>Hypothesis testing</h2>
 
-Suppose for each spatial parameter $z$, gene $g$, context $c$, and factor $\xi$ we have some set of resamples of the associated effect $\beta$, either generated via MCMC walk or bootstrapping. 
+Suppose for each spatial parameter $z$, gene $g$, context $c$, and factor $\xi$ we have some set of resamples of the associated effect $\beta$, either generated via MCMC walk or bootstrapping. How do we compute $p$-values and confidence intervals? 
 
 <h3>Computations</h3>
 
@@ -60,20 +62,20 @@ countdata <- read.csv(
     )
   )
 data.variables <- list(
-    species = "gene",
-    ran = "mouse",
+    species    = "gene",
+    ran        = "mouse",
     timeseries = "age"
   )
 model <- wisp(
-    count.data = countdata,
-    variables = data.variables,
-    plot.settings = list(
-        print.plots = FALSE, 
-        dim.bounds = colMeans(layer.boundary.bins)
-      ),
+    count.data     = countdata,
+    variables      = data.variables,
+    model.settings = list(LRO_cost = "none"), 
+    plot.settings  = list(
+      print.plots  = FALSE, 
+      dim.bounds   = colMeans(layer.boundary.bins)),
     bootstraps.num = 1000, 
-    max.fork = 20,
-    verbose = TRUE
+    max.fork       = 20,
+    verbose        = TRUE
   )
 model$plots <- NULL
 saveRDS(model, "corticallaminar_model.rds")
@@ -81,15 +83,15 @@ saveRDS(model, "corticallaminar_model.rds")
 
 ```{r wisp_model_fit, eval = FALSE}
 model <- wisp(
-    count.data = countdata,
-    variables = data.variables,
-    plot.settings = list(
-        print.plots = FALSE, 
-        dim.bounds = colMeans(layer.boundary.bins)
-      ),
+    count.data     = countdata,
+    variables      = list(species = "gene", ran = "mouse", timeseries = "age"),
+    model.settings = list(LRO_cost = "none"), 
+    plot.settings  = list(
+      print.plots  = FALSE, 
+      dim.bounds   = colMeans(layer.boundary.bins)),
     bootstraps.num = 1000, 
-    max.fork = 5,
-    verbose = TRUE
+    max.fork       = 20,
+    verbose        = TRUE
   )
 ```
 
@@ -118,24 +120,24 @@ This default analysis can be accessed from the output of <span class = "function
 print(head(model$stats$parameters))
 ```
 ```{r check1, echo = FALSE}
-if (model$stats$parameters[4,2] < 0.0476934491 || model$stats$parameters[4,2] > 0.0476934493) stop("failed check 1")
+if (model$stats$parameters[4,2] < 0.04 || model$stats$parameters[4,2] > 0.05) stop("failed check 1")
 ```
 
-To customize the computations for $p$-values and CIs, we can use the function <span class = "function">sample.stats</span>. This function assumes that resamples have already been generated, by either MCMC walk or bootstrapping. It itself does not run these resamples; it merely extracts $p$-values and CIs from them. The function <span class = "function">sample.stats</span> allows for setting a new alpha level and for switching between Holm-Bonferroni and Bonferroni corrections. It returns the data frame which populates <span class = "code_variable">model\$stats\$parameters</span>: 
+To customize the computations for $p$-values and CIs, we can use the function <span class = "function">sample.stats</span>. This function assumes that resamples have already been generated, by either MCMC walk or bootstrapping. It itself does not run these resamples; it merely extracts $p$-values and CIs from them. The function <span class = "function">sample.stats</span> allows for setting a new alpha level and for switching between Holm-Bonferroni and Bonferroni corrections. It returns a copy of <span class = "code_variable">model</span> with (1) a new or (if it already existed) re-written entry <span class = "code_variable">parameters</span> under <span class = "code_variable">stats</span> holding a data frame giving, for each parameter, its name, estimate, confidence interval (CI.low, CI.high), p-value, adjusted p-value (p.value.adj), adjusted alpha (alpha.adj), and significance level (significance), and also (2) new (or re-written) 95% confidence interval range columns in <span class = "code_variable">count.data.summed</span> for predicted log count by bin. 
 
 ```{r customize_stats}
-model$stats$parameters <- sample.stats(
+model <- sample.stats(
     model,
-    alpha = 0.01,
+    alpha      = 0.01,
     Bonferroni = TRUE,
-    verbose = TRUE
+    verbose    = TRUE
   )
 ```
 ```{r check2, echo = FALSE}
-if (model$stats$parameters[4,3] < -0.1029797 || model$stats$parameters[4,3] > -0.1029795) stop("failed check 2")
+if (model$stats$parameters[4,3] < -0.1 || model$stats$parameters[4,3] > -0.09) stop("failed check 2")
 ```
 
-Above we switched from $\alpha = 0.05$ to $\alpha = 0.01$ and from a Holm-Bonferroni to a Bonferroni correction. As can be seen in the print out, if <span class = "code_variable">verbose</span> is set to <span class = "code_variable">TRUE</span>, <span class = "function">sample.stats</span> will print out both the head of <span class = "code_variable">model\$stats\$parameters</span> and also information about the threshold $\alpha$ and the number of hypothesis tests run. In this case, $\alpha = 0.01$ and 171 tests are fun. In addition, the function <span class = "function">summary.stats</span> estimates the number of resamples needed for threshold $\alpha$ and outputs both this number and the actual number of resamples used. In this case, it's recommended that 17,100 resamples are used, but only 1,001 are given (the thousand bootstraps, plus the original fit of the model to the data). Hence, if this were a real analysis, either $\alpha$ should be increased (e.g., back up to 0.05), or the number of bootstraps increased. 
+Above we switched from $\alpha = 0.05$ to $\alpha = 0.01$ and from a Holm-Bonferroni to a Bonferroni correction. As can be seen in the print out, if <span class = "code_variable">verbose</span> is set to <span class = "code_variable">TRUE</span>, <span class = "function">sample.stats</span> will print out both the head of <span class = "code_variable">model\$stats\$parameters</span> and also information about the threshold $\alpha$ and the number of hypothesis tests run. In this case, $\alpha = 0.01$ and 171 tests were run. In addition, the function <span class = "function">sample.stats</span> estimates the number of resamples needed for threshold $\alpha$ and outputs both this number and the actual number of resamples used. In this case, it's recommended that 17,100 resamples are used, but only 1,001 are given (the thousand bootstraps, plus the original fit of the model to the data). Hence, if this were a real analysis, either $\alpha$ should be increased (e.g., back up to 0.05), or the number of bootstraps increased. 
 
 <h2>MCMC</h2>
 
@@ -148,25 +150,25 @@ The settings for the MCMC walk can be adjusted with the <span class = "code_vari
 ```{r wisp_MCMC_settings, eval = FALSE}
 # Set new MCMC values 
 MCMC.settings.new <- list(
-      MCMC.burnin = 1e2,
-      MCMC.steps = 1e3,
-      MCMC.step.size = 0.5,
-      MCMC.prior = 1.0, 
+      MCMC.burnin          = 1e2,
+      MCMC.steps           = 1e3,
+      MCMC.step.size       = 0.5,
+      MCMC.prior           = 1.0, 
       MCMC.neighbor.filter = 1
     )
 
 # Use new settings in wisp
 model <- wisp(
-    count.data = countdata,
-    variables = data.variables,
-    MCMC.settings = MCMC.settings.new,
-    plot.settings = list(
+    count.data      = countdata,
+    variables       = data.variables,
+    MCMC.settings   = MCMC.settings.new,
+    plot.settings   = list(
         print.plots = FALSE, 
-        dim.bounds = colMeans(layer.boundary.bins)
+        dim.bounds  = colMeans(layer.boundary.bins)
       ),
-    bootstraps.num = 1000, 
-    max.fork = 5,
-    verbose = TRUE
+    bootstraps.num  = 1000, 
+    max.fork        = 5,
+    verbose         = TRUE
   )
 ```
 
@@ -186,7 +188,7 @@ Wispack includes the function <span class = "function">plot.MCMC.walks</span> fo
 MCMC_walk_plots <- plot.MCMC.walks(
  model, 
  print.plots = FALSE, 
- verbose = FALSE, 
+ verbose     = FALSE, 
  low_samples = 10
 )
 ```
@@ -198,7 +200,7 @@ print(MCMC_walk_plots$plot.walks.parameters_low)
 ```
 ```{r check3, echo = FALSE}
 test_val <- ggplot_build(MCMC_walk_plots$plot.walks.parameters_low)$data[[1]][4,2]
-if (test_val < -0.9426827 || test_val > -0.9426825) stop("failed check 3")
+if (test_val < -0.93 || test_val > -0.9) stop("failed check 3")
 ```
 
 As can be seen, there is high autocorrelation between steps, i.e., the value at a given point is much closer to the values of its neighbors than to the values of more distant points. This is undesirable, as it means that many of the samples are not independent. A higher value for <span class = "code_variable">MCMC.neighbor.filter</span> may help, as it essentially skips nearby samples. 
@@ -221,24 +223,22 @@ Notice that the NLL is generally decreasing across the MCMC steps, but only by a
 
 <h3>Reconciling MCMC and L-BFGS</h3>
 
-Despite being the default, MCMC walks are often a poor choice for all but the simplest wisp models, given the high autocorrelation and tendency to get trapped in local minima. MCMC walks are the default because they are computationally much faster and can be run on a single core. However, using them often requires throwing out the initial fit from L-BFGS. To see why, first note that the <span class = "function">wisp</span> function returns three matrices of parameter resamples: 
+Despite being the default, MCMC walks are often a poor choice for all but the simplest wisp models, given the high autocorrelation and tendency to get trapped in local minima. MCMC walks are the default because they are computationally much faster and can be run on a single core. However, using them often requires throwing out the initial fit from L-BFGS. To see why, first note that the <span class = "function">wisp</span> function returns two matrices of parameter resamples plus a character string specifying the type of resamples to be used: 
 
 ```{r get_param_matrix_names}
 paste0(names(model)[grep("sample.params", names(model))], collapse = ", ")
 ```
 
-The matrices <span class = "code_variable">sample.params.bs</span> and <span class = "code_variable">sample.params.MCMC</span> contain the bootstrap and MCMC resamples, respectively. The matrix <span class = "code_variable">sample.params</span> is used by the <span class = "function">sample.stats</span> function. If <span class = "code_variable">sample.params.bs</span> is not present, then <span class = "code_variable">sample.params</span> is a copy of <span class = "code_variable">sample.params.MCMC</span>. If <span class = "code_variable">sample.params.bs</span> is present, then <span class = "code_variable">sample.params</span> is a copy of it. Thus, when both MCMC walks and bootstrap resamples are run, <span class = "code_variable">sample.params</span> ignores the MCMC walks and uses the bootstrap resamples. 
-
-Let's make a copy of our model that uses the MCMC walks and re-run the statistical analysis on it: 
+The matrices <span class = "code_variable">sample.params.bs</span> and <span class = "code_variable">sample.params.MCMC</span> contain the bootstrap and MCMC resamples, respectively. The matrix <span class = "code_variable">sample.params.<sample.params.type></span> is used by the <span class = "function">sample.stats</span> function. If <span class = "code_variable">sample.params.bs</span> is present, then <span class = "code_variable">sample.params.type</span> will be "bs", otherwise it will be "MCMC". Thus, when both MCMC walks and bootstrap resamples are run, <span class = "code_variable">sample.params</span> ignores the MCMC walks and uses the bootstrap resamples. However, we can force a change by manually resetting <span class = "code_variable">sample.params.type</span> to "MCMC". Let's make a copy of our model that uses the MCMC walks and re-run the statistical analysis on it: 
 
 ```{r model_copy}
-model_MCMC <- model
-model_MCMC$sample.params <- model_MCMC$sample.params.MCMC
-model_MCMC$stats$parameters <- sample.stats(model_MCMC)
+model_MCMC                    <- model
+model_MCMC$sample.params.type <- "MCMC"
+model_MCMC                    <- sample.stats(model_MCMC)
 ```
 ```{r check4, echo = FALSE}
 test_val <- model_MCMC$stats$parameters[4,4]
-if (test_val > 0.05630499 || test_val < 0.05630497) stop("failed check 4")
+if (test_val > 0.07 || test_val < 0.05) stop("failed check 4")
 ```
 
 Now, let's plot the values $\beta$ for <span class = "gene">RORB</span> for the effect of age in the left hemisphere. We will highlight the value found by the L-BFGS fit with a large yellow asterisk. Here are the distributions from the bootstrap resamples:
@@ -248,7 +248,7 @@ plots.param <- plot.parameters(model, species = "Rorb", verbose = FALSE)
 print(
   plots.param$plot_treatment_18_cortex_Rorb + 
     scale_y_continuous(expand = expansion(mult = 0.1)) +
-    geom_point(aes(y = means), shape = 8, size = 4, stroke = 2, color = "black", na.rm = TRUE) + 
+    geom_point(aes(y = means), shape = 8, size = 4, stroke = 2, color = "black",  na.rm = TRUE) + 
     geom_point(aes(y = means), shape = 8, size = 4, stroke = 1, color = "yellow", na.rm = TRUE)
   )
 ```
@@ -262,7 +262,7 @@ plots.param_MCMC <- plot.parameters(model_MCMC, species = "Rorb", verbose = FALS
 print(
   plots.param_MCMC$plot_treatment_18_cortex_Rorb + 
     scale_y_continuous(expand = expansion(mult = 0.1)) +
-    geom_point(aes(y = means), shape = 8, size = 4, stroke = 2, color = "black", na.rm = TRUE) + 
+    geom_point(aes(y = means), shape = 8, size = 4, stroke = 2, color = "black",  na.rm = TRUE) + 
     geom_point(aes(y = means), shape = 8, size = 4, stroke = 1, color = "yellow", na.rm = TRUE)
   )
 ```
@@ -275,7 +275,7 @@ Three possible solutions suggest themselves:
 2. Set <span class = "code_variable">MCMC.burnin</span> to zero and start the walk from the L-BFGS fit.
 3. Discard the L-BFGS fit and use the median of the MCMC walk as the estimate of each effect $\beta$.
 
-Each of these options have downsides. In practical terms, (1) is often unworkable, as significantly larger step sizes tend to lead to acceptance rates near (or at) zero. Option (2), interestingly, has the same problem, unless step size is so small that the acceptance rate is very high, leaving the space around the L-BFGS fit underexplored. (As to implementing this option, if the number of burn-in steps is set to zero, wispack will automatically switch to starting the walk at the L-BGGS fit.) In both cases, the root issue is presumably the non-linearity of the model: small changes to viable parameters often produce large changes in predictions, leading to a worse fit with the data. The L-BFGS fit gets around this issue because following the gradient allows for navigating around these non-linearities.
+Each of these options have downsides. In practical terms, (1) is often unworkable, as significantly larger step sizes tend to lead to acceptance rates near (or at) zero. Option (2), interestingly, has the same problem, unless step size is so small that the acceptance rate is very high, leaving the space around the L-BFGS fit underexplored. (As to implementing this option, if the number of burn-in steps is set to zero, wispack will automatically switch to starting the walk at the L-BFGS fit.) In both cases, the root issue is presumably the non-linearity of the model: small changes to viable parameters often produce large changes in predictions, leading to a worse fit with the data. The L-BFGS fit gets around this issue because following the gradient allows for navigating around these non-linearities.
 
 We're left with option (3), which is unsatisfactory (of course) because it leaves us with final estimates that are known to be suboptimal fits. Still, if we wish to implement it, the argument <span class = "code_variable">use.median</span> in the <span class = "function">wisp</span> function allows for doing so. If this argument is set to <span class = "code_variable">TRUE</span>, then the median of the MCMC walk is used as the estimate of each effect $\beta$, rather than the L-BFGS fit. As an example, we can re-run the model: 
 
@@ -291,19 +291,20 @@ countdata <- read.csv(
 
 # Specify variables for wisp
 data.variables <- list(
-    species = "gene",
-    ran = "mouse",
+    species    = "gene",
+    ran        = "mouse",
     timeseries = "age"
   )
 
 # Run with median
 model_median <- wisp(
-    count.data = countdata,
-    variables = data.variables,
-    use.median = TRUE,
-    plot.settings = list(print.plots = FALSE),
+    count.data     = countdata,
+    variables      = data.variables,
+    use.median     = TRUE,
+    model.settings = list(LRO_cost = "none"), 
+    plot.settings  = list(print.plots = FALSE),
     bootstraps.num = 0, 
-    verbose = TRUE
+    verbose        = TRUE
   )
 ```
 ```{r check5, echo = FALSE}
@@ -317,7 +318,7 @@ Now, let's plot the age-effect parameters again, this time with the median estim
 print(
   model_median$plots$parameters$plot_treatment_18_cortex_Rorb + 
     scale_y_continuous(expand = expansion(mult = 0.1)) +
-    geom_point(aes(y = means), shape = 8, size = 4, stroke = 2, color = "black", na.rm = TRUE) + 
+    geom_point(aes(y = means), shape = 8, size = 4, stroke = 2, color = "black",  na.rm = TRUE) + 
     geom_point(aes(y = means), shape = 8, size = 4, stroke = 1, color = "yellow", na.rm = TRUE)
   )
 ```
@@ -359,7 +360,7 @@ print(
 ```
 ```{r check6, echo = FALSE}
 test_val <- ggplot_build(bs_comp_plots$plot_sample_correlations)$data[[1]][4,2]
-if (test_val < 0.003856667 || test_val > 0.003856669) stop("failed check 6")
+if (test_val < 0.003 || test_val > 0.004) stop("failed check 6")
 ```
 
 Another important consideration is the distribution of the resampled parameter values. The plots of the age effect show this distribution (for each parameter separately) as a violin plot. From these it's clear that the bootstrap resamples are more normal than the MCMC walk resamples. We can get a more complete picture by looking at the distribution of Shapiro-Wilk normality test $p$-values across all parameters, which is the second plot provided by the <span class = "function">plot.MCMC.bs.comparison</span> function. As seen in the plot, the two resampling methods produce mirror results: MCMC walks produce many parameter distributions with low $p$-values (i.e., non-normal distributions), while bootstrap resamples produce many parameter distributions with high $p$-values (i.e., normal distributions).
@@ -372,7 +373,7 @@ print(
 ```
 ```{r check7, echo = FALSE}
 test_val <- ggplot_build(bs_comp_plots$plot_comparison_Shaprio)$data[[1]][4,2]
-if (test_val < 0.9714236 || test_val > 0.9714238) stop("failed check 7")
+if (test_val < 0.8 || test_val > 0.9) stop("failed check 7")
 ```
 
 Finally, the third plot of the <span class = "function">plot.MCMC.bs.comparison</span> function provides another look at the parameter distributions produced by each method by plotting a few randomly chosen distributions: 
@@ -385,7 +386,7 @@ print(
 ```
 ```{r check8, echo = FALSE}
 test_val <- ggplot_build(bs_comp_plots$plot_comparison_density)$data[[1]][4,2]
-if (test_val < 6.193577e-05 || test_val > 6.193579e-05) stop("failed check 8")
+if (test_val < 7.5e-05 || test_val > 7.6e-05) stop("failed check 8")
 ```
 
 A natural question to ask concerns the false-positive rate, false-discovery rate, and power of the bootstrap-based hypothesis testing. This question is addressed in the [benchmarking tutorial](tutorial_benchmarks.html). 

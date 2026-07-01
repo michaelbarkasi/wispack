@@ -1,6 +1,7 @@
 ---
 title: "Release Notes"
-date: "`r Sys.Date()`"
+author: "Michael Barkasi"
+date: "July 3, 2026 (v2.4)"
 ---
 
 ## Planned changes for future releases
@@ -13,6 +14,16 @@ date: "`r Sys.Date()`"
 - Allow <span class = "code_variable">MCMC.prior</span> to be a vector of different prior distributions for each parameter. When completed, update the tutorial on customizing statistical analyses.
 - Ensure nested loops for matrix operations have the major axis (column) on outside. 
 - Extracellular (out-of-soma) transcripts do not follow a Poisson distribution, and so any attempt to model them with wisp needs to account for this. 
+
+## Version 2.4 (July 3, 2026)
+
+- Part 2 of a major code refactor/optimization. 
+- Finished refactoring wspc object class and its initialization method into a more organized structure.
+- Fixed issue in <span class = "function">extrapolate_none</span>.
+- Added option to level preprocessing coordinate transform (the <span class = "function">cortical_coordinate_transform</span> function) based on different layers.
+- Updated Roxygen2 descriptions for user-facing R functions. 
+- Checked all tutorials to ensure they work with current version and removed auto-dating, so their current working version is properly documented. Included footnotes on saved and pre-processed code chunks. 
+- Substantial code cleaning. 
 
 ## Version 2.3 (June 16, 2026)
 

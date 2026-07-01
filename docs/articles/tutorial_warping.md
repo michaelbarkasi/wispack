@@ -3,9 +3,9 @@
 ## Introduction
 
 Separating signal from noise is a central issue in science. Observations
-of a variable reflect both the true expected population value and random
-variation. The lower the sample size, the more random variation will
-influence the observed values.
+of a variable reflect both the true expected population value *and*
+random variation. The lower the sample size, the more random variation
+will influence the observed values.
 
 A common method for dealing with random variation is to normalize
 observations. For example, with our [somatosensory cortex
@@ -33,7 +33,7 @@ often called *mixed-effects models*, as they contain both fixed-effect
 terms (e.g., the effect of hemisphere on expression rate) and
 random-effect terms (e.g., the random variation in expression rate due
 to sample-specific factors). Wisp models are mixed-effects models. They
-employ a random-effect term to factor out individual variation.
+employ a random-effect term to factor out individual variation.[^1]
 
 Although we won’t use it right away, let’s load wispack awhile:
 
@@ -100,14 +100,14 @@ To solve our problem about the form of \rho, let’s distinguish between:
 
 Let’s reserve the symbol “\rho” for the scalar value (or a vector of
 these scalar values) and use the symbol “\omega” for the transforming
-function. Let’s also assume that \rho\geq 0 indicates values above
-what’s expected, and \rho\<0 indicates values below what’s expected. If
-\Delta(z,b) = b - z is the distance from z to the *upper* boundary b and
-we assume that z\leq b, then: \begin{array}{l l} z \leq \omega(z, b)
-\leq z + \Delta(z,b) & \text{ if } \rho\geq 0 \\ z \geq \omega(z, b)
-\geq 0 & \text{ if } \rho \< 0 \end{array} Thus, a possible form for
-\omega would use a ratio term \varphi between zero and one to scale the
-distance to the upper boundary according for positive \rho and to scale
+function. Let’s also assume that \rho\geq 0 indicates values above (or
+equal to) what’s expected, and \rho\<0 indicates values below what’s
+expected. If \Delta(z,b) = b - z is the distance from z to the *upper*
+boundary b and we assume that z\leq b, then: \begin{array}{l l} z \leq
+\omega(z, b) \leq z + \Delta(z,b) & \text{ if } \rho\geq 0 \\ z \geq
+\omega(z, b) \geq 0 & \text{ if } \rho \< 0 \end{array} Thus, a possible
+form for \omega would use a ratio term \varphi between zero and one to
+scale the distance to the upper boundary for positive \rho and to scale
 z itself down towards zero for negative \rho: \omega(z, b) =
 \begin{cases} z + \varphi(\rho)\Delta(z,b) & \text{if } \rho \geq 0 \\
 z - \varphi(\rho)z & \text{if } \rho \< 0 \end{cases} What form could
@@ -138,15 +138,15 @@ be positive? Let’s first examine a plot of the warp-ratio function
 warp_ratio <- function(X,rho,b) 1 - exp(rho^2)^(-X / b)
 
 # Set some demo terms
-rhos <- c(0, 0.75, 1.5, 3)
-bs <- c(100, 1e3)
+rhos  <- c(0, 0.75, 1.5, 3)
+bs    <- c(100, 1e3)
 max_X <- 100
 
 # Make data frame for plotting
 demo_data <- data.frame(
-  X = rep(c(1:max_X), length(bs)*length(rhos)),
-  rho = factor(rep(rep(rhos, each = max_X), length(bs))),
-  b = factor(rep(bs, each = max_X*length(rhos))),
+  X     = rep(c(1:max_X), length(bs)*length(rhos)),
+  rho   = factor(rep(rep(rhos, each = max_X), length(bs))),
+  b     = factor(rep(bs, each = max_X*length(rhos))),
   ratio = c(
     vapply(bs, 
       function(j) c(
@@ -168,8 +168,8 @@ ggplot(demo_data) +
   facet_wrap(~b, labeller = label_both) +
   labs(
     title = "Warp ratio function demo",
-    x = "X",
-    y = expression(varphi(X, rho, b)),
+    x     = "X",
+    y     = expression(varphi(X, rho, b)),
     color = expression(rho)
   ) +
   theme_minimal() + 
@@ -206,8 +206,9 @@ Thus, the final form of the random-effect term is: \omega(z, \rho, b) =
 \\ z - \varphi(\Delta(z,b),\rho,b)z & \text{if } \rho \< 0 \end{cases} A
 positive benefit of this approach is that when there is no upper bound,
 i.e., b=\infty, \omega(z,b) is linear with respect to z. A proof of this
-theorem is provided in appendix section A.4 of the original wisp
-[preprint](https://doi.org/10.1101/2025.06.11.659209).
+theorem is provided in appendix of both the original wisp
+[preprint](https://doi.org/10.1101/2025.06.11.659209) and the final
+published [paper](https://doi.org/10.1093/nar/gkag466).
 
 Wispack provides a function demo.warp.plots for visualizing the function
 \omega and its effect on the poly-sigmoid \Phi.
@@ -215,13 +216,13 @@ Wispack provides a function demo.warp.plots for visualizing the function
 ``` r
 
 warp_plots <- demo.warp.plots(
-    w = 2,                       # warping factor
-    point_pos = 60,
-    point_neg = 40,
-    Rt = c(6, 3, 0.2, 6)*4.65,   # rates for poly-sigmoid
-    tslope = c(0.4, 0.75, 1),    # slope scalars for poly-sigmoid
-    tpoint = c(15, 38, 80),      # transition points for poly-sigmoid
-    w_factors = c(0.6, -0.9, 0.5),      # warping factors for poly sigmoid
+    w            = 2,                      # warping factor for plot 1
+    point_pos    = 60,
+    point_neg    = 40,
+    Rt           = c(6, 3, 0.2, 6) * 4.65, # rates for poly-sigmoid
+    tslope       = c(0.4, 0.75, 1),        # slope scalars for poly-sigmoid
+    tpoint       = c(15, 38, 80),          # transition points for poly-sigmoid
+    w_factors    = c(0.6, -0.9, 0.5),      # warping factors for poly sigmoid (plot 2)
     return_plots = TRUE
   )
 ```
@@ -242,7 +243,10 @@ bounds. Indeed; the “w” in “wisp” refers to this behavior: *warped*
 sigmoidal Poisson-process mixed-effects models.
 
 The second plot created by demo.warp.plot shows the effect of \omega on
-\Phi.
+\Phi. In this plot, model parameters are represented by colored dashed
+lines: gray for rates, red for transition-point locations, and blue for
+transition-point slopes. Darker shades represent the original, unwarped
+parameters, while lighter shades represent the warped parameters.
 
 ``` r
 
@@ -257,3 +261,12 @@ rate parameter, the second is for the slope parameter, and the third is
 for the transition point parameter. As can be seen in the plot, the
 warping function \omega has the effect of increasing the rate,
 decreasing the slope, and increasing the transition point location.
+
+[^1]: As explained in the tutorial on [modeling cell
+    types](https://michaelbarkasi.github.io/wispack/articles/tutorial_multicontext.md),
+    as of v2.4, the random-effect term of a wisp model is primarily
+    intended to capture variation from external noise (e.g., tissue
+    preparation), rather than from internal biological variation (e.g.,
+    cell type differences). This intention is baked into how the
+    random-effect term interacts with the species and context variables.
+    The random-effect term depends only on the former, not the latter.

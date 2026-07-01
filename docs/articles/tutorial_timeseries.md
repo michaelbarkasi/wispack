@@ -43,7 +43,8 @@ of mice. The data has been preprocessed into laminar coordinates as
 described in [the
 tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.md)
 on modeling the cortical-laminar axis (see also [this
-preprint](https://doi.org/10.1101/2025.06.11.659209)). As with all data
+preprint](https://doi.org/10.1101/2025.06.11.659209) or the published
+[paper](https://doi.org/10.1093/nar/gkag466)). As with all data
 appropriate for wispack, and in line with well-known modeling functions
 in R (e.g.,
 [lme4::lmer](https://cran.r-project.org/web/packages/lme4/index.html),
@@ -90,7 +91,7 @@ print(unique(countdata$hemisphere))
 ## [1] "left"  "right"
 ```
 
-A variable giving counts (by cell) for the following six layer specific
+A variable giving counts (by cell) for the following six layer-specific
 genes:
 
 ``` r
@@ -132,7 +133,7 @@ genes in this data set are known to be localized to specific cortical
 layers.
 
 | Abbreviation  | Name                                       | Layer |
-|:--------------|:-------------------------------------------|:------|
+|---------------|--------------------------------------------|-------|
 | BCL11B, CTIP2 | B-cell CLL/lymphoma 11b                    | 5/6   |
 | FEZF2         | FEZ Family Zinc Finger 2                   | 5     |
 | SATB2         | SATB Homeobox 2                            | 2/3   |
@@ -165,16 +166,17 @@ fixed-effect column is to be treated as a time series factor.
 
 # Define variables in the dataframe for the model
 data.variables <- list(
-    species = "gene",
-    ran = "mouse",
+    species    = "gene",
+    ran        = "mouse",
     timeseries = "age"
   )
 ```
 
 As we’re modeling layer-specific genes, we can also grab cortical layer
 boundaries which were estimated for this data independent of wisp (using
-manual CCFv3 registration). These will only be used for plotting and
-visualization after fitting the model, not for fitting the model itself.
+manual [CCFv3](https://doi.org/10.1016/j.cell.2020.04.007)
+registration). These will only be used for plotting and visualization
+after fitting the model, not for fitting the model itself.
 
 ``` r
 
@@ -187,30 +189,29 @@ layer.boundary.bins <- read.csv(boundary_path)
 ```
 
 With data loaded, variables set, and boundaries grabbed, we can fit the
-wisp model. As it’s not necessary for demonstrating time-series
-modeling, we’ll only fit the model (fit_only = TRUE) without running any
-[statistical parameter
-estimation](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md).
+wisp model.[^1]
 
 ``` r
 
 library(wispack, quietly = TRUE)
 
 model <- wisp(
-    count.data = countdata,
-    variables = data.variables,
-    fit_only = TRUE,
-    model.settings = list(LROwindow_factor = 2.0),
-    plot.settings = list(
-        print.plots = FALSE, 
-        dim.bounds = colMeans(layer.boundary.bins)
-      ),
-    verbose = TRUE
+    count.data     = countdata,
+    variables      = data.variables,
+    fit_only       = TRUE,
+    model.settings = list(
+      LRO_cost         = "none", 
+      LROwindow_factor = 2.0
+    ),
+    plot.settings  = list(
+      print.plots = FALSE, 
+      dim.bounds  = colMeans(layer.boundary.bins)
+    ),
+    verbose        = TRUE
   )
 ```
 
 ``` scroll-output
-## 
 ## 
 ## Parsing data and settings for wisp model
 ## ----------------------------------------
@@ -219,6 +220,7 @@ model <- wisp(
 ##  buffer_factor: 0.05
 ##  ctol: 1e-06
 ##  max_penalty_at_distance_factor: 0.01
+##  LRO_cost: none
 ##  LROcutoff: 2
 ##  LROwindow_factor: 2
 ##  rise_threshold_factor: 0.8
@@ -236,6 +238,7 @@ model <- wisp(
 ##  log.scale: FALSE
 ##  splitting_factor: 
 ##  CI_style: TRUE
+##  splitting_factor_colors: 120, 240
 ##  label_size: 5.5
 ##  title_size: 20
 ##  axis_size: 12
@@ -269,6 +272,9 @@ model <- wisp(
 ## 
 ## Initializing Cpp (wspc) model
 ## ----------------------------------------
+## Context grouping levels: "cortex"
+## Species grouping levels: "Bcl11b" "Cux2" "Fezf2" "Nxph3" "Rorb" "Satb2"
+## Random-effect grouping levels: "none" "1" "2" "3" "4" "5"
 ## 
 ## Infinity handling:
 ## machine epsilon: (eps_): 2.22045e-16
@@ -277,74 +283,32 @@ model <- wisp(
 ## implied pseudo-infinity for unbounded warp (inf_warp): 4.5036e+08
 ## 
 ## Extracting variables and data information:
-## Max bin: 100.000000
-## Fixed effects:
-## "hemisphere" "timeseries"
-## Ref levels:
-## "left" "7"
-## Time series detected:
-## "7" "12" "18"
-## Created treatment levels:
-## "ref" "right" "12" "18" "right12" "right18"
-## Constructed weight_row matrix
-## Context grouping levels:
-## "cortex"
-## Species grouping levels:
-## "Bcl11b" "Cux2" "Fezf2" "Nxph3" "Rorb" "Satb2"
-## Random-effect grouping levels:
-## "none" "1" "2" "3" "4" "5"
+## Max bin: 100
+## Fixed effects: "hemisphere" "timeseries"
+## Ref levels: "left" "7"
+## Time series detected: "7" "12" "18"
+## Created treatment levels: "ref" "right" "12" "18" "right12" "right18"
 ## Total rows in summed count data table: 21600
 ## Number of rows with unique model components: 216
 ## 
-## Creating summed-count data columns and weight matrix:
-## Random level 0, 1/6 complete
-## Random level 1, 2/6 complete
-## Random level 2, 3/6 complete
-## Random level 3, 4/6 complete
-## Random level 4, 5/6 complete
-## Random level 5, 6/6 complete
-## 
-## Making extrapolation pool:
-## row: 720/3600
-## row: 1440/3600
-## row: 2160/3600
-## row: 2880/3600
-## row: 3600/3600
-## 
-## Wrapping up initialization:
-## Extrapolated 'none' rows
-## Took log of observed counts
-## Estimated gamma dispersion of raw counts
-## Found average log counts for each context-species combination
-## Constructed grouping variable IDs
-## 
 ## Running LRO change-point detection and setting initial parameters
 ## ----------------------------------------
+## 
 ## Estimated change points
-## Estimated initial parameters for fixed-effect treatments
-## Built initial beta (ref and fixed-effects) matrices
-## Initialized random-effect warping factors
-## Made and mapped parameter vector
+## Estimated initial parameters
 ## Number of parameters: 414
 ## Size of boundary vector: 2160
 ## 
 ## Fitting model to data
 ## ----------------------------------------
 ## 
-## Setting boundary penalty coefficients
-## Initial neg_loglik: 15281.4
-## Initial neg_loglik with penalty: 15434.2
-## Initial min boundary distance: 0.24777
-## Final neg_loglik: 15013
-## Final neg_loglik with penalty: 15120.1
-## Final min boundary distance: 0.123085
-## Number of evaluations: 189
-## Checking feasibility of provided parameters
-## ... no tpoints below buffer
-## ... no NAN rates predicted
-## ... no negative rates predicted
-## Provided parameters are feasible
-## Initial boundary distance (want > 0): 0.123085
+## Initial nll: 15270.5
+## Initial nll with penalty: 15423.1
+## Initial min boundary distance: 0.247893
+## Final nll: 15010.9
+## Final nll with penalty: 15118.6
+## Final min boundary distance: 0.116235
+## Number of evaluations: 237
 ## 
 ## Making rate-count plots... 
 ## Making time series plots...
@@ -400,8 +364,8 @@ and the interaction between right hemisphere and age P12 will all be
 included in the estimate, while the effects for age P18 and the
 interaction between right hemisphere and age P18 will not be included.
 What makes the time series additive is the way a treatment level like 18
-or right18 include not only effects related to the age 18, but also
-effects related to all earlier ages, e.g., 12.
+or right18 include not only effects related to the age P18, but also
+effects related to all earlier ages, e.g., P12.
 
 ## Visualizing time series
 
@@ -470,3 +434,14 @@ to include cell type in the model as well. This is explained in the
 [cell type
 tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_multicontext.md),
 which also includes all plots.
+
+[^1]: Two notes. First, we’ll only fit the model (fit_only = TRUE)
+    without running any [statistical parameter
+    estimation](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md),
+    which is not necessary for demonstrating time-series modeling.
+    Second, the LRO_cost variable under model.settings is set to “none”.
+    The default (as of v2.4) is “AIC”, which will trigger a
+    time-consuming grid search of parameters (minimizing model AIC) to
+    use in the initial LRO change-point detection algorithm. Setting to
+    “none” skips this search and defaults to reasonably robust LRO
+    options.

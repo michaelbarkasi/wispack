@@ -59,7 +59,6 @@ reference:
   navbar: Analysis functions
   contents:
   - analyze.residuals
-  - pvalues.samples
   - sample.stats
   
 - title: Plotting functions 

@@ -46,6 +46,9 @@ sample.stats(
 
 ## Value
 
-Data frame giving, for each parameter, its name, estimate, confidence
-interval (CI.low, CI.high), p-value, adjusted p-value (p.value.adj),
-adjusted alpha (alpha.adj), and significance level (significance).
+A copy of wisp.results with (1) a new entry `parameters` under `stats`
+holding a data frame giving, for each parameter, its name, estimate,
+confidence interval (CI.low, CI.high), p-value, adjusted p-value
+(p.value.adj), adjusted alpha (alpha.adj), and significance level
+(significance), and also (2) 95% confidence interval range columns in
+`count.data.summed` for predicted log count by bin.

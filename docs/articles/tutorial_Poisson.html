@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -87,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-06-05</h4>
+            <h4 data-toc-skip class="date">July 2, 2026 (v2.4)</h4>
       
 
       <div class="d-none name"><code>tutorial_Poisson.Rmd</code></div>
@@ -122,14 +122,14 @@ with instances spread over a one-dimensional space <span class="math inline">x</
 bins:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n_bins</span> <span class="op">&lt;-</span> <span class="fl">100</span></span>
-<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">n_bins</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">x</span>      <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">n_bins</span><span class="op">)</span></span></code></pre></div>
 <p>We will randomly distribute 10,000 process instances across the
 space, for an average of 100 instances per bin. The variable holding
 these positions will be called <span class="code_variable">bin</span>:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span> <span class="co"># for reproducibility</span></span>
 <span><span class="va">n_instances</span> <span class="op">&lt;-</span> <span class="fl">10000</span></span>
-<span><span class="va">bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">n_instances</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">bin</span>         <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">n_instances</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>Now suppose that the space is divided into four equal-sized blocks,
 each with a different constant process rate <span class="math inline">\lambda</span>, and suppose there is a constant
 variance <span class="math inline">\sigma_\gamma^2 = 2</span> across the
@@ -141,12 +141,12 @@ instance by pulling individual process rates from a gamma distribution
 and then drawing counts from a Poisson distribution with those
 rates:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">lambda</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">5</span>, <span class="fl">2</span>, <span class="fl">7</span><span class="op">)</span>, each <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">/</span><span class="fl">4</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">lambda</span>    <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">5</span>, <span class="fl">2</span>, <span class="fl">7</span><span class="op">)</span>, each <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">/</span><span class="fl">4</span><span class="op">)</span></span>
 <span><span class="va">var_gamma</span> <span class="op">&lt;-</span> <span class="fl">2</span></span>
 <span><span class="va">process_lambda</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/GammaDist.html" class="external-link">rgamma</a></span><span class="op">(</span></span>
 <span>    <span class="va">n_instances</span>, </span>
 <span>    shape <span class="op">=</span> <span class="va">lambda</span><span class="op">[</span><span class="va">bin</span><span class="op">]</span><span class="op">^</span><span class="fl">2</span><span class="op">/</span><span class="va">var_gamma</span>, </span>
-<span>    rate <span class="op">=</span> <span class="va">lambda</span><span class="op">[</span><span class="va">bin</span><span class="op">]</span><span class="op">/</span><span class="va">var_gamma</span></span>
+<span>    rate  <span class="op">=</span> <span class="va">lambda</span><span class="op">[</span><span class="va">bin</span><span class="op">]</span>  <span class="op">/</span><span class="va">var_gamma</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="va">count</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="va">n_instances</span>, <span class="va">process_lambda</span><span class="op">)</span></span></code></pre></div>
 <p>The variable <span class="code_variable">count</span> is a vector of
@@ -170,8 +170,8 @@ space:</p>
 <span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_jitter.html" class="external-link">geom_jitter</a></span><span class="op">(</span>height <span class="op">=</span> <span class="fl">0</span>, width <span class="op">=</span> <span class="fl">0.5</span>, alpha <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span></span>
 <span>    title <span class="op">=</span> <span class="st">"Simulated Poisson process"</span>,</span>
-<span>    x <span class="op">=</span> <span class="st">"Spatial bin"</span>,</span>
-<span>    y <span class="op">=</span> <span class="st">"Process count"</span></span>
+<span>    x     <span class="op">=</span> <span class="st">"Spatial bin"</span>,</span>
+<span>    y     <span class="op">=</span> <span class="st">"Process count"</span></span>
 <span>  <span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span></span>
@@ -187,8 +187,8 @@ each bin can be summed while maintaining a Poisson distribution.</p>
 <span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span></span>
 <span>    title <span class="op">=</span> <span class="st">"Simulated Poisson process"</span>,</span>
-<span>    x <span class="op">=</span> <span class="st">"Spatial bin"</span>,</span>
-<span>    y <span class="op">=</span> <span class="st">"Summed process count"</span></span>
+<span>    x     <span class="op">=</span> <span class="st">"Spatial bin"</span>,</span>
+<span>    y     <span class="op">=</span> <span class="st">"Summed process count"</span></span>
 <span>  <span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span></span>
@@ -204,14 +204,15 @@ Poisson processes. The parameters used to create the dataframe <span class="code
 wisp model is fit in two steps.</p>
 <p>The first step is to find transition points <span class="math inline">p</span> in count rate by looking for outliers in
 the ratio between the likelihood of the neighborhood around <span class="math inline">x</span> having a constant rate and the likelihood
-of each side of the neighborhood around <span class="math inline">x</span> having different rates. If there are <span class="math inline">n</span> such transition points <span class="math inline">p=\langle p_1,\ldots,p_n\rangle</span>, then a
-specific variety of sigmoid, the logistic function: <span class="math display">\psi(x,r,s) = \frac{r}{1 + \exp({sx})}</span> can
-be used to model the rate <span class="math inline">\lambda</span>
-across space by combining <span class="math inline">n</span> such
-sigmoids into a wisp function: <span class="math display">\Psi(x,r,s,p)
-= r_1 + \sum_{i=1}^n \psi(x - p_i, r_{i+1} - r_{i}, -s_i)</span> with
-rate parameters <span class="math inline">r=\langle
-r_1,\ldots,r_{n+1}\rangle</span> and slope-scale parameters <span class="math inline">s=\langle s_1,\ldots,s_{n}\rangle</span>.</p>
+of each side of the neighborhood around <span class="math inline">x</span> having different rates (LRO change-point
+detection). If there are <span class="math inline">n</span> such
+transition points <span class="math inline">p=\langle
+p_1,\ldots,p_n\rangle</span>, then a specific variety of sigmoid, the
+logistic function: <span class="math display">\psi(x,r,s) = \frac{r}{1 +
+\exp({sx})}</span> can be used to model the rate <span class="math inline">\lambda</span> across space by combining <span class="math inline">n</span> such sigmoids into a wisp function: <span class="math display">\Psi(x,r,s,p) = r_1 + \sum_{i=1}^n \psi(x - p_i,
+r_{i+1} - r_{i}, -s_i)</span> with rate parameters <span class="math inline">r=\langle r_1,\ldots,r_{n+1}\rangle</span> and
+slope-scale parameters <span class="math inline">s=\langle
+s_1,\ldots,s_{n}\rangle</span>.</p>
 <div class="figure">
 <img src="fig_logisticpolysig.png" alt="Demo plots of functions involved in wisp" width="90%"><p class="caption">
 (Top) The logistic function, used to model a single change point in gene
@@ -224,19 +225,27 @@ parameters <span class="math inline">r</span>, <span class="math inline">s</span
 which maximize the likelihood of the log transform <span class="math inline">\log(y+1)</span> of <span class="code_variable">countdata$count</span>.</p>
 <p>For this demonstration, the data in <span class="code_variable">countdata</span> has been explicitly constructed
 with the statistical structure captured by wisp using known parameters
-<span class="math inline">r</span> and <span class="math inline">p</span>. Thus, fitting a wisp model to <span class="code_variable">countdata</span> should recover those parameters.
-(Note: The verbose progress reports from wisp show how the function adds
-columns to <span class="code_variable">countdata</span> for <span class="code_variable">context</span>, <span class="code_variable">species</span>, <span class="code_variable">ran</span>, <span class="code_variable">timeseries</span>, and <span class="code_variable">fixedeffects</span>; while not used here, these
-columns are used in more complex modeling scenarios.)</p>
+<span class="math inline">r</span> and <span class="math inline">p</span>. Thus, fitting a wisp model to <span class="code_variable">countdata</span> should recover those
+parameters.<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;Two notes. First, the verbose progress reports from wisp
+(printed below) show how the function adds columns to &lt;span class="code_variable"&gt;countdata&lt;/span&gt; for &lt;span class="code_variable"&gt;context&lt;/span&gt;, &lt;span class="code_variable"&gt;species&lt;/span&gt;, &lt;span class="code_variable"&gt;ran&lt;/span&gt;, &lt;span class="code_variable"&gt;timeseries&lt;/span&gt;, and &lt;span class="code_variable"&gt;fixedeffects&lt;/span&gt;; while not used here, these
+columns are used in more complex modeling scenarios. Second, the
+algorithm for detecting change points depends on two key settings,
+determining what counts as an outlier and neighborhood size. By default,
+these are set via a grid search which looks to minimize some cost metric
+(&lt;span class="code_variable"&gt;LRO_cost&lt;/span&gt;), either AIC, BIC, or
+negative log-likelihood. For simplicity, this metric is here set to
+“none”, triggering &lt;span class="function"&gt;wisp&lt;/span&gt; to skip the grid
+search and use a set of default parameter values for the LRO
+algorithm.&lt;/p&gt;'><sup>1</sup></a></p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
 <span>    <span class="va">countdata</span>, </span>
-<span>    fit_only <span class="op">=</span> <span class="cn">TRUE</span>, </span>
-<span>    plot.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>CI_style <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>    fit_only       <span class="op">=</span> <span class="cn">TRUE</span>, </span>
+<span>    model.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>LRO_cost <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span>,</span>
+<span>    plot.settings  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>CI_style <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## </span></span>
-<span><span class="co">## </span></span>
 <span><span class="co">## Parsing data and settings for wisp model</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
@@ -244,6 +253,7 @@ columns are used in more complex modeling scenarios.)</p>
 <span><span class="co">##  buffer_factor: 0.05</span></span>
 <span><span class="co">##  ctol: 1e-06</span></span>
 <span><span class="co">##  max_penalty_at_distance_factor: 0.01</span></span>
+<span><span class="co">##  LRO_cost: none</span></span>
 <span><span class="co">##  LROcutoff: 2</span></span>
 <span><span class="co">##  LROwindow_factor: 1.25</span></span>
 <span><span class="co">##  rise_threshold_factor: 0.8</span></span>
@@ -261,6 +271,7 @@ columns are used in more complex modeling scenarios.)</p>
 <span><span class="co">##  log.scale: FALSE</span></span>
 <span><span class="co">##  splitting_factor: </span></span>
 <span><span class="co">##  CI_style: FALSE</span></span>
+<span><span class="co">##  splitting_factor_colors: 120, 240</span></span>
 <span><span class="co">##  label_size: 5.5</span></span>
 <span><span class="co">##  title_size: 20</span></span>
 <span><span class="co">##  axis_size: 12</span></span>
@@ -294,6 +305,9 @@ columns are used in more complex modeling scenarios.)</p>
 <span><span class="co">## </span></span>
 <span><span class="co">## Initializing Cpp (wspc) model</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## Context grouping levels: "context"</span></span>
+<span><span class="co">## Species grouping levels: "species"</span></span>
+<span><span class="co">## Random-effect grouping levels: "ran"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Infinity handling:</span></span>
 <span><span class="co">## machine epsilon: (eps_): 2.22045e-16</span></span>
@@ -302,57 +316,31 @@ columns are used in more complex modeling scenarios.)</p>
 <span><span class="co">## implied pseudo-infinity for unbounded warp (inf_warp): 4.5036e+08</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Extracting variables and data information:</span></span>
-<span><span class="co">## Found max bin: 100.000000</span></span>
+<span><span class="co">## Max bin: 100</span></span>
 <span><span class="co">## No fixed effects detected.</span></span>
 <span><span class="co">## No time series detected.</span></span>
-<span><span class="co">## Created treatment levels:</span></span>
-<span><span class="co">## "ref"</span></span>
-<span><span class="co">## Constructed weight_row matrix</span></span>
-<span><span class="co">## Context grouping levels:</span></span>
-<span><span class="co">## "context"</span></span>
-<span><span class="co">## Species grouping levels:</span></span>
-<span><span class="co">## "species"</span></span>
-<span><span class="co">## Random-effect grouping levels:</span></span>
-<span><span class="co">## "ran"</span></span>
+<span><span class="co">## Created treatment levels: "ref"</span></span>
 <span><span class="co">## Total rows in summed count data table: 100</span></span>
 <span><span class="co">## Number of rows with unique model components: 1</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## Creating summed-count data columns and weight matrix:</span></span>
-<span><span class="co">## Random level 0, 1/1 complete</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Wrapping up initialization:</span></span>
-<span><span class="co">## Took log of observed counts</span></span>
-<span><span class="co">## Estimated gamma dispersion of raw counts</span></span>
-<span><span class="co">## Found average log counts for each context-species combination</span></span>
-<span><span class="co">## Constructed grouping variable IDs</span></span>
-<span><span class="co">## </span></span>
 <span><span class="co">## Running LRO change-point detection and setting initial parameters</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
 <span><span class="co">## Estimated change points</span></span>
-<span><span class="co">## Estimated initial parameters for fixed-effect treatments</span></span>
-<span><span class="co">## Built initial beta (ref and fixed-effects) matrices</span></span>
-<span><span class="co">## Initialized random-effect warping factors</span></span>
-<span><span class="co">## Made and mapped parameter vector</span></span>
+<span><span class="co">## Estimated initial parameters</span></span>
 <span><span class="co">## Number of parameters: 10</span></span>
 <span><span class="co">## Size of boundary vector: 11</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Fitting model to data</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## Setting boundary penalty coefficients</span></span>
-<span><span class="co">## Initial neg_loglik: 183.522</span></span>
-<span><span class="co">## Initial neg_loglik with penalty: 185.191</span></span>
+<span><span class="co">## Initial nll: 183.846</span></span>
+<span><span class="co">## Initial nll with penalty: 185.518</span></span>
 <span><span class="co">## Initial min boundary distance: 0.25</span></span>
-<span><span class="co">## Final neg_loglik: 183.287</span></span>
-<span><span class="co">## Final neg_loglik with penalty: 184.448</span></span>
-<span><span class="co">## Final min boundary distance: 4.68473</span></span>
-<span><span class="co">## Number of evaluations: 34</span></span>
-<span><span class="co">## Checking feasibility of provided parameters</span></span>
-<span><span class="co">## ... no tpoints below buffer</span></span>
-<span><span class="co">## ... no NAN rates predicted</span></span>
-<span><span class="co">## ... no negative rates predicted</span></span>
-<span><span class="co">## Provided parameters are feasible</span></span>
-<span><span class="co">## Initial boundary distance (want &gt; 0): 4.68473</span></span>
+<span><span class="co">## Final nll: 183.287</span></span>
+<span><span class="co">## Final nll with penalty: 184.444</span></span>
+<span><span class="co">## Final min boundary distance: 4.68519</span></span>
+<span><span class="co">## Number of evaluations: 35</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Making rate-count plots...</span></span></code></pre>
 <p><img src="tutorial_Poisson_files/figure-html/model-1.png" class="r-plt" alt="" width="700"></p>
@@ -365,7 +353,7 @@ visually seems to land in the middle of the data.</p>
 values:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">param_names</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">fitted.parameters</span><span class="op">)</span></span>
-<span><span class="va">est_param</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">fitted.parameters</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">est_param</span>   <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">fitted.parameters</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">param_type</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Rt"</span>, <span class="st">"tslope"</span>, <span class="st">"tpoint"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span></span>
 <span>  <span class="st">"\nRecovered"</span>, <span class="va">param_type</span>, <span class="st">"parameters:"</span>, </span>
@@ -377,12 +365,12 @@ values:</p>
 <span><span class="op">}</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## </span></span>
 <span><span class="co">## Recovered Rt parameters: 4.675, 6.306, 5.388, 6.587</span></span>
-<span><span class="co">## Recovered tslope parameters: 86.644, 32.061, 83.237</span></span>
-<span><span class="co">## Recovered tpoint parameters: 25.961, 50.259, 75.876</span></span></code></pre>
-<p>It is immediately clear from the three tpoint parameters (i.e., <span class="math inline">p</span>) that wisp has recovered the transition
+<span><span class="co">## Recovered tslope parameters: 26.572, 14.986, 27.099</span></span>
+<span><span class="co">## Recovered tpoint parameters: 25.85, 50.452, 75.832</span></span></code></pre>
+<p>It is immediately clear from the three <span class="code_variable">tpoint</span> parameters (i.e., <span class="math inline">p</span>) that wisp has recovered the transition
 points at bins <span class="math inline">25</span>, <span class="math inline">50</span>, and <span class="math inline">75</span>.
-However, at first glance, the rates (Rt) look off. This is because wisp
-has predicted the log transform of the sum of the rates. To recover the
+However, at first glance, the rates (<span class="code_variable">Rt</span>) look off. This is because wisp has
+predicted the log transform of the sum of the rates. To recover the
 original rates of <span class="math inline">1</span>, <span class="math inline">5</span>, <span class="math inline">2</span>, and
 <span class="math inline">7</span>, we need to exponentiate the
 recovered rates, subtract <span class="math inline">1</span>, and divide
@@ -391,10 +379,10 @@ by the mean number of tokens per bin within the block.</p>
 <code class="sourceCode R"><span><span class="va">tokens_per_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="va">n_bins</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">b</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">n_bins</span><span class="op">)</span> <span class="va">tokens_per_bin</span><span class="op">[</span><span class="va">b</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">$</span><span class="va">bin</span> <span class="op">==</span> <span class="va">b</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">block</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">start_bin</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">block</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">*</span> <span class="fl">25</span> <span class="op">+</span> <span class="fl">1</span></span>
-<span>  <span class="va">end_bin</span> <span class="op">&lt;-</span> <span class="va">block</span> <span class="op">*</span> <span class="fl">25</span></span>
-<span>  <span class="va">mean_tokens</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">tokens_per_bin</span><span class="op">[</span><span class="va">start_bin</span><span class="op">:</span><span class="va">end_bin</span><span class="op">]</span><span class="op">)</span></span>
-<span>  <span class="va">rate_param</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">$</span><span class="va">fitted.parameters</span><span class="op">[</span><span class="va">block</span><span class="op">]</span></span>
+<span>  <span class="va">start_bin</span>      <span class="op">&lt;-</span> <span class="op">(</span><span class="va">block</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">*</span> <span class="fl">25</span> <span class="op">+</span> <span class="fl">1</span></span>
+<span>  <span class="va">end_bin</span>        <span class="op">&lt;-</span> <span class="va">block</span> <span class="op">*</span> <span class="fl">25</span></span>
+<span>  <span class="va">mean_tokens</span>    <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">tokens_per_bin</span><span class="op">[</span><span class="va">start_bin</span><span class="op">:</span><span class="va">end_bin</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="va">rate_param</span>     <span class="op">&lt;-</span> <span class="va">model</span><span class="op">$</span><span class="va">fitted.parameters</span><span class="op">[</span><span class="va">block</span><span class="op">]</span></span>
 <span>  <span class="va">recovered_rate</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">rate_param</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">/</span> <span class="va">mean_tokens</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span></span>
@@ -404,12 +392,13 @@ by the mean number of tokens per bin within the block.</p>
 <span>    <span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## </span></span>
-<span><span class="co">## Block 1 recovered rate: 1.058</span></span>
-<span><span class="co">## Block 2 recovered rate: 5.415</span></span>
+<span><span class="co">## Block 1 recovered rate: 1.059</span></span>
+<span><span class="co">## Block 2 recovered rate: 5.412</span></span>
 <span><span class="co">## Block 3 recovered rate: 2.16</span></span>
-<span><span class="co">## Block 4 recovered rate: 7.405</span></span></code></pre>
+<span><span class="co">## Block 4 recovered rate: 7.407</span></span></code></pre>
 <p>Thus, wisp indeed works well for modeling gamma-distributed Poisson
 processes!</p>
+
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>

@@ -12,8 +12,8 @@ of autocorrelation results for bootstrapping vs MCMC walks.
 plot.MCMC.bs.comparison(
  wisp.results, 
  print.plots = FALSE, 
- verbose = TRUE,
- ran.seed = 1234
+ verbose     = TRUE,
+ ran.seed    = 1234
 )
 ```
 

@@ -22,22 +22,22 @@ visualization purposes, mouse brain slices represent the tissue sample
 and laterality (left vs right hemisphere) represents a fixed effect
 (i.e., covariate).
 
-To the best of our knowledge, wisp models provide the only statistical
-framework for testing for FSEs and (hence) wispack is the only software
-for FSE testing. Wisp models allow for FSE testing because they
-explicitly model the spatial distribution of gene expression in terms of
-[parameters
+To the best of our knowledge (as of July, 2026), wisp models provide the
+only statistical framework for testing for FSEs and (hence) wispack is
+the only software for FSE testing. Wisp models allow for FSE testing
+because they explicitly model the spatial distribution of gene
+expression in terms of [parameters
 \beta](https://michaelbarkasi.github.io/wispack/articles/tutorial_Poisson.md)
 which can themselves depend on some other covariate. A coarse-grain
 work-around for FSE testing would be to include an interaction term
 x\times\xi between a spatial variable x and another covariate \xi of
 interest in a linear model, but this approach could only capture an
-additive effect constant across space. That is, such an approach would
-make transcription rate \lambda (or its log transform) into the
-function: \lambda(x, \xi) = \beta_0 + \beta_x x + \beta\_\xi \xi +
-\beta\_{x\times\xi} x\times\xi Wisp models, on the other hand, can
-capture complex effects on density gradients, change-point locations,
-and local expression levels.
+additive effect (on both model intercept and slope) constant across
+space. That is, such an approach would make transcription rate \lambda
+(or its log transform) into the function: \lambda(x, \xi) = \beta_0 +
+\beta_x x + \beta\_\xi \xi + \beta\_{x\times\xi} x\times\xi Wisp models,
+on the other hand, can capture complex effects on density gradients,
+change-point locations, and local expression levels.
 
 This tutorial will use simulations to benchmark wispack’s ability to
 detect FSEs. In order to contrast FSE testing with DE and SVG testing,
@@ -96,6 +96,11 @@ print(head(countdata))
 ## 6     1 1018093344102270476-1        29   Pvalb 6.834409 5.008881
 ```
 
+``` r
+
+if (countdata[1,5] < 3.485959 || countdata[1,5] > 3.485961) stop("failed check 1")
+```
+
 Let’s visualize the seed data:
 
 ``` r
@@ -108,8 +113,8 @@ ggplot(countdata, aes(x = coord_x, y = coord_y, color = gene)) +
   theme(
     panel.background = element_rect(fill = "white", colour = NA),
     plot.background  = element_rect(fill = "white", colour = NA),
-    legend.position = "none"
-    )
+    legend.position  = "none"
+  )
 ```
 
 ![](tutorial_benchmarks_files/figure-html/preview_data-1.png)
@@ -140,7 +145,8 @@ ggplot(seed_patch, aes(x = coord_x, y = coord_y, color = gene)) +
   theme_minimal() +
   theme(
     panel.background = element_rect(fill = "white", colour = NA),
-    plot.background  = element_rect(fill = "white", colour = NA))
+    plot.background  = element_rect(fill = "white", colour = NA)
+  )
 ```
 
 ![](tutorial_benchmarks_files/figure-html/preview_patch-1.png)
@@ -151,7 +157,7 @@ With a patch of seed data in hand, we need functions which will
 transform this data into simulations with known (stipulated) DE genes,
 SVGs, FSEs, and inter-replicate variation. Wispack provides the function
 attractor_simulation for this purpose. Let’s load wispack and run this
-function once to see how it works.
+function once to see how it works.[^1]
 
 ``` r
 
@@ -161,12 +167,12 @@ library(wispack, quietly = TRUE)
 set.seed(12399)
 # Run simulation
 test_sim <- attractor_simulation(
-    seed_data = seed_patch, 
-    n_bins = 100,
-    n_replicates = 4,
+    seed_data                = seed_patch, 
+    n_bins                   = 100,
+    n_replicates             = 4,
     replicate_spatial_scalar = 0.05, 
-    min_effect_size = 0.05,
-    print_plots = TRUE
+    min_effect_size          = 0.05,
+    print_plots              = TRUE
   )
 ```
 
@@ -375,9 +381,10 @@ ggplot(data, aes(x = coord_x, y = coord_y, size = log(count + 1))) +
   ggtitle("Tac2 replicates under reference condition") +
   theme_minimal() +
   theme(
-    legend.position = "none",
     panel.background = element_rect(fill = "white", colour = NA),
-    plot.background  = element_rect(fill = "white", colour = NA))
+    plot.background  = element_rect(fill = "white", colour = NA),
+    legend.position  = "none"
+  )
 ```
 
 ![](tutorial_benchmarks_files/figure-html/plot_replicates-1.png)
@@ -407,33 +414,33 @@ metrics, including false-positive rate, false-discovery rate, power, and
 correlation between estimated and true effect sizes.
 
 Let’s do a demo run of the function with only 100 bootstraps, so we can
-see the output of the function.
+see the output of the function.[^2]
 
 ``` r
 
 wisp_results <- model_attractor_simulation_wisp(
-    sim = test_sim,
-    sim_num = 1,
-    bs_num = 100,
+    sim      = test_sim,
+    sim_num  = 1,
+    bs_num   = 100,
     max_fork = 10
   )
 print(wisp_results)
 ```
 
 ``` scroll-output
-##             est        true         param         id method sim
-## 1   0.539478541  0.11578059   rate_effect      Pvalb   wisp   1
-## 2  -0.105849303  0.00000000   rate_effect    Slc17a7   wisp   1
-## 3  -1.222181768 -0.47856480   rate_effect       Tac2   wisp   1
-## 4   0.006184086  0.00000000   rate_effect        Vip   wisp   1
-## 5  -0.352741206 -0.32017728 random_effect replicate1   wisp   1
-## 6   0.218342446  0.01829868 random_effect replicate2   wisp   1
-## 7   0.299583307  0.10155727 random_effect replicate3   wisp   1
-## 8  -0.219550273 -0.16940425 random_effect replicate4   wisp   1
-## 9   0.185024752  1.00000000           FSE      Pvalb   wisp   1
-## 10  0.845940594  0.00000000           FSE    Slc17a7   wisp   1
-## 11  0.130569307  1.00000000           FSE       Tac2   wisp   1
-## 12  1.295841584  0.00000000           FSE        Vip   wisp   1
+##            est        true         param         id method sim
+## 1   0.53847248  0.11578059   rate_effect      Pvalb   wisp   1
+## 2  -0.13800140  0.00000000   rate_effect    Slc17a7   wisp   1
+## 3  -1.12143237 -0.47856480   rate_effect       Tac2   wisp   1
+## 4  -0.00776477  0.00000000   rate_effect        Vip   wisp   1
+## 5  -0.35380530 -0.32017728 random_effect replicate1   wisp   1
+## 6   0.24177749  0.01829868 random_effect replicate2   wisp   1
+## 7   0.29361719  0.10155727 random_effect replicate3   wisp   1
+## 8  -0.20168035 -0.16940425 random_effect replicate4   wisp   1
+## 9   0.20544554  1.00000000           FSE      Pvalb   wisp   1
+## 10  1.31643564  0.00000000           FSE    Slc17a7   wisp   1
+## 11  0.45049505  1.00000000           FSE       Tac2   wisp   1
+## 12  1.49306931  0.00000000           FSE        Vip   wisp   1
 ```
 
 Here we see three different parameters (under the param column) for
@@ -476,11 +483,11 @@ computation. Here is the code for that function:
 
 # Function to extract mean p-value across blocks for each gene 
 extract_pvalue_attractor_simulation_wisp <- function(model) {
-    genes <- model[["grouping.variables"]][["species.lvls"]]
+    genes    <- model[["grouping.variables"]][["species.lvls"]]
     p_values <- rep(NA, length(genes))
     names(p_values) <- genes
     for (g in genes) {
-      mask <- grepl(paste0("beta_Rt_context_", g, "_trt_X"), model[["stats"]][["parameters"]]$parameter)
+      mask        <- grepl(paste0("beta_Rt_context_", g, "_trt_X"), model[["stats"]][["parameters"]]$parameter)
       p_values[g] <- mean(model[["stats"]][["parameters"]]$p.value.adj[mask]) / sum(mask) 
       # ^ ... Values are adjusted for multiple tests, but we know that there is only a single degree of freedom in the rate effect per gene
     }
@@ -545,55 +552,52 @@ code:
 model_attractor_simulation_wisp <- function(
     sim, 
     sim_num,
-    bs_num = 1e3,
+    bs_num   = 1e3,
     max_fork = 1
   ) {
-    
     # Fit model
     model <- wisp(
-      count.data = sim$data,
-      variables = list(
-        bin = "bin_x", 
-        count = "count",
-        species = "gene",
-        ran = "replicate",
+      count.data     = sim$data,
+      variables      = list(
+        bin          = "bin_x", 
+        count        = "count",
+        species      = "gene",
+        ran          = "replicate",
         fixedeffects = c("fixedeffect")
       ),
-      fit_only = FALSE,
-      MCMC.settings = list(MCMC.steps = 0, MCMC.burnin = 0),
+      fit_only       = FALSE,
+      MCMC.settings  = list(MCMC.steps = 0, MCMC.burnin = 0),
       bootstraps.num = bs_num,
-      max.fork = max_fork,
-      plot.settings = list(print.plots = FALSE),
-      verbose = FALSE,
-      ran.seed = sim_num
+      max.fork       = max_fork,
+      plot.settings  = list(print.plots = FALSE),
+      verbose        = FALSE,
+      ran.seed       = sim_num
     )
     
     # Extract model results for comparing to ground truth
     MR <- extract_wisp_attractor_simulation_results(model)
-    
     # Extract ground-truth from simulation
     GT <- attractor_simulation_ground_truth(sim)
     
     # Compile results in named vector and return
     return(
       data.frame(
-        est = c(MR$fse_est, MR$ran_est, MR$fse_pvalues),
-        true = c(GT$fse_true, GT$ran_true, GT$FSEs),
-        param = c(
+        est    = c(MR$fse_est, MR$ran_est, MR$fse_pvalues),
+        true   = c(GT$fse_true, GT$ran_true, GT$FSEs),
+        param  = c(
           rep("rate_effect", length(MR$fse_est)), 
           rep("random_effect", length(MR$ran_est)), 
           rep("FSE", length(MR$fse_pvalues))
         ),
-        id = c(
+        id     = c(
           names(MR$fse_est), 
           names(MR$ran_est), 
           names(MR$fse_pvalues)
         ),
         method = "wisp",
-        sim = sim_num
+        sim    = sim_num
       )
     )
-    
   }
 ```
 
@@ -626,7 +630,7 @@ Benchmarking DESeq2 on the attractor simulations will require writing a
 custom function similar to model_attractor_simulation_wisp for use in
 run_attractor_sim_benchmarks.
 
-First, install and load DESeq2:
+First, install and load DESeq2:[^3]
 
 ``` r
 
@@ -647,11 +651,11 @@ make_DESeq2_data <- function(
     # Set reference level
     sim_data$fixedeffect <- relevel(as.factor(sim_data$fixedeffect), ref = "ref")
     # Get genes 
-    genes <- unique(sim_data$gene)
+    genes   <- unique(sim_data$gene)
     n_genes <- length(genes)
     # Grab variable levels
     fixedeffects <- unique(sim_data$fixedeffect)
-    replicates <- unique(sim_data$replicate)
+    replicates   <- unique(sim_data$replicate)
     sample_names <- c(
       paste0(as.character(replicates), "_", as.character(fixedeffects)[1]),
       paste0(as.character(replicates), "_", as.character(fixedeffects)[2])
@@ -659,11 +663,11 @@ make_DESeq2_data <- function(
     # Make coldata
     coldata <- data.frame(
       fixedeffect = rep(fixedeffects, each = length(replicates)), 
-      replicate = rep(replicates, length(fixedeffects))
+      replicate   = rep(replicates, length(fixedeffects))
     )
     rownames(coldata) <- sample_names
     # Make count matrix 
-    cts <- array(NA, dim = c(n_genes, nrow(coldata)))
+    cts           <- array(NA, dim = c(n_genes, nrow(coldata)))
     rownames(cts) <- genes
     colnames(cts) <- rownames(coldata)
     for (i in genes) {
@@ -687,41 +691,35 @@ model_attractor_simulation_DESeq2 <- function(
     sim,
     sim_num
   ) {
-    
     # Make data for DESeq2
     ddata <- make_DESeq2_data(sim$data)
-    dds <- DESeqDataSetFromMatrix(countData = ddata$cts, colData = ddata$coldata, design = ~ fixedeffect)
+    dds   <- DESeqDataSetFromMatrix(countData = ddata$cts, colData = ddata$coldata, design = ~ fixedeffect)
     
     # Fit model
     # ... run differential expression analysis on fixedeffect
-    dds <- DESeq(estimateSizeFactors(dds), fitType = "mean", minReplicatesForReplace = 3)
+    dds                <- DESeq(estimateSizeFactors(dds), fitType = "mean", minReplicatesForReplace = 3)
     # ... apply shrinkage (ridge regression)
     resLFC_fixedeffect <- lfcShrink(dds, coef = "fixedeffect_trt_vs_ref", type = "apeglm")
     
     # Extract model results for comparing to ground truth
     MR <- as.data.frame(resLFC_fixedeffect@listData)[,c("log2FoldChange", "padj")]
-    
     # Extract ground-truth from simulation
     GT <- attractor_simulation_ground_truth(sim)
     
     # Compile results in named vector and return
     return(
       data.frame(
-        est = c(MR$log2FoldChange, MR$padj),
-        true = c(GT$fse_true, GT$FSEs),
-        param = c(
+        est    = c(MR$log2FoldChange, MR$padj),
+        true   = c(GT$fse_true, GT$FSEs),
+        param  = c(
           rep("rate_effect", length(MR$log2FoldChange)), 
           rep("FSE", length(MR$padj))
         ),
-        id = c(
-          rownames(MR), 
-          rownames(MR)
-        ),
+        id     = c(rownames(MR), rownames(MR)),
         method = "DESeq2",
-        sim = sim_num
+        sim    = sim_num
       )
     )
-   
   }
 ```
 
@@ -733,30 +731,30 @@ along with the DESeq2-fitted values (as lines):
 
 # Make data for DESeq2
 ddata <- make_DESeq2_data(test_sim$data)
-dds <- DESeqDataSetFromMatrix(countData = ddata$cts, colData = ddata$coldata, design = ~ fixedeffect)
+dds   <- DESeqDataSetFromMatrix(countData = ddata$cts, colData = ddata$coldata, design = ~ fixedeffect)
 
 # Fit model
 # ... run differential expression analysis on fixedeffect
-dds <- DESeq(estimateSizeFactors(dds), fitType = "mean", minReplicatesForReplace = 3)
+dds                <- DESeq(estimateSizeFactors(dds), fitType = "mean", minReplicatesForReplace = 3)
 # ... apply shrinkage (ridge regression)
 resLFC_fixedeffect <- lfcShrink(dds, coef = "fixedeffect_trt_vs_ref", type = "apeglm")
 
 # Extract fitted values 
-pred <- as.data.frame(resLFC_fixedeffect@listData)
+pred      <- as.data.frame(resLFC_fixedeffect@listData)
 # ... grab reference values
 ref_preds <- pred$baseMean 
 # ... convert fitted L2FC into trt values
 trt_preds <- ref_preds * 2^(pred$log2FoldChange)
 
 # Prepare the data frame for plotting
-pred$gene <- rownames(pred)
-pred <- rbind(pred, pred)
-pred$fixedeffect <- c(rep("ref", nrow(pred)/2), rep("trt", nrow(pred)/2))
+pred$gene         <- rownames(pred)
+pred              <- rbind(pred, pred)
+pred$fixedeffect  <- c(rep("ref", nrow(pred)/2), rep("trt", nrow(pred)/2))
 colnames(pred)[1] <- "count"
-pred$count <- c(ref_preds, trt_preds)
+pred$count        <- c(ref_preds, trt_preds)
 
 # Aggregate simulated counts for plotting
-sim_counts <- aggregate(count ~ gene + replicate + fixedeffect, data = test_sim$data, FUN = sum)
+sim_counts        <- aggregate(count ~ gene + replicate + fixedeffect, data = test_sim$data, FUN = sum)
 
 # Plot
 ggplot(sim_counts, aes(x = fixedeffect, y = log(count), color = gene)) +
@@ -770,7 +768,8 @@ ggplot(sim_counts, aes(x = fixedeffect, y = log(count), color = gene)) +
   theme_minimal() +
   theme(
     panel.background = element_rect(fill = "white", colour = NA),
-    plot.background  = element_rect(fill = "white", colour = NA))
+    plot.background  = element_rect(fill = "white", colour = NA)
+  )
 ```
 
 ![](tutorial_benchmarks_files/figure-html/test_model_deseq2-1.png)
@@ -827,13 +826,13 @@ py_install(
       "ipdb",
       "rpy2"
     ), 
-  pip = TRUE
+    pip = TRUE
   )
 ```
 
 With a virtual Python environment set up, we can now install and load
 ELLA. Note that we are using the original ELLA version (branch ella1),
-not the most current.
+not the most current.[^4]
 
 ``` r
 
@@ -859,7 +858,7 @@ expects these names. Fourth, we rename count to umi, for the same
 reason.
 
 The most complex issue is that ELLA is intended to model the radial axis
-out from a cell’s nucleus. It requires, for each cell, an center
+out from a cell’s nucleus. It requires, for each cell, a center
 coordinate \langle \mathrm{centerX}, \mathrm{centerY} \rangle from which
 the radial distance of each spatial point is computed. The attractor
 simulations are, of course, purpose-built to exhibit spatial variation
@@ -884,13 +883,12 @@ normalizing.
 make_ELLA_data <- function(
     sim_data,
     radial_dim = "bin_x",
-    theta = "bin_y"
+    theta      = "bin_y"
   ) {
-    
     # Initialize top-level list structure
     ella_data <- list()
     length(ella_data) <- 7
-    names(ella_data) <- c(
+    names(ella_data)  <- c(
       "types",        # character vector of cell types
       "cells",        # named list, each element is a character vector of cell IDs for each type (with the type as the list element name)
       "cells_all",    # character vector of all cell IDs
@@ -902,23 +900,20 @@ make_ELLA_data <- function(
     
     # Set types
     # ... use "ref" from fixedeffect as the cell type, throw out "trt" (because no ground truth about SVG for trt)
-    ella_data$types <- list("ref")
-    
+    ella_data$types     <- list("ref")
     # Throw out trt data
-    sim_data <- sim_data[sim_data$fixedeffect == "ref",]
-    
+    sim_data            <- sim_data[sim_data$fixedeffect == "ref",]
     # Set cells and cells_all
-    cell_names <- sort(unique(sim_data$replicate))
-    ella_data$cells <- list(ref = cell_names)
+    cell_names          <- sort(unique(sim_data$replicate))
+    ella_data$cells     <- list(ref = cell_names)
     ella_data$cells_all <- cell_names
-    
     # Set genes
-    ella_data$genes <- list(ref = sort(unique(sim_data$gene)))
+    ella_data$genes     <- list(ref = sort(unique(sim_data$gene)))
     
     # Make cell segmentation data 
     x_range <- range(sim_data$bin_x)
     y_range <- range(sim_data$bin_y)
-    n_segs <- 2 * (x_range[2] - x_range[1] + 1) + 2 * (y_range[2] - y_range[1] + 1)
+    n_segs  <- 2 * (x_range[2] - x_range[1] + 1) + 2 * (y_range[2] - y_range[1] + 1)
     n_cells <- length(cell_names)
     ella_data$cell_seg <- data.frame(
       x = rep(c(
@@ -937,52 +932,51 @@ make_ELLA_data <- function(
     )
     
     # wrap patch around nuclear center 
-    r <- sim_data[,radial_dim]
+    r     <- sim_data[,radial_dim]
     theta <- sim_data[,theta]
-    r <- r - min(r) + 1
+    r     <- r - min(r) + 1
     theta <- theta - min(theta) + 1
-    X <- r * cos((theta/max(theta)) * 2 * pi)
-    Y <- r * sin((theta/max(theta)) * 2 * pi)
+    X     <- r * cos((theta/max(theta)) * 2 * pi)
+    Y     <- r * sin((theta/max(theta)) * 2 * pi)
     
     # wrap cell segmentation around nuclear center
-    r_seg_dim <- substr(radial_dim, nchar(radial_dim), nchar(radial_dim))
+    r_seg_dim     <- substr(radial_dim, nchar(radial_dim), nchar(radial_dim))
     theta_seg_dim <- "y"
     if (r_seg_dim == "y") theta_seg_dim <- "x"
-    theta_seg <- ella_data$cell_seg[,theta_seg_dim]
-    theta_seg <- theta_seg - min(theta_seg) + 1
-    r_seg <- ella_data$cell_seg[,r_seg_dim]
-    r_seg <- r_seg - min(r_seg) + 1
-    ella_data$cell_seg[,r_seg_dim] <- r_seg * cos((theta_seg/max(theta_seg)) * 2 * pi)
+    theta_seg     <- ella_data$cell_seg[,theta_seg_dim]
+    theta_seg     <- theta_seg - min(theta_seg) + 1
+    r_seg         <- ella_data$cell_seg[,r_seg_dim]
+    r_seg         <- r_seg - min(r_seg) + 1
+    ella_data$cell_seg[,r_seg_dim]     <- r_seg * cos((theta_seg/max(theta_seg)) * 2 * pi)
     ella_data$cell_seg[,theta_seg_dim] <- r_seg * sin((theta_seg/max(theta_seg)) * 2 * pi)
     
     # Compensate for radial dilution
     max_count <- max(sim_data$count)
-    count <- sim_data$count * r
-    count <- (count / max(count)) * max_count
-    count <- as.integer(round(count, 0))
+    count     <- sim_data$count * r
+    count     <- (count / max(count)) * max_count
+    count     <- as.integer(round(count, 0))
     
     # Get library counts 
     sc_total <- rep(0, nrow(sim_data))
     for (c in cell_names) {
-      mask <- sim_data$replicate == c
+      mask           <- sim_data$replicate == c
       sc_total[mask] <- sum(sim_data$count[mask])
     }
     
     # Make expr data 
     ella_data$expr <- data.frame(
-      type = sim_data$fixedeffect,
-      cell = sim_data$replicate,
-      gene = sim_data$gene,
-      x = X,
-      y = Y,
-      umi = count,
-      centerX = 0,
-      centerY = 0,
+      type     = sim_data$fixedeffect,
+      cell     = sim_data$replicate,
+      gene     = sim_data$gene,
+      x        = X,
+      y        = Y,
+      umi      = count,
+      centerX  = 0,
+      centerY  = 0,
       sc_total = sc_total
     )
     
     return(ella_data)
-    
   }
 ```
 
@@ -992,24 +986,30 @@ transformation:
 ``` r
 
 ella_sim <- make_ELLA_data(test_sim$data)
-plt1 <- ggplot(test_sim$data[test_sim$data$replicate == "replicate1" & test_sim$data$fixedeffect == "ref",], aes(x = bin_x, y = bin_y, color = gene, size = count)) +
+plt1 <- ggplot(
+    test_sim$data[test_sim$data$replicate == "replicate1" & test_sim$data$fixedeffect == "ref",], 
+    aes(x = bin_x, y = bin_y, color = gene, size = count)
+  ) +
   geom_point(alpha = 0.5) +
   ggtitle("Original Cartesian coordinates") +
   theme_minimal() +
   theme(
     panel.background = element_rect(fill = "white", colour = NA),
     plot.background  = element_rect(fill = "white", colour = NA),
-    legend.position = "bottom"
+    legend.position  = "bottom"
   ) +
   guides(size = "none")
-plt2 <- ggplot(ella_sim$expr[ella_sim$expr$cell == "replicate1",], aes(x = x, y = y, color = gene, size = umi)) +
+plt2 <- ggplot(
+    ella_sim$expr[ella_sim$expr$cell == "replicate1",], 
+    aes(x = x, y = y, color = gene, size = umi)
+  ) +
   geom_point(alpha = 0.5) +
   ggtitle("Transformed radial coordinates") +
   theme_minimal() +
   theme(
     panel.background = element_rect(fill = "white", colour = NA),
     plot.background  = element_rect(fill = "white", colour = NA),
-    legend.position = "bottom"
+    legend.position  = "bottom"
   ) +
   guides(size = "none")
 grid.arrange(plt1, plt2, nrow = 1)
@@ -1026,26 +1026,26 @@ and the transformed radial axis:
 plot_count_density <- function(
     df_rad, 
     df_car, 
-    nbins = 25, 
+    nbins     = 25, 
     replicate = "replicate1"
   ) {
     
     # Filter data
-    df_rad <- df_rad[df_rad$cell == replicate,]
+    df_rad       <- df_rad[df_rad$cell == replicate,]
     df_rad$count <- df_rad$umi
-    df_car <- df_car[df_car$replicate == replicate & df_car$fixedeffect == "ref",]
-    df_car$x <- df_car$bin_x
-    df_car$y <- df_car$bin_y
+    df_car       <- df_car[df_car$replicate == replicate & df_car$fixedeffect == "ref",]
+    df_car$x     <- df_car$bin_x
+    df_car$y     <- df_car$bin_y
     
     # For matching the log-scale transforms
-    eps <- 4e-3 
+    eps          <- 4e-3 
     
     # Density vs x 
-    xbreaks <- seq(min(df_car$x), max(df_car$x), length.out = nbins + 1)
-    xmid    <- 0.5 * (xbreaks[-1] + xbreaks[-length(xbreaks)])
-    xwidth  <- diff(xbreaks)
-    df_car$xbin <- cut(df_car$x, breaks = xbreaks, include.lowest = TRUE)
-    xcount <- tapply(
+    xbreaks      <- seq(min(df_car$x), max(df_car$x), length.out = nbins + 1)
+    xmid         <- 0.5 * (xbreaks[-1] + xbreaks[-length(xbreaks)])
+    xwidth       <- diff(xbreaks)
+    df_car$xbin  <- cut(df_car$x, breaks = xbreaks, include.lowest = TRUE)
+    xcount       <- tapply(
       df_car$count,
       list(df_car$gene, df_car$xbin),
       sum
@@ -1063,16 +1063,16 @@ plot_count_density <- function(
       theme(
         panel.background = element_rect(fill = "white", colour = NA),
         plot.background  = element_rect(fill = "white", colour = NA),
-        legend.position = "bottom"
+        legend.position  = "bottom"
       )
     
     # Density vs radius 
-    r <- sqrt(df_rad$x^2 + df_rad$y^2)
-    rbreaks <- seq(min(r), max(r), length.out = nbins + 1)
-    rmid    <- 0.5 * (rbreaks[-1] + rbreaks[-length(rbreaks)])
-    rwidth  <- diff(rbreaks)
-    df_rad$rbin <- cut(r, breaks = rbreaks, include.lowest = TRUE)
-    rcount <- tapply(
+    r            <- sqrt(df_rad$x^2 + df_rad$y^2)
+    rbreaks      <- seq(min(r), max(r), length.out = nbins + 1)
+    rmid         <- 0.5 * (rbreaks[-1] + rbreaks[-length(rbreaks)])
+    rwidth       <- diff(rbreaks)
+    df_rad$rbin  <- cut(r, breaks = rbreaks, include.lowest = TRUE)
+    rcount       <- tapply(
       df_rad$count,
       list(df_rad$gene, df_rad$rbin),
       sum
@@ -1092,7 +1092,7 @@ plot_count_density <- function(
       theme(
         panel.background = element_rect(fill = "white", colour = NA),
         plot.background  = element_rect(fill = "white", colour = NA),
-        legend.position = "bottom"
+        legend.position  = "bottom"
       )
     
     # Arrange
@@ -1109,7 +1109,7 @@ plot_count_density <- function(
     grid.arrange(
       title,
       panels,
-      ncol = 1,
+      ncol    = 1,
       heights = c(0.1, 1)
     )
     
@@ -1137,11 +1137,11 @@ run_ELLA <- function(
   ) { 
     # construct ELLA object
     ELLA_class <- ELLA_mod$ELLA
-    ella_sim <- ELLA_class(
-      dataset = "sim_benchmark",
+    ella_sim   <- ELLA_class(
+      dataset                = "sim_benchmark",
       adam_learning_rate_min = 1e-2,
-      max_iter = 1000L, 
-      L1_lam = L1_lam
+      max_iter               = 1000L, 
+      L1_lam                 = L1_lam
     )
     # convert simulated data to ELLA format
     ella_data <- r_to_py(make_ELLA_data(sim_data))
@@ -1163,7 +1163,7 @@ run_ELLA <- function(
 
 # Extract SVG p-values from ELLA results
 extract_svg <- function(ella_sim) {
-  pv_svg <- unlist(ella_sim$pv_fdr_tl[["ref"]])
+  pv_svg        <- unlist(ella_sim$pv_fdr_tl[["ref"]])
   names(pv_svg) <- ella_sim$gene_list_dict[["ref"]]
   pv_svg
 }
@@ -1178,35 +1178,29 @@ model_attractor_simulation_ELLA <- function(
     sim,
     sim_num 
   ) {
-    
     # Run ELLA
     model <- run_ELLA(sim$data)
     
     # Extract model results for comparing to ground truth
-    svg_pvalues <- unlist(model$pv_cauchy_tl[["ref"]])
+    svg_pvalues        <- unlist(model$pv_cauchy_tl[["ref"]])
     names(svg_pvalues) <- model$gene_list_dict[["ref"]]
     svg_pvalues
     
     # Extract ground-truth
-    GT <- attractor_simulation_ground_truth(sim)
+    GT   <- attractor_simulation_ground_truth(sim)
     SVGs <- GT$SVGs
     
     # Compile results in named vector 
     results <- data.frame(
-      est = c(svg_pvalues),
-      true = c(SVGs),
-      param = c(
-        rep("SVG", length(svg_pvalues))
-      ),
-      id = c(
-        names(svg_pvalues)
-      ),
+      est    = c(svg_pvalues),
+      true   = c(SVGs),
+      param  = c(rep("SVG", length(svg_pvalues))),
+      id     = c(names(svg_pvalues)),
       method = "ELLA",
-      sim = sim_num
+      sim    = sim_num
     )
     
     return(results)
-    
   }
 ```
 
@@ -1222,15 +1216,14 @@ plot_ella_fit <- function(
     sim_data,
     title_extra
   ) {
-    
     # Convert spatial coordinate to radial distance
     df_ella_sim <- data.frame(
       d_c_s = as.numeric(ella_sim$df_registered$d_c_s),
-      cell = as.character(ella_sim$df_registered$cell),
-      gene = as.character(ella_sim$df_registered$gene),
-      umi = as.integer(ella_sim$df_registered$umi)
+      cell  = as.character(ella_sim$df_registered$cell),
+      gene  = as.character(ella_sim$df_registered$gene),
+      umi   = as.integer(ella_sim$df_registered$umi)
     )
-    rad <- round(df_ella_sim$d_c_s,2)*100
+    rad  <- round(df_ella_sim$d_c_s,2)*100
     rads <- sort(unique(rad))
     
     # Initialize data frame to hold results 
@@ -1243,33 +1236,33 @@ plot_ella_fit <- function(
     # Compute counts per radial bin for each gene
     i <- 0
     for (r in rads) {
-      mask_r <- rad == r
+      mask_r  <- rad == r
       mask_rc <- datac$bin_x == r
       for (g in ella_sim$gene_list_dict[["ref"]]) {
-        mask <- df_ella_sim$gene == g & mask_r
-        maskc <- datac$gene == g & mask_rc
-        i <- i + 1
-        counts$gene[i] <- g
-        counts$rad[i] <- r
-        n <- length(unique(df_ella_sim$cell[mask]))
+        mask             <- df_ella_sim$gene == g & mask_r
+        maskc            <- datac$gene == g & mask_rc
+        i                <- i + 1
+        counts$gene[i]   <- g
+        counts$rad[i]    <- r
+        n                <- length(unique(df_ella_sim$cell[mask]))
         # ... count after the radial transform
-        counts$count[i] <- sum(df_ella_sim$umi[mask])/n
+        counts$count[i]  <- sum(df_ella_sim$umi[mask])/n
         # ... count before the radial transform 
         counts$countc[i] <- sum(datac$count[maskc])/n
       }
     }
     
     # Grab ELLA predictions
-    predictions <- ella_sim$weighted_lam_est[["ref"]]
+    predictions        <- ella_sim$weighted_lam_est[["ref"]]
     names(predictions) <- ella_sim$gene_list_dict[["ref"]]
-    pred_wide <- as.data.frame(predictions)
-    r <- c(1:nrow(pred_wide))
-    pred_wide$r <- r
-    pred <- data.frame()
+    pred_wide          <- as.data.frame(predictions)
+    r                  <- c(1:nrow(pred_wide))
+    pred_wide$r        <- r
+    pred               <- data.frame()
     for (g in names(predictions)) {
       df_g <- data.frame(
         gene = g,
-        r = r,
+        r    = r,
         lam = predictions[[g]]
       )
       pred <- rbind(pred, df_g)
@@ -1282,15 +1275,15 @@ plot_ella_fit <- function(
       geom_line() +
       labs(
         title = paste0("ELLA fit vs. counts", title_extra),
-        x = "radius",
-        y = "expression level (log scale)"
+        x     = "radius",
+        y     = "expression level (log scale)"
       ) +
       geom_point(data = na.omit(counts), aes(x = rad, y = log(countc/scalar+1), color = gene), alpha = 0.5) +
       theme_minimal() +
       theme(
         panel.background = element_rect(fill = "white", colour = NA),
         plot.background  = element_rect(fill = "white", colour = NA),
-        legend.position = "bottom"
+        legend.position  = "bottom"
       )
   }
 ```
@@ -1299,7 +1292,7 @@ And here are the results:
 
 ``` r
 
-plt_ella1 <- plot_ella_fit(run_ELLA(test_sim$data), test_sim$data, title_extra = " (L1 penalty = 0.2)")
+plt_ella1 <- plot_ella_fit(run_ELLA(test_sim$data),               test_sim$data, title_extra = " (L1 penalty = 0.2)")
 plt_ella2 <- plot_ella_fit(run_ELLA(test_sim$data, L1_lam = 0.0), test_sim$data, title_extra = " (L1 penalty = 0.0)")
 grid.arrange(plt_ella1, plt_ella2, nrow = 1)
 ```
@@ -1327,10 +1320,10 @@ sample points for computing benchmark metrics.
 
 results <- run_attractor_sim_benchmarks(
   seed_data = count_data_neurons_patch,
-  n_sims = 250,
+  n_sims    = 250,
   modeling_functions = list(
-    wisp = model_attractor_simulation_wisp, 
-    ELLA = model_attractor_simulation_ELLA,
+    wisp   = model_attractor_simulation_wisp, 
+    ELLA   = model_attractor_simulation_ELLA,
     DESeq2 = model_attractor_simulation_DESeq2
     ),
   modeling_function_args = list(wisp = list(bs_num = 1e3, max_fork = bs_chunksize))
@@ -1339,7 +1332,7 @@ results <- run_attractor_sim_benchmarks(
 
 ### Results
 
-The results of this run are provided with wispack:
+The results of this run are provided with wispack:[^5]
 
 ``` r
 
@@ -1413,13 +1406,13 @@ ggplot(corr_results[corr_results$param == "rate_effect",], aes(x = true, y = est
   theme_minimal() +
   labs(
     title = "FSE estimation",
-    x = "Ground truth",
-    y = "Estimated"
+    x     = "Ground truth",
+    y     = "Estimated"
   ) +
   theme(
     panel.background = element_rect(fill = "white", colour = NA),
     plot.background  = element_rect(fill = "white", colour = NA),
-    legend.position = "bottom"
+    legend.position  = "bottom"
   )
 ```
 
@@ -1450,13 +1443,13 @@ ggplot(corr_results[corr_results$param == "random_effect",], aes(x = true, y = e
   theme_minimal() +
   labs(
     title = "FSE estimation",
-    x = "Ground truth",
-    y = "Estimated"
+    x     = "Ground truth",
+    y     = "Estimated"
   ) +
   theme(
     panel.background = element_rect(fill = "white", colour = NA),
     plot.background  = element_rect(fill = "white", colour = NA),
-    legend.position = "bottom"
+    legend.position  = "bottom"
   )
 ```
 
@@ -1474,3 +1467,32 @@ Wispack would also need only about 20-30 seconds to fit a single model,
 but estimating p-values through bootstrap resampling. For this
 benchmark, a thousand bootstraps were done per model, in parallel across
 a hundred cores, leading to the ten-fold increase in computation time.
+
+[^1]: Although this code chunk was run live on the last compile for this
+    tutorial, using v2.4 of wispack, the attractor_simulation function
+    has not been changed since it was introduced in v2.0.
+
+[^2]: As noted above for the run of the attractor_simulation function,
+    although this code chunk was run live on the last compile for this
+    tutorial, using v2.4 of wispack, the model_attractor_simulation_wisp
+    function has not been changed since it was introduced in v2.0.
+    Although the wisp function itself has changed, the results of this
+    code chunk are still extremely close to the original compile of this
+    tutorial using v2.0.
+
+[^3]: This code chunk was last run on July 3, 2026. Any updates to
+    DESeq2 after this date may impact any subsequent reruns of the
+    related code, e.g., the code chunk named test_model_deseq2.
+
+[^4]: Even so, any changes to this branch may break future runs of this
+    code. The latest version of this tutorial, from July 3 2026, used a
+    git clone made January 29 of 2026.
+
+[^5]: These were run with v2.0 of wispack for the original publication
+    of the [paper](https://doi.org/10.1093/nar/gkag466) introducing
+    wispack and wisps. Subsequent reruns of these benchmarks may produce
+    different results, depending on changes to wispack, ELLA1, and
+    DESeq2. Actually, the current version of wispack, v2.4, is
+    approximately three times faster than v2.0, thanks to code
+    optimization. So, the run times for wispack would be notably faster
+    than those listed here.

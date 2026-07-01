@@ -6,17 +6,17 @@
 \usage{
 plot.timeseries(
  wisp.results, 
- splitting_factor = NULL, 
- log.scale = FALSE,
- print.plots = FALSE,
- species = c(),
- verbose = TRUE
+ splitting_factor = c(), 
+ log.scale        = FALSE,
+ print.plots      = FALSE,
+ species          = c(),
+ verbose          = TRUE
 )
 }
 \arguments{
 \item{wisp.results}{List, output of the wisp function.}
 
-\item{splitting_factor}{Character string, the name of the fixed effect by which to split the timeseries. If NULL, the first non-timeseries fixed effect is used. If "none", will not split.}
+\item{splitting_factor}{Character string, the name of the fixed effect by which to split the timeseries. If empty, c(), the first non-timeseries fixed effect is used. If "none", will not split.}
 
 \item{log.scale}{Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.}
 

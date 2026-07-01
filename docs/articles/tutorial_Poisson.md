@@ -31,7 +31,7 @@ divided into 100 bins:
 ``` r
 
 n_bins <- 100
-x <- seq(1, n_bins)
+x      <- seq(1, n_bins)
 ```
 
 We will randomly distribute 10,000 process instances across the space,
@@ -42,7 +42,7 @@ positions will be called bin:
 
 set.seed(123) # for reproducibility
 n_instances <- 10000
-bin <- sample(x, n_instances, replace = TRUE)
+bin         <- sample(x, n_instances, replace = TRUE)
 ```
 
 Now suppose that the space is divided into four equal-sized blocks, each
@@ -56,12 +56,12 @@ counts from a Poisson distribution with those rates:
 
 ``` r
 
-lambda <- rep(c(1, 5, 2, 7), each = length(x)/4)
+lambda    <- rep(c(1, 5, 2, 7), each = length(x)/4)
 var_gamma <- 2
 process_lambda <- rgamma(
     n_instances, 
     shape = lambda[bin]^2/var_gamma, 
-    rate = lambda[bin]/var_gamma
+    rate  = lambda[bin]  /var_gamma
   )
 count <- rpois(n_instances, process_lambda)
 ```
@@ -94,8 +94,8 @@ ggplot2::ggplot(countdata, ggplot2::aes(x = bin, y = count)) +
   ggplot2::geom_jitter(height = 0, width = 0.5, alpha = 0.1) +
   ggplot2::labs(
     title = "Simulated Poisson process",
-    x = "Spatial bin",
-    y = "Process count"
+    x     = "Spatial bin",
+    y     = "Process count"
   ) +
   ggplot2::theme_minimal() +
   ggplot2::theme(
@@ -116,8 +116,8 @@ ggplot2::ggplot(summed_counts, ggplot2::aes(x = bin, y = count)) +
   ggplot2::geom_point() +
   ggplot2::labs(
     title = "Simulated Poisson process",
-    x = "Spatial bin",
-    y = "Summed process count"
+    x     = "Spatial bin",
+    y     = "Summed process count"
   ) +
   ggplot2::theme_minimal() +
   ggplot2::theme(
@@ -137,14 +137,14 @@ recovered using a wisp. A wisp model is fit in two steps.
 The first step is to find transition points p in count rate by looking
 for outliers in the ratio between the likelihood of the neighborhood
 around x having a constant rate and the likelihood of each side of the
-neighborhood around x having different rates. If there are n such
-transition points p=\langle p_1,\ldots,p_n\rangle, then a specific
-variety of sigmoid, the logistic function: \psi(x,r,s) = \frac{r}{1 +
-\exp({sx})} can be used to model the rate \lambda across space by
-combining n such sigmoids into a wisp function: \Psi(x,r,s,p) = r_1 +
-\sum\_{i=1}^n \psi(x - p_i, r\_{i+1} - r\_{i}, -s_i) with rate
-parameters r=\langle r_1,\ldots,r\_{n+1}\rangle and slope-scale
-parameters s=\langle s_1,\ldots,s\_{n}\rangle.
+neighborhood around x having different rates (LRO change-point
+detection). If there are n such transition points p=\langle
+p_1,\ldots,p_n\rangle, then a specific variety of sigmoid, the logistic
+function: \psi(x,r,s) = \frac{r}{1 + \exp({sx})} can be used to model
+the rate \lambda across space by combining n such sigmoids into a wisp
+function: \Psi(x,r,s,p) = r_1 + \sum\_{i=1}^n \psi(x - p_i, r\_{i+1} -
+r\_{i}, -s_i) with rate parameters r=\langle r_1,\ldots,r\_{n+1}\rangle
+and slope-scale parameters s=\langle s_1,\ldots,s\_{n}\rangle.
 
 ![Demo plots of functions involved in wisp](fig_logisticpolysig.png)
 
@@ -159,23 +159,20 @@ parameters r, s and p which maximize the likelihood of the log transform
 For this demonstration, the data in countdata has been explicitly
 constructed with the statistical structure captured by wisp using known
 parameters r and p. Thus, fitting a wisp model to countdata should
-recover those parameters. (Note: The verbose progress reports from wisp
-show how the function adds columns to countdata for context, species,
-ran, timeseries, and fixedeffects; while not used here, these columns
-are used in more complex modeling scenarios.)
+recover those parameters.[^1]
 
 ``` r
 
 library(wispack, quietly = TRUE)
 model <- wisp(
     countdata, 
-    fit_only = TRUE, 
-    plot.settings = list(CI_style = FALSE)
+    fit_only       = TRUE, 
+    model.settings = list(LRO_cost = "none"),
+    plot.settings  = list(CI_style = FALSE)
   )
 ```
 
 ``` scroll-output
-## 
 ## 
 ## Parsing data and settings for wisp model
 ## ----------------------------------------
@@ -184,6 +181,7 @@ model <- wisp(
 ##  buffer_factor: 0.05
 ##  ctol: 1e-06
 ##  max_penalty_at_distance_factor: 0.01
+##  LRO_cost: none
 ##  LROcutoff: 2
 ##  LROwindow_factor: 1.25
 ##  rise_threshold_factor: 0.8
@@ -201,6 +199,7 @@ model <- wisp(
 ##  log.scale: FALSE
 ##  splitting_factor: 
 ##  CI_style: FALSE
+##  splitting_factor_colors: 120, 240
 ##  label_size: 5.5
 ##  title_size: 20
 ##  axis_size: 12
@@ -234,6 +233,9 @@ model <- wisp(
 ## 
 ## Initializing Cpp (wspc) model
 ## ----------------------------------------
+## Context grouping levels: "context"
+## Species grouping levels: "species"
+## Random-effect grouping levels: "ran"
 ## 
 ## Infinity handling:
 ## machine epsilon: (eps_): 2.22045e-16
@@ -242,57 +244,31 @@ model <- wisp(
 ## implied pseudo-infinity for unbounded warp (inf_warp): 4.5036e+08
 ## 
 ## Extracting variables and data information:
-## Found max bin: 100.000000
+## Max bin: 100
 ## No fixed effects detected.
 ## No time series detected.
-## Created treatment levels:
-## "ref"
-## Constructed weight_row matrix
-## Context grouping levels:
-## "context"
-## Species grouping levels:
-## "species"
-## Random-effect grouping levels:
-## "ran"
+## Created treatment levels: "ref"
 ## Total rows in summed count data table: 100
 ## Number of rows with unique model components: 1
 ## 
-## Creating summed-count data columns and weight matrix:
-## Random level 0, 1/1 complete
-## 
-## Wrapping up initialization:
-## Took log of observed counts
-## Estimated gamma dispersion of raw counts
-## Found average log counts for each context-species combination
-## Constructed grouping variable IDs
-## 
 ## Running LRO change-point detection and setting initial parameters
 ## ----------------------------------------
+## 
 ## Estimated change points
-## Estimated initial parameters for fixed-effect treatments
-## Built initial beta (ref and fixed-effects) matrices
-## Initialized random-effect warping factors
-## Made and mapped parameter vector
+## Estimated initial parameters
 ## Number of parameters: 10
 ## Size of boundary vector: 11
 ## 
 ## Fitting model to data
 ## ----------------------------------------
 ## 
-## Setting boundary penalty coefficients
-## Initial neg_loglik: 183.522
-## Initial neg_loglik with penalty: 185.191
+## Initial nll: 183.846
+## Initial nll with penalty: 185.518
 ## Initial min boundary distance: 0.25
-## Final neg_loglik: 183.287
-## Final neg_loglik with penalty: 184.448
-## Final min boundary distance: 4.68473
-## Number of evaluations: 34
-## Checking feasibility of provided parameters
-## ... no tpoints below buffer
-## ... no NAN rates predicted
-## ... no negative rates predicted
-## Provided parameters are feasible
-## Initial boundary distance (want > 0): 4.68473
+## Final nll: 183.287
+## Final nll with penalty: 184.444
+## Final min boundary distance: 4.68519
+## Number of evaluations: 35
 ## 
 ## Making rate-count plots...
 ```
@@ -310,7 +286,7 @@ The recovered parameters can also be extracted as numerical values:
 ``` r
 
 param_names <- names(model$fitted.parameters)
-est_param <- round(model$fitted.parameters, 3)
+est_param   <- round(model$fitted.parameters, 3)
 for (param_type in c("Rt", "tslope", "tpoint")) {
   cat(
   "\nRecovered", param_type, "parameters:", 
@@ -325,8 +301,8 @@ for (param_type in c("Rt", "tslope", "tpoint")) {
 ``` scroll-output
 ## 
 ## Recovered Rt parameters: 4.675, 6.306, 5.388, 6.587
-## Recovered tslope parameters: 86.644, 32.061, 83.237
-## Recovered tpoint parameters: 25.961, 50.259, 75.876
+## Recovered tslope parameters: 26.572, 14.986, 27.099
+## Recovered tpoint parameters: 25.85, 50.452, 75.832
 ```
 
 It is immediately clear from the three tpoint parameters (i.e., p) that
@@ -342,10 +318,10 @@ within the block.
 tokens_per_bin <- rep(NA, n_bins)
 for (b in 1:n_bins) tokens_per_bin[b] <- sum(countdata$bin == b)
 for (block in 1:4) {
-  start_bin <- (block - 1) * 25 + 1
-  end_bin <- block * 25
-  mean_tokens <- mean(tokens_per_bin[start_bin:end_bin])
-  rate_param <- model$fitted.parameters[block]
+  start_bin      <- (block - 1) * 25 + 1
+  end_bin        <- block * 25
+  mean_tokens    <- mean(tokens_per_bin[start_bin:end_bin])
+  rate_param     <- model$fitted.parameters[block]
   recovered_rate <- (exp(rate_param) - 1) / mean_tokens
   cat(
     paste0(
@@ -358,11 +334,23 @@ for (block in 1:4) {
 
 ``` scroll-output
 ## 
-## Block 1 recovered rate: 1.058
-## Block 2 recovered rate: 5.415
+## Block 1 recovered rate: 1.059
+## Block 2 recovered rate: 5.412
 ## Block 3 recovered rate: 2.16
-## Block 4 recovered rate: 7.405
+## Block 4 recovered rate: 7.407
 ```
 
 Thus, wisp indeed works well for modeling gamma-distributed Poisson
 processes!
+
+[^1]: Two notes. First, the verbose progress reports from wisp (printed
+    below) show how the function adds columns to countdata for context,
+    species, ran, timeseries, and fixedeffects; while not used here,
+    these columns are used in more complex modeling scenarios. Second,
+    the algorithm for detecting change points depends on two key
+    settings, determining what counts as an outlier and neighborhood
+    size. By default, these are set via a grid search which looks to
+    minimize some cost metric (LRO_cost), either AIC, BIC, or negative
+    log-likelihood. For simplicity, this metric is here set to “none”,
+    triggering wisp to skip the grid search and use a set of default
+    parameter values for the LRO algorithm.

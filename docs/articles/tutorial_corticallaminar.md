@@ -41,15 +41,15 @@ columnar axes labeled.
 ### Coordinate transform
 
 As wisp can only model one dimension of spatial variation (at least, as
-of v2.1), this axis must be identified and the RORB molecule coordinates
+of v2.4), this axis must be identified and the RORB molecule coordinates
 must be transformed into it. As the primary concern is with how RORB is
 distributed across cortical layers, the laminar axis is the obvious
 candidate. Coordinate transformation into an axis of interest must be
 done outside of wispack. For this case, a custom coordinate
 transformation, described in this
-[preprint](https://doi.org/10.1101/2025.06.11.659209) (and available as
-code via the wispack function cortical_coordinate_transform\<\>), was
-written.
+[preprint](https://doi.org/10.1101/2025.06.11.659209) and
+[paper](https://doi.org/10.1093/nar/gkag466) (and available as code via
+the wispack function cortical_coordinate_transform), was written.
 
 ![Image showing the steps to transform coordinates from the CCFv3
 registration to laminar and columnar axes](fig_coordtrans.png)
@@ -57,8 +57,8 @@ registration to laminar and columnar axes](fig_coordtrans.png)
 Visualization of coordinate transform steps from initial CCFv3
 registration to laminar and columnar axes.
 
-Note that the laminar axis is encoded as *y*, with 0 being the bottom of
-L6b, 100 the top of L2/3. The columnar axis is encoded as *x*, with 0
+Note that the laminar axis is encoded as y, with 0 being the bottom of
+L6b, 100 the top of L2/3. The columnar axis is encoded as x, with 0
 being the most posterior point, 100 the most anterior point. L1 was
 removed from the analysis, as it contains very few cells.
 
@@ -125,7 +125,7 @@ Just as RORB is known to be localized to L4, the other genes are also
 known to be localized to specific layers.
 
 | Abbreviation  | Name                                       | Layer |
-|:--------------|:-------------------------------------------|:------|
+|---------------|--------------------------------------------|-------|
 | BCL11B, CTIP2 | B-cell CLL/lymphoma 11b                    | 5/6   |
 | FEZF2         | FEZ Family Zinc Finger 2                   | 5     |
 | SATB2         | SATB Homeobox 2                            | 2/3   |
@@ -187,10 +187,10 @@ analyses](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md)).
 
 ## Effects structure
 
-The goal is to test for interacting effects of age and laterality, with
-mouse as a random-effect grouping factor. A linear model from the
-well-known R package lme4 with the appropriate effects structure could
-be gotten with the following call:
+The goal is to test for interacting effects of age and laterality (i.e.,
+variable hemisphere), with mouse as a random-effect grouping factor. A
+linear model from the well-known R package lme4 with the appropriate
+effects structure could be gotten with the following call:
 
 ``` r
 
@@ -210,12 +210,12 @@ hemisphere have any effect independent of RNA species.) Nevertheless,
 this model shows the basic effects structure wisp aims to capture.
 
 A wisp captures this effects structure without discarding spatial
-information, and while segregating counts by gene. Unlike a
-mixed-effects linear model from the lme4 package, there is no model
-formula to specify in wispack. Instead of using a syntactic description
-(a formula), the effects structure in wispack is set semantically, i.e.,
-by specifying which variables in the data frame correspond to which
-roles in the model. The roles are:
+information, and while segregating count by gene. Unlike a mixed-effects
+linear model from the lme4 package, there is no model formula to specify
+in wispack. Instead of using a syntactic description (a formula), the
+effects structure in wispack is set semantically, i.e., by specifying
+which variables in the data frame correspond to which roles in the
+model. The roles are:
 
 1.  count: either a non-negative integer giving the number of RNA
     molecules of a given species in a given cell, or a non-negative real
@@ -253,15 +253,15 @@ different names in the data frame, and thus wispack needs to know which
 data columns carry these variables. While wispack has no default names
 for fixed effects, if no fixed effects are specified, all columns not
 identified as one of the other roles will be treated as fixed effects.
-Unless flagged as a time series, all fixed effects must have at most two
+Unless flagged as a time series, fixed effects can have no more than two
 levels.
 
 ``` r
 
 # Specify variables for wisp
 data.variables <- list(
-    species = "gene",
-    ran = "mouse",
+    species    = "gene",
+    ran        = "mouse",
     timeseries = "age"
   )
 ```
@@ -276,12 +276,12 @@ It would be redundant, but all roles would be specified as follows:
 
 # Specify all variables for wisp
 data.variables <- list(
-    count = "count",
-    bin = "bin", 
-    context = "context", 
-    species = "gene",
-    ran = "mouse",
-    timeseries = "age",
+    count        = "count",
+    bin          = "bin", 
+    context      = "context", 
+    species      = "gene",
+    ran          = "mouse",
+    timeseries   = "age",
     fixedeffects = c("hemisphere", "age")
   )
 ```
@@ -310,7 +310,9 @@ function](fig_logisticpolysig.png)
 
 (Top) The logistic function, used to model a single change point in gene
 expression. (Bottom) The wisp poly-sigmoid function, built from three
-logistic components, representing three change points.
+logistic components, representing three change points. Note that “WSP”
+was older parlance for “wisp”, from when this figure was originally
+made.
 
 Random effects from the random-effect grouping factor are a [nonlinear
 warping](https://michaelbarkasi.github.io/wispack/articles/tutorial_warping.md)
@@ -322,7 +324,8 @@ function](fig_warped.png)
 (Top) The warping function used to represent random effects, e.g.,
 variation due to differences between individual animals or due to
 measurement noise. (Bottom) The wisp poly-sigmoid with warping function
-applied.
+applied. Note that “WSP” was older parlance for “wisp”, from when this
+figure was originally made.
 
 ## Fitting a wisp
 
@@ -351,6 +354,12 @@ the model, but are used only in making plots so that the model fit and
 parameter estimates can be compared to the laminar boundaries estimated
 by the CCFv3 registration.
 
+Note that the LRO_cost variable under model.settings is set to “none”.
+The default (as of v2.4) is “AIC”, which will trigger a time-consuming
+grid search of parameters (minimizing model AIC) to use in the initial
+LRO change-point detection algorithm. Setting to “none” skips this
+search and defaults to reasonably robust LRO options.
+
 ``` r
 
 # Set random seed for reproducibility
@@ -359,18 +368,18 @@ set.seed(123)
 library(wispack, quietly = TRUE)
 # Fit model
 model <- wisp(
-    count.data = countdata,
-    variables = data.variables,
-    plot.settings = list(
+    count.data      = countdata,
+    variables       = data.variables,
+    model.settings  = list(LRO_cost = "none"),
+    plot.settings   = list(
         print.plots = FALSE, 
-        dim.bounds = colMeans(layer.boundary.bins)
+        dim.bounds  = colMeans(layer.boundary.bins)
       ),
-    verbose = TRUE
+    verbose         = TRUE
   )
 ```
 
 ``` scroll-output
-## 
 ## 
 ## Parsing data and settings for wisp model
 ## ----------------------------------------
@@ -379,6 +388,7 @@ model <- wisp(
 ##  buffer_factor: 0.05
 ##  ctol: 1e-06
 ##  max_penalty_at_distance_factor: 0.01
+##  LRO_cost: none
 ##  LROcutoff: 2
 ##  LROwindow_factor: 1.25
 ##  rise_threshold_factor: 0.8
@@ -396,6 +406,7 @@ model <- wisp(
 ##  log.scale: FALSE
 ##  splitting_factor: 
 ##  CI_style: TRUE
+##  splitting_factor_colors: 120, 240
 ##  label_size: 5.5
 ##  title_size: 20
 ##  axis_size: 12
@@ -436,6 +447,9 @@ model <- wisp(
 ## 
 ## Initializing Cpp (wspc) model
 ## ----------------------------------------
+## Context grouping levels: "cortex"
+## Species grouping levels: "Bcl11b" "Cux2" "Fezf2" "Nxph3" "Rorb" "Satb2"
+## Random-effect grouping levels: "none" "1" "2" "3" "4"
 ## 
 ## Infinity handling:
 ## machine epsilon: (eps_): 2.22045e-16
@@ -444,53 +458,19 @@ model <- wisp(
 ## implied pseudo-infinity for unbounded warp (inf_warp): 4.5036e+08
 ## 
 ## Extracting variables and data information:
-## Found max bin: 100.000000
-## Fixed effects:
-## "hemisphere" "timeseries"
-## Ref levels:
-## "left" "12"
-## Time series detected:
-## "12" "18"
-## Created treatment levels:
-## "ref" "right" "18" "right18"
-## Constructed weight_row matrix
-## Context grouping levels:
-## "cortex"
-## Species grouping levels:
-## "Bcl11b" "Cux2" "Fezf2" "Nxph3" "Rorb" "Satb2"
-## Random-effect grouping levels:
-## "none" "1" "2" "3" "4"
+## Max bin: 100
+## Fixed effects: "hemisphere" "timeseries"
+## Ref levels: "left" "12"
+## Time series detected: "12" "18"
+## Created treatment levels: "ref" "right" "18" "right18"
 ## Total rows in summed count data table: 12000
 ## Number of rows with unique model components: 120
 ## 
-## Creating summed-count data columns and weight matrix:
-## Random level 0, 1/5 complete
-## Random level 1, 2/5 complete
-## Random level 2, 3/5 complete
-## Random level 3, 4/5 complete
-## Random level 4, 5/5 complete
-## 
-## Making extrapolation pool:
-## row: 480/2400
-## row: 960/2400
-## row: 1440/2400
-## row: 1920/2400
-## row: 2400/2400
-## 
-## Wrapping up initialization:
-## Extrapolated 'none' rows
-## Took log of observed counts
-## Estimated gamma dispersion of raw counts
-## Found average log counts for each context-species combination
-## Constructed grouping variable IDs
-## 
 ## Running LRO change-point detection and setting initial parameters
 ## ----------------------------------------
+## 
 ## Estimated change points
-## Estimated initial parameters for fixed-effect treatments
-## Built initial beta (ref and fixed-effects) matrices
-## Initialized random-effect warping factors
-## Made and mapped parameter vector
+## Estimated initial parameters
 ## Number of parameters: 300
 ## Size of boundary vector: 1260
 ## 
@@ -498,14 +478,6 @@ model <- wisp(
 ## ----------------------------------------
 ## 
 ## Running MCMC stimulations
-## Checking feasibility of provided parameters
-## ... no tpoints below buffer
-## ... no NAN rates predicted
-## ... no negative rates predicted
-## Provided parameters are feasible
-## Initial boundary distance (want > 0): 0.247647
-## Performing initial fit of full data
-## Penalized neg_loglik: 11975.6
 ## step: 1/1100
 ## step: 110/1100
 ## step: 220/1100
@@ -517,26 +489,18 @@ model <- wisp(
 ## step: 880/1100
 ## step: 990/1100
 ## All complete!
-## Acceptance rate (aim for 0.2-0.3): 0.283432
+## Acceptance rate (aim for 0.2-0.3): 0.246085
+## Penalized nll: 11976.4
 ## 
 ## MCMC simulation complete... 
-## MCMC run time (total), minutes: 1.178
-## MCMC run time (per retained step), seconds: 0.064
-## MCMC run time (per step), seconds: 0.064
+## MCMC run time (total), minutes: 0.43
+## MCMC run time (per retained step), seconds: 0.023
+## MCMC run time (per step), seconds: 0.023
 ## 
-## Setting full-data fit as parameters... 
-## Checking feasibility of provided parameters
-## ... no tpoints below buffer
-## ... no NAN rates predicted
-## ... no negative rates predicted
-## Provided parameters are feasible
-## Initial boundary distance (want > 0): 0.164251
-## 
-## Running stats on simulation results
+## Computing p-values and CI for model parameters
 ## ----------------------------------------
 ## 
 ## Grabbing sample results... 
-## Grabbing parameter values... 
 ## Computing 95% confidence intervals... 
 ## Estimating p-values from resampled parameters... 
 ## 
@@ -546,21 +510,16 @@ model <- wisp(
 ## 
 ## Stat summary (head only):
 ## ------------------------------
-##                                  parameter      estimate       CI.low      CI.high     p.value p.value.adj    alpha.adj significance
-## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3874762662 3.2423579199 3.6060658268          NA          NA           NA             
-## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0002723492 0.0002701605 0.0009564635 0.000999001  0.04495504 0.0011111111            *
-## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6059294086 0.4971755126 0.6552261694 0.000000000  0.00000000 0.0002923977          ***
-## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0476934492 0.0324878078 0.0563049808 0.000000000  0.00000000 0.0002941176          ***
-## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786 1.9117544868 2.6135187197          NA          NA           NA             
-## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 0.0504651545 0.0951689705 0.000000000  0.00000000 0.0002958580          ***
+##                                  parameter      estimate      CI.low    CI.high  p.value p.value.adj    alpha.adj significance
+## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3880114451 3.257259190 3.57683057       NA          NA           NA             
+## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0003773747 0.009057961 0.01865859 0.957043    0.957043 0.0500000000           ns
+## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6072410701 0.387548476 0.60704006 0.000000    0.000000 0.0002923977          ***
+## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0461743004 0.032824337 0.06588826 0.000000    0.000000 0.0002941176          ***
+## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2781929967 1.923734236 2.64818473       NA          NA           NA             
+## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.0822301676 0.069129014 0.10433351 0.000000    0.000000 0.0002958580          ***
 ## ----
 ## 
-## Computing 95% CI for predicated values by bin
-## ----------------------------------------
-## 
-## Grabbing sample results... 
-## Computing predicted values for each sampled parameter set... 
-## Computing 95% CIs... 
+## Computing 95% CI for predicated values by bin... 
 ## 
 ## Analyzing residuals
 ## ----------------------------------------
@@ -571,24 +530,22 @@ model <- wisp(
 ## 
 ## Log-residual summary by grouping variables (head only):
 ## ------------------------------
-##          group      mean        sd   variance
-## 1          all 0.2387532 0.3908161 0.15273719
-## 2 ran_lvl_none 0.2323705 0.3161788 0.09996903
-## 3    ran_lvl_1 0.2381996 0.3967808 0.15743503
-## 4    ran_lvl_2 0.2130804 0.3931356 0.15455562
-## 5    ran_lvl_3 0.2747967 0.4583713 0.21010427
-## 6    ran_lvl_4 0.2417013 0.4391963 0.19289335
+##          group      mean        sd  variance
+## 1          all 0.2389661 0.3918609 0.1535550
+## 2 ran_lvl_none 0.2321238 0.3174750 0.1007903
+## 3    ran_lvl_1 0.2384415 0.3968682 0.1575043
+## 4    ran_lvl_2 0.2132537 0.3938506 0.1551183
+## 5    ran_lvl_3 0.2751780 0.4605209 0.2120795
+## 6    ran_lvl_4 0.2426757 0.4399106 0.1935213
 ## ----
+## 
+## Making plots
+## ----------------------------------------
 ## 
 ## Making MCMC walks plots... 
 ## Making effect parameter distribution plots... 
 ## Making rate-count plots... 
 ## Making time series plots... 
-## Making parameter plots... 
-## Making parameter plots... 
-## Making parameter plots... 
-## Making parameter plots... 
-## Making parameter plots... 
 ## Making parameter plots...
 ```
 
@@ -613,6 +570,7 @@ for (n in names(model)) cat(n, ": ", paste0(class(model[[n]]), collapse = ", "),
 ``` scroll-output
 ## model.component.list: character
 ## count.data.summed: data.frame
+## LRO.grid.search.results: matrix, array
 ## fitted.parameters: numeric
 ## gamma.dispersion: matrix, array
 ## param.names: character
@@ -623,17 +581,19 @@ for (n in names(model)) cat(n, ": ", paste0(class(model[[n]]), collapse = ", "),
 ## param.idx0: list
 ## token.pool: list
 ## settings: list
-## Cpp_model: Rcpp_wspc
-## sample.params: matrix, array
+## plot.settings: list
+## sample.params.type: character
 ## sample.params.MCMC: matrix, array
 ## diagnostics.MCMC: data.frame
-## variables: list
-## plot.settings: list
+## pred_values: matrix, array
 ## stats: list
 ## plots: list
+## variables: list
 ```
 
-Within the stats object (another list itself), the following is found:
+These components are described in more detail in the wisp entry of the
+“Package Functions” section of this site. Within the stats object
+(another list itself), the following is found:
 
 ``` r
 
@@ -642,10 +602,8 @@ for (n in names(model$stats)) cat(n, ": ", paste0(class(model$stats[[n]]), colla
 
 ``` scroll-output
 ## parameters: data.frame
-## tps: data.frame
 ## residuals: data.frame
 ## residuals.log: data.frame
-## variance: data.frame
 ```
 
 The parameter object stats\$parameter is a data frame the rows of which
@@ -658,13 +616,13 @@ print(head(model$stats$parameter))
 ```
 
 ``` scroll-output
-##                                  parameter      estimate       CI.low      CI.high     p.value p.value.adj    alpha.adj significance
-## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3874762662 3.2423579199 3.6060658268          NA          NA           NA             
-## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0002723492 0.0002701605 0.0009564635 0.000999001  0.04495504 0.0011111111            *
-## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6059294086 0.4971755126 0.6552261694 0.000000000  0.00000000 0.0002923977          ***
-## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0476934492 0.0324878078 0.0563049808 0.000000000  0.00000000 0.0002941176          ***
-## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2516514786 1.9117544868 2.6135187197          NA          NA           NA             
-## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.1004792278 0.0504651545 0.0951689705 0.000000000  0.00000000 0.0002958580          ***
+##                                  parameter      estimate      CI.low    CI.high  p.value p.value.adj    alpha.adj significance
+## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3880114451 3.257259190 3.57683057       NA          NA           NA             
+## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0003773747 0.009057961 0.01865859 0.957043    0.957043 0.0500000000           ns
+## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6072410701 0.387548476 0.60704006 0.000000    0.000000 0.0002923977          ***
+## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0461743004 0.032824337 0.06588826 0.000000    0.000000 0.0002941176          ***
+## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2781929967 1.923734236 2.64818473       NA          NA           NA             
+## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.0822301676 0.069129014 0.10433351 0.000000    0.000000 0.0002958580          ***
 ```
 
 All fixed-effects of hemisphere (i.e., laterality) on the expression
@@ -676,22 +634,22 @@ type of parameter (fixed effect on rate, which is “beta” on “Rt”):
 ``` r
 
 mask <- grepl("Rorb", model$stats$parameters$parameter) &    # just this gene
-  grepl("right", model$stats$parameters$parameter) &         # just the effect of hemisphere
-  grepl("beta", model$stats$parameters$parameter) &          # just the fixed effects of the above factor
-  grepl("Rt", model$stats$parameters$parameter)              # just the effects on rate
+  grepl("right",      model$stats$parameters$parameter) &    # just the effect of hemisphere
+  grepl("beta",       model$stats$parameters$parameter) &    # just the fixed effects of the above factor
+  grepl("Rt",         model$stats$parameters$parameter)      # just the effects on rate
 print(model$stats$parameter[mask, ])
 ```
 
 ``` scroll-output
-##                                 parameter   estimate        CI.low     CI.high     p.value p.value.adj    alpha.adj significance
-## 66   beta_Rt_cortex_Rorb_right_X_Tns/Blk1  0.3675538  0.2549638213 0.405098281 0.000000000  0.00000000 0.0003472222          ***
-## 68 beta_Rt_cortex_Rorb_right18_X_Tns/Blk1 -0.1202368  0.0226205964 0.057872150 0.000999001  0.02897103 0.0017241379            *
-## 70   beta_Rt_cortex_Rorb_right_X_Tns/Blk2  0.3366749  0.1872820676 0.342245184 0.000000000  0.00000000 0.0003521127          ***
-## 72 beta_Rt_cortex_Rorb_right18_X_Tns/Blk2 -0.2536468 -0.0264334049 0.002955359 0.000999001  0.02797203 0.0017857143            *
-## 74   beta_Rt_cortex_Rorb_right_X_Tns/Blk3  0.2557962  0.2014214573 0.367680590 0.000000000  0.00000000 0.0003571429          ***
-## 76 beta_Rt_cortex_Rorb_right18_X_Tns/Blk3 -0.4326966 -0.0001465364 0.050469691 0.000999001  0.02697303 0.0018518519            *
-## 78   beta_Rt_cortex_Rorb_right_X_Tns/Blk4  0.1952882  0.1495461129 0.327293014 0.000000000  0.00000000 0.0003623188          ***
-## 80 beta_Rt_cortex_Rorb_right18_X_Tns/Blk4 -0.5650512  0.0045191349 0.041503420 0.000999001  0.02597403 0.0019230769            *
+##                                 parameter   estimate      CI.low      CI.high     p.value p.value.adj    alpha.adj significance
+## 66   beta_Rt_cortex_Rorb_right_X_Tns/Blk1  0.3542878  0.29575520 0.5817378023 0.000000000  0.00000000 0.0003496503          ***
+## 68 beta_Rt_cortex_Rorb_right18_X_Tns/Blk1 -0.1004888  0.01281358 0.0507603189 0.000999001  0.02797203 0.0017857143            *
+## 70   beta_Rt_cortex_Rorb_right_X_Tns/Blk2  0.3255307  0.32983321 0.4904189120 0.000000000  0.00000000 0.0003546099          ***
+## 72 beta_Rt_cortex_Rorb_right18_X_Tns/Blk2 -0.2427069 -0.01771349 0.0005267267 0.000999001  0.02697303 0.0018518519            *
+## 74   beta_Rt_cortex_Rorb_right_X_Tns/Blk3  0.2572398  0.16865627 0.3684502226 0.000000000  0.00000000 0.0003597122          ***
+## 76 beta_Rt_cortex_Rorb_right18_X_Tns/Blk3 -0.3952781  0.05777799 0.0948408947 0.000999001  0.02597403 0.0019230769            *
+## 78   beta_Rt_cortex_Rorb_right_X_Tns/Blk4  0.2136000  0.17765346 0.3884743571 0.000000000  0.00000000 0.0003649635          ***
+## 80 beta_Rt_cortex_Rorb_right18_X_Tns/Blk4 -0.6081176  0.08597708 0.1059236005 0.000999001  0.02497502 0.0020000000            *
 ```
 
 Notice that all of the parameter names end in “Tns/Blk1”, “Tns/Blk2”,
@@ -704,7 +662,10 @@ the interaction of hemisphere with age (the effect of laterality at
 P18). As can be seen, RORB expression is up-regulated in the right
 hemisphere (compared to left) across all blocks, but the interaction of
 hemisphere with age decreases that up-regulation, i.e., the laterality
-effect is less pronounced at P18 than at P12.
+effect is less pronounced at P18 than at P12. In blocks 3 and 4, that
+negative interaction seems to more than cancel out the positive effect
+of the right hemisphere itself (meaning that the left has a higher
+expression rate), although the uncertainty ranges are large.
 
 ### Plotting results
 

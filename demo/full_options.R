@@ -51,31 +51,31 @@ fixed.effect.names <- c("hemisphere", "age")
 
 # Define variables in the dataframe for the model
 data.variables <- list(
-    count = "count",
-    bin = "bin", 
-    context = "context", 
-    species = "gene",
-    ran = "mouse",
-    timeseries = NULL,
+    count        = "count",
+    bin          = "bin", 
+    context      = "context", 
+    species      = "gene",
+    ran          = "mouse",
+    timeseries   = NULL,
     fixedeffects = fixed.effect.names
   )
 
 # Model settings 
 # ... all settings shown here are defaults
 model.settings <- list(
-    buffer_factor = 0.05,                       # buffer factor for minimum distance between t-points
-    ctol = 1e-6,                                # convergence tolerance
+    buffer_factor                  = 0.05,      # buffer factor for minimum distance between t-points
+    ctol                           = 1e-6,      # convergence tolerance
     max_penalty_at_distance_factor = 0.01,      # maximum penalty at distance from parameter bounds
-    LRO_grid_search = "none",                   # Cost metric (AIC or BIC) to use for grid search to find initial LROcp parameters; any other character string will skip grid search
-    LROcutoff = 2.0,                            # cutoff for LROcp, a multiple of standard deviation
-    LROwindow_factor = 1.25,                    # controls size of window used in LROcp algorithm (window = LROwindow_factor * bin_num * buffer_factor)
-    rise_threshold_factor = 0.8,                # amount of detected rise as fraction of total required to end run
-    max_evals = 1000,                           # maximum number of evaluations for optimization
-    rng_seed = 42,                              # seed for random number generator
-    warp_precision = 1e-7,                      # decimal precision to retain when selecting really big number as pseudo infinity for unbound warping
-    round_none = TRUE,                          # round extrapoloted counts for "none" (no random effect) to nearest integer? 
-    trtKO = c("none"),                          # list of effect names to remove from the model, e.g., model without the Factor1 x Factor2 interaction
-    max_bin = 0.0                               # Largest bin number; if left zero, will infer from count data
+    LRO_grid_search                = "AIC",     # Cost metric (AIC or BIC) to use for grid search to find initial LROcp parameters; any other character string will skip grid search
+    LROcutoff                      = 2.0,       # cutoff for LROcp, a multiple of standard deviation
+    LROwindow_factor               = 1.25,      # controls size of window used in LROcp algorithm (window = LROwindow_factor * bin_num * buffer_factor)
+    rise_threshold_factor          = 0.8,       # amount of detected rise as fraction of total required to end run
+    max_evals                      = 1000,      # maximum number of evaluations for optimization
+    rng_seed                       = 42,        # seed for random number generator
+    warp_precision                 = 1e-7,      # decimal precision to retain when selecting really big number as pseudo infinity for unbound warping
+    round_none                     = TRUE,      # round extrapoloted counts for "none" (no random effect) to nearest integer? 
+    trtKO                          = c("none"), # list of effect names to remove from the model, e.g., model without the Factor1 x Factor2 interaction
+    max_bin                        = 0.0        # Largest bin number; if left zero, will infer from count data
   )
 
 # Setting suggestions: 
@@ -89,47 +89,46 @@ model.settings <- list(
 # Settings for MCMC walk
 # ... all settings shown here are defaults
 MCMC.settings <- list(
-    MCMC.burnin = 1e2,
-    MCMC.steps = 1e3,
-    MCMC.step.size = 0.5,
-    MCMC.prior = 1.0, 
+    MCMC.burnin          = 1e2,
+    MCMC.steps           = 1e3,
+    MCMC.step.size       = 0.5,
+    MCMC.prior           = 1.0, 
     MCMC.neighbor.filter = 1
   )
 
 # Settings for plotting
 plot.settings <- list(
-  print.plots = TRUE,
-  dim.bounds = colMeans(layer.boundary.bins), 
-  log.scale = FALSE,
-  splitting_factor = NULL,
-  CI_style = TRUE,
-  label_size = 5.5,
-  title_size = 20,
-  axis_size = 12, 
-  legend_size = 10,
-  count_size = 1.5,
-  count_jitter = 0.5,
-  count.alpha.ran = 0.25,
+  print.plots      = TRUE,
+  dim.bounds       = colMeans(layer.boundary.bins), 
+  log.scale        = FALSE,
+  splitting_factor = c(),
+  CI_style         = TRUE,
+  label_size       = 5.5,
+  title_size       = 20,
+  axis_size        = 12, 
+  legend_size      = 10,
+  count_size       = 1.5,
+  count_jitter     = 0.5,
+  count.alpha.ran  = 0.25,
   count.alpha.none = 0.25,
-  pred.alpha.ran = 0.9,
-  pred.alpha.none = 1.0
+  pred.alpha.ran   = 0.9,
+  pred.alpha.none  = 1.0
 )
 
 # Fit model
-# ... all settings shown here are defaults
 laminar.model <- wisp(
-    count.data = countdata,
-    variables = data.variables,
-    fit_only = FALSE,
-    use.median = FALSE,
-    bootstraps.num = 0,
+    count.data               = countdata,
+    variables                = data.variables,
+    fit_only                 = FALSE,
+    use.median               = FALSE,
+    bootstraps.num           = 0,
     converged.resamples.only = TRUE,
-    max.fork = bs_chunksize,
-    verbose = TRUE,
-    model.settings = model.settings,
-    MCMC.settings = MCMC.settings,
-    plot.settings = plot.settings,
-    ran.seed = 1234
+    max.fork                 = bs_chunksize,
+    verbose                  = TRUE,
+    model.settings           = model.settings,
+    MCMC.settings            = MCMC.settings,
+    plot.settings            = plot.settings,
+    ran.seed                 = 1234
   )
 
 # Demo plots showing anatomy of a wisp

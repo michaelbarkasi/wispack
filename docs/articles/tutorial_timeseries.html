@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -87,7 +87,7 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">2026-06-05</h4>
+            <h4 data-toc-skip class="date">July 3, 2026 (v2.4)</h4>
       
 
       <div class="d-none name"><code>tutorial_timeseries.Rmd</code></div>
@@ -142,8 +142,9 @@ Example data: postnatal age
 <p>This tutorial will use MERFISH data collected from the auditory
 cortex of mice. The data has been preprocessed into laminar coordinates
 as described in <a href="tutorial_corticallaminar.html">the tutorial</a>
-on modeling the cortical-laminar axis (see also <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">this preprint</a>). As
-with all data appropriate for wispack, and in line with well-known
+on modeling the cortical-laminar axis (see also <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">this preprint</a> or
+the published <a href="https://doi.org/10.1093/nar/gkag466" class="external-link">paper</a>).
+As with all data appropriate for wispack, and in line with well-known
 modeling functions in R (e.g., <a href="https://cran.r-project.org/web/packages/lme4/index.html" class="external-link"><span class="function">lme4::lmer</span></a>, <a href="https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html" class="external-link"><span class="function">stats::lm</span></a>), the data must be in long format.
 That is, each row must correspond to a single observation, which when
 modeling spatial transcriptomics data will typically be a count of
@@ -170,8 +171,8 @@ transcripts from an RNA species in a single cell.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">$</span><span class="va">hemisphere</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## [1] "left"  "right"</span></span></code></pre>
-<p>A variable giving counts (by cell) for the following six layer
-specific genes:</p>
+<p>A variable giving counts (by cell) for the following six
+layer-specific genes:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">countdata</span><span class="op">$</span><span class="va">gene</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## [1] "Bcl11b" "Fezf2"  "Satb2"  "Nxph3"  "Cux2"   "Rorb"</span></span></code></pre>
@@ -198,47 +199,87 @@ genes in this data set are known to be localized to specific cortical
 layers.</p>
 <table class="table">
 <colgroup>
-<col width="51%">
-<col width="22%">
-<col width="25%">
+<col style="width: 25%;">
+<col style="width: 50%;">
+<col style="width: 25%;">
 </colgroup>
-<thead><tr class="header">
-<th align="left">Abbreviation</th>
-<th align="left">Name</th>
-<th align="left">Layer</th>
+<thead><tr>
+<th>
+Abbreviation
+</th>
+<th>
+Name
+</th>
+<th>
+Layer
+</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
-<td align="left">
+<tr>
+<td>
 <span class="gene">BCL11B</span>, <span class="gene">CTIP2</span>
 </td>
-<td align="left">B-cell CLL/lymphoma 11b</td>
-<td align="left">5/6</td>
+<td>
+B-cell CLL/lymphoma 11b
+</td>
+<td>
+5/6
+</td>
 </tr>
-<tr class="even">
-<td align="left"><span class="gene">FEZF2</span></td>
-<td align="left">FEZ Family Zinc Finger 2</td>
-<td align="left">5</td>
+<tr>
+<td>
+<span class="gene">FEZF2</span>
+</td>
+<td>
+FEZ Family Zinc Finger 2
+</td>
+<td>
+5
+</td>
 </tr>
-<tr class="odd">
-<td align="left"><span class="gene">SATB2</span></td>
-<td align="left">SATB Homeobox 2</td>
-<td align="left">2/3</td>
+<tr>
+<td>
+<span class="gene">SATB2</span>
+</td>
+<td>
+SATB Homeobox 2
+</td>
+<td>
+2/3
+</td>
 </tr>
-<tr class="even">
-<td align="left"><span class="gene">NXPH3</span></td>
-<td align="left">Neurexophilin 3</td>
-<td align="left">6</td>
+<tr>
+<td>
+<span class="gene">NXPH3</span>
+</td>
+<td>
+Neurexophilin 3
+</td>
+<td>
+6
+</td>
 </tr>
-<tr class="odd">
-<td align="left"><span class="gene">CUX2</span></td>
-<td align="left">Cut like homeobox 2</td>
-<td align="left">2/3/4</td>
+<tr>
+<td>
+<span class="gene">CUX2</span>
+</td>
+<td>
+Cut like homeobox 2
+</td>
+<td>
+2/3/4
+</td>
 </tr>
-<tr class="even">
-<td align="left"><span class="gene">RORB</span></td>
-<td align="left">Retinoic acid-related orphan receptor beta</td>
-<td align="left">4</td>
+<tr>
+<td>
+<span class="gene">RORB</span>
+</td>
+<td>
+Retinoic acid-related orphan receptor beta
+</td>
+<td>
+4
+</td>
 </tr>
 </tbody>
 </table>
@@ -266,15 +307,15 @@ column is to be treated as a time series factor.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Define variables in the dataframe for the model</span></span>
 <span><span class="va">data.variables</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    species <span class="op">=</span> <span class="st">"gene"</span>,</span>
-<span>    ran <span class="op">=</span> <span class="st">"mouse"</span>,</span>
+<span>    species    <span class="op">=</span> <span class="st">"gene"</span>,</span>
+<span>    ran        <span class="op">=</span> <span class="st">"mouse"</span>,</span>
 <span>    timeseries <span class="op">=</span> <span class="st">"age"</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p>As we’re modeling layer-specific genes, we can also grab cortical
 layer boundaries which were estimated for this data independent of wisp
-(using manual CCFv3 registration). These will only be used for plotting
-and visualization after fitting the model, not for fitting the model
-itself.</p>
+(using manual <a href="https://doi.org/10.1016/j.cell.2020.04.007" class="external-link">CCFv3</a>
+registration). These will only be used for plotting and visualization
+after fitting the model, not for fitting the model itself.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">boundary_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
 <span>    <span class="st">"extdata"</span>, </span>
@@ -283,25 +324,31 @@ itself.</p>
 <span>  <span class="op">)</span></span>
 <span><span class="va">layer.boundary.bins</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">boundary_path</span><span class="op">)</span></span></code></pre></div>
 <p>With data loaded, variables set, and boundaries grabbed, we can fit
-the wisp model. As it’s not necessary for demonstrating time-series
-modeling, we’ll only fit the model (<span class="code_variable">fit_only
-= TRUE</span>) without running any <a href="tutorial_stats.html">statistical parameter estimation</a>.</p>
+the wisp model.<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;Two notes. First, we’ll only fit the model (&lt;span class="code_variable"&gt;fit_only = TRUE&lt;/span&gt;) without running any &lt;a href="tutorial_stats.html"&gt;statistical parameter estimation&lt;/a&gt;, which
+is not necessary for demonstrating time-series modeling. Second, the
+&lt;span class="code_variable"&gt;LRO_cost&lt;/span&gt; variable under &lt;span class="code_variable"&gt;model.settings&lt;/span&gt; is set to “none”. The
+default (as of v2.4) is “AIC”, which will trigger a time-consuming grid
+search of parameters (minimizing model AIC) to use in the initial LRO
+change-point detection algorithm. Setting to “none” skips this search
+and defaults to reasonably robust LRO options.&lt;/p&gt;'><sup>1</sup></a></p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
-<span>    count.data <span class="op">=</span> <span class="va">countdata</span>,</span>
-<span>    variables <span class="op">=</span> <span class="va">data.variables</span>,</span>
-<span>    fit_only <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>    model.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>LROwindow_factor <span class="op">=</span> <span class="fl">2.0</span><span class="op">)</span>,</span>
-<span>    plot.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>        print.plots <span class="op">=</span> <span class="cn">FALSE</span>, </span>
-<span>        dim.bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span></span>
-<span>      <span class="op">)</span>,</span>
-<span>    verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>    count.data     <span class="op">=</span> <span class="va">countdata</span>,</span>
+<span>    variables      <span class="op">=</span> <span class="va">data.variables</span>,</span>
+<span>    fit_only       <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    model.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      LRO_cost         <span class="op">=</span> <span class="st">"none"</span>, </span>
+<span>      LROwindow_factor <span class="op">=</span> <span class="fl">2.0</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    plot.settings  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      print.plots <span class="op">=</span> <span class="cn">FALSE</span>, </span>
+<span>      dim.bounds  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    verbose        <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## </span></span>
-<span><span class="co">## </span></span>
 <span><span class="co">## Parsing data and settings for wisp model</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
@@ -309,6 +356,7 @@ modeling, we’ll only fit the model (<span class="code_variable">fit_only
 <span><span class="co">##  buffer_factor: 0.05</span></span>
 <span><span class="co">##  ctol: 1e-06</span></span>
 <span><span class="co">##  max_penalty_at_distance_factor: 0.01</span></span>
+<span><span class="co">##  LRO_cost: none</span></span>
 <span><span class="co">##  LROcutoff: 2</span></span>
 <span><span class="co">##  LROwindow_factor: 2</span></span>
 <span><span class="co">##  rise_threshold_factor: 0.8</span></span>
@@ -326,6 +374,7 @@ modeling, we’ll only fit the model (<span class="code_variable">fit_only
 <span><span class="co">##  log.scale: FALSE</span></span>
 <span><span class="co">##  splitting_factor: </span></span>
 <span><span class="co">##  CI_style: TRUE</span></span>
+<span><span class="co">##  splitting_factor_colors: 120, 240</span></span>
 <span><span class="co">##  label_size: 5.5</span></span>
 <span><span class="co">##  title_size: 20</span></span>
 <span><span class="co">##  axis_size: 12</span></span>
@@ -359,6 +408,9 @@ modeling, we’ll only fit the model (<span class="code_variable">fit_only
 <span><span class="co">## </span></span>
 <span><span class="co">## Initializing Cpp (wspc) model</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## Context grouping levels: "cortex"</span></span>
+<span><span class="co">## Species grouping levels: "Bcl11b" "Cux2" "Fezf2" "Nxph3" "Rorb" "Satb2"</span></span>
+<span><span class="co">## Random-effect grouping levels: "none" "1" "2" "3" "4" "5"</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Infinity handling:</span></span>
 <span><span class="co">## machine epsilon: (eps_): 2.22045e-16</span></span>
@@ -367,74 +419,32 @@ modeling, we’ll only fit the model (<span class="code_variable">fit_only
 <span><span class="co">## implied pseudo-infinity for unbounded warp (inf_warp): 4.5036e+08</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Extracting variables and data information:</span></span>
-<span><span class="co">## Max bin: 100.000000</span></span>
-<span><span class="co">## Fixed effects:</span></span>
-<span><span class="co">## "hemisphere" "timeseries"</span></span>
-<span><span class="co">## Ref levels:</span></span>
-<span><span class="co">## "left" "7"</span></span>
-<span><span class="co">## Time series detected:</span></span>
-<span><span class="co">## "7" "12" "18"</span></span>
-<span><span class="co">## Created treatment levels:</span></span>
-<span><span class="co">## "ref" "right" "12" "18" "right12" "right18"</span></span>
-<span><span class="co">## Constructed weight_row matrix</span></span>
-<span><span class="co">## Context grouping levels:</span></span>
-<span><span class="co">## "cortex"</span></span>
-<span><span class="co">## Species grouping levels:</span></span>
-<span><span class="co">## "Bcl11b" "Cux2" "Fezf2" "Nxph3" "Rorb" "Satb2"</span></span>
-<span><span class="co">## Random-effect grouping levels:</span></span>
-<span><span class="co">## "none" "1" "2" "3" "4" "5"</span></span>
+<span><span class="co">## Max bin: 100</span></span>
+<span><span class="co">## Fixed effects: "hemisphere" "timeseries"</span></span>
+<span><span class="co">## Ref levels: "left" "7"</span></span>
+<span><span class="co">## Time series detected: "7" "12" "18"</span></span>
+<span><span class="co">## Created treatment levels: "ref" "right" "12" "18" "right12" "right18"</span></span>
 <span><span class="co">## Total rows in summed count data table: 21600</span></span>
 <span><span class="co">## Number of rows with unique model components: 216</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## Creating summed-count data columns and weight matrix:</span></span>
-<span><span class="co">## Random level 0, 1/6 complete</span></span>
-<span><span class="co">## Random level 1, 2/6 complete</span></span>
-<span><span class="co">## Random level 2, 3/6 complete</span></span>
-<span><span class="co">## Random level 3, 4/6 complete</span></span>
-<span><span class="co">## Random level 4, 5/6 complete</span></span>
-<span><span class="co">## Random level 5, 6/6 complete</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Making extrapolation pool:</span></span>
-<span><span class="co">## row: 720/3600</span></span>
-<span><span class="co">## row: 1440/3600</span></span>
-<span><span class="co">## row: 2160/3600</span></span>
-<span><span class="co">## row: 2880/3600</span></span>
-<span><span class="co">## row: 3600/3600</span></span>
-<span><span class="co">## </span></span>
-<span><span class="co">## Wrapping up initialization:</span></span>
-<span><span class="co">## Extrapolated 'none' rows</span></span>
-<span><span class="co">## Took log of observed counts</span></span>
-<span><span class="co">## Estimated gamma dispersion of raw counts</span></span>
-<span><span class="co">## Found average log counts for each context-species combination</span></span>
-<span><span class="co">## Constructed grouping variable IDs</span></span>
-<span><span class="co">## </span></span>
 <span><span class="co">## Running LRO change-point detection and setting initial parameters</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
 <span><span class="co">## Estimated change points</span></span>
-<span><span class="co">## Estimated initial parameters for fixed-effect treatments</span></span>
-<span><span class="co">## Built initial beta (ref and fixed-effects) matrices</span></span>
-<span><span class="co">## Initialized random-effect warping factors</span></span>
-<span><span class="co">## Made and mapped parameter vector</span></span>
+<span><span class="co">## Estimated initial parameters</span></span>
 <span><span class="co">## Number of parameters: 414</span></span>
 <span><span class="co">## Size of boundary vector: 2160</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Fitting model to data</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
 <span><span class="co">## </span></span>
-<span><span class="co">## Setting boundary penalty coefficients</span></span>
-<span><span class="co">## Initial neg_loglik: 15281.4</span></span>
-<span><span class="co">## Initial neg_loglik with penalty: 15434.2</span></span>
-<span><span class="co">## Initial min boundary distance: 0.24777</span></span>
-<span><span class="co">## Final neg_loglik: 15013</span></span>
-<span><span class="co">## Final neg_loglik with penalty: 15120.1</span></span>
-<span><span class="co">## Final min boundary distance: 0.123085</span></span>
-<span><span class="co">## Number of evaluations: 189</span></span>
-<span><span class="co">## Checking feasibility of provided parameters</span></span>
-<span><span class="co">## ... no tpoints below buffer</span></span>
-<span><span class="co">## ... no NAN rates predicted</span></span>
-<span><span class="co">## ... no negative rates predicted</span></span>
-<span><span class="co">## Provided parameters are feasible</span></span>
-<span><span class="co">## Initial boundary distance (want &gt; 0): 0.123085</span></span>
+<span><span class="co">## Initial nll: 15270.5</span></span>
+<span><span class="co">## Initial nll with penalty: 15423.1</span></span>
+<span><span class="co">## Initial min boundary distance: 0.247893</span></span>
+<span><span class="co">## Final nll: 15010.9</span></span>
+<span><span class="co">## Final nll with penalty: 15118.6</span></span>
+<span><span class="co">## Final min boundary distance: 0.116235</span></span>
+<span><span class="co">## Number of evaluations: 237</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Making rate-count plots... </span></span>
 <span><span class="co">## Making time series plots...</span></span></code></pre>
@@ -478,8 +488,8 @@ age P12 will all be included in the estimate, while the effects for age
 P18 and the interaction between right hemisphere and age P18 will not be
 included. What makes the time series additive is the way a treatment
 level like <span class="code_variable">18</span> or <span class="code_variable">right18</span> include not only effects related to
-the age <span class="code_variable">18</span>, but also effects related
-to all earlier ages, e.g., <span class="code_variable">12</span>.</p>
+the age <span class="code_variable">P18</span>, but also effects related
+to all earlier ages, e.g., <span class="code_variable">P12</span>.</p>
 <h2>
 Visualizing time series
 </h2>
@@ -536,6 +546,7 @@ how gene expression depends on cell type. To properly analyze this data,
 we need to include cell type in the model as well. This is explained in
 the <a href="tutorial_multicontext.html">cell type tutorial</a>, which
 also includes all plots.</p>
+
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>

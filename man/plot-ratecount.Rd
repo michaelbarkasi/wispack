@@ -6,17 +6,17 @@
 \usage{
 plot.ratecount(
  wisp.results, 
- log.scale = FALSE,
- dim.boundaries = c(), 
- print.plots = FALSE, 
- y.lim = NA, 
+ log.scale        = FALSE,
+ dim.boundaries   = c(), 
+ print.plots      = FALSE, 
+ y.lim            = NA, 
  count.alpha.none = NA, 
- count.alpha.ran = NA, 
- pred.alpha.none = NA, 
- pred.alpha.ran = NA, 
- rans.to.print = c(), 
- species = c(), 
- verbose = TRUE
+ count.alpha.ran  = NA, 
+ pred.alpha.none  = NA, 
+ pred.alpha.ran   = NA, 
+ rans.to.print    = c(), 
+ species          = c(), 
+ verbose          = TRUE
 )
 }
 \arguments{

@@ -22,30 +22,78 @@ wisp(
 \arguments{
 \item{count.data}{Data.frame, data to be modeled, with columns for model variables (count, bin, context, species, ran, fixedeffects), or equivalent variables as specified in the \code{variables} argument.}
 
-\item{variables}{List, names of the columns in \code{count.data} that correspond to the model variables. The list should contain only (but not necessarily all) named elements: \code{count}, \code{bin}, \code{context}, \code{species}, \code{ran}, and \code{fixedeffects}.}
+\item{variables}{List, names of the columns in \code{count.data} that correspond to the model variables. The list should contain only (but not necessarily all) named elements: \code{count}, \code{bin}, \code{context}, \code{species}, \code{ran}, \code{timeseries}, and \code{fixedeffects}.}
 
-\item{fit_only}{Logical, if TRUE, only fits the model to the full data set using L-BFGS and returns the fitted model without running MCMC or bootstrapping; if FALSE, runs MCMC and/or bootstrapping to estimate parameter uncertainty.}
+\item{fit_only}{Logical, if TRUE, only fits the model to the full data set using L-BFGS and returns the fitted model without running resampling (MCMC or bootstrapping); if FALSE, runs MCMC and/or bootstrapping to estimate parameter uncertainty.}
 
-\item{use.median}{Logical, if TRUE, the median of the resamples is used as the final parameter estimates; if FALSE, the initial fit by L-BFGS is used.}
+\item{use.median}{Logical, if TRUE, the median of the resamples is used as the final parameter estimates; if FALSE, the fit by L-BFGS on the full, original data is used.}
 
 \item{bootstraps.num}{Integer, number of bootstrap resamples to perform. If 0, only MCMC is run.}
 
 \item{converged.resamples.only}{Logical, if TRUE, only resamples with a converged fit are used for statistical analysis; if FALSE, all resamples are used. Applies only to bootstraps.}
 
-\item{max.fork}{Integer, maximum number of parallel processes to use for bootstrapping.}
+\item{max.fork}{Integer, maximum number of parallel processes to use for bootstrapping. Applies only on Mac and Linux. Must be 1 for windows.}
 
 \item{verbose}{Logical, if TRUE, prints information during the fitting process.}
 
-\item{model.settings}{List, settings for the C++ model, including \code{buffer_factor}, \code{ctol}, \code{max_penalty_at_distance_factor}, \code{LRO_cost}, \code{LROcutoff}, \code{LROwindow_factor}, \code{rise_threshold_factor}, \code{max_evals}, \code{rng_seed}, \code{warp_precision}, \code{round_none}, \code{trtKO}, and \code{max_bin}. Default values are provided.}
+\item{model.settings}{List, settings for the C++ model, including: \itemize{
+\item \code{buffer_factor} = 0.05: The minimum distance between t-points must be this proportion of \code{max_bin}.
+\item \code{ctol} = 1e-6: Convergence tolerance for L-BFGS.
+\item \code{max_penalty_at_distance_factor} = 0.01: Maximum penalty applied to negative log-likelihood when at a non-trivial distance from parameter bounds.
+\item \code{LRO_cost} = "AIC": Character string giving cost function to use when evaluating likelihood-ratio outlier (LRO) parameters for testing for expression-rate transition points in the data ("AIC", "BIC", "NLL"; anything else defaults to the hand-specified LROcutoff and LROwindow_factor).
+\item \code{LROcutoff} = 2.0: Cutoff used in the \code{LROcp_find} function, a multiple of standard deviation. Specifically, each point is evaluated as the ratio of the likelihood of the data on a model with a transition point to the likelihood of the data on a model without a change point. A point is taken to be a transition point only if this ratio is more than this number of standard deviations above the mean across all points.
+\item \code{LROwindow_factor} = 1.25: controls size of window used in \code{LROcp_find} algorithm (window = LROwindow_factor X bin_num X buffer_factor)
+\item \code{rise_threshold_factor} = 0.8: Amount of detected rise as fraction of total required to end run when making initial estimates of transition-point slopes.
+\item \code{max_evals} = 1000: Maximum number of evaluations for optimization, when using L-BFGS.
+\item \code{rng_seed} = 42: Seed for random number generator used internal to C++.
+\item \code{warp_precision} = 1e-7: Decimal precision to retain when selecting really big number as pseudo infinity for unbound warping.
+\item \code{round_none} = TRUE: Logical specifying whether to round extrapolated counts for "none" (no random effect) to nearest integer.
+\item \code{trtKO} = c("none"): List of effect names to remove from the model, e.g., model without the Factor1 x Factor2 interaction. Must match one of the treatment levels of the full model.
+\item \code{max_bin} = 0.0: Largest bin number; if left zero, will infer from count data
+}}
 
-\item{MCMC.settings}{List, settings for the MCMC simulation, including \code{MCMC.burnin}, \code{MCMC.steps}, \code{MCMC.step.size}, \code{MCMC.prior}, and \code{MCMC.neighbor.filter}. Default values are provided.}
+\item{MCMC.settings}{List, settings for the MCMC simulation, including: \itemize{
+\item \code{MCMC.burnin} = 1e2: Number of random-walk steps to take to find the optimal parameters. If zero, will start the walk from the L-BFGS parameters.
+\item \code{MCMC.steps} = 1e3: Number of random-walk steps to take when resampling parameters.
+\item \code{MCMC.step.size} = 0.5: Standard deviation of the normal distribution controlling random-walk step size.
+\item \code{MCMC.prior} = 1.0: Prior to compute the Bayesian update controlling step acceptance.
+\item \code{MCMC.neighbor.filter} = 1: Will only save every this-many steps as a resample.
+}}
 
-\item{plot.settings}{List, settings for plots to make, including \code{print.plots}, \code{dim.bounds}, \code{log.scale}, \code{splitting_factor}, \code{CI_style}, \code{splitting_factor_colors}, \code{label_size}, \code{title_size}, \code{axis_size}, \code{legend_size}, \code{count_size}, \code{count_jitter}, \code{count.alpha.ran}, \code{count.alpha.none}, \code{pred.alpha.ran}, and \code{pred.alpha.none}. Default values are provided.}
+\item{plot.settings}{List, settings for plots to make, including: \itemize{
+\item \code{print.plots} = TRUE: Logical indicating whether to print plots as they are produced during the model fit.
+\item \code{dim.bounds} = Vector of bins; if non-empty, rate-count plots will plot vertical dot-dashed lines as these coordinates to indicate a prior-known boundary along the spatial dimension. Note that these values are not used in any way during the model fit itself.
+\item \code{log.scale} = False: Logical indicating whether plots should show the log of expression-rate values (plus 1).
+\item \code{splitting_factor} = c(): Name of a fixed-effect factor. Must be either empty or length 1. If provided, rate-count and time-series plots will determine the color hue of treatment levels by the value of this fixed-effect in that level. Within splitting factor levels, the other fixed-effect factor level determines color brightness. Note that this splitting-factor color scheme only has an effect if there are exactly two fixed-effect levels (one of which can be a time series, but the splitting factor itself cannot be a time series).
+\item \code{CI_style} = TRUE: Logical indicating whether rate-count plots should show (TRUE:) predicted treatment-level expression rates free of individual effects plus shading showing 95\% confidence invervals, or (FALSE:) observed data as points, plus fitted treatment-level expression rates for both individual samples and predictions free of individual effects.
+\item \code{splitting_factor_colors} = c(120, 240): Vector of two integers (range 0:360) giving the hue of each level of the splitting factor.
+\item \code{label_size}, \code{title_size}, \code{axis_size}, \code{legend_size}, \code{count_size}: Controls for plot element sizes.
+\item \code{count_jitter} = 0.5: Scale of jitter to apply when plotting data for a given input.
+\item \code{count.alpha.ran}, \code{count.alpha.none}, \code{pred.alpha.ran}, and \code{pred.alpha.none}: Controls for plot element alpha-levels.
+}}
 
-\item{ran.seed}{Integer, random seed for reproducibility. If NULL, no seed is set. Default is 1234.}
+\item{ran.seed}{= 1234: Integer, random seed for reproducibility. Used within R. If NULL, no seed is set. Default is 1234.}
 }
 \value{
-List giving the results of the fitted model, including: \code{model.component.list}, \code{count.data.summed}, \code{fitted.parameters}, \code{gamma.disperson}, \code{param.names}, \code{fix}, \code{treatment}, \code{grouping.variables}, \code{param.idx0}, \code{settings}, \code{sample.params.type}, \code{sample.params.bs}, \code{sample.params.MCMC}, \code{diagnostics.bs}, \code{diagnostics.MCMC}, \code{stats}, and \code{plots}
+List giving the results of the fitted model, including: \itemize{
+\item \code{model.component.list} = {"Rt", "tslope", "tpoint"}: Character vector giving the main model components; always "Rt" = rate, "tslope" = transition-point slope, and "tpoint" = transition-point location.
+\item \code{count.data.summed}: Data frame of the fitted data. There is one row per combination of spatial bin, fixed effects, and random effects. Contains columns for \code{bin}, \code{count} (sum of spots with a given species label), \code{pred} (predicted rate), \code{count.log} log of the count, plus one, \code{pred.log} (log of predicted rate plus one), \code{context}, \code{species}, \code{ran} (random-effect level), and \code{treatment} (treatment level).
+\item \code{fitted.parameters}: Vector of all fitted model parameters.
+\item \code{gamma.disperson}: Matrix giving the estimated gamma dispersion of the gamma-convolved Poisson model.
+\item \code{param.names}: Names of the model parameters, matching the order of \code{fitted.parameters}.
+\item \code{fix}: List containing four elements: \code{names} (names of fixed-effect factors), \code{lvls} (list, each element the names of the levels of a fixed-effect factor), \code{treat.lvl} (as before, but excluding reference levels), and \code{ref.lvl} (as before, but containing only the reference-level).
+\item \code{treatment}: List with two elements: \code{names} (names of the treatment levels) and \code{components} (list, each element the names of the fixed-effect factor levels constituting that treatment level).
+\item \code{grouping.variables}: List containing character vectors \code{context.lvls}, \code{species.lvls}, and \code{ran.lvls} holding, respectively, the grouping levels of the context, species, and random-effect grouping variabes.
+\item \code{param.idx0}: List containing zero-indexed index values for \code{fitted.parameters} for different combinations of treatment levels and grouping factors.
+\item \code{settings}: A copy of the original model settings provided to the \code{wisp} function.
+\item \code{sample.params.type}: A character string, "bs" or "MCMC", specifies which type of resamples were used to compute stats.
+\item \code{sample.params.bs}: A data frame giving the resampled parameters from bootstrapping (if any).
+\item \code{sample.params.MCMC}: A data frame giving the resampled parameters from the MCMC resampling (if any).
+\item \code{diagnostics.bs}: Diagnostic information for each bootstrap resample.
+\item \code{diagnostics.MCMC}: Diagnostic information for each MCMC random-walk step (i.e., resample).
+\item \code{stats}: List containing a main data frame \code{parameters} with the results (p-values, estimate, confidence intervals, etc) of the statistical analysis of the model parameters, plus data frames holding model residuals.
+\item \code{plots}: List containing whatever plots where generated during the model fit.
+}
 }
 \description{
 This function takes a data frame of wisp variables (as columns) and fits a wisp model to it. Statistical analyses and plots are generated from the fitted model.

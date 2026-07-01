@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -73,6 +73,7 @@
 <span>  L1_removed <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  nat_left <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  nat_right <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  leveling_layer <span class="op">=</span> <span class="st">"L4"</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -103,6 +104,10 @@
 
 <dt id="arg-nat-right">nat_right<a class="anchor" aria-label="anchor" href="#arg-nat-right"></a></dt>
 <dd><p>Logical, setting used based on manual visual checks to ensure consistent orientation, causes angle and coordinate sign flips in layer leveling (default is FALSE)</p></dd>
+
+
+<dt id="arg-leveling-layer">leveling_layer<a class="anchor" aria-label="anchor" href="#arg-leveling-layer"></a></dt>
+<dd><p>Character string, the layer to use when leveling tissue patch in coordinate transformation (default is)</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
