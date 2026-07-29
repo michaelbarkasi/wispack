@@ -218,6 +218,19 @@ wisp <- function(
     new_names      <- c(variables.names, old_names[fe_cols])
     data           <- cbind(count.data[,ordered_cols], count.data[,fe_cols])
     colnames(data) <- new_names
+    # Ensure timeseries column is a plain numeric vector so C++ sorts levels numerically
+    # (factors fail Rf_isNumeric and fall into lexicographic sort, e.g. "12" < "7")
+    if ("timeseries" %in% colnames(data)) {
+      ts_vals <- suppressWarnings(as.numeric(as.character(data[["timeseries"]])))
+      if (any(is.na(ts_vals))) {
+        stop(
+          "Timeseries column contains non-numeric values; all time points must be numeric. ",
+          "Non-parseable values: ",
+          paste(unique(as.character(data[["timeseries"]])[is.na(ts_vals)]), collapse = ", ")
+        )
+      }
+      data[["timeseries"]] <- ts_vals
+    }
     
     # Parse model settings 
     # ... define default values

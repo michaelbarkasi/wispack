@@ -483,6 +483,7 @@ make_count_data <- function(
     }
     count_data$hemisphere <- droplevels(count_data$hemisphere)
     count_data$hemisphere <- relevel(count_data$hemisphere, ref = "left")
+    count_data$age        <- factor(count_data$age, levels = sort(as.integer(levels(count_data$age))))
     
     # Print summary
     if (verbose) {
@@ -564,6 +565,7 @@ make_count_data_csv <- function(
     count_data <- do.call(rbind, count_list)
     count_data$hemisphere <- droplevels(count_data$hemisphere)
     count_data$hemisphere <- relevel(count_data$hemisphere, ref = "left")
+    count_data$age        <- factor(count_data$age, levels = sort(as.integer(levels(count_data$age))))
     
     # Print summary
     if (verbose) {
@@ -1243,11 +1245,11 @@ create.count.data.WSPmm <- function(
     
     # Pre-allocate as much of the count data as possible
     count_data <- data.frame(
-      count = rep(as.numeric(NA), numrow),
-      bin = rep(df.merfish[,bin.dim], num_genes),
-      context = context_col,
-      gene = rep(gene.list, each = num_cells), 
-      mouse = rep(df.merfish[,"mouse"], num_genes),
+      count    = rep(as.numeric(NA), numrow),
+      bin      = rep(df.merfish[,bin.dim], num_genes),
+      context  = context_col,
+      gene     = rep(gene.list, each = num_cells), 
+      mouse    = rep(df.merfish[,"mouse"], num_genes),
       cell_num = rep(df.merfish[,"cell_num"], num_genes)
     )
     colnames(count_data)[3] <- context
@@ -1266,9 +1268,9 @@ create.count.data.WSPmm <- function(
     
     # Fill in the count data
     for (i in 1:num_genes) {
-      g <- gene.list[i]
-      idx_initial <- (i-1)*num_cells+1
-      idx_final <- i*num_cells
+      g           <- gene.list[i]
+      idx_initial <- (i - 1) * num_cells + 1
+      idx_final   <- i * num_cells
       count_data[idx_initial:idx_final, "count"] <- df.merfish[, g]
     }
     
