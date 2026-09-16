@@ -433,6 +433,9 @@ wisp <- function(
         timeseries = plots.timeseries
       )
       
+      # Add plots to results
+      results[["plots"]]     <- plots
+      
     } else {
       
       # Estimate model parameters with MCMC or bootstrapping ####
@@ -650,6 +653,9 @@ wisp <- function(
         effect.dist         = plots.effect.dist
       )
       
+      # Add plots to results
+      results[["plots"]]     <- plots
+      
       # Print summary plots
       if (plotset$print.plots) {
         plot.species.summary(
@@ -662,7 +668,7 @@ wisp <- function(
       
     }
     
-    # Add plots and metadata to results
+    # Add metadata to results
     results[["plots"]]     <- plots
     results[["variables"]] <- variables
     
@@ -1601,6 +1607,7 @@ plot.ratecount <- function(
 #' @usage plot.timeseries(
 #'  wisp.results, 
 #'  splitting_factor = c(), 
+#'  tertiary_effects = NULL,
 #'  log.scale        = FALSE,
 #'  print.plots      = FALSE,
 #'  species          = c(),
@@ -1608,6 +1615,7 @@ plot.ratecount <- function(
 #' )
 #' @param wisp.results List, output of the wisp function.
 #' @param splitting_factor Character string, the name of the fixed effect by which to split the timeseries. If empty, c(), the first non-timeseries fixed effect is used. If "none", will not split.
+#' @param tertiary_effects Character vector, or NULL (default). Any fixed effects besides \code{timeseries} and the splitting factor are pruned down to a single level before rates are reconstructed (otherwise treatments belonging to different levels of those extra fixed effects would be mixed together). If NULL, each such fixed effect is pruned down to its reference level. Otherwise, for each additional fixed effect, if one of the levels named in \code{tertiary_effects} matches one of its levels, that level is used instead of the reference level.
 #' @param log.scale Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.
 #' @param print.plots Logical, if TRUE, prints plots; if FALSE, only returns plots in list without printing any. 
 #' @param species Character vector, list of species levels to plot. If c(), all species levels are plotted.
@@ -1617,6 +1625,7 @@ plot.ratecount <- function(
 plot.timeseries <- function(
     wisp.results, 
     splitting_factor = c(),
+    tertiary_effects = NULL,
     log.scale        = FALSE,
     print.plots      = FALSE,
     species          = c(),
@@ -1675,7 +1684,57 @@ plot.timeseries <- function(
       }
     }
     trt_names   <- wisp.results[["treatment"]][["names"]]
-    split_names <- trt_names[split_mask]
+    
+    # Any fixed effects besides timeseries and the splitting factor are pruned
+    # down to a single level each, so that treatments line up 1:1 with
+    # timeseries levels within each side of the split (otherwise, treatments
+    # spanning multiple levels of these extra fixed effects would get mixed
+    # together when reconstructing rates below).
+    other_names   <- setdiff(wisp.results[["fix"]][["names"]], c("timeseries", splitting_name))
+    tertiary_mask <- rep(TRUE, length(trt_comps))
+    if (length(other_names) > 0) {
+      matched_any <- FALSE
+      for (nm in other_names) {
+        nm_idx      <- which(wisp.results[["fix"]][["names"]] == nm)
+        nm_treatlvl <- wisp.results[["fix"]][["treat.lvl"]][[nm]]
+        nm_lvls     <- wisp.results[["fix"]][["lvls"]][[nm]]
+        nm_reflvl   <- wisp.results[["fix"]][["ref.lvl"]][nm_idx]
+        
+        target_lvl <- nm_reflvl
+        if (length(tertiary_effects) > 0) {
+          matched <- intersect(tertiary_effects, nm_lvls)
+          if (length(matched) > 1) {
+            stop(paste0(
+              "tertiary_effects contains more than one level of fixed effect '", nm, "'"
+            ))
+          }
+          if (length(matched) == 1) {
+            target_lvl  <- matched
+            matched_any <- TRUE
+          }
+        }
+        
+        for (t in seq_along(trt_comps)) {
+          if (target_lvl == nm_reflvl) {
+            # Reference level: keep treatments that do NOT contain any
+            # non-reference level of this fixed effect
+            if (any(nm_treatlvl %in% trt_comps[[t]])) tertiary_mask[t] <- FALSE
+          } else {
+            # Non-reference level: keep only treatments containing it
+            if (!(target_lvl %in% trt_comps[[t]])) tertiary_mask[t] <- FALSE
+          }
+        }
+      }
+      if (length(tertiary_effects) > 0 && !matched_any) {
+        warning(
+          "None of the levels in tertiary_effects matched a fixed effect ",
+          "besides timeseries/splitting_factor; using reference levels instead"
+        )
+      }
+    }
+    
+    split_names <- trt_names[split_mask & tertiary_mask]
+    ref_names   <- trt_names[!split_mask & tertiary_mask]
     
     # Get timeseries levels 
     ts <- wisp.results[["fix"]][["lvls"]][["timeseries"]]
@@ -1705,6 +1764,7 @@ plot.timeseries <- function(
     
     df_count            <- wisp.results$count.data.summed 
     df_count_split_mask <- df_count$treatment %in% split_names
+    df_count_ref_mask   <- df_count$treatment %in% ref_names
     df_count_ran        <- unique(df_count$ran)
     max_bin             <- max(df_count$bin, na.rm = TRUE)
     
@@ -1748,11 +1808,11 @@ plot.timeseries <- function(
           rownames(tpoints) <- rownames(wm)
         }
         
-        split_lvl_ref_rates   <- rates[!split_mask,]
-        split_lvl_trt_rates   <- rates[split_mask,]
-        split_lvl_ref_tpoints <- tpoints[!split_mask,]
-        split_lvl_trt_tpoints <- tpoints[split_mask,]
-        split_mask_ref        <- species_context_mask & !df_count_split_mask
+        split_lvl_ref_rates   <- rates[!split_mask & tertiary_mask,]
+        split_lvl_trt_rates   <- rates[split_mask & tertiary_mask,]
+        split_lvl_ref_tpoints <- tpoints[!split_mask & tertiary_mask,]
+        split_lvl_trt_tpoints <- tpoints[split_mask & tertiary_mask,]
+        split_mask_ref        <- species_context_mask & df_count_ref_mask
         split_mask_trt        <- species_context_mask & df_count_split_mask
         
         n_b <- ncol(rates)
@@ -1760,7 +1820,7 @@ plot.timeseries <- function(
           tsl <- ts[tsi]
           ts_trt_mask <- df_count$treatment %in% ts_treatments[[tsi]]
           for (b in c(1:n_b)) {
-            if (any(!split_mask)) {
+            if (any(!split_mask & tertiary_mask)) {
               if (n_b > 1) {
                 these_rates <- split_lvl_ref_rates[tsi, b]
               } else {
@@ -1801,7 +1861,7 @@ plot.timeseries <- function(
               }
               
             }
-            if (any(split_mask)) {
+            if (any(split_mask & tertiary_mask)) {
               if (n_b > 1) {
                 these_rates <- split_lvl_trt_rates[tsi, b]
               } else {

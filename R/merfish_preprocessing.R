@@ -475,10 +475,19 @@ make_count_data <- function(
       snk.print_vec("Standard deviation of means", sd(mean_rates))
     }
     
-    # Combine data from all mice
+    # Combine data from all mice, keeping only columns common to all files
+    all_columns     <- lapply(1:length(files), function(f) colnames(get(paste0("mouse", f))))
+    common_columns  <- Reduce(intersect, all_columns)
+    dropped_columns <- setdiff(Reduce(union, all_columns), common_columns)
+    if (length(dropped_columns) > 0) {
+      warning(
+        "Dropping columns not common to all mice: ", 
+        paste(dropped_columns, collapse = ", ")
+      )
+    }
     count_data <- data.frame()
     for (f in 1:length(files)) {
-      count_data <- rbind(count_data, get(paste0("mouse", f)))
+      count_data <- rbind(count_data, get(paste0("mouse", f))[, common_columns])
       rm(list = paste0("mouse", f))
     }
     count_data$hemisphere <- droplevels(count_data$hemisphere)

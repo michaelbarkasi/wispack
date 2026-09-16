@@ -7,6 +7,7 @@
 plot.timeseries(
  wisp.results, 
  splitting_factor = c(), 
+ tertiary_effects = NULL,
  log.scale        = FALSE,
  print.plots      = FALSE,
  species          = c(),
@@ -17,6 +18,8 @@ plot.timeseries(
 \item{wisp.results}{List, output of the wisp function.}
 
 \item{splitting_factor}{Character string, the name of the fixed effect by which to split the timeseries. If empty, c(), the first non-timeseries fixed effect is used. If "none", will not split.}
+
+\item{tertiary_effects}{Character vector, or NULL (default). Any fixed effects besides \code{timeseries} and the splitting factor are pruned down to a single level before rates are reconstructed (otherwise treatments belonging to different levels of those extra fixed effects would be mixed together). If NULL, each such fixed effect is pruned down to its reference level. Otherwise, for each additional fixed effect, if one of the levels named in \code{tertiary_effects} matches one of its levels, that level is used instead of the reference level.}
 
 \item{log.scale}{Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.}
 
