@@ -1,0 +1,9 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^docs$
+^output$
+^.*\.Rcheck$
+^.*\.tar\.gz$
+vignettes/.*_cache(/|$)
+vignettes/output(/|$)
+^wispack\.Rproj$

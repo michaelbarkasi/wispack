@@ -6,7 +6,6 @@ Read-and-delete-me
 .Rproj.user
 wispack.Rcheck/*
 *.Rcheck/*
-.Rbuildignore
 .RData
 *.RDataTmp
 .Rhistory
@@ -15,7 +14,7 @@ wispack.Rcheck/*
 .github/.DS_Store
 src/.DS_Store
 *.tar.gz
-vignettes/*_cache/*
+vignettes/**/*_cache/*
 docs/deps/font-awesome-6.5.2/webfonts/*
 .positai
 .RDataTmp
