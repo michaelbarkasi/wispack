@@ -1,13 +1,30 @@
 # Golden-value reference table for the tutorial_* vignettes ############################################################
 #
-# Every numeric bound checked (silently) inside the tutorial_*.Rmd vignettes is recorded here, once, keyed by vignette
-# and check label. The tests/testthat slow-tier tests (tests/testthat/test-slow-*.R) read these bounds instead of
-# hard-coding them a second time, so there is exactly one place that encodes "the narrative numbers are X". A future
-# pass can have the vignettes' own check chunks read from this same list (e.g. via `wispack:::.wisp_golden`), which
-# would let `R CMD build`'ing the vignettes and running the testthat suite both verify the narrative against the same
-# source, without duplicating tolerances in two places.
+# Every numeric bound checked (silently) inside the tutorial_*.Rmd vignettes' check chunks is recorded here, once,
+# keyed by vignette and check label. Both the vignettes' own check chunks (via wispack:::.check_between(), below)
+# and the tests/testthat slow-tier tests (tests/testthat/test-slow-*.R, via expect_between()) read these bounds
+# instead of hard-coding them a second time, so there is exactly one place that encodes "the narrative numbers are
+# X" -- rendering a vignette and running the testthat suite both verify the narrative against the same source.
 #
-# This object is internal (not exported); it exists purely to support the test suite and vignette maintenance.
+# This object (and the helper below) are internal (not exported); they exist purely to support the vignettes and
+# the test suite.
+
+#' Assert that a value falls within a golden-value bound, vignette-check style.
+#'
+#' The vignette equivalent of tests/testthat/helper-expectations.R's expect_between(): same bounds table, same
+#' inclusive-range check, but raising a plain error (via stop()) instead of a testthat expectation, since this is
+#' called from knitr chunks, not from test_that() blocks.
+#'
+#' @param value Numeric value measured in the vignette.
+#' @param bounds A `c(lo = ..., hi = ...)` entry from `.wisp_golden`.
+#' @param label Short label identifying the check, used in the error message if it fails.
+#' @noRd
+.check_between <- function(value, bounds, label) {
+  if (value < bounds[["lo"]] || value > bounds[["hi"]]) {
+    stop(sprintf("failed %s: %s is not between %s and %s", label, format(value), format(bounds[["lo"]]), format(bounds[["hi"]])))
+  }
+  invisible(value)
+}
 
 #' @noRd
 .wisp_golden <- list(

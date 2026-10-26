@@ -251,8 +251,9 @@ radial.model <- wisp(
 )
 ```
 ```{r check1, echo = FALSE}
+g <- wispack:::.wisp_golden$liverradial
 test_val <- radial.model$stats$parameters[4,2]
-if (test_val < 0.13 || test_val > 0.16) stop("failed check 1")
+wispack:::.check_between(test_val, g$param4_estimate, "check 1")
 ```
 
 <h2>Examining results</h2>
@@ -272,7 +273,7 @@ grid.draw(g)
 ```
 ```{r check2, echo = FALSE}
 test_val <- ggplot_build(plt_glul)$data[[1]][4,2]
-if (test_val < 4.4 || test_val > 4.5) stop("failed check 2")
+wispack:::.check_between(test_val, g$zonation_space_glul, "check 2")
 ```
 
 While the rate-count plots make clear the spatial gradients of <span class = "gene">GLUL</span> and <span class = "gene">ASS1</span>, temporal information can only be read off implicitly. For <span class = "gene">ASS1</span>, we seem to see a slight decrease in gene expression over the day, from ZT0 to ZT18. For <span class = "gene">GLUL</span>, expression seems constant across the day, except perhaps for some minor interaction between zone and time that has the central region decreasing in expression as the portal region increases. These temporal patterns can be seen more clearly by looking at the time-series plots. 
@@ -286,7 +287,7 @@ grid.draw(g)
 ```
 ```{r check3, echo = FALSE}
 test_val <- ggplot_build(plt_glul)$data[[1]][17,2]
-if (test_val < 6.9 || test_val > 7) stop("failed check 3")
+wispack:::.check_between(test_val, g$zonation_time_glul, "check 3")
 ```
 
 The time-series plot for <span class = "gene">ASS1</span> shows some variation (generally downward) over time, but the magnitude of that variation is smaller and noisy compared to the difference in expression level between the blocks (i.e., over space). The same holds true for <span class = "gene">GLUL</span>, although again we see the more portal region (block 2) seeming to increase in expression while the more central region (block 1) decreases.
@@ -303,7 +304,7 @@ grid.draw(g)
 ```
 ```{r check4, echo = FALSE}
 test_val <- ggplot_build(plt_arntl)$data[[1]][4,2]
-if (test_val < 2.4 || test_val > 2.6) stop("failed check 4")
+wispack:::.check_between(test_val, g$rhythm_space_arntl, "check 4")
 ```
 
 These temporal dynamics are made more clear in the time-series plots, which clearly show the mid-ZT dip in <span class = "gene">ARNTL</span> and the mid-ZT bump in <span class = "gene">DBP</span>. 
@@ -316,7 +317,7 @@ grid.draw(g)
 ```
 ```{r check5, echo = FALSE}
 test_val <- ggplot_build(plt_arntl)$data[[1]][4,2]
-if (test_val < 1.9 || test_val > 2) stop("failed check 5")
+wispack:::.check_between(test_val, g$rhythm_time_arntl, "check 5")
 ```
 
 <h3>Zonated and rhythmic genes</h3>
@@ -331,7 +332,7 @@ grid.draw(g)
 ```
 ```{r check6, echo = FALSE}
 test_val <- ggplot_build(plt_elovl3)$data[[1]][4,2]
-if (test_val < 5.4 || test_val > 5.5) stop("failed check 6")
+wispack:::.check_between(test_val, g$both_space_elovl3, "check 6")
 ```
 
 However, unlike <span class = "gene">GLUL</span> and <span class = "gene">PCK1</span>, <span class = "gene">ELOVL3</span> and <span class = "gene">PCK1</span> have notable temporal rhythm. <span class = "gene">ELOVL3</span> is similar to <span class = "gene">ARNTL</span>, with a mid-ZT dip. <span class = "gene">PCK1</span> is similar to <span class = "gene">DBP</span>, with a mid-ZT bump. 
@@ -344,7 +345,7 @@ grid.draw(g)
 ```
 ```{r check7, echo = FALSE}
 test_val <- ggplot_build(plt_elovl3)$data[[1]][4,2]
-if (test_val < 4.6 || test_val > 4.8) stop("failed check 7")
+wispack:::.check_between(test_val, g$both_time_elovl3, "check 7")
 ```
 
 <h2>Advantages of wisp</h2>
