@@ -413,7 +413,11 @@ make_count_data <- function(
     load_first_file_only = FALSE,
     verbose              = TRUE
   ) {
-    
+
+    if (!requireNamespace("hdf5r", quietly = TRUE)) {
+      stop("make_count_data() requires the 'hdf5r' package to read HDF5 files. Install it with install.packages(\"hdf5r\").")
+    }
+
     # Get a list of all HDF5 files in the "data" folder
     files <- list.files(
       path = data_path, # Defined in the main script
@@ -538,7 +542,11 @@ make_count_data_csv <- function(
     load_first_file_only = FALSE,
     verbose              = TRUE
   ) {
-    
+
+    if (!requireNamespace("data.table", quietly = TRUE)) {
+      stop("make_count_data_csv() requires the 'data.table' package to read csv files. Install it with install.packages(\"data.table\").")
+    }
+
     # Get a list of all csv files in the "data" folder
     files <- list.files(
       path = data_path, # Defined in the main script
@@ -1134,7 +1142,11 @@ cortical_coordinate_transform <- function(
     leveling_layer = "L4", 
     verbose        = TRUE
   ) {
-    
+
+    if (!requireNamespace("scales", quietly = TRUE)) {
+      stop("cortical_coordinate_transform() requires the 'scales' package. Install it with install.packages(\"scales\").")
+    }
+
     # Count_data input should have genes across in columns, not stacked in rows
     
     if (verbose) {

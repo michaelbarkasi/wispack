@@ -1,3 +1,13 @@
 useDynLib(wispack, .registration = TRUE)
 importFrom(Rcpp, evalCpp)
+importFrom(RColorBrewer, brewer.pal)
+import(ggplot2)
+import(grid)
+import(gridExtra)
+import(colorspace)
+importFrom(grDevices, colorRampPalette)
+importFrom(graphics, curve)
+importFrom(methods, new)
+importFrom(stats, coef, cor, density, dgamma, ecdf, integrate, lm, na.omit, nls, qnorm, qqnorm,
+           quantile, rbeta, relevel, rnorm, rpois, runif, sd, shapiro.test, step, var)
 exportPattern("^[[:alpha:]]+")

@@ -474,7 +474,7 @@ wisp <- function(
         
         # Save MCMC estimates and diagnostics
         n_params           <- ncol(MCMC_walk) - 4
-        sample.params.MCMC <- MCMC_walk[,1:n_params]
+        sample.params.MCMC <- MCMC_walk[, 1:n_params, drop = FALSE] # drop = FALSE: a single-parameter model must stay a matrix, not collapse to a vector
         diagnostics.MCMC   <- data.frame(
           pen.neg.value    = MCMC_walk[,n_params + 1],
           neg.loglik       = MCMC_walk[,n_params + 2], 
@@ -513,7 +513,7 @@ wisp <- function(
         
         # Save bs estimates and diagnostics
         n_params         <- ncol(sample_results) - 4
-        sample.params.bs <- sample_results[,1:n_params]
+        sample.params.bs <- sample_results[, 1:n_params, drop = FALSE] # drop = FALSE: a single-parameter model must stay a matrix, not collapse to a vector
         diagnostics.bs   <- data.frame( 
           pen.neg.value = sample_results[,n_params + 1],
           neg.loglik    = sample_results[,n_params + 2], 
@@ -3049,7 +3049,7 @@ plot.MCMC.walks <- function(
     sampled_params <- wisp.results$sample.params.MCMC
     if (length(sampled_params) == 0 || is.null(sampled_params)) return(NULL)
     if (verbose) snk.report...("Making MCMC walks plots")
-    sampled_params <- sampled_params[-c(nrow(sampled_params)),]  # Remove last row, which contains L-BFGS values
+    sampled_params <- sampled_params[-c(nrow(sampled_params)), , drop = FALSE]  # Remove last row, which contains L-BFGS values
     
     # Find high-value parameters
     high_val <- 20 < colMeans(sampled_params)
@@ -3067,7 +3067,7 @@ plot.MCMC.walks <- function(
     if (any(high_val)) {
       
       # Subset data
-      sampled_params_high <- sampled_params[these_rows,high_val]
+      sampled_params_high <- sampled_params[these_rows, high_val, drop = FALSE]
       
       # Make long-format data frame
       walks_high <- data.frame(
@@ -3106,11 +3106,11 @@ plot.MCMC.walks <- function(
     if (any(!high_val)) {
       
       # Subset data
-      sampled_params_low <- sampled_params[these_rows,!high_val]
+      sampled_params_low <- sampled_params[these_rows, !high_val, drop = FALSE]
       if (length(low_samples) > 1) these_cols <- low_samples
-      else these_cols <- sample(1:ncol(sampled_params_low), low_samples, replace = FALSE)
-      sampled_params_low <- sampled_params_low[,these_cols]
-      sampled_params_low <- sampled_params_low[,order(colMeans(abs(sampled_params_low)), decreasing = TRUE)]
+      else these_cols <- sample(1:ncol(sampled_params_low), min(low_samples, ncol(sampled_params_low)), replace = FALSE)
+      sampled_params_low <- sampled_params_low[, these_cols, drop = FALSE]
+      sampled_params_low <- sampled_params_low[, order(colMeans(abs(sampled_params_low)), decreasing = TRUE), drop = FALSE]
       
       # Make long-format data frame
       walks_low <- data.frame(
@@ -3665,8 +3665,12 @@ project_cp <- function(
     # Uses R package dtw, with step pattern derived from: 
     # H. Sakoe and S. Chiba, "Dynamic programming algorithm optimization for spoken word recognition," 
     #   in IEEE Transactions on Acoustics, Speech, and Signal Processing, vol. 26, no. 1, pp. 43-49, February 1978, doi: 10.1109/TASSP.1978.1163055. 
-    #   This step pattern chosen to enforce a very shallow slope. 
-    
+    #   This step pattern chosen to enforce a very shallow slope.
+
+    if (!requireNamespace("dtw", quietly = TRUE)) {
+      stop("project_cp() requires the 'dtw' package. Install it with install.packages(\"dtw\").")
+    }
+
     # Check input
     if (is.null(dim(X_lik))) return(-1)
     if (length(found_cp) == 0) return(-1)

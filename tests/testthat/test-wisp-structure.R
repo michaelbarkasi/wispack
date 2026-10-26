@@ -55,6 +55,10 @@ test_that("the package's exported API surface hasn't grown or shrunk unintention
   current <- sort(getNamespaceExports("wispack"))
   expected <- sort(c(
     ".__C__C++Object", ".__C__Rcpp_wspc",
+    # S4 method-table registration artifacts re-exported by import(ggplot2)/import(grid)/import(gridExtra)
+    # (those packages setMethod() some base generics on their own S4 classes; importing them re-exports
+    # the method-table entries too). Not something wispack defines itself.
+    ".__T__[:base", ".__T__[[<-:base", ".__T__[<-:base", ".__T__$:base", ".__T__$<-:base",
     "affine", "analyze_attractor_sim_benchmarks", "analyze.residuals",
     "attractor_simulation", "attractor_simulation_ground_truth",
     "bin_data", "convergence_mask", "coordinate_binning", "coordinate_transform",
