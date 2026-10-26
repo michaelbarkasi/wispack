@@ -58,7 +58,7 @@ NULL
 #'    \item \code{count_jitter} = 0.5: Scale of jitter to apply when plotting data for a given input. 
 #'    \item \code{count.alpha.ran}, \code{count.alpha.none}, \code{pred.alpha.ran}, and \code{pred.alpha.none}: Controls for plot element alpha-levels. 
 #'    }
-#' @param ran.seed = 1234: Integer, random seed for reproducibility. Used within R. If NULL, no seed is set. Default is 1234.
+#' @param ran.seed Integer, random seed for reproducibility. Used within R. If NULL, no seed is set. Default is 1234.
 #' @return List giving the results of the fitted model, including: \itemize{
 #'    \item \code{model.component.list} = {"Rt", "tslope", "tpoint"}: Character vector giving the main model components; always "Rt" = rate, "tslope" = transition-point slope, and "tpoint" = transition-point location. 
 #'    \item \code{count.data.summed}: Data frame of the fitted data. There is one row per combination of spatial bin, fixed effects, and random effects. Contains columns for \code{bin}, \code{count} (sum of spots with a given species label), \code{pred} (predicted rate), \code{count.log} log of the count, plus one, \code{pred.log} (log of predicted rate plus one), \code{context}, \code{species}, \code{ran} (random-effect level), and \code{treatment} (treatment level). 
