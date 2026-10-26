@@ -5,10 +5,10 @@
 \title{Plot individual components of wisp fit for a single species level}
 \usage{
 plot.decomposition(
- wisp.results, 
- species, 
- log            = FALSE, 
- dim.boundaries = c(), 
+ wisp.results,
+ species,
+ log.scale      = FALSE,
+ dim.boundaries = c(),
  y.lim          = NULL
 )
 }
@@ -28,4 +28,7 @@ List of ggplot objects containing the decomposed rate-count plots.
 }
 \description{
 Extension of \code{plot.ratecount} which plots the individual pieces of the rate-count plot for a single species separately. Returns individual plots for data points only, fit lines only, and data points plus fit lines for individual random levels.
+}
+\note{
+Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.decomposition(...)} directly.
 }

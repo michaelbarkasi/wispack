@@ -26,3 +26,6 @@ Nothing, plots are printed to the current graphics device.
 \description{
 Function to summarize all important information for an individual species level on one plot.
 }
+\note{
+Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.species.summary(...)} directly.
+}

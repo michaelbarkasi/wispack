@@ -26,3 +26,6 @@ List of ggplot objects containing plots of representative parameter distribution
 \description{
 Function allowing for visual comparison of the parameter estimates from bootstrapping vs MCMC simulation. Shows density for ten representative parameters from bootstrapping and MCMC walk, the distributions of Shapiro-Walk p-values for bootstrapping vs MCMC walks, and the density of autocorrelation results for bootstrapping vs MCMC walks.
 }
+\note{
+Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.MCMC.bs.comparison(...)} directly.
+}

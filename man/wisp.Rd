@@ -72,19 +72,22 @@ wisp(
 \item \code{count.alpha.ran}, \code{count.alpha.none}, \code{pred.alpha.ran}, and \code{pred.alpha.none}: Controls for plot element alpha-levels.
 }}
 
-\item{ran.seed}{= 1234: Integer, random seed for reproducibility. Used within R. If NULL, no seed is set. Default is 1234.}
+\item{ran.seed}{Integer, random seed for reproducibility. Used within R. If NULL, no seed is set. Default is 1234.}
 }
 \value{
 List giving the results of the fitted model, including: \itemize{
-\item \code{model.component.list} = {"Rt", "tslope", "tpoint"}: Character vector giving the main model components; always "Rt" = rate, "tslope" = transition-point slope, and "tpoint" = transition-point location.
+\item \code{model.component.list}: Character vector \code{c("Rt", "tslope", "tpoint")} giving the main model components; always "Rt" = rate, "tslope" = transition-point slope, and "tpoint" = transition-point location.
 \item \code{count.data.summed}: Data frame of the fitted data. There is one row per combination of spatial bin, fixed effects, and random effects. Contains columns for \code{bin}, \code{count} (sum of spots with a given species label), \code{pred} (predicted rate), \code{count.log} log of the count, plus one, \code{pred.log} (log of predicted rate plus one), \code{context}, \code{species}, \code{ran} (random-effect level), and \code{treatment} (treatment level).
+\item \code{LRO.grid.search.results}: Matrix of grid-search results used to select the LRO change-point detection settings (one row per candidate \code{LROwindow_factor}/\code{LROcutoff} pair, with the resulting log-likelihood and AIC/BIC-style cost columns). Empty when \code{model.settings$LRO_cost = "none"}, since the grid search is then skipped.
 \item \code{fitted.parameters}: Vector of all fitted model parameters.
-\item \code{gamma.disperson}: Matrix giving the estimated gamma dispersion of the gamma-convolved Poisson model.
+\item \code{gamma.dispersion}: Matrix giving the estimated gamma dispersion of the gamma-convolved Poisson model.
 \item \code{param.names}: Names of the model parameters, matching the order of \code{fitted.parameters}.
 \item \code{fix}: List containing four elements: \code{names} (names of fixed-effect factors), \code{lvls} (list, each element the names of the levels of a fixed-effect factor), \code{treat.lvl} (as before, but excluding reference levels), and \code{ref.lvl} (as before, but containing only the reference-level).
 \item \code{treatment}: List with two elements: \code{names} (names of the treatment levels) and \code{components} (list, each element the names of the fixed-effect factor levels constituting that treatment level).
+\item \code{weight.matrix}: Matrix of weights for reconstructing treatment-level rates from the fitted model components; row \code{i} gives the weights needed to compute treatment \code{i}.
 \item \code{grouping.variables}: List containing character vectors \code{context.lvls}, \code{species.lvls}, and \code{ran.lvls} holding, respectively, the grouping levels of the context, species, and random-effect grouping variabes.
 \item \code{param.idx0}: List containing zero-indexed index values for \code{fitted.parameters} for different combinations of treatment levels and grouping factors.
+\item \code{token.pool}: List of integer vectors, one per row of \code{count.data.summed}, giving the indices of the raw count tokens pooled into that row; used internally to resample bootstrap replicates.
 \item \code{settings}: A copy of the original model settings provided to the \code{wisp} function.
 \item \code{sample.params.type}: A character string, "bs" or "MCMC", specifies which type of resamples were used to compute stats.
 \item \code{sample.params.bs}: A data frame giving the resampled parameters from bootstrapping (if any).
@@ -92,7 +95,9 @@ List giving the results of the fitted model, including: \itemize{
 \item \code{diagnostics.bs}: Diagnostic information for each bootstrap resample.
 \item \code{diagnostics.MCMC}: Diagnostic information for each MCMC random-walk step (i.e., resample).
 \item \code{stats}: List containing a main data frame \code{parameters} with the results (p-values, estimate, confidence intervals, etc) of the statistical analysis of the model parameters, plus data frames holding model residuals.
+\item \code{plot.settings}: A copy of the (defaulted) plot settings provided to the \code{wisp} function; used by the \code{plot.*} family of functions when re-plotting a fitted model.
 \item \code{plots}: List containing whatever plots where generated during the model fit.
+\item \code{variables}: A copy of the resolved \code{variables} list (the column-name mapping actually used for the fit, after defaults were filled in).
 }
 }
 \description{

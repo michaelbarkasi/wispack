@@ -15,5 +15,5 @@ Suggests: testthat (>= 3.0.0)
 SystemRequirements: NLopt, C++17
 Roxygen: list(markdown = TRUE)
 URL: https://michaelbarkasi.github.io/wispack/
-Config/roxygen2/version: 8.1.0
+Config/roxygen2/version: 8.1.1
 Config/testthat/edition: 3

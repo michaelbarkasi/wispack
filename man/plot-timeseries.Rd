@@ -35,3 +35,6 @@ List of ggplot objects for timeseries plots.
 \description{
 Function to plot timeseries effects from wisp results, separated by a splitting factor (e.g., hemisphere).
 }
+\note{
+Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.timeseries(...)} directly.
+}

@@ -5,9 +5,10 @@
 \title{Plot fitted model and data}
 \usage{
 plot.ratecount(
- wisp.results, 
+ wisp.results,
  log.scale        = FALSE,
- dim.boundaries   = c(), 
+ CI_style         = TRUE,
+ dim.boundaries   = c(),
  print.plots      = FALSE, 
  y.lim            = NA, 
  count.alpha.none = NA, 
@@ -51,4 +52,7 @@ List of ggplot objects for rate-count plots.
 }
 \description{
 This function takes wisp model results (a fitted line) and observed data (counts) and plots them together for visual comparison. It can also include independent block boundaries for comparison if provided.
+}
+\note{
+Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.ratecount(...)} directly.
 }

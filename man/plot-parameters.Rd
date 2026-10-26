@@ -5,11 +5,12 @@
 \title{Plot of wisp parameters}
 \usage{
 plot.parameters(
- wisp.results, 
- species         = c(), 
- violin          = TRUE, 
- print.plots     = FALSE, 
- species.classes = NULL, 
+ wisp.results,
+ species         = c(),
+ violin          = TRUE,
+ print.plots     = FALSE,
+ species.classes = NULL,
+ mc_type         = NULL,
  verbose         = TRUE
 )
 }
@@ -33,4 +34,7 @@ List of ggplot objects for parameter plots.
 }
 \description{
 Function to make nicely formatted violin (or bar) plots of the fitted wisp parameters, including confidence intervals if stat information is available.
+}
+\note{
+Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.parameters(...)} directly.
 }

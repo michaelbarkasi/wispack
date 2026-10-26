@@ -60,23 +60,28 @@ NULL
 #'    }
 #' @param ran.seed Integer, random seed for reproducibility. Used within R. If NULL, no seed is set. Default is 1234.
 #' @return List giving the results of the fitted model, including: \itemize{
-#'    \item \code{model.component.list} = {"Rt", "tslope", "tpoint"}: Character vector giving the main model components; always "Rt" = rate, "tslope" = transition-point slope, and "tpoint" = transition-point location. 
-#'    \item \code{count.data.summed}: Data frame of the fitted data. There is one row per combination of spatial bin, fixed effects, and random effects. Contains columns for \code{bin}, \code{count} (sum of spots with a given species label), \code{pred} (predicted rate), \code{count.log} log of the count, plus one, \code{pred.log} (log of predicted rate plus one), \code{context}, \code{species}, \code{ran} (random-effect level), and \code{treatment} (treatment level). 
-#'    \item \code{fitted.parameters}: Vector of all fitted model parameters. 
-#'    \item \code{gamma.disperson}: Matrix giving the estimated gamma dispersion of the gamma-convolved Poisson model. 
-#'    \item \code{param.names}: Names of the model parameters, matching the order of \code{fitted.parameters}. 
+#'    \item \code{model.component.list}: Character vector \code{c("Rt", "tslope", "tpoint")} giving the main model components; always "Rt" = rate, "tslope" = transition-point slope, and "tpoint" = transition-point location.
+#'    \item \code{count.data.summed}: Data frame of the fitted data. There is one row per combination of spatial bin, fixed effects, and random effects. Contains columns for \code{bin}, \code{count} (sum of spots with a given species label), \code{pred} (predicted rate), \code{count.log} log of the count, plus one, \code{pred.log} (log of predicted rate plus one), \code{context}, \code{species}, \code{ran} (random-effect level), and \code{treatment} (treatment level).
+#'    \item \code{LRO.grid.search.results}: Matrix of grid-search results used to select the LRO change-point detection settings (one row per candidate \code{LROwindow_factor}/\code{LROcutoff} pair, with the resulting log-likelihood and AIC/BIC-style cost columns). Empty when \code{model.settings$LRO_cost = "none"}, since the grid search is then skipped.
+#'    \item \code{fitted.parameters}: Vector of all fitted model parameters.
+#'    \item \code{gamma.dispersion}: Matrix giving the estimated gamma dispersion of the gamma-convolved Poisson model.
+#'    \item \code{param.names}: Names of the model parameters, matching the order of \code{fitted.parameters}.
 #'    \item \code{fix}: List containing four elements: \code{names} (names of fixed-effect factors), \code{lvls} (list, each element the names of the levels of a fixed-effect factor), \code{treat.lvl} (as before, but excluding reference levels), and \code{ref.lvl} (as before, but containing only the reference-level).
 #'    \item \code{treatment}: List with two elements: \code{names} (names of the treatment levels) and \code{components} (list, each element the names of the fixed-effect factor levels constituting that treatment level).
-#'    \item \code{grouping.variables}: List containing character vectors \code{context.lvls}, \code{species.lvls}, and \code{ran.lvls} holding, respectively, the grouping levels of the context, species, and random-effect grouping variabes. 
-#'    \item \code{param.idx0}: List containing zero-indexed index values for \code{fitted.parameters} for different combinations of treatment levels and grouping factors. 
-#'    \item \code{settings}: A copy of the original model settings provided to the \code{wisp} function. 
-#'    \item \code{sample.params.type}: A character string, "bs" or "MCMC", specifies which type of resamples were used to compute stats. 
-#'    \item \code{sample.params.bs}: A data frame giving the resampled parameters from bootstrapping (if any). 
-#'    \item \code{sample.params.MCMC}: A data frame giving the resampled parameters from the MCMC resampling (if any). 
-#'    \item \code{diagnostics.bs}: Diagnostic information for each bootstrap resample. 
-#'    \item \code{diagnostics.MCMC}: Diagnostic information for each MCMC random-walk step (i.e., resample). 
-#'    \item \code{stats}: List containing a main data frame \code{parameters} with the results (p-values, estimate, confidence intervals, etc) of the statistical analysis of the model parameters, plus data frames holding model residuals. 
+#'    \item \code{weight.matrix}: Matrix of weights for reconstructing treatment-level rates from the fitted model components; row \code{i} gives the weights needed to compute treatment \code{i}.
+#'    \item \code{grouping.variables}: List containing character vectors \code{context.lvls}, \code{species.lvls}, and \code{ran.lvls} holding, respectively, the grouping levels of the context, species, and random-effect grouping variabes.
+#'    \item \code{param.idx0}: List containing zero-indexed index values for \code{fitted.parameters} for different combinations of treatment levels and grouping factors.
+#'    \item \code{token.pool}: List of integer vectors, one per row of \code{count.data.summed}, giving the indices of the raw count tokens pooled into that row; used internally to resample bootstrap replicates.
+#'    \item \code{settings}: A copy of the original model settings provided to the \code{wisp} function.
+#'    \item \code{sample.params.type}: A character string, "bs" or "MCMC", specifies which type of resamples were used to compute stats.
+#'    \item \code{sample.params.bs}: A data frame giving the resampled parameters from bootstrapping (if any).
+#'    \item \code{sample.params.MCMC}: A data frame giving the resampled parameters from the MCMC resampling (if any).
+#'    \item \code{diagnostics.bs}: Diagnostic information for each bootstrap resample.
+#'    \item \code{diagnostics.MCMC}: Diagnostic information for each MCMC random-walk step (i.e., resample).
+#'    \item \code{stats}: List containing a main data frame \code{parameters} with the results (p-values, estimate, confidence intervals, etc) of the statistical analysis of the model parameters, plus data frames holding model residuals.
+#'    \item \code{plot.settings}: A copy of the (defaulted) plot settings provided to the \code{wisp} function; used by the \code{plot.*} family of functions when re-plotting a fitted model.
 #'    \item \code{plots}: List containing whatever plots where generated during the model fit.
+#'    \item \code{variables}: A copy of the resolved \code{variables} list (the column-name mapping actually used for the fit, after defaults were filled in).
 #'    }
 #' @export
 wisp <- function(
@@ -1060,6 +1065,16 @@ analyze.residuals <- function(
   }
 
 # Plotting methods #####################################################################################################
+#
+# NOTE ON NAMING: the functions below (plot.ratecount, plot.timeseries, plot.parameters, plot.effect.dist,
+# plot.species.summary, plot.MCMC.walks, plot.decomposition, plot.MCMC.bs.comparison) are *not* S3 methods, despite
+# looking like them. wisp()'s return value (and the outputs of these plotting functions) are plain, unclassed
+# lists -- there is no "ratecount"/"timeseries"/etc. class for the `plot` generic to dispatch on. These must be
+# called by their full name (e.g. plot.ratecount(model, ...)), not via plot(model, ...); R's method dispatch will
+# never reach them through the generic. The dotted names are an established part of the public API and are kept
+# for that reason, not changed to avoid the S3-method-naming confusion -- hence this note instead.
+# (R CMD check's Rd-consistency checker still treats these as S3 methods by name pattern alone, which is why their
+# Rd files show a "should use \method markup" NOTE; that's a cosmetic consequence of the same naming choice.)
 
 #' Plot fitted model and data
 #'
@@ -1068,9 +1083,10 @@ analyze.residuals <- function(
 #' @name plot.ratecount
 #' @rdname plot-ratecount
 #' @usage plot.ratecount(
-#'  wisp.results, 
+#'  wisp.results,
 #'  log.scale        = FALSE,
-#'  dim.boundaries   = c(), 
+#'  CI_style         = TRUE,
+#'  dim.boundaries   = c(),
 #'  print.plots      = FALSE, 
 #'  y.lim            = NA, 
 #'  count.alpha.none = NA, 
@@ -1095,6 +1111,7 @@ analyze.residuals <- function(
 #' @param species Character vector, list of species levels to plot. If c(), all species levels are plotted.
 #' @param verbose Logical, if TRUE, prints updates about the plotting process.
 #' @return List of ggplot objects for rate-count plots.
+#' @note Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.ratecount(...)} directly.
 #' @export
 plot.ratecount <- function(
     wisp.results,
@@ -1621,6 +1638,7 @@ plot.ratecount <- function(
 #' @param species Character vector, list of species levels to plot. If c(), all species levels are plotted.
 #' @param verbose Logical, if TRUE, prints updates about the plotting process.
 #' @return List of ggplot objects for timeseries plots.
+#' @note Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.timeseries(...)} directly.
 #' @export
 plot.timeseries <- function(
     wisp.results, 
@@ -2091,21 +2109,23 @@ plot.timeseries <- function(
 #' @name plot.parameters
 #' @rdname plot-parameters
 #' @usage plot.parameters(
-#'  wisp.results, 
-#'  species         = c(), 
-#'  violin          = TRUE, 
-#'  print.plots     = FALSE, 
-#'  species.classes = NULL, 
+#'  wisp.results,
+#'  species         = c(),
+#'  violin          = TRUE,
+#'  print.plots     = FALSE,
+#'  species.classes = NULL,
+#'  mc_type         = NULL,
 #'  verbose         = TRUE
 #' )
 #' @param wisp.results List, output of the wisp function.
 #' @param species Character string, the species level to be plotted. If c(), all species levels are plotted.
-#' @param violin Logical, if TRUE, plots violin plots for each parameter; if FALSE, uses bar plots. 
+#' @param violin Logical, if TRUE, plots violin plots for each parameter; if FALSE, uses bar plots.
 #' @param print.plots Logical, if TRUE, prints the plots to the console; if FALSE, only returns a list of plots without printing.
 #' @param species.classes List, a list of character vectors specifying which species levels to include together in plots. If NULL, all species levels are plotted separately.
 #' @param mc_type Character string, type of model component to plot ("rate", "tpoint", "tslope"). If NULL, all model components are plotted.
 #' @param verbose Logical, if TRUE, prints updates about the plotting process.
 #' @return List of ggplot objects for parameter plots.
+#' @note Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.parameters(...)} directly.
 #' @export
 plot.parameters <- function(
     wisp.results,
@@ -2730,6 +2750,7 @@ plot.parameters <- function(
 #' @param print.plots Logical, if TRUE, prints the plots to the current device.
 #' @param verbose Logical, if TRUE, prints information during plotting.
 #' @return List of ggplot objects containing histograms of fitted parameters.
+#' @note Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.effect.dist(...)} directly.
 #' @export
 plot.effect.dist <- function(
     wisp.results,
@@ -2905,6 +2926,7 @@ plot.effect.dist <- function(
 #' @param species Character vector, optional, specifies which species levels to summarize. Defaults to all.
 #' @param verbose Logical, if TRUE, prints information during plotting.
 #' @return Nothing, plots are printed to the current graphics device.
+#' @note Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.species.summary(...)} directly.
 #' @export
 plot.species.summary <- function(
     wisp.results,
@@ -3014,6 +3036,7 @@ plot.species.summary <- function(
 #' @param verbose Logical, if TRUE, prints information during plotting.
 #' @param low_samples Integer, number of low-value parameters to plot. Defaults to 10.
 #' @return List of ggplot objects containing plots of walks for low-value parameters, high-value parameters, and normalized negative log likelihood.
+#' @note Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.MCMC.walks(...)} directly.
 #' @export
 plot.MCMC.walks <- function(
     wisp.results,
@@ -3199,10 +3222,10 @@ plot.MCMC.walks <- function(
 #' @name plot.decomposition
 #' @rdname plot-decomposition
 #' @usage plot.decomposition(
-#'  wisp.results, 
-#'  species, 
-#'  log            = FALSE, 
-#'  dim.boundaries = c(), 
+#'  wisp.results,
+#'  species,
+#'  log.scale      = FALSE,
+#'  dim.boundaries = c(),
 #'  y.lim          = NULL
 #' )
 #' @param wisp.results List, output of the wisp function.
@@ -3211,6 +3234,7 @@ plot.MCMC.walks <- function(
 #' @param dim.boundaries Numeric vector, independent block boundaries to plot for comparison. If empty, the argument is ignored.
 #' @param y.lim Numeric vector of length 2, limits for the y-axis of the plots. If NA, defaults to automatic limits.
 #' @return List of ggplot objects containing the decomposed rate-count plots.
+#' @note Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.decomposition(...)} directly.
 #' @export
 plot.decomposition <- function(
     wisp.results,
@@ -3351,6 +3375,7 @@ plot.decomposition <- function(
 #' @param verbose Logical, if TRUE, prints information during plotting.
 #' @param ran.seed Integer, random seed for reproducibility. Defaults to 1234. If NULL, no seed set. 
 #' @return List of ggplot objects containing plots of representative parameter distributions, Shapiro-Wilk normality test results, and autocorrelation plots for bootstrap and MCMC parameter estimates.
+#' @note Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.MCMC.bs.comparison(...)} directly.
 #' @export
 plot.MCMC.bs.comparison <- function(
     wisp.results,

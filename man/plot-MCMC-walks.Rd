@@ -26,3 +26,6 @@ List of ggplot objects containing plots of walks for low-value parameters, high-
 \description{
 Function to make nicely formatted histograms of fitted parameters from WISP results.
 }
+\note{
+Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.MCMC.walks(...)} directly.
+}

@@ -23,3 +23,6 @@ List of ggplot objects containing histograms of fitted parameters.
 \description{
 Function to make nicely formatted histograms of fitted parameters from WISP results.
 }
+\note{
+Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.effect.dist(...)} directly.
+}
