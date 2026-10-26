@@ -1255,63 +1255,23 @@ Rcpp::NumericMatrix wspc::bs_batch(
       batch_timer.step("start");  
       
       if (max_fork > 1) {
-        // Run in parallel with forking
+        // Run in parallel with forking (see src/fork_utils.h for run_forked_batches() and the Windows guard)
         int batch_size = std::min(max_fork, bs_num_max - b * max_fork);
-        
-        // Pipes for inter-process communication
-        iVec pids(batch_size);
-        std::vector<std::array<int, 2>> pipes(batch_size); 
-        
-        // Initialize pipes and fork processes
-        for (int i = 0; i < batch_size; i++) {
-          
-          int this_row = b * max_fork + i;
-          pipe(pipes[i].data()); // Create a pipe
-          pid_t pid = fork();
-          
-          if (pid == 0) { // child process
-            
-            // Close read end
-            close(pipes[i][0]); 
-            // Fit bootstrap
-            dVec result = bs_fit(this_row, false); 
-            // Send result
-            write(pipes[i][1], result.data(), sizeof(double) * c_num);
-            // Close write end
-            close(pipes[i][1]); 
-            // Exit child process
-            _exit(0); 
-            
-          } else if (pid > 0) { // parent process
-            
-            // Grab child pid
-            pids[i] = pid;
-            // Close write end
-            close(pipes[i][1]); 
-            
-          } else {
-            Rcpp::stop("Fork failed!");
+
+        run_forked_batches<double>(
+          batch_size,
+          [c_num](int) { return (size_t)c_num; },                         // batch_payload_size: fixed row width
+          [this, b, max_fork](int i) {                                    // compute_batch: fit resample row
+            return bs_fit(b * max_fork + i, false);
+          },
+          [&bs_results, b, max_fork](int i, const dVec& buf) {           // reduce_batch: write into result matrix
+            bs_results.row(b * max_fork + i) = to_NumVec(buf);
+          },
+          [b, max_fork](int i) {                                         // batch_error_context
+            return "\nBootstrap resample row " + std::to_string(b * max_fork + i) + ".";
           }
-          
-        }
-        
-        // Fetch results from pipes
-        for (int i = 0; i < batch_size; i++) {
-          
-          // Wait for child process
-          waitpid(pids[i], NULL, 0); 
-          // Create a temporary buffer to hold the row data
-          dVec temp_row(c_num); 
-          // Read the row from the pipe into the buffer
-          read(pipes[i][0], temp_row.data(), sizeof(double) * c_num);
-          // Copy the buffer contents into the corresponding row of the matrix
-          int this_row = b * max_fork + i;
-          bs_results.row(this_row) = to_NumVec(temp_row);
-          // Close read end
-          close(pipes[i][0]); 
-          
-        } 
-        
+        );
+
       } else {
         // Run in serial ... Fit bootstrap and copy into the corresponding row of the matrix
         bs_results.row(b) = to_NumVec(bs_fit(b, true));

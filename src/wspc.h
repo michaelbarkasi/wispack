@@ -13,9 +13,8 @@
 #include <RcppEigen.h>
 #include <Rcpp/Benchmark/Timer.h>
 #include <nlopt.hpp>
-#include <unistd.h>                           // for forking on unix
 #include <random>                             // for thread-safe random number generation
-#include <sys/wait.h>                         // for Ubuntu C++ compiler to recognize waitpid
+#include "fork_utils.h"                       // run_forked_batches(); guards fork()/pipe()/waitpid() on Windows
 using namespace Rcpp;
 
 // [[Rcpp::plugins(cpp14)]]
