@@ -1,0 +1,80 @@
+# Structural tests for wisp()'s return value and for the package's exported API surface. These catch an
+# accidental breaking change to the public contract (a renamed/missing list element, a new name silently added to
+# NAMESPACE) independently of whether any fitted number drifts -- i.e. they're a different kind of regression
+# guard than the ported vignette checks.
+
+test_that("wisp() returns the documented top-level structure", {
+  cd <- make_tiny_countdata(seed = 1)
+  model <- wisp(
+    cd,
+    fit_only       = TRUE,
+    model.settings = list(LRO_cost = "none"),
+    plot.settings  = list(print.plots = FALSE),
+    verbose        = FALSE
+  )
+
+  expect_type(model, "list")
+  expect_true(all(c(
+    "model.component.list", "count.data.summed", "fitted.parameters", "param.names",
+    "fix", "treatment", "grouping.variables", "param.idx0", "settings", "plots"
+  ) %in% names(model)))
+
+  expect_equal(model$model.component.list, c("Rt", "tslope", "tpoint"))
+  expect_type(model$fitted.parameters, "double")
+  expect_length(model$param.names, length(model$fitted.parameters))
+  expect_false(anyNA(model$fitted.parameters))
+
+  expect_true(all(c("context.lvls", "species.lvls", "ran.lvls") %in% names(model$grouping.variables)))
+  expect_true(all(c("names", "lvls", "treat.lvl", "ref.lvl") %in% names(model$fix)))
+  expect_true(all(c("names", "components") %in% names(model$treatment)))
+})
+
+test_that("wisp() is deterministic given the same seed and settings", {
+  cd <- make_tiny_countdata(seed = 1)
+  args <- list(
+    count.data     = cd,
+    fit_only       = TRUE,
+    model.settings = list(LRO_cost = "none"),
+    plot.settings  = list(print.plots = FALSE),
+    verbose        = FALSE,
+    ran.seed       = 42
+  )
+  model1 <- do.call(wisp, args)
+  model2 <- do.call(wisp, args)
+
+  expect_equal(model1$fitted.parameters, model2$fitted.parameters)
+  expect_equal(model1$param.names, model2$param.names)
+})
+
+test_that("the package's exported API surface hasn't grown or shrunk unintentionally", {
+  # wispack's NAMESPACE uses exportPattern("^[[:alpha:]]+"), which exports *every* top-level alphabetic-starting
+  # object, not a curated list -- so an internal helper (or a leftover S4 class-registration artifact from the
+  # Rcpp module) can become "public API" just by being defined at top level. This test freezes the current
+  # surface so that change is visible and intentional. When you add a genuinely new, intended export, update the
+  # vector below in the same commit.
+  current <- sort(getNamespaceExports("wispack"))
+  expected <- sort(c(
+    ".__C__C++Object", ".__C__Rcpp_wspc",
+    "affine", "analyze_attractor_sim_benchmarks", "analyze.residuals",
+    "attractor_simulation", "attractor_simulation_ground_truth",
+    "bin_data", "convergence_mask", "coordinate_binning", "coordinate_transform",
+    "cortical_coordinate_transform", "create.count.data.WSPmm", "create.count.data.WSPmm.allen",
+    "demo.sigmoid.plots", "demo.warp.plots",
+    "extract_pvalue_attractor_simulation_wisp", "extract_random_effect_attractor_simulation_wisp",
+    "extract_rate_effect_attractor_simulation_wisp", "extract_wisp_attractor_simulation_results",
+    "find_centroid", "induce_SV",
+    "make_count_data", "make_count_data_csv", "make_replicate", "matrix_transform",
+    "model_attractor_simulation_wisp",
+    "parse_csv", "parse_hdf5", "plot_results",
+    "plot.decomposition", "plot.effect.dist", "plot.MCMC.bs.comparison", "plot.MCMC.walks",
+    "plot.parameters", "plot.ratecount", "plot.species.summary", "plot.timeseries",
+    "poly_sigmoid_R", "project_cp", "pvalues.samples", "rot_matrix",
+    "run_attractor_sim_benchmarks", "sample.stats", "sigmoid_stable_R", "smooth_data",
+    "snk.horizontal_rule", "snk.print_details", "snk.print_function", "snk.print_table",
+    "snk.print_var_charvec", "snk.print_var_list", "snk.print_vec", "snk.report", "snk.report...",
+    "snk.section_break_reps", "snk.simple_break_reps", "snk.small_break_reps",
+    "snk.step_heading", "snk.step_number", "snk.summary_heading",
+    "warp_mc_R", "wisp", "wisp.sigmoid", "wisp.warp", "wspc"
+  ))
+  expect_equal(current, expected)
+})

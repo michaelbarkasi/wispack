@@ -1,0 +1,106 @@
+# Golden-value reference table for the tutorial_* vignettes ############################################################
+#
+# Every numeric bound checked (silently) inside the tutorial_*.Rmd vignettes is recorded here, once, keyed by vignette
+# and check label. The tests/testthat slow-tier tests (tests/testthat/test-slow-*.R) read these bounds instead of
+# hard-coding them a second time, so there is exactly one place that encodes "the narrative numbers are X". A future
+# pass can have the vignettes' own check chunks read from this same list (e.g. via `wispack:::.wisp_golden`), which
+# would let `R CMD build`'ing the vignettes and running the testthat suite both verify the narrative against the same
+# source, without duplicating tolerances in two places.
+#
+# This object is internal (not exported); it exists purely to support the test suite and vignette maintenance.
+
+#' @noRd
+.wisp_golden <- list(
+
+  poisson = list(
+    countdata_bin1    = c(lo = 31,        hi = 31),
+    countdata_count2  = c(lo = 8,         hi = 8),
+    Rt1               = c(lo = 4.5,       hi = 4.75),
+    tslope2_min       = 10,  # one-sided: tslope2 must be >= this
+    tpoint2           = c(lo = 49,        hi = 51),
+    recovered_rate4   = c(lo = 7.3,       hi = 7.5)
+  ),
+
+  warping = list(
+    warp_ratio_demo        = c(lo = 0.2702110,  hi = 0.2702112),
+    warped_sigmoid_layer5  = c(lo = 27.8595328, hi = 27.8595330)
+  ),
+
+  wispplots = list(
+    ratecount_Rorb        = c(lo = 9.2,      hi = 9.3),
+    decomposition_panel3  = c(lo = 16.3,     hi = 16.4),
+    timeseries_Rorb       = c(lo = 11.11764, hi = 11.11766)
+    # NOTE: the vignette's check4 (plot.parameters' ranEff plot, data row 2) is deliberately not reproduced here.
+    # plot.parameters() appears to draw its displayed random-effect points from the global RNG stream at call
+    # time rather than from a fixed stored sample, so that bound only ever held because of knitr's chunk-level
+    # RNG-state caching across the vignette's specific rendering order -- it isn't a property of the fitted model.
+    # See the corresponding (structural, not value-based) test in tests/testthat/test-wisp-plots-fixture.R.
+  ),
+
+  stats = list(
+    default_param4             = c(lo = 0.04,    hi = 0.05),
+    bonferroni_param4          = c(lo = -0.1,    hi = -0.09),
+    mcmc_walk_low4             = c(lo = -0.93,   hi = -0.9),
+    mcmc_resample_param4       = c(lo = 0.05,    hi = 0.07),
+    median_fit_param1          = c(lo = 3.4,     hi = 3.5),
+    bs_comparison_correlation  = c(lo = 0.003,   hi = 0.004),
+    bs_comparison_shapiro      = c(lo = 0.8,     hi = 0.9),
+    bs_comparison_density      = c(lo = 7.5e-05, hi = 7.6e-05)
+  ),
+
+  multicontext = list(
+    n_celltypes_raw      = c(lo = 31, hi = 31),
+    n_celltypes_filtered = c(lo = 2,  hi = 2),
+    beta_Rt_GABA_Bcl11b_right18_Blk2 = c(lo = -0.17,     hi = -0.16),
+    ratecount_Glut                   = c(lo = 2.890371,  hi = 2.890373),
+    ratecount_Glut_Bcl11b            = c(lo = 3.1,       hi = 3.2),
+    ratecount_Glut_Cux2              = c(lo = 2.3,       hi = 2.4),
+    ratecount_Glut_Rorb              = c(lo = 1.9,       hi = 2.0),
+    ratecount_Glut_Nxph3             = c(lo = 5.2,       hi = 5.3),
+    timeseries_Glut_Bcl11b           = c(lo = 1.37,      hi = 1.4),
+    timeseries_Glut_Cux2             = c(lo = 2.4,       hi = 2.5),
+    timeseries_Glut_Fezf2            = c(lo = 1.2,       hi = 1.3),
+    timeseries_Glut_Nxph3            = c(lo = 1.6,       hi = 1.7),
+    timeseries_Glut_Rorb             = c(lo = 1.9,       hi = 2.0)
+  ),
+
+  timeseries = list(
+    ratecount_Nxph3 = c(lo = 219, hi = 220)
+  ),
+
+  corticallaminar = list(
+    n_genes          = c(lo = 6,     hi = 6),
+    second_gene_name = "Fezf2",
+    n_cells          = c(lo = 54116, hi = 54116),
+    param1_estimate  = c(lo = 3.38,  hi = 3.4),
+    hemisphere_RORB  = c(lo = -0.01, hi = 0.1)
+  ),
+
+  liverradial = list(
+    param4_estimate   = c(lo = 0.13, hi = 0.16),
+    zonation_space_glul   = c(lo = 4.4, hi = 4.5),
+    zonation_time_glul    = c(lo = 6.9, hi = 7.0),
+    rhythm_space_arntl    = c(lo = 2.4, hi = 2.6),
+    rhythm_time_arntl     = c(lo = 1.9, hi = 2.0),
+    both_space_elovl3     = c(lo = 5.4, hi = 5.5),
+    both_time_elovl3      = c(lo = 4.6, hi = 4.8)
+  ),
+
+  benchmarks = list(
+    seed_data_val          = c(lo = 3.485959,   hi = 3.485961),
+    Vip_smoothed           = c(lo = 2.116861,   hi = 2.116863),
+    Slc17a7_SVG            = c(lo = 2.063262,   hi = 2.063264),
+    Tac2_effect            = c(lo = -0.4785649, hi = -0.4785647),
+    Tac2_FSE               = c(lo = 3.691496,   hi = 3.691498),
+    replicate_scalar1      = c(lo = -0.3201774, hi = -0.3201772),
+    wisp_results_7_2       = c(lo = 0.101,      hi = 0.102),
+    wisp_results_12_1      = c(lo = 1.4,        hi = 1.5),
+    metrics_1_1            = c(lo = 0.227,      hi = 0.229),
+    metrics_3_2            = c(lo = 0.017,      hi = 0.019),
+    metrics_8_3            = c(lo = 0.427,      hi = 0.429),
+    metrics_9_1            = c(lo = 1,          hi = 3.000),
+    metrics_9_2            = c(lo = 26,         hi = 28.00),
+    metrics_9_3            = c(lo = 426,        hi = 428.0)
+  )
+
+)

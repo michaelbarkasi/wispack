@@ -11,7 +11,9 @@ License: GPL (>= 3)
 Imports: Rcpp (>= 1.0.13-1), RcppEigen, methods, dtwclust
 LinkingTo: Rcpp, RcppEigen, StanHeaders, BH
 Depends: ggplot2, grid, gridExtra, colorspace
+Suggests: testthat (>= 3.0.0)
 SystemRequirements: NLopt, C++17
 Roxygen: list(markdown = TRUE)
 URL: https://michaelbarkasi.github.io/wispack/
 Config/roxygen2/version: 8.1.0
+Config/testthat/edition: 3
