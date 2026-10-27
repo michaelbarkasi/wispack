@@ -113,18 +113,18 @@ https://pubs.opengroup.org/onlinepubs/7908799/xsh/unistd.h.html
 
 Available and licensed on your local system
 
-<h1> dtwclust </h1>
+<h1> dtw </h1>
 
-Alexis Sarda-Espinosa  
-Sarda-Espinosa A (2024). dtwclust: Time Series Clustering Along with Optimizations for the Dynamic Time Warping Distance. R package version 6.0.0
+Toni Giorgino
+Giorgino T (2009). “Computing and Visualizing Dynamic Time Warping Alignments in R: The dtw Package.” Journal of Statistical Software, 31(7), 1-24. doi:10.18637/jss.v031.i07
 
-Specifically using DTW Barycenter Averaging, from:  
-Petitjean F, Ketterlin A and Gancarski P (2011). “A global averaging method for dynamic time warping, with applications to clustering.” Pattern Recognition, 44(3), pp. 678 - 693. ISSN 0031-3203, doi:10.1016/j.patcog.2010.09.013, https://www.sciencedirect.com/science/article/pii/S003132031000453X
+For partial matching and normalization strategies, also:
+Tormene P, Giorgino T, Quaglini S, Stefanelli M (2008). “Matching Incomplete Time Series with Dynamic Time Warping: An Algorithm and an Application to Post-Stroke Rehabilitation.” Artificial Intelligence in Medicine, 45(1), 11-34. doi:10.1016/j.artmed.2008.11.007
 
-https://cran.r-project.org/package=dtwclust  
-https://github.com/asardaes/dtwclust
+https://cran.r-project.org/package=dtw
+https://dynamictimewarping.github.io/
 
-GPLv3
+GPL (>= 2)
 
 <h1> ggplot2 </h1>
 

@@ -1,6 +1,7 @@
 useDynLib(wispack, .registration = TRUE)
 importFrom(Rcpp, evalCpp)
 importFrom(RColorBrewer, brewer.pal)
+importFrom(dtw, dtw, symmetricP05)
 importFrom(utils, globalVariables)
 import(ggplot2)
 import(grid)

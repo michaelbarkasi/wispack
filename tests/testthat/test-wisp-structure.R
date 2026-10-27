@@ -66,7 +66,7 @@ test_that("the package's exported API surface hasn't grown or shrunk unintention
     "demo.sigmoid.plots", "demo.warp.plots",
     "extract_pvalue_attractor_simulation_wisp", "extract_random_effect_attractor_simulation_wisp",
     "extract_rate_effect_attractor_simulation_wisp", "extract_wisp_attractor_simulation_results",
-    "find_centroid", "induce_SV",
+    "induce_SV",
     "make_count_data", "make_count_data_csv", "make_replicate", "matrix_transform",
     "model_attractor_simulation_wisp",
     "parse_csv", "parse_hdf5", "plot_results",
