@@ -8,3 +8,4 @@
 *.RData binary
 *.rda binary
 *.Rda binary
+*.gz binary

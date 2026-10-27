@@ -21,7 +21,7 @@ This tutorial will use MERFISH data collected from the auditory cortex of mice. 
 countdata <- read.csv(
   system.file(
       "extdata", 
-      "ACx_laminar_countdata_demo_with_celltype.csv", 
+      "ACx_laminar_countdata_demo_with_celltype.csv.gz", 
       package = "wispack"
     )
   )

@@ -7,9 +7,9 @@ g <- .wisp_golden$liverradial
 
 test_that("wisp() on the Droin liver radial-zonation simulation matches the vignette narrative", {
   skip_unless_slow_tests()
-  skip_unless_extdata("Droin_radial_count_data_sim.csv")
+  skip_unless_extdata("Droin_radial_count_data_sim.csv.gz")
 
-  count_data <- read.csv(system.file("extdata", "Droin_radial_count_data_sim.csv", package = "wispack"))
+  count_data <- read.csv(system.file("extdata", "Droin_radial_count_data_sim.csv.gz", package = "wispack"))
   data.variables <- list(
     count      = "count",
     bin        = "bin",

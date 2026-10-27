@@ -5,7 +5,7 @@
 g <- .wisp_golden$multicontext
 
 test_that("ACx laminar + celltype count data matches the vignette narrative", {
-  path <- skip_unless_extdata("ACx_laminar_countdata_demo_with_celltype.csv")
+  path <- skip_unless_extdata("ACx_laminar_countdata_demo_with_celltype.csv.gz")
   countdata <- read.csv(path)
 
   unique_celltypes <- unique(countdata$celltype_MMC)

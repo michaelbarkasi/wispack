@@ -5,7 +5,7 @@
 g <- .wisp_golden$corticallaminar
 
 test_that("S1 laminar count data matches the vignette narrative", {
-  path <- skip_unless_extdata("S1_laminar_countdata_demo.csv")
+  path <- skip_unless_extdata("S1_laminar_countdata_demo.csv.gz")
   countdata <- read.csv(path)
 
   num_genes <- length(unique(countdata$gene))

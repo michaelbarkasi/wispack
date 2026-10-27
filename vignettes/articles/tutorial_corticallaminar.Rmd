@@ -51,7 +51,7 @@ To start, load this data and print its first few rows:
 countdata <- read.csv(
   system.file(
       "extdata", 
-      "S1_laminar_countdata_demo.csv", 
+      "S1_laminar_countdata_demo.csv.gz", 
       package = "wispack"
     )
   )

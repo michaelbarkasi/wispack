@@ -7,9 +7,9 @@ g <- .wisp_golden$benchmarks
 
 test_that("model_attractor_simulation_wisp on the Allen seed patch matches the vignette narrative", {
   skip_unless_slow_tests()
-  skip_unless_extdata("Allen_data.csv")
+  skip_unless_extdata("Allen_data.csv.gz")
 
-  countdata <- read.csv(system.file("extdata", "Allen_data.csv", package = "wispack"))
+  countdata <- read.csv(system.file("extdata", "Allen_data.csv.gz", package = "wispack"))
   seed_patch <- countdata[
     countdata$slice_num == 33 &
       countdata$coord_y >= 2 & countdata$coord_y <= 4 &

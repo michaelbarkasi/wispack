@@ -6,9 +6,9 @@ g <- .wisp_golden$stats
 
 test_that("wisp() with use.median = TRUE on the S1 laminar data matches the vignette narrative", {
   skip_unless_slow_tests()
-  skip_unless_extdata("S1_laminar_countdata_demo.csv")
+  skip_unless_extdata("S1_laminar_countdata_demo.csv.gz")
 
-  countdata <- read.csv(system.file("extdata", "S1_laminar_countdata_demo.csv", package = "wispack"))
+  countdata <- read.csv(system.file("extdata", "S1_laminar_countdata_demo.csv.gz", package = "wispack"))
   data.variables <- list(species = "gene", ran = "mouse", timeseries = "age")
 
   model_median <- wisp(

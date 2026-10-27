@@ -37,7 +37,7 @@ We begin with real spatial transcriptomics data from the [Allen Institute](https
 countdata <- read.csv(
   system.file(
       "extdata", 
-      "Allen_data.csv", 
+      "Allen_data.csv.gz", 
       package = "wispack"
     )
   )

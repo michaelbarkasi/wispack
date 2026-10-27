@@ -57,7 +57,7 @@ layer.boundary.bins <- read.csv(
 countdata <- read.csv(
   system.file(
       "extdata", 
-      "S1_laminar_countdata_demo.csv", 
+      "S1_laminar_countdata_demo.csv.gz", 
       package = "wispack"
     )
   )
@@ -285,7 +285,7 @@ We're left with option (3), which is unsatisfactory (of course) because it leave
 countdata <- read.csv(
   system.file(
       "extdata", 
-      "S1_laminar_countdata_demo.csv", 
+      "S1_laminar_countdata_demo.csv.gz", 
       package = "wispack"
     )
   )

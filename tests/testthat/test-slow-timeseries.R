@@ -6,10 +6,10 @@ g <- .wisp_golden$timeseries
 
 test_that("wisp() on the ACx laminar timeseries data matches the vignette narrative", {
   skip_unless_slow_tests()
-  skip_unless_extdata("ACx_laminar_countdata_demo.csv")
+  skip_unless_extdata("ACx_laminar_countdata_demo.csv.gz")
   skip_unless_extdata("ACx_layer_boundary_bins.csv")
 
-  countdata <- read.csv(system.file("extdata", "ACx_laminar_countdata_demo.csv", package = "wispack"))
+  countdata <- read.csv(system.file("extdata", "ACx_laminar_countdata_demo.csv.gz", package = "wispack"))
   data.variables <- list(species = "gene", ran = "mouse", timeseries = "age")
   layer.boundary.bins <- read.csv(system.file("extdata", "ACx_layer_boundary_bins.csv", package = "wispack"))
 

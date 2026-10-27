@@ -25,11 +25,11 @@ if (sys_name == "Darwin" || sys_name == "Linux") {
 # ... from horizontal (axial) slice of mouse cortex, primary somatosensory cortex (L1 removed)
 data_path <- system.file(
     "extdata", 
-    "S1_laminar_countdata_demo.csv", 
+    "S1_laminar_countdata_demo.csv.gz", 
     package = "wispack"
   )
 countdata <- read.csv(data_path)
-# ... Manual load: countdata <- read.csv("S1_laminar_countdata_demo.csv")
+# ... Manual load: countdata <- read.csv("S1_laminar_countdata_demo.csv.gz")
 # ... Note on spatial coordinates: 
 #  y-axes: laminar, 0 is bottom of L6b, 100 is top of L2/3
 #  x-axes: columnar, 0 is most posterior, 100 is most anterior

@@ -7,13 +7,13 @@
 g <- .wisp_golden$benchmarks
 
 test_that("Allen MERFISH seed data matches the vignette narrative", {
-  path <- skip_unless_extdata("Allen_data.csv")
+  path <- skip_unless_extdata("Allen_data.csv.gz")
   countdata <- read.csv(path)
   expect_between(countdata[1, 5], bounds = g$seed_data_val)
 })
 
 test_that("attractor_simulation on the seed patch matches the vignette narrative", {
-  path <- skip_unless_extdata("Allen_data.csv")
+  path <- skip_unless_extdata("Allen_data.csv.gz")
   countdata <- read.csv(path)
   seed_patch <- countdata[
     countdata$slice_num == 33 &
@@ -47,7 +47,7 @@ test_that("attractor_simulation on the seed patch matches the vignette narrative
 test_that("ground truth extracted from an attractor simulation matches its own stipulated values", {
   # Correctness test, independent of the regression bounds above: the ground-truth helper should report TRUE
   # exactly at the indices the simulation itself recorded as SVGs/FSEs.
-  path <- skip_unless_extdata("Allen_data.csv")
+  path <- skip_unless_extdata("Allen_data.csv.gz")
   countdata <- read.csv(path)
   seed_patch <- countdata[
     countdata$slice_num == 33 &

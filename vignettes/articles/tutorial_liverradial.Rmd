@@ -182,7 +182,7 @@ For the purpose of this tutorial, the above preprocessing code is not run. Inste
 count_data <- read.csv(
   system.file(
       "extdata", 
-      "Droin_radial_count_data_sim.csv", 
+      "Droin_radial_count_data_sim.csv.gz", 
       package = "wispack"
     )
   )

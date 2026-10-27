@@ -7,10 +7,10 @@ g <- .wisp_golden$multicontext
 
 test_that("wisp() on the multicontext (celltype) data matches the vignette narrative", {
   skip_unless_slow_tests()
-  skip_unless_extdata("ACx_laminar_countdata_demo_with_celltype.csv")
+  skip_unless_extdata("ACx_laminar_countdata_demo_with_celltype.csv.gz")
   skip_unless_extdata("ACx_layer_boundary_bins.csv")
 
-  countdata <- read.csv(system.file("extdata", "ACx_laminar_countdata_demo_with_celltype.csv", package = "wispack"))
+  countdata <- read.csv(system.file("extdata", "ACx_laminar_countdata_demo_with_celltype.csv.gz", package = "wispack"))
   Glut_mask <- grepl("Glut", countdata$celltype_MMC)
   GABA_mask <- grepl("GABA", countdata$celltype_MMC)
   countdata$celltype_MMC[Glut_mask] <- "Glut"
