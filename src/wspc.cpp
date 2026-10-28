@@ -2069,6 +2069,7 @@ RCPP_MODULE(wspc) {
     .method("grad_compute_bnll_debug", &wspc::grad_compute_bnll_debug)
     .method("predict_rates_batch", &wspc::predict_rates_batch)
     .method("fit", &wspc::fit)
+    .method("bs_fit", &wspc::bs_fit)   // exposed for the mclapply-vs-fork_utils benchmark only (scratch/benchmark); bs_batch() remains the real fitting path
     .method("bs_batch", &wspc::bs_batch)
     .method("MCMC", &wspc::MCMC)
     .method("clear_stan_mem", &wspc::clear_stan_mem)

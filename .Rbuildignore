@@ -7,3 +7,4 @@
 vignettes/.*_cache(/|$)
 vignettes/output(/|$)
 ^wispack\.Rproj$
+^benchmarks$
