@@ -1,4 +1,4 @@
-# Port of tutorial_stats.Rmd's checks 1-4, 6-7 and tutorial_wispplots.Rmd's checks 1-3, now that both
+# Port of tutorial_stats.Rmd's checks 1-4, 6-7 and tutorial_wispplots.Rmd's checks 1-4, now that both
 # vignettes fit the cortical-laminar RORB model (1000 bootstraps, max.fork = 20) on the fly instead of loading
 # a shipped inst/extdata/corticallaminar_model.rds fixture (that file has been removed -- see
 # R/golden_checks.R and the commit that dropped it). These checks used to live in the fast tier
@@ -68,7 +68,7 @@ test_that("the real cortical-laminar bootstrap fit matches both tutorial_stats.R
   # here keeps this file's call sequence matching the vignette's, for whatever it's worth given check8's
   # fragility is NOT fixed by this replay (see header note); kept mainly so plot.parameters() itself is still
   # exercised against the real fit at least once in the suite.
-  invisible(plot.parameters(model, species = "Rorb", verbose = FALSE))
+  plots.param <- plot.parameters(model, species = "Rorb", verbose = FALSE)
   invisible(plot.parameters(model_MCMC, species = "Rorb", verbose = FALSE))
   model_median <- wisp(
     count.data     = countdata,
@@ -110,4 +110,14 @@ test_that("the real cortical-laminar bootstrap fit matches both tutorial_stats.R
   gb3 <- plot.timeseries(model, species = "Rorb", verbose = FALSE)
   test_val <- gb3$plot_pred_context_cortex_timeseries_Rorb$data[2, 3]
   expect_between(test_val, bounds = gw$timeseries_Rorb)
+
+  # wispplots check4: plot.parameters' random-effect plot, checked structurally only -- see
+  # tutorial_wispplots.Rmd's own check4 chunk and its comment for why. Reuses the plots.param computed
+  # above (same plot.parameters(model, species = "Rorb") call the vignette itself makes earlier).
+  d <- plots.param$plot_ranEff_cortex_Rorb$data
+  expect_true(all(c("means", "value", "parameter", "type", "species", "value_low", "value_high") %in% names(d)))
+  expect_true(all(d$species == "Rorb"))
+  expect_true(all(is.finite(d$value)))
+  expect_true(all(is.finite(d$means)))
+  expect_gt(nrow(d), 0)
 })

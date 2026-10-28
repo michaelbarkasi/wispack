@@ -51,7 +51,7 @@
     # plot.parameters() appears to draw its displayed random-effect points from the global RNG stream at call
     # time rather than from a fixed stored sample, so that bound only ever held because of knitr's chunk-level
     # RNG-state caching across the vignette's specific rendering order -- it isn't a property of the fitted model.
-    # See the corresponding (structural, not value-based) test in tests/testthat/test-wisp-plots-fixture.R.
+    # See the corresponding (structural, not value-based) test in tests/testthat/test-slow-stats-wispplots-fixture.R.
   ),
 
   stats = list(

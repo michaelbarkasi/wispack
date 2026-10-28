@@ -212,10 +212,14 @@ plots.param$plot_ranEff_cortex_Rorb
 # Not wired to the shared .wisp_golden table like the other checks: plot.parameters()'s random-effect scatter
 # draws from the global RNG stream at call time rather than a fixed stored sample, so this exact row/value
 # depends on how much of the RNG stream earlier chunks in *this* vignette consumed -- it only ever holds given
-# this specific rendering order, not as a portable property of the fitted model. See
-# tests/testthat/test-wisp-plots-fixture.R for the (structural, not value-based) equivalent check.
-test_val <- plots.param$plot_ranEff_cortex_Rorb$data[2,2]
-if (test_val < 0.17 || test_val > 0.18) stop("failed check 4")
+# this specific rendering order, not as a portable property of the fitted model -- confirmed this is true
+# even run-to-run of this vignette itself now that it fits the model live instead of loading a cached
+# fixture. Checked structurally instead; see tests/testthat/test-slow-stats-wispplots-fixture.R for the
+# equivalent check.
+d <- plots.param$plot_ranEff_cortex_Rorb$data
+ok <- all(c("means", "value", "parameter", "type", "species", "value_low", "value_high") %in% names(d)) &&
+  all(d$species == "Rorb") && all(is.finite(d$value)) && all(is.finite(d$means)) && nrow(d) > 0
+if (!ok) stop("failed check 4")
 ```
 
 There is one scalar for each parameter type (rate, transition point, transition slope), with each sample (i.e., replicate) having its own set of scalars. For example, in the above plot we can see at a glance that samples 1 and 2 have rates that are higher than expected while samples 3 and 4 have rates that are lower than expected. The exact interpretation of the random-effect parameters is discussed in the [warping tutorial](tutorial_warping.html).
