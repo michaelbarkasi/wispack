@@ -43,21 +43,25 @@ with $|\cdot|_{\text{abs}}$ being absolute value. Wispack uses either Holm-Bonfe
 
 <h3>Implementation</h3>
 
-Suppose we have the results from a run of <span class = "function">wisp</span>, such as this one which matches the example from the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html), except that in addition to the default thousand-step MCMC walk with a hundred-step burn-in, it also performs a thousand bootstrap resamples:
+Suppose we have the results from a run of <span class = "function">wisp</span>, such as this one which matches the example from the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html), except that in addition to the default thousand-step MCMC walk with a hundred-step burn-in, it also performs a thousand bootstrap resamples. Let's fit this model (this takes a few minutes, owing to the bootstraps):
 
-```{r wisp_model_rebuild, eval = FALSE, echo = FALSE}
+```{r wisp_model_fit}
+# Set random seed for reproducibility
+set.seed(123)
+# Load wispack
 library(wispack, quietly = TRUE)
+# Grab data
 layer.boundary.bins <- read.csv(
   system.file(
-      "extdata", 
-      "S1_layer_boundary_bins.csv", 
+      "extdata",
+      "S1_layer_boundary_bins.csv",
       package = "wispack"
     )
   )
 countdata <- read.csv(
   system.file(
-      "extdata", 
-      "S1_laminar_countdata_demo.csv.gz", 
+      "extdata",
+      "S1_laminar_countdata_demo.csv.gz",
       package = "wispack"
     )
   )
@@ -69,46 +73,13 @@ data.variables <- list(
 model <- wisp(
     count.data     = countdata,
     variables      = data.variables,
-    model.settings = list(LRO_cost = "none"), 
+    model.settings = list(LRO_cost = "none"),
     plot.settings  = list(
-      print.plots  = FALSE, 
+      print.plots  = FALSE,
       dim.bounds   = colMeans(layer.boundary.bins)),
-    bootstraps.num = 1000, 
+    bootstraps.num = 1000,
     max.fork       = 20,
     verbose        = TRUE
-  )
-model$plots <- NULL
-saveRDS(model, "corticallaminar_model.rds")
-```
-
-```{r wisp_model_fit, eval = FALSE}
-model <- wisp(
-    count.data     = countdata,
-    variables      = list(species = "gene", ran = "mouse", timeseries = "age"),
-    model.settings = list(LRO_cost = "none"), 
-    plot.settings  = list(
-      print.plots  = FALSE, 
-      dim.bounds   = colMeans(layer.boundary.bins)),
-    bootstraps.num = 1000, 
-    max.fork       = 20,
-    verbose        = TRUE
-  )
-```
-
-The result of this run comes with wispack and can be loaded as follows:
-
-```{r load_model}
-# Set random seed for reproducibility
-set.seed(123)
-# Load wispack
-library(wispack, quietly = TRUE)
-# Load demo model
-model <- readRDS(
-  system.file(
-      "extdata", 
-      "corticallaminar_model.rds", 
-      package = "wispack"
-    )
   )
 ```
 
@@ -386,8 +357,14 @@ print(
 )
 ```
 ```{r check8, echo = FALSE}
-test_val <- ggplot_build(bs_comp_plots$plot_comparison_density)$data[[1]][4,2]
-wispack:::.check_between(test_val, g$bs_comparison_density, "check 8")
+# Not wired to the shared .wisp_golden table like the other checks on this page: plot.MCMC.bs.comparison()
+# selects which parameter's distribution to plot here based on a Shapiro-Wilk p-value computed from a random
+# resample of that parameter's values (see R/wspmm.R), so the specific value at data row 4 depends on the exact
+# R-level RNG stream position at call time -- confirmed to differ by orders of magnitude between otherwise-
+# identical re-runs (plain script vs. testthat vs. knitr), not just a property of the fitted model. Checked
+# structurally instead, the same way as check 4 in the plotting-functions tutorial.
+d <- ggplot_build(bs_comp_plots$plot_comparison_density)$data[[1]]
+if (!all(c("x", "y", "colour") %in% names(d)) || !is.finite(d[4, "y"]) || d[4, "y"] < 0) stop("failed check 8")
 ```
 
 A natural question to ask concerns the false-positive rate, false-discovery rate, and power of the bootstrap-based hypothesis testing. This question is addressed in the [benchmarking tutorial](tutorial_benchmarks.html). 

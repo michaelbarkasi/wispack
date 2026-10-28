@@ -19,48 +19,39 @@ The backbone of wisp visualization is the _rate-count plot_, as in "predicted ra
 
 <h3>Confidence intervals</h3>
 
-The CI rate-count plot is a simplified line plot showing predicted rate as a function of spatial position, along with a 95\% confidence interval for the rate at each spatial location. As a demonstration, let's use a re-done version of the model of the laminar axis of somatosensory cortex from the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html): 
+The CI rate-count plot is a simplified line plot showing predicted rate as a function of spatial position, along with a 95\% confidence interval for the rate at each spatial location. As a demonstration, let's fit a model of the laminar axis of somatosensory cortex from the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html), under the same settings used there, except that the <span class = "function">wisp</span> function is set, as in the following code chunk, to also run a thousand bootstraps in addition to the default MCMC walk. We want bootstraps because we will be plotting the model parameters below, and bootstraps generate more reliable [parameter estimates](tutorial_stats.html) than the MCMC walk. As will be visible in the first rate-count plot below (at least, when compared to the same plot in the RORB tutorial), this has a big effect on the CI and parameter estimates. This is the same fit used in the [stats tutorial](tutorial_stats.html); we'll also grab the layer-boundary points from the [CCFv3](https://doi.org/10.1016/j.cell.2020.04.007) registration here, for use below in the rate-count plots (fitting takes a few minutes, owing to the bootstraps):
 
-```{r load_model}
+```{r wisp_model_fit}
 # Set random seed for reproducibility
 set.seed(123)
 # Load wispack
 library(wispack, quietly = TRUE)
-# Load demo model
-model <- readRDS(
+# Grab data
+layer.boundary.bins <- read.csv(
   system.file(
-      "extdata", 
-      "corticallaminar_model.rds", 
+      "extdata",
+      "S1_layer_boundary_bins.csv",
       package = "wispack"
     )
   )
-```
-
-The saved model just loaded was made for the [stats tutorial](tutorial_stats.html) under the same settings used in the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html), except that the <span class = "function">wisp</span> function was set, as in the following code chunk, to also run a thousand bootstraps in addition to the default MCMC walk. We want bootstraps because we will be plotting the model parameters below, and bootstraps generate more reliable [parameter estimates](tutorial_stats.html) than the MCMC walk. As will be visible in the first rate-count plot below (at least, when compared to the same plot in the RORB tutorial), this change has a big effect on the CI and parameter estimates. 
-
-```{r wisp_model_fit, eval = FALSE}
+countdata <- read.csv(
+  system.file(
+      "extdata",
+      "S1_laminar_countdata_demo.csv.gz",
+      package = "wispack"
+    )
+  )
+# Fit model
 model <- wisp(
     count.data     = countdata,
     variables      = list(species = "gene", ran = "mouse", timeseries = "age"),
-    model.settings = list(LRO_cost = "none"), 
+    model.settings = list(LRO_cost = "none"),
     plot.settings  = list(
-      print.plots  = FALSE, 
+      print.plots  = FALSE,
       dim.bounds   = colMeans(layer.boundary.bins)),
-    bootstraps.num = 1000, 
+    bootstraps.num = 1000,
     max.fork       = 20,
     verbose        = TRUE
-  )
-```
-
-For the rate-count plots, we can also grab the layer-boundary points from the [CCFv3](https://doi.org/10.1016/j.cell.2020.04.007) registration for comparison: 
-
-```{r layer_boundaries}
-layer.boundary.bins <- read.csv(
-  system.file(
-      "extdata", 
-      "S1_layer_boundary_bins.csv", 
-      package = "wispack"
-    )
   )
 ```
 
