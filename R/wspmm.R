@@ -3474,9 +3474,9 @@ plot.MCMC.bs.comparison <- function(
     # For each method, order parameters by "normality" (p-value of shaprio test)
     mcmc_pvals <- rep(NA, ncol(param_mcmc))
     bs_pvals   <- rep(NA, ncol(param_bs))
-    for (i in 1:ncol(param_mcmc)) {
-      mcmc_vals    <- param_mcmc[, i]
-      bs_vals      <- param_bs[, i]
+    for (p in 1:ncol(param_mcmc)) {
+      mcmc_vals    <- param_mcmc[, p]
+      bs_vals      <- param_bs[, p]
       n_resamples  <- 100
       mcmc_sw_stat <- rep(NA, n_resamples)
       bs_sw_stat   <- rep(NA, n_resamples)
@@ -3488,8 +3488,8 @@ plot.MCMC.bs.comparison <- function(
         mcmc_sw_stat[i]  <- shapiro.test(mcmc_vals_sample)$p.value
         bs_sw_stat[i]    <- shapiro.test(bs_vals_sample)$p.value
       }
-      mcmc_pvals[i] <- mean(mcmc_sw_stat)
-      bs_pvals[i]   <- mean(bs_sw_stat)
+      mcmc_pvals[p] <- mean(mcmc_sw_stat)
+      bs_pvals[p]   <- mean(bs_sw_stat)
     }
     mcmc_pvals_order <- order(mcmc_pvals)
     bs_pvals_order   <- order(bs_pvals)

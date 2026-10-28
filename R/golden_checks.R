@@ -61,8 +61,15 @@
     mcmc_resample_param4       = c(lo = 0.05,    hi = 0.07),
     median_fit_param1          = c(lo = 3.4,     hi = 3.5),
     bs_comparison_correlation  = c(lo = 0.003,   hi = 0.004),
-    bs_comparison_shapiro      = c(lo = 0.8,     hi = 0.9),
-    bs_comparison_density      = c(lo = 7.5e-05, hi = 7.6e-05)
+    bs_comparison_shapiro      = c(lo = 0.8,     hi = 0.9)
+    # NOTE: the vignette's check8 (plot.MCMC.bs.comparison's plot_comparison_density, data row 4) is
+    # deliberately not reproduced here, for the same reason as the wispplots group's check4 below:
+    # plot.MCMC.bs.comparison() ranks parameters by a Shapiro-Wilk p-value computed from a *random* resample
+    # of each parameter's bootstrap/MCMC values (see R/wspmm.R), so which column ends up selected for display
+    # depends on the exact R-level RNG stream position at call time -- confirmed empirically to differ by
+    # orders of magnitude between otherwise-identical re-runs (plain script vs. testthat vs. knitr all land on
+    # different values), not just between knitr sessions. Checked structurally instead; see
+    # tests/testthat/test-slow-stats-wispplots-fixture.R and tutorial_stats.Rmd's own check8 chunk.
   ),
 
   multicontext = list(
