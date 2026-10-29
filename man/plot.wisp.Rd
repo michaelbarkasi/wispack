@@ -4,21 +4,36 @@
 \alias{plot.wisp}
 \title{Plot a fitted wisp model}
 \usage{
-\method{plot}{wisp}(x, type, ...)
+\method{plot}{wisp}(
+  x,
+  type,
+  print.plots = TRUE,
+  verbose = TRUE,
+  species = "all",
+  decompose = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{List, output of the \code{\link{wisp}} function (an object of class \code{"wisp"}).}
 
 \item{type}{Character string, which plot to make. One of: \itemize{
-\item \code{"ratecount"}: plot the fitted model and observed data (counts) together for visual comparison, optionally with independent block boundaries. See the "ratecount" section below for its extra arguments.
+\item \code{"ratecount"}: plot the fitted model and observed data (counts) together for visual comparison, optionally with independent block boundaries. Set \code{decompose = TRUE} to instead plot the individual pieces of this plot, for a single species, separately. See the "ratecount" section below for its extra arguments.
 \item \code{"timeseries"}: plot timeseries effects, separated by a splitting factor (e.g., hemisphere). See the "timeseries" section below.
 \item \code{"parameters"}: violin (or bar) plots of the fitted wisp parameters, including confidence intervals if available. See the "parameters" section below.
 \item \code{"effect.dist"}: histograms of the fitted parameters. See the "effect.dist" section below.
 \item \code{"species.summary"}: rate-count, residual, and parameter plots for one species level, combined on one plot. See the "species.summary" section below.
 \item \code{"MCMC.walks"}: sampling of random walks and negative log likelihood from MCMC simulations. See the "MCMC.walks" section below.
-\item \code{"decomposition"}: individual pieces of the rate-count plot for a single species, plotted separately (an extension of \code{type = "ratecount"}). See the "decomposition" section below.
 \item \code{"MCMC.bs.comparison"}: visually compare normality and autocorrelation of bootstrap and MCMC parameter estimates. See the "MCMC.bs.comparison" section below.
 }}
+
+\item{print.plots}{Logical, defaults to TRUE. If TRUE, prints the plot(s) to the current graphics device as they are built; if FALSE, only returns them (without printing). Forwarded to every \code{type} except \code{"species.summary"}, which has no print-control of its own and always prints its combined plot (see the "species.summary" section below).}
+
+\item{verbose}{Logical, defaults to TRUE. If TRUE, prints updates about the plotting process. Forwarded to every \code{type}.}
+
+\item{species}{Character vector, or the string \code{"all"} (the default), giving which species level(s) to include. \code{"all"} is translated internally to \code{c()}, this package's own "no filter, include everything" convention. Only forwarded to \code{type \%in\% c("ratecount", "timeseries", "parameters", "species.summary")}, since only those underlying plotting functions have a \code{species} argument; passing a non-default \code{species} for any other \code{type} raises a warning and is otherwise ignored. When \code{decompose = TRUE}, \code{species} must resolve to exactly one species level (i.e. not \code{"all"}, and not a multi-element vector), or a clear error is raised.}
+
+\item{decompose}{Logical, defaults to FALSE. Only meaningful when \code{type = "ratecount"}; if TRUE, plots the individual pieces of the rate-count plot (data points only, fit lines only, and data points plus fit lines for individual random levels) for a single species separately, instead of the ordinary combined rate-count plot. This replaces the pre-2.6.0 \code{type = "decomposition"} (see \code{vignette("release_notes", package = "wispack")}). Setting \code{decompose = TRUE} for any other \code{type} is an error.}
 
 \item{...}{Additional arguments passed on to the plotting function selected by \code{type}; see the sections below for each type's own arguments.}
 }
@@ -34,22 +49,19 @@ that looked like an S3 method but never was, since \code{wisp()} results used to
 }
 \section{ratecount}{
 
-Takes wisp model results (a fitted line) and observed data (counts) and plots them together for visual comparison. Can also include independent block boundaries for comparison if provided.
+Takes wisp model results (a fitted line) and observed data (counts) and plots them together for visual comparison. Can also include independent block boundaries for comparison if provided. With \code{decompose = TRUE}, instead returns the individual pieces of this plot (data points only, fit lines only, and data points plus fit lines for individual random levels) for a single species, plotted separately; \code{species} must then resolve to exactly one species level, or a clear error is raised.
 \itemize{
 \item \code{log.scale} Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.
-\item \code{CI_style} Logical, if TRUE, plots predicted lines with confidence interval style shading; if FALSE, plots predicted lines as solid lines with random levels and data points.
+\item \code{CI_style} Logical, if TRUE, plots predicted lines with confidence interval style shading; if FALSE, plots predicted lines as solid lines with random levels and data points. Ignored when \code{decompose = TRUE}.
 \item \code{dim.boundaries} Numeric vector, independent block boundaries to plot for comparison. If empty, the argument is ignored.
-\item \code{print.plots} Logical, if TRUE, prints plots; if FALSE, only returns plots in list without printing any.
-\item \code{y.lim} Numeric vector of length 2, limits for the y-axis of the plots. If NA, defaults to automatic limits.
-\item \code{count.alpha.none} Numeric, transparency for count points when random level is "none". If left NA, defaults to 0.25.
-\item \code{count.alpha.ran} Numeric, transparency for count points when random level is not "none". If left NA, defaults to 0.25.
-\item \code{pred.alpha.none} Numeric, transparency for predicted lines when random level is "none". If left NA, defaults to 1.0.
-\item \code{pred.alpha.ran} Numeric, transparency for predicted lines when random level is not "none". If left NA, defaults to 0.9.
-\item \code{rans.to.print} Character vector, list of random levels to include on each species plot. If c(), all random levels are included.
-\item \code{species} Character vector, list of species levels to plot. If c(), all species levels are plotted.
-\item \code{verbose} Logical, if TRUE, prints updates about the plotting process.
+\item \code{y.lim} Numeric vector of length 2, limits for the y-axis of the plots. If NA (plain ratecount) or NULL (\code{decompose = TRUE}), defaults to automatic limits.
+\item \code{count.alpha.none} Numeric, transparency for count points when random level is "none". If left NA, defaults to 0.25. Ignored when \code{decompose = TRUE}.
+\item \code{count.alpha.ran} Numeric, transparency for count points when random level is not "none". If left NA, defaults to 0.25. Ignored when \code{decompose = TRUE}.
+\item \code{pred.alpha.none} Numeric, transparency for predicted lines when random level is "none". If left NA, defaults to 1.0. Ignored when \code{decompose = TRUE}.
+\item \code{pred.alpha.ran} Numeric, transparency for predicted lines when random level is not "none". If left NA, defaults to 0.9. Ignored when \code{decompose = TRUE}.
+\item \code{rans.to.print} Character vector, list of random levels to include on each species plot. If c(), all random levels are included. Ignored when \code{decompose = TRUE}.
 }
-Returns a list of ggplot objects for rate-count plots.
+Returns a list of ggplot objects for rate-count plots (or, with \code{decompose = TRUE}, for the decomposed rate-count plots).
 }
 
 \section{timeseries}{
@@ -59,9 +71,6 @@ Plots timeseries effects from wisp results, separated by a splitting factor (e.g
 \item \code{splitting_factor} Character string, the name of the fixed effect by which to split the timeseries. If empty, c(), the first non-timeseries fixed effect is used. If "none", will not split.
 \item \code{tertiary_effects} Character vector, or NULL (default). Any fixed effects besides \code{timeseries} and the splitting factor are pruned down to a single level before rates are reconstructed (otherwise treatments belonging to different levels of those extra fixed effects would be mixed together). If NULL, each such fixed effect is pruned down to its reference level. Otherwise, for each additional fixed effect, if one of the levels named in \code{tertiary_effects} matches one of its levels, that level is used instead of the reference level.
 \item \code{log.scale} Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.
-\item \code{print.plots} Logical, if TRUE, prints plots; if FALSE, only returns plots in list without printing any.
-\item \code{species} Character vector, list of species levels to plot. If c(), all species levels are plotted.
-\item \code{verbose} Logical, if TRUE, prints updates about the plotting process.
 }
 Returns a list of ggplot objects for timeseries plots.
 }
@@ -70,66 +79,41 @@ Returns a list of ggplot objects for timeseries plots.
 
 Makes nicely formatted violin (or bar) plots of the fitted wisp parameters, including confidence intervals if stat information is available.
 \itemize{
-\item \code{species} Character string, the species level to be plotted. If c(), all species levels are plotted.
 \item \code{violin} Logical, if TRUE, plots violin plots for each parameter; if FALSE, uses bar plots.
-\item \code{print.plots} Logical, if TRUE, prints the plots to the console; if FALSE, only returns a list of plots without printing.
 \item \code{species.classes} List, a list of character vectors specifying which species levels to include together in plots. If NULL, all species levels are plotted separately.
 \item \code{mc_type} Character string, type of model component to plot ("rate", "tpoint", "tslope"). If NULL, all model components are plotted.
-\item \code{verbose} Logical, if TRUE, prints updates about the plotting process.
 }
 Returns a list of ggplot objects for parameter plots.
 }
 
 \section{effect.dist}{
 
-Makes nicely formatted histograms of fitted parameters from wisp results.
-\itemize{
-\item \code{print.plots} Logical, if TRUE, prints the plots to the current device.
-\item \code{verbose} Logical, if TRUE, prints information during plotting.
-}
+Makes nicely formatted histograms of fitted parameters from wisp results. Has no \code{species} argument; \code{species} is ignored (with a warning) if set to a non-default value for this type.
 Returns a list of ggplot objects containing histograms of fitted parameters.
 }
 
 \section{species.summary}{
 
-Summarizes all important information (rate-count, residual, and parameter plots) for one or more individual species levels, each on one combined plot. Note that \code{wisp()} does not store built plot objects on its return value, so this always rebuilds the rate-count, residual, and parameter plots it needs fresh from \code{x} rather than reading them back from a stored \code{$plots} field.
+Summarizes all important information (rate-count, residual, and parameter plots) for one or more individual species levels, each on one combined plot. Note that \code{wisp()} does not store built plot objects on its return value, so this always rebuilds the rate-count, residual, and parameter plots it needs fresh from \code{x} rather than reading them back from a stored \code{$plots} field. Unlike every other \code{type}, this one has no \code{print.plots} argument of its own and always prints its combined plots to the current graphics device; the dispatcher's \code{print.plots} argument has no effect here.
 \itemize{
 \item \code{contexts} Character vector, optional, specifies which context levels to summarize. Defaults to all.
-\item \code{species} Character vector, optional, specifies which species levels to summarize. Defaults to all.
-\item \code{verbose} Logical, if TRUE, prints information during plotting.
 }
 Returns nothing; plots are printed to the current graphics device.
 }
 
 \section{MCMC.walks}{
 
-Makes nicely formatted plots of the random walks and (normalized) negative log likelihood sampled during MCMC simulation. Returns \code{NULL} early if the model has no MCMC sampling (i.e. \code{x$sample.params.MCMC} is empty/NULL).
+Makes nicely formatted plots of the random walks and (normalized) negative log likelihood sampled during MCMC simulation. Returns \code{NULL} early if the model has no MCMC sampling (i.e. \code{x$sample.params.MCMC} is empty/NULL). Has no \code{species} argument; \code{species} is ignored (with a warning) if set to a non-default value for this type.
 \itemize{
-\item \code{print.plots} Logical, if TRUE, prints the plots to the current device.
-\item \code{verbose} Logical, if TRUE, prints information during plotting.
 \item \code{low_samples} Integer, number of low-value parameters to plot. Defaults to 10.
 }
 Returns a list of ggplot objects containing plots of walks for low-value parameters, high-value parameters, and normalized negative log likelihood (or \code{NULL}, see above).
 }
 
-\section{decomposition}{
-
-An extension of \code{type = "ratecount"} which plots the individual pieces of the rate-count plot for a single species separately. Returns individual plots for data points only, fit lines only, and data points plus fit lines for individual random levels. \code{species} is required for this type (no default), and must name exactly one species level; omitting it surfaces R's normal "argument is missing, with no default" error from the underlying plotting code.
-\itemize{
-\item \code{species} Character string, the species level to plot. Must be provided, and only one at a time.
-\item \code{log.scale} Logical, if TRUE, plots on a log scale. Defaults to FALSE.
-\item \code{dim.boundaries} Numeric vector, independent block boundaries to plot for comparison. If empty, the argument is ignored.
-\item \code{y.lim} Numeric vector of length 2, limits for the y-axis of the plots. If NA, defaults to automatic limits.
-}
-Returns a list of ggplot objects containing the decomposed rate-count plots.
-}
-
 \section{MCMC.bs.comparison}{
 
-Allows for visual comparison of the parameter estimates from bootstrapping vs MCMC simulation. Shows density for ten representative parameters from bootstrapping and MCMC walk, the distributions of Shapiro-Wilk p-values for bootstrapping vs MCMC walks, and the density of autocorrelation results for bootstrapping vs MCMC walks.
+Allows for visual comparison of the parameter estimates from bootstrapping vs MCMC simulation. Shows density for ten representative parameters from bootstrapping and MCMC walk, the distributions of Shapiro-Wilk p-values for bootstrapping vs MCMC walks, and the density of autocorrelation results for bootstrapping vs MCMC walks. Has no \code{species} argument; \code{species} is ignored (with a warning) if set to a non-default value for this type.
 \itemize{
-\item \code{print.plots} Logical, if TRUE, prints the plots to the current graphics device.
-\item \code{verbose} Logical, if TRUE, prints information during plotting.
 \item \code{ran.seed} Integer, random seed for reproducibility. Defaults to 1234. If NULL, no seed set.
 }
 Returns a list of ggplot objects containing plots of representative parameter distributions, Shapiro-Wilk normality test results, and autocorrelation plots for bootstrap and MCMC parameter estimates.

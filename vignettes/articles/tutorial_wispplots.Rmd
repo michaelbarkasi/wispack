@@ -63,6 +63,7 @@ plot(
     type           = "ratecount",
     dim.boundaries = colMeans(layer.boundary.bins),
     species        = "Rorb",
+    print.plots    = FALSE,
     verbose        = FALSE
   )
 ```
@@ -73,6 +74,7 @@ gb <- plot(
     type           = "ratecount",
     dim.boundaries = colMeans(layer.boundary.bins),
     species        = "Rorb",
+    print.plots    = FALSE,
     verbose        = FALSE
   )
 test_val <- ggplot_build(gb$plot_pred_context_cortex_fixEff_Rorb)$data[[1]][4,2]
@@ -92,6 +94,7 @@ plot(
     dim.boundaries = colMeans(layer.boundary.bins),
     species        = "Rorb",
     log.scale      = TRUE,
+    print.plots    = FALSE,
     verbose        = FALSE
   )
 ```
@@ -107,20 +110,23 @@ plot(
     dim.boundaries = colMeans(layer.boundary.bins),
     CI_style       = FALSE,
     species        = "Rorb",
+    print.plots    = FALSE,
     verbose        = FALSE
   )
 ```
 
-As with CI rate-count plots, the horizontal axis represents spatial position along the modeled dimension, and the vertical axis represents predicted rate. 
+As with CI rate-count plots, the horizontal axis represents spatial position along the modeled dimension, and the vertical axis represents predicted rate.
 
-The main advantages of scatter rate-count plots are that they show how well the model fits the observed data, and also show the variability in individual replicates. Still, they can be visually crowded, so wispack provides a function to decompose them into their components. 
+The main advantages of scatter rate-count plots are that they show how well the model fits the observed data, and also show the variability in individual replicates. Still, they can be visually crowded, so wispack provides a way to decompose them into their components: set <span class = "code_variable">decompose = TRUE</span> on <span class = "function">plot</span> with <span class = "code_variable">type = "ratecount"</span>.
 
 ```{r RORB_ran_decomposed, results = "hide"}
 plots.decomp <- plot(
     model,
-    type           = "decomposition",
+    type           = "ratecount",
     dim.boundaries = colMeans(layer.boundary.bins),
-    species        = "Rorb"
+    species        = "Rorb",
+    decompose      = TRUE,
+    print.plots    = FALSE
   )
 ```
 ```{r check2, echo = FALSE}
@@ -152,17 +158,19 @@ For models fit with a covariate specified as a [time series](tutorial_timeseries
 ```{r RORB_timeseries, results = "hide"}
 plot(
     model,
-    type    = "timeseries",
-    species = "Rorb",
-    verbose = FALSE
+    type        = "timeseries",
+    species     = "Rorb",
+    print.plots = FALSE,
+    verbose     = FALSE
   )
 ```
 ```{r check3, echo = FALSE}
 gb <- plot(
     model,
-    type    = "timeseries",
-    species = "Rorb",
-    verbose = FALSE
+    type        = "timeseries",
+    species     = "Rorb",
+    print.plots = FALSE,
+    verbose     = FALSE
   )
 test_val <- gb$plot_pred_context_cortex_timeseries_Rorb$data[2,3]
 wispack:::.check_between(test_val, g$timeseries_Rorb, "check 3")
@@ -177,9 +185,10 @@ Rate-count and time-series plots show observed and predicted gene expression rat
 ```{r RORB_parameters, results = "hide"}
 plots.param <- plot(
     model,
-    type    = "parameters",
-    species = "Rorb",
-    verbose = FALSE
+    type        = "parameters",
+    species     = "Rorb",
+    print.plots = FALSE,
+    verbose     = FALSE
   )
 ```
 

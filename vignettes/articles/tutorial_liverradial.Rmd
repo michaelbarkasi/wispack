@@ -275,6 +275,7 @@ rc_plots <- plot(
   count.alpha.ran  = radial.model$plot.settings$count.alpha.ran,
   pred.alpha.none  = radial.model$plot.settings$pred.alpha.none,
   pred.alpha.ran   = radial.model$plot.settings$pred.alpha.ran,
+  print.plots      = FALSE,
   verbose          = FALSE
 )
 plt_glul      <- rc_plots[["plot_pred.log_context_liver_fixEff_glul"]]
@@ -295,6 +296,7 @@ ts_plots <- plot(
   type             = "timeseries",
   splitting_factor = radial.model$plot.settings$splitting_factor,
   log.scale        = radial.model$plot.settings$log.scale,
+  print.plots      = FALSE,
   verbose          = FALSE
 )
 plt_glul      <- ts_plots[["plot_pred.log_context_liver_timeseries_glul"]]

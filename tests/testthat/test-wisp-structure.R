@@ -67,7 +67,7 @@ test_that("the package's exported API surface hasn't grown or shrunk unintention
     ".__T__[:base", ".__T__[[<-:base", ".__T__[<-:base", ".__T__$:base", ".__T__$<-:base",
     "affine", "analyze_attractor_sim_benchmarks", "analyze.residuals",
     "attractor_simulation", "attractor_simulation_ground_truth",
-    "bin_data", "convergence_mask", "coordinate_binning", "coordinate_transform",
+    "bin_data", "coef.wisp", "confint.wisp", "convergence_mask", "coordinate_binning", "coordinate_transform",
     "cortical_coordinate_transform", "create.count.data.WSPmm", "create.count.data.WSPmm.allen",
     "demo.sigmoid.plots", "demo.warp.plots",
     "extract_pvalue_attractor_simulation_wisp", "extract_random_effect_attractor_simulation_wisp",
@@ -76,13 +76,14 @@ test_that("the package's exported API surface hasn't grown or shrunk unintention
     "make_count_data", "make_count_data_csv", "make_replicate", "matrix_transform",
     "model_attractor_simulation_wisp",
     "parse_csv", "parse_hdf5", "plot_results", "plot.wisp",
-    "poly_sigmoid_R", "project_cp", "pvalues.samples", "rot_matrix",
+    "poly_sigmoid_R", "print.summary.wisp", "print.wisp", "project_cp", "pvalues.samples",
+    "residuals.wisp", "rot_matrix",
     "run_attractor_sim_benchmarks", "sample.stats", "sigmoid_stable_R", "smooth_data",
     "snk.horizontal_rule", "snk.print_details", "snk.print_function", "snk.print_table",
     "snk.print_var_charvec", "snk.print_var_list", "snk.print_vec", "snk.report", "snk.report...",
     "snk.section_break_reps", "snk.simple_break_reps", "snk.small_break_reps",
-    "snk.step_heading", "snk.step_number", "snk.summary_heading",
-    "warp_mc_R", "wisp", "wisp.sigmoid", "wisp.warp", "wspc"
+    "snk.step_heading", "snk.step_number", "snk.summary_heading", "summary.wisp",
+    "warp_mc_R", "wisp", "wisp_sigmoid", "wisp_warp", "wspc"
   ))
   expect_equal(current, expected)
 })

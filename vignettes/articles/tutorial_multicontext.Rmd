@@ -141,6 +141,7 @@ rc_plots <- plot(
   count.alpha.ran  = model$plot.settings$count.alpha.ran,
   pred.alpha.none  = model$plot.settings$pred.alpha.none,
   pred.alpha.ran   = model$plot.settings$pred.alpha.ran,
+  print.plots      = FALSE,
   verbose          = FALSE
 )
 plt_Glut <- rc_plots[["plot_pred.log_context_Glut"]] + theme(legend.position = "bottom")
@@ -261,6 +262,7 @@ ts_plots  <- plot(
   type             = "timeseries",
   splitting_factor = model$plot.settings$splitting_factor,
   log.scale        = model$plot.settings$log.scale,
+  print.plots      = FALSE,
   verbose          = FALSE
 )
 plt_Glut1 <- ts_plots[["plot_pred.log_context_Glut_timeseries_Bcl11b"]] + theme(plot.title = element_text(hjust = 0.0))

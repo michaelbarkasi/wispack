@@ -166,6 +166,7 @@ rc_plots <- plot(
     type           = "ratecount",
     dim.boundaries = colMeans(layer.boundary.bins),
     species        = "Nxph3",
+    print.plots    = FALSE,
     verbose        = FALSE
   )
 print(rc_plots$plot_pred_context_cortex_fixEff_Nxph3)
@@ -183,7 +184,7 @@ By default, when the <span class = "code_variable">timeseries</span> factor is p
 While this trend can be discerned from the spatial wisp plot, wispack offers another kind of plot for plotting time-series data which makes the trend obvious at a glance while also clarifying it. These time-series plots are made automatically by the <span class = "function">wisp</span> function when a time series is provided or detected, through an internal call to <span class = "function">plot</span> with <span class = "code_variable">type = "timeseries"</span>.
 
 ```{r plot_timeseries}
-ts_plots <- plot(model, type = "timeseries", species = "Nxph3", verbose = FALSE)
+ts_plots <- plot(model, type = "timeseries", species = "Nxph3", print.plots = FALSE, verbose = FALSE)
 print(ts_plots$plot_pred_context_cortex_timeseries_Nxph3)
 ```
 

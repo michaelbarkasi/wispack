@@ -70,8 +70,8 @@ test_that("the real cortical-laminar bootstrap fit matches both tutorial_stats.R
   # here keeps this file's call sequence matching the vignette's, for whatever it's worth given check8's
   # fragility is NOT fixed by this replay (see header note); kept mainly so plot(model, type = "parameters")
   # itself is still exercised against the real fit at least once in the suite.
-  plots.param <- plot(model, type = "parameters", species = "Rorb", verbose = FALSE)
-  invisible(plot(model_MCMC, type = "parameters", species = "Rorb", verbose = FALSE))
+  plots.param <- plot(model, type = "parameters", species = "Rorb", print.plots = FALSE, verbose = FALSE)
+  invisible(plot(model_MCMC, type = "parameters", species = "Rorb", print.plots = FALSE, verbose = FALSE))
   model_median <- wisp(
     count.data     = countdata,
     variables      = data.variables,
@@ -85,7 +85,7 @@ test_that("the real cortical-laminar bootstrap fit matches both tutorial_stats.R
 
   # stats checks 6-7: MCMC-vs-bootstrap comparison plots, on the (Bonferroni-adjusted) bootstrap model.
   # (check8, plot_comparison_density, is checked structurally only -- see header note.)
-  bs_comp_plots <- plot(model, type = "MCMC.bs.comparison", verbose = FALSE)
+  bs_comp_plots <- plot(model, type = "MCMC.bs.comparison", print.plots = FALSE, verbose = FALSE)
 
   test_val <- ggplot2::ggplot_build(bs_comp_plots$plot_sample_correlations)$data[[1]][4, 2]
   expect_between(test_val, bounds = g$bs_comparison_correlation)
@@ -98,18 +98,18 @@ test_that("the real cortical-laminar bootstrap fit matches both tutorial_stats.R
   expect_true(is.finite(d[4, "y"]) && d[4, "y"] >= 0)
 
   # wispplots check1: plot(model, type = "ratecount")
-  gb <- plot(model, type = "ratecount", dim.boundaries = colMeans(layer.boundary.bins), species = "Rorb", verbose = FALSE)
+  gb <- plot(model, type = "ratecount", dim.boundaries = colMeans(layer.boundary.bins), species = "Rorb", print.plots = FALSE, verbose = FALSE)
   test_val <- ggplot2::ggplot_build(gb$plot_pred_context_cortex_fixEff_Rorb)$data[[1]][4, 2]
   expect_between(test_val, bounds = gw$ratecount_Rorb)
 
-  # wispplots check2: plot(model, type = "decomposition")
-  plots.decomp <- plot(model, type = "decomposition", dim.boundaries = colMeans(layer.boundary.bins), species = "Rorb")
+  # wispplots check2: plot(model, type = "ratecount", decompose = TRUE)
+  plots.decomp <- plot(model, type = "ratecount", dim.boundaries = colMeans(layer.boundary.bins), species = "Rorb", decompose = TRUE, print.plots = FALSE)
   layer_data <- ggplot2::ggplot_build(plots.decomp[[3]])$data[[1]]
   test_val <- layer_data[, c("x", "y")][43, 2]
   expect_between(test_val, bounds = gw$decomposition_panel3)
 
   # wispplots check3: plot(model, type = "timeseries")
-  gb3 <- plot(model, type = "timeseries", species = "Rorb", verbose = FALSE)
+  gb3 <- plot(model, type = "timeseries", species = "Rorb", print.plots = FALSE, verbose = FALSE)
   test_val <- gb3$plot_pred_context_cortex_timeseries_Rorb$data[2, 3]
   expect_between(test_val, bounds = gw$timeseries_Rorb)
 

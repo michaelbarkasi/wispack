@@ -217,7 +217,7 @@ wispack:::.check_between(test_val, g$mcmc_resample_param4, "check 4")
 Now, let's plot the values $\beta$ for <span class = "gene">RORB</span> for the effect of age in the left hemisphere. We will highlight the value found by the L-BFGS fit with a large yellow asterisk. Here are the distributions from the bootstrap resamples:
 
 ```{r plot_RORB_bootstrap, echo = TRUE, results = "hide", message = FALSE, warning = FALSE}
-plots.param <- plot(model, type = "parameters", species = "Rorb", verbose = FALSE)
+plots.param <- plot(model, type = "parameters", species = "Rorb", print.plots = FALSE, verbose = FALSE)
 print(
   plots.param$plot_treatment_18_cortex_Rorb + 
     scale_y_continuous(expand = expansion(mult = 0.1)) +
@@ -231,7 +231,7 @@ Notice that the L-BFGS fits mostly fall near the medians (i.e., peaks) of the di
 In contrast, by plotting the distributions from the MCMC walks, we can see that the L-BFGS fits never fall near the median, and often fall well outside the range of MCMC walk values. Within the MCMC walk results, the L-BFGS fit is often an outlier. 
 
 ```{r plot_RORB_MCMC, echo = TRUE, results = "hide", message = FALSE, warning = FALSE}
-plots.param_MCMC <- plot(model_MCMC, type = "parameters", species = "Rorb", verbose = FALSE)
+plots.param_MCMC <- plot(model_MCMC, type = "parameters", species = "Rorb", print.plots = FALSE, verbose = FALSE)
 print(
   plots.param_MCMC$plot_treatment_18_cortex_Rorb + 
     scale_y_continuous(expand = expansion(mult = 0.1)) +
@@ -288,7 +288,7 @@ wispack:::.check_between(test_val, g$median_fit_param1, "check 5")
 Now, let's plot the age-effect parameters again, this time with the median estimate from the MCMC walk highlighted:
 
 ```{r plot_RORB_median, echo = TRUE, results = "hide", message = FALSE, warning = FALSE}
-median_plots.param <- plot(model_median, type = "parameters", species = "Rorb", verbose = FALSE)
+median_plots.param <- plot(model_median, type = "parameters", species = "Rorb", print.plots = FALSE, verbose = FALSE)
 print(
   median_plots.param$plot_treatment_18_cortex_Rorb +
     scale_y_continuous(expand = expansion(mult = 0.1)) +
@@ -320,8 +320,9 @@ Beyond the comparisons already made, wispack provides <span class = "function">p
 ```{r MCMC_bootstrap_comparison}
 bs_comp_plots <- plot(
   model,
-  type    = "MCMC.bs.comparison",
-  verbose = FALSE
+  type        = "MCMC.bs.comparison",
+  print.plots = FALSE,
+  verbose     = FALSE
 )
 ```
 

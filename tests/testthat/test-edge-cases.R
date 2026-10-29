@@ -31,11 +31,11 @@ test_that("wisp() on constant-rate data recovers (near-)equal rates across any d
   expect_lt(diff(range(rts)) / mean(rts), 0.1)
 })
 
-test_that("wisp.sigmoid handles a degree-0 (no transition point) model for every input shape", {
+test_that("wisp_sigmoid handles a degree-0 (no transition point) model for every input shape", {
   z <- c(1, 50, 99)
-  out <- wisp.sigmoid(z, Rt = 4, tslope = numeric(0), tpoint = numeric(0))
+  out <- wisp_sigmoid(z, Rt = 4, tslope = numeric(0), tpoint = numeric(0))
   expect_equal(out, rep(4, length(z)))
 
-  out_mat <- wisp.sigmoid(matrix(z, nrow = 1), Rt = 4, tslope = numeric(0), tpoint = numeric(0))
+  out_mat <- wisp_sigmoid(matrix(z, nrow = 1), Rt = 4, tslope = numeric(0), tpoint = numeric(0))
   expect_equal(out_mat, matrix(rep(4, length(z)), nrow = 1))
 })

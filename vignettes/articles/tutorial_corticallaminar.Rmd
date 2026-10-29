@@ -288,6 +288,7 @@ rc_plots <- plot(
     type           = "ratecount",
     dim.boundaries = colMeans(layer.boundary.bins),
     species        = "Rorb",
+    print.plots    = FALSE,
     verbose        = FALSE
   )
 print(rc_plots$plot_pred_context_cortex_fixEff_Rorb)
@@ -300,7 +301,7 @@ Regarding what this particular plot shows for <span class = "gene">RORB</span>, 
 This swap is easy to see on a time-series plot. When a time series is provided (via the <span class = "code_variable">variables</span> argument), the <span class = "function">wisp</span> function automatically generates time-series plots for each gene (again, not stored on the returned model -- call <span class = "function">plot</span> with <span class = "code_variable">type = "timeseries"</span> to regenerate).
 
 ```{r plot_RORB_timeseries}
-ts_plots <- plot(model, type = "timeseries", species = "Rorb", verbose = FALSE)
+ts_plots <- plot(model, type = "timeseries", species = "Rorb", print.plots = FALSE, verbose = FALSE)
 print(ts_plots$plot_pred_context_cortex_timeseries_Rorb)
 ```
 
