@@ -44,8 +44,25 @@ test_that("wisp() on the Droin liver radial-zonation simulation matches the vign
   # check1
   expect_between(radial.model$stats$parameters[4, 2], bounds = g$param4_estimate)
 
-  rc_plots <- radial.model[["plots"]][["ratecount"]]
-  ts_plots <- radial.model[["plots"]][["timeseries"]]
+  rc_plots <- plot.ratecount(
+    wisp.results     = radial.model,
+    log.scale        = radial.model$plot.settings$log.scale,
+    CI_style         = radial.model$plot.settings$CI_style,
+    dim.boundaries   = radial.model$plot.settings$dim.bounds,
+    count.alpha.none = radial.model$plot.settings$count.alpha.none,
+    count.alpha.ran  = radial.model$plot.settings$count.alpha.ran,
+    pred.alpha.none  = radial.model$plot.settings$pred.alpha.none,
+    pred.alpha.ran   = radial.model$plot.settings$pred.alpha.ran,
+    print.plots      = FALSE,
+    verbose          = FALSE
+  )
+  ts_plots <- plot.timeseries(
+    wisp.results     = radial.model,
+    splitting_factor = radial.model$plot.settings$splitting_factor,
+    log.scale        = radial.model$plot.settings$log.scale,
+    print.plots      = FALSE,
+    verbose          = FALSE
+  )
 
   # check2
   plt_glul <- rc_plots[["plot_pred.log_context_liver_fixEff_glul"]]

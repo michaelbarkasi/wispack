@@ -16,8 +16,11 @@ test_that("wisp() returns the documented top-level structure", {
   expect_type(model, "list")
   expect_true(all(c(
     "model.component.list", "count.data.summed", "fitted.parameters", "param.names",
-    "fix", "treatment", "grouping.variables", "param.idx0", "settings", "plots"
+    "fix", "treatment", "grouping.variables", "param.idx0", "settings"
   ) %in% names(model)))
+  # wisp() does not store built plot objects on its return value (see R/wspmm.R); regenerate
+  # plots on demand via plot.ratecount()/plot.timeseries()/plot.parameters()/etc. instead.
+  expect_false("plots" %in% names(model))
 
   expect_equal(model$model.component.list, c("Rt", "tslope", "tpoint"))
   expect_type(model$fitted.parameters, "double")

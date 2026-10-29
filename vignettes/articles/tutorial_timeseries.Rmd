@@ -161,11 +161,17 @@ where $\beta$ are the effect parameters and $w$ are the weights. The rows of the
 The [rate-count wisp plot](tutorial_wispplots.html) is made automatically with all calls of <span class = "function">wisp</span> by an internal call to <span class = "function">plot.ratecount</span>. This style of plot conveys the spatial distribution of a RNA species explicitly, by plotting space on the x-axis. It can only convey changes over a time series indirectly, via coloring of the levels of the <span class = "code_variable">timeseries</span> factor. For example, consider the wisp plot for <span class = "gene">NXPH3</span>, which shows a temporally dynamic and lateralized profile in deep layers (block 1), but almost no activity in superficial layers (block 2). 
 
 ```{r plot_wisp}
-print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Nxph3)
+rc_plots <- plot.ratecount(
+    model,
+    dim.boundaries = colMeans(layer.boundary.bins),
+    species        = "Nxph3",
+    verbose        = FALSE
+  )
+print(rc_plots$plot_pred_context_cortex_fixEff_Nxph3)
 ```
 ```{r check, echo = FALSE}
 g <- wispack:::.wisp_golden$timeseries
-gb <- ggplot2::ggplot_build(model$plots$ratecount$plot_pred_context_cortex_fixEff_Nxph3)
+gb <- ggplot2::ggplot_build(rc_plots$plot_pred_context_cortex_fixEff_Nxph3)
 layer_data <- gb$data[[1]]
 test_val <- layer_data[, c("x", "y")][4,2]
 wispack:::.check_between(test_val, g$ratecount_Nxph3, "end check")
@@ -176,7 +182,8 @@ By default, when the <span class = "code_variable">timeseries</span> factor is p
 While this trend can be discerned from the spatial wisp plot, wispack offers another kind of plot for plotting time-series data which makes the trend obvious at a glance while also clarifying it. These time-series plots are made automatically by the <span class = "function">wisp</span> function when a time series is provided or detected, through an internal call to the <span class = "function">plot.timeseries</span> function. 
 
 ```{r plot_timeseries}
-print(model$plots$timeseries$plot_pred_context_cortex_timeseries_Nxph3)
+ts_plots <- plot.timeseries(model, species = "Nxph3", verbose = FALSE)
+print(ts_plots$plot_pred_context_cortex_timeseries_Nxph3)
 ```
 
 Wisp time-series plots keep the y-axis a representation of rate, but switch the x-axis to a representation of the time-series points. However, the spatial aspect of the data is not completely lost. Instead of plotting the predicted rate on the y-axis, which would include not only the rate parameter but also the effects of transition-point location and transition-point slope, the time-series plot instead plots just the rate parameter itself. This parameter is a vector, each element of which is the rate for a block of space defined by transition points. In the <span class = "gene">NXPH3</span> time-series plot above, the dip in expression at P12 in the deep layers (block 1) can be seen more clearly. 

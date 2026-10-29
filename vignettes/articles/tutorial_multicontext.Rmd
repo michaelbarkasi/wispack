@@ -131,15 +131,25 @@ wispack:::.check_between(test_val, g$beta_Rt_GABA_Bcl11b_right18_Blk2, "check 3"
 When given different contexts, the <span class = "function">wisp</span> function will make different rate-count and time-series plots for each context. For the big picture, let's compare the reference levels for all genes between glutamatergic and GABAergic neurons.
 
 ```{r print_plots_ref_level, fig.asp = 0.625, echo = TRUE, results = "hide", message = FALSE, warning = FALSE}
-rc_plots <- model[["plots"]][["ratecount"]]
+rc_plots <- plot.ratecount(
+  wisp.results     = model,
+  log.scale        = model$plot.settings$log.scale,
+  CI_style         = model$plot.settings$CI_style,
+  dim.boundaries   = model$plot.settings$dim.bounds,
+  count.alpha.none = model$plot.settings$count.alpha.none,
+  count.alpha.ran  = model$plot.settings$count.alpha.ran,
+  pred.alpha.none  = model$plot.settings$pred.alpha.none,
+  pred.alpha.ran   = model$plot.settings$pred.alpha.ran,
+  verbose          = FALSE
+)
 plt_Glut <- rc_plots[["plot_pred.log_context_Glut"]] + theme(legend.position = "bottom")
 plt_GABA <- rc_plots[["plot_pred.log_context_GABA"]] + theme(legend.position = "bottom")
 ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
 ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
+grid.draw(combined_plot)
 ```
 ```{r check4, echo = FALSE}
 test_val <- ggplot_build(plt_Glut)$data[[1]][4,2]
@@ -171,8 +181,8 @@ plt_Glut1 <- plt_Glut1 + coord_cartesian(ylim = ylims)
 plt_GABA1 <- plt_GABA1 + coord_cartesian(ylim = ylims)
 plt_Glut2 <- plt_Glut2 + coord_cartesian(ylim = ylims)
 plt_GABA2 <- plt_GABA2 + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut1, plt_GABA1, plt_Glut2, plt_GABA2, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut1, plt_GABA1, plt_Glut2, plt_GABA2, ncol = 2)  
+grid.draw(combined_plot)
 ```
 ```{r check5, echo = FALSE}
 test_val <- ggplot_build(plt_Glut1)$data[[1]][4,2]
@@ -190,8 +200,8 @@ ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
 ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
+grid.draw(combined_plot)
 ```
 ```{r check6, echo = FALSE}
 test_val <- ggplot_build(plt_Glut)$data[[1]][4,2]
@@ -207,8 +217,8 @@ ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
 ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
+grid.draw(combined_plot)
 ```
 ```{r check7, echo = FALSE}
 test_val <- ggplot_build(plt_Glut)$data[[1]][4,2]
@@ -230,8 +240,8 @@ plt_Glut1 <- plt_Glut1 + coord_cartesian(ylim = ylims)
 plt_GABA1 <- plt_GABA1 + coord_cartesian(ylim = ylims)
 plt_Glut2 <- plt_Glut2 + coord_cartesian(ylim = ylims)
 plt_GABA2 <- plt_GABA2 + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut1, plt_GABA1, plt_Glut2, plt_GABA2, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut1, plt_GABA1, plt_Glut2, plt_GABA2, ncol = 2)  
+grid.draw(combined_plot)
 ```
 ```{r check8, echo = FALSE}
 test_val <- ggplot_build(plt_Glut1)$data[[1]][4,2]
@@ -245,7 +255,12 @@ Finally, as observed in the reference level, <span class = "gene">NXPH3</span> a
 Temporal trajectories of the count (y-axis) across age (x-axis) can be visualized with the [time-series plots](tutorial_timeseries.html). These show some interesting patterns on their own. For example, while <span class = "gene">BCL11B</span> shares a spatial pattern with <span class = "gene">FEZF2</span>, its temporal pattern is more similar to that of <span class = "gene">SATB2</span>. 
 
 ```{r print_timeseries_plots_Bcl11bSatb2, fig.asp = 1.25, echo = TRUE, results = "hide", message = FALSE, warning = FALSE}
-ts_plots  <- model[["plots"]][["timeseries"]]
+ts_plots  <- plot.timeseries(
+  wisp.results     = model,
+  splitting_factor = model$plot.settings$splitting_factor,
+  log.scale        = model$plot.settings$log.scale,
+  verbose          = FALSE
+)
 plt_Glut1 <- ts_plots[["plot_pred.log_context_Glut_timeseries_Bcl11b"]] + theme(plot.title = element_text(hjust = 0.0))
 plt_GABA1 <- ts_plots[["plot_pred.log_context_GABA_timeseries_Bcl11b"]] + theme(plot.title = element_text(hjust = 0.0))
 plt_Glut2 <- ts_plots[["plot_pred.log_context_Glut_timeseries_Satb2"]]  + theme(plot.title = element_text(hjust = 0.0))
@@ -258,8 +273,8 @@ plt_Glut1 <- plt_Glut1 + coord_cartesian(ylim = ylims)
 plt_GABA1 <- plt_GABA1 + coord_cartesian(ylim = ylims)
 plt_Glut2 <- plt_Glut2 + coord_cartesian(ylim = ylims)
 plt_GABA2 <- plt_GABA2 + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut1, plt_GABA1, plt_Glut2, plt_GABA2, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut1, plt_GABA1, plt_Glut2, plt_GABA2, ncol = 2)  
+grid.draw(combined_plot)
 ```
 ```{r check9, echo = FALSE}
 test_val <- ggplot_build(plt_Glut1)$data[[1]][4,2]
@@ -275,8 +290,8 @@ ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
 ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
+grid.draw(combined_plot)
 ```
 ```{r check10, echo = FALSE}
 test_val <- ggplot_build(plt_Glut)$data[[1]][4,2]
@@ -292,8 +307,8 @@ ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
 ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
+grid.draw(combined_plot)
 ```
 ```{r check11, echo = FALSE}
 test_val <- ggplot_build(plt_Glut)$data[[1]][4,2]
@@ -309,8 +324,8 @@ ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
 ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
+grid.draw(combined_plot)
 ```
 ```{r check12, echo = FALSE}
 test_val <- ggplot_build(plt_Glut)$data[[1]][4,2]
@@ -326,8 +341,8 @@ ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
 ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
+grid.draw(combined_plot)
 ```
 ```{r check13, echo = FALSE}
 gb <- ggplot2::ggplot_build(plt_Glut)

@@ -280,20 +280,27 @@ Notice that all of the parameter names end in "Tns/Blk1", "Tns/Blk2", "Tns/Blk3"
 
 It's difficult to get a handle on the results as pure effect numbers. A better way to understand the results is through visualization. Wispack provides a number of functions for [making intuitive spatial plots](tutorial_wispplots.html). Indeed; a strength of wisp models is their use of concrete spatial parameters. 
 
-The standard way to visualize a fitted wisp model, for an individual gene, is to plot gene expression level (e.g., total <span class = "code_variable">count</span> per bin) on the y-axis and spatial position (<span class = "code_variable">bin</span>) on the x-axis, with effects conditions represented by different colors. The <span class = "function">wisp</span> function automatically generates these plots and stores them in <span class = "code_variable">plots$ratecount</span>. Here, for example, is the plot for <span class = "gene">RORB</span>: 
+The standard way to visualize a fitted wisp model, for an individual gene, is to plot gene expression level (e.g., total <span class = "code_variable">count</span> per bin) on the y-axis and spatial position (<span class = "code_variable">bin</span>) on the x-axis, with effects conditions represented by different colors. The <span class = "function">wisp</span> function automatically generates these plots as it fits (printing them, if requested), but does not store the built plot objects on the returned model -- call <span class = "function">plot.ratecount</span> directly to regenerate the one(s) you want. Here, for example, is the plot for <span class = "gene">RORB</span>:
 
 ```{r plot_RORB_ratecount}
-print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Rorb)
+rc_plots <- plot.ratecount(
+    model,
+    dim.boundaries = colMeans(layer.boundary.bins),
+    species        = "Rorb",
+    verbose        = FALSE
+  )
+print(rc_plots$plot_pred_context_cortex_fixEff_Rorb)
 ```
 
 The shading shows 95% confidence intervals for the rate estimates. Note that while the p-values and confidence intervals for the model parameters are corrected for multiple-comparisons (by default, using Holm-Bonferroni), the confidence intervals shown in these plots are not corrected for multiple comparisons. This is because the confidence intervals on this plot are for predicted rate, not for model parameters. Model parameter estimates can be adjusted for multiple comparisons because they each constitute a well-defined single hypothesis test. However, predicted rates at different spatial positions are not independent of one another and so do not constitute distinct hypothesis tests; hence, there's no well-defined way to correct for multiple comparisons. 
 
 Regarding what this particular plot shows for <span class = "gene">RORB</span>, as expected there is a large peak in <span class = "gene">RORB</span> expression in L4. This peak is present for both left (green) and right (blue) hemispheres. However, the plot suggests that there is laterality at both ages, albeit with a swap in up-regulation. Specifically, at P12 the plot shows up-regulation in the right hemisphere (light blue) compared to the left (light green), while at P18 there is up-regulation in the left hemisphere (dark green) compared to the right (dark blue). 
 
-This swap is easy to see on a time-series plot. When a time series is provided (via the <span class = "code_variable">variables</span> argument), the <span class = "function">wisp</span> function automatically generates time-series plots for each gene.
+This swap is easy to see on a time-series plot. When a time series is provided (via the <span class = "code_variable">variables</span> argument), the <span class = "function">wisp</span> function automatically generates time-series plots for each gene (again, not stored on the returned model -- call <span class = "function">plot.timeseries</span> to regenerate).
 
 ```{r plot_RORB_timeseries}
-print(model$plots$timeseries$plot_pred_context_cortex_timeseries_Rorb)
+ts_plots <- plot.timeseries(model, species = "Rorb", verbose = FALSE)
+print(ts_plots$plot_pred_context_cortex_timeseries_Rorb)
 ```
 
 The time-series plot puts the time points on the x-axis, with rate (as before) on the y-axis. However, the rate value is not the expected value at a given bin, but rather the rate parameter itself. As each block has a different rate parameter, the time-series plot shows the rate for each block. If the data also includes a single additional covariate (fixed effect) besides the time series, that variable is used as a splitting factor to generate separate lines for each level of that variable. Here, the splitting factor is <span class = "code_variable">hemisphere</span>, and so we see separate lines for left (green) and right (blue) hemispheres. Notice how the rate counts are relatively low and bunched at the bottom for all but one block. This exception is block 3, the block overlapping L4. Here we see the swap clearly: right (blue) higher at P12, left (green) higher at P18.
