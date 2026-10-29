@@ -15,6 +15,18 @@ date: "`r wispack:::.wisp_build_stamp('release_notes')`"
 - Ensure nested loops for matrix operations have the major axis (column) on outside. 
 - Extracellular (out-of-soma) transcripts do not follow a Poisson distribution, and so any attempt to model them with wisp needs to account for this. 
 
+## Version 2.6.0 (October 29, 2026)
+
+- **Breaking API change**: the eight dotted plotting functions (<span class = "function">plot.ratecount</span>, <span class = "function">plot.timeseries</span>, <span class = "function">plot.parameters</span>, <span class = "function">plot.effect.dist</span>, <span class = "function">plot.species.summary</span>, <span class = "function">plot.MCMC.walks</span>, <span class = "function">plot.decomposition</span>, <span class = "function">plot.MCMC.bs.comparison</span>) have been removed. They looked like S3 methods but never were one, since <span class = "function">wisp()</span> used to return a plain, unclassed list, so <span class = "function">plot()</span> could never dispatch to them; users had to call each by its full dotted name. <span class = "function">wisp()</span> now classes its return value <span class = "code_variable">"wisp"</span>, and all plotting goes through one real, exported S3 method, <span class = "function">plot.wisp</span>, selected with a <span class = "code_variable">type</span> argument. All other arguments to each old function are unchanged and are simply passed through <span class = "code_variable">...</span>. The old-name to new-call mapping is:
+  - <span class = "function">plot.ratecount(model, ...)</span> &rarr; <span class = "function">plot(model, type = "ratecount", ...)</span>
+  - <span class = "function">plot.timeseries(model, ...)</span> &rarr; <span class = "function">plot(model, type = "timeseries", ...)</span>
+  - <span class = "function">plot.parameters(model, ...)</span> &rarr; <span class = "function">plot(model, type = "parameters", ...)</span>
+  - <span class = "function">plot.effect.dist(model, ...)</span> &rarr; <span class = "function">plot(model, type = "effect.dist", ...)</span>
+  - <span class = "function">plot.species.summary(model, ...)</span> &rarr; <span class = "function">plot(model, type = "species.summary", ...)</span>
+  - <span class = "function">plot.MCMC.walks(model, ...)</span> &rarr; <span class = "function">plot(model, type = "MCMC.walks", ...)</span>
+  - <span class = "function">plot.decomposition(model, ...)</span> &rarr; <span class = "function">plot(model, type = "decomposition", ...)</span>
+  - <span class = "function">plot.MCMC.bs.comparison(model, ...)</span> &rarr; <span class = "function">plot(model, type = "MCMC.bs.comparison", ...)</span>
+
 ## Version 2.5.1 (October 3, 2026)
 
 - Updated .Rbuildignore.

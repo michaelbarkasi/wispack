@@ -55,11 +55,12 @@ model <- wisp(
   )
 ```
 
-Let's use the <span class = "function">plot.ratecount</span> function to remake the <span class = "gene">RORB</span> plot that was made and shown in the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html), this time using the bootstrap resamples for the CI instead of MCMC resamples: 
+Let's use <span class = "function">plot</span> with <span class = "code_variable">type = "ratecount"</span> to remake the <span class = "gene">RORB</span> plot that was made and shown in the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html), this time using the bootstrap resamples for the CI instead of MCMC resamples:
 
 ```{r RORB_CI, results = "hide"}
-plot.ratecount(
+plot(
     model,
+    type           = "ratecount",
     dim.boundaries = colMeans(layer.boundary.bins),
     species        = "Rorb",
     verbose        = FALSE
@@ -67,8 +68,9 @@ plot.ratecount(
 ```
 ```{r check1, echo = FALSE}
 g <- wispack:::.wisp_golden$wispplots
-gb <- plot.ratecount(
+gb <- plot(
     model,
+    type           = "ratecount",
     dim.boundaries = colMeans(layer.boundary.bins),
     species        = "Rorb",
     verbose        = FALSE
@@ -84,8 +86,9 @@ Both kinds of rate-count plots separate treatment conditions. In this data, we h
 By default, both kinds of rate-count plots show rate as a raw value. However, it's possible to rescale the vertical axis into log form:
 
 ```{r RORB_CI_log, results = "hide"}
-plot.ratecount(
+plot(
     model,
+    type           = "ratecount",
     dim.boundaries = colMeans(layer.boundary.bins),
     species        = "Rorb",
     log.scale      = TRUE,
@@ -95,11 +98,12 @@ plot.ratecount(
 
 <h3>Scatter plots</h3>
 
-The second kind of rate-count plot, the _scatter rate-count plot_, is a more complex plot showing predicted rate without random effects as a line, model fit to individual replicates (i.e., predicted rates with random effects) as dashed lines, and observed counts (plus interpolations for random-effect-free counts) as scatter points. It's accessed via the <span class = "code_variable">CI_style</span> argument in <span class = "function">plot.ratecount</span>: 
+The second kind of rate-count plot, the _scatter rate-count plot_, is a more complex plot showing predicted rate without random effects as a line, model fit to individual replicates (i.e., predicted rates with random effects) as dashed lines, and observed counts (plus interpolations for random-effect-free counts) as scatter points. It's accessed via the <span class = "code_variable">CI_style</span> argument to <span class = "function">plot</span> with <span class = "code_variable">type = "ratecount"</span>:
 
 ```{r RORB_ran, results = "hide"}
-plot.ratecount(
+plot(
     model,
+    type           = "ratecount",
     dim.boundaries = colMeans(layer.boundary.bins),
     CI_style       = FALSE,
     species        = "Rorb",
@@ -112,8 +116,9 @@ As with CI rate-count plots, the horizontal axis represents spatial position alo
 The main advantages of scatter rate-count plots are that they show how well the model fits the observed data, and also show the variability in individual replicates. Still, they can be visually crowded, so wispack provides a function to decompose them into their components. 
 
 ```{r RORB_ran_decomposed, results = "hide"}
-plots.decomp <- plot.decomposition(
+plots.decomp <- plot(
     model,
+    type           = "decomposition",
     dim.boundaries = colMeans(layer.boundary.bins),
     species        = "Rorb"
   )
@@ -142,18 +147,20 @@ Notice how each plot has two dashed lines which fit the observed counts well, an
 
 <h2>Time-series plots</h2>
 
-For models fit with a covariate specified as a [time series](tutorial_timeseries.html), wispack provides a function to plot predicted rates as a function of time. This is done with the <span class = "function">plot.timeseries</span> function. Although there are only two ages in the cortical laminar data, we can still use this function to visualize how predicted rates change with age. Let's look at the time-series plot for <span class = "gene">RORB</span> again:
+For models fit with a covariate specified as a [time series](tutorial_timeseries.html), wispack provides a way to plot predicted rates as a function of time. This is done with <span class = "function">plot</span> and <span class = "code_variable">type = "timeseries"</span>. Although there are only two ages in the cortical laminar data, we can still use this to visualize how predicted rates change with age. Let's look at the time-series plot for <span class = "gene">RORB</span> again:
 
 ```{r RORB_timeseries, results = "hide"}
-plot.timeseries(
-    model, 
+plot(
+    model,
+    type    = "timeseries",
     species = "Rorb",
     verbose = FALSE
   )
 ```
 ```{r check3, echo = FALSE}
-gb <- plot.timeseries(
-    model, 
+gb <- plot(
+    model,
+    type    = "timeseries",
     species = "Rorb",
     verbose = FALSE
   )
@@ -168,14 +175,15 @@ As explained in the [time series tutorial](tutorial_timeseries.html), the rate r
 Rate-count and time-series plots show observed and predicted gene expression rates as a function of spatial position, time, and (at least implicitly) treatment conditions. However, with the exception of time-series plots showing rate parameters, these plots do not directly show the underlying rate, transition point, and slope parameters -- or the corresponding random-effect scalars -- that define a wisp model. 
 
 ```{r RORB_parameters, results = "hide"}
-plots.param <- plot.parameters(
+plots.param <- plot(
     model,
+    type    = "parameters",
     species = "Rorb",
     verbose = FALSE
   )
 ```
 
-The <span class = "function">plot.parameters</span> function produces separate plots for the baseline (reference condition) parameters, the treatment condition parameters, and the random-effect scalars. Let's look at the baseline parameters first: 
+<span class = "function">plot</span> with <span class = "code_variable">type = "parameters"</span> produces separate plots for the baseline (reference condition) parameters, the treatment condition parameters, and the random-effect scalars. Let's look at the baseline parameters first:
 
 ```{r RORB_parameters_baseline}
 plots.param$plot_baseline_cortex_Rorb
@@ -209,7 +217,7 @@ Finally, we can look at the random-effect scalars for each parameter:
 plots.param$plot_ranEff_cortex_Rorb
 ```
 ```{r check4, echo = FALSE}
-# Not wired to the shared .wisp_golden table like the other checks: plot.parameters()'s random-effect scatter
+# Not wired to the shared .wisp_golden table like the other checks: plot(model, type = "parameters")'s random-effect scatter
 # draws from the global RNG stream at call time rather than a fixed stored sample, so this exact row/value
 # depends on how much of the RNG stream earlier chunks in *this* vignette consumed -- it only ever holds given
 # this specific rendering order, not as a portable property of the fitted model -- confirmed this is true

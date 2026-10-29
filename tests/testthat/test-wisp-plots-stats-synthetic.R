@@ -1,5 +1,5 @@
-# Mechanical exercise of the plotting/stats machinery (plot.ratecount, plot.decomposition, plot.timeseries,
-# plot.parameters, plot.MCMC.walks, plot.MCMC.bs.comparison, sample.stats()) on a small synthetic model with
+# Mechanical exercise of the plotting/stats machinery (plot(model, type = "ratecount"/"decomposition"/
+# "timeseries"/"parameters"/"MCMC.walks"/"MCMC.bs.comparison"), sample.stats()) on a small synthetic model with
 # more than one fitted parameter and a handful of bootstrap resamples -- see
 # tests/testthat/helper-fixtures.R's make_small_multiparam_countdata(). This is decoupled from "does a specific
 # RORB story reproduce" (that's the slow-tier real-data tests and the tutorial vignettes); it only checks that
@@ -25,41 +25,41 @@ test_that("the synthetic fixture has more than one fitted parameter", {
   expect_true(all(is.finite(model$fitted.parameters)))
 })
 
-test_that("plot.ratecount runs on the synthetic fixture", {
-  rc <- plot.ratecount(model, species = "demoGene", verbose = FALSE)
+test_that("plot(model, type = \"ratecount\") runs on the synthetic fixture", {
+  rc <- plot(model, type = "ratecount", species = "demoGene", verbose = FALSE)
   expect_true(is.list(rc))
   expect_true("plot_pred_context_demoContext_fixEff_demoGene" %in% names(rc))
   expect_s3_class(rc$plot_pred_context_demoContext_fixEff_demoGene, "ggplot")
 })
 
-test_that("plot.decomposition runs on the synthetic fixture", {
-  decomp <- plot.decomposition(model, species = "demoGene")
+test_that("plot(model, type = \"decomposition\") runs on the synthetic fixture", {
+  decomp <- plot(model, type = "decomposition", species = "demoGene")
   expect_true(is.list(decomp))
   expect_gt(length(decomp), 0)
 })
 
-test_that("plot.timeseries runs on the synthetic fixture", {
-  ts <- plot.timeseries(model, species = "demoGene", verbose = FALSE)
+test_that("plot(model, type = \"timeseries\") runs on the synthetic fixture", {
+  ts <- plot(model, type = "timeseries", species = "demoGene", verbose = FALSE)
   expect_true(is.list(ts))
   expect_true("plot_pred_context_demoContext_timeseries_demoGene" %in% names(ts))
   expect_s3_class(ts$plot_pred_context_demoContext_timeseries_demoGene, "ggplot")
 })
 
-test_that("plot.parameters runs on the synthetic fixture", {
-  pp <- plot.parameters(model, species = "demoGene", verbose = FALSE)
+test_that("plot(model, type = \"parameters\") runs on the synthetic fixture", {
+  pp <- plot(model, type = "parameters", species = "demoGene", verbose = FALSE)
   expect_true(is.list(pp))
   expect_true("plot_baseline_demoContext_demoGene" %in% names(pp))
   expect_true("plot_ranEff_demoContext_demoGene" %in% names(pp))
 })
 
-test_that("plot.MCMC.walks runs on the synthetic fixture", {
-  mw <- plot.MCMC.walks(model, print.plots = FALSE, verbose = FALSE, low_samples = 5)
+test_that("plot(model, type = \"MCMC.walks\") runs on the synthetic fixture", {
+  mw <- plot(model, type = "MCMC.walks", print.plots = FALSE, verbose = FALSE, low_samples = 5)
   expect_true(is.list(mw))
   expect_true(all(c("plot.walks.parameters_low", "plot.walks.parameters_high", "plot.walks.nll") %in% names(mw)))
 })
 
-test_that("plot.MCMC.bs.comparison runs on the synthetic fixture (needs >1 parameter to not crash)", {
-  bc <- plot.MCMC.bs.comparison(model, verbose = FALSE)
+test_that("plot(model, type = \"MCMC.bs.comparison\") runs on the synthetic fixture (needs >1 parameter to not crash)", {
+  bc <- plot(model, type = "MCMC.bs.comparison", verbose = FALSE)
   expect_true(is.list(bc))
   expect_true(all(c("plot_sample_correlations", "plot_comparison_Shaprio", "plot_comparison_density") %in% names(bc)))
   expect_s3_class(bc$plot_comparison_density, "ggplot")

@@ -19,8 +19,11 @@ test_that("wisp() returns the documented top-level structure", {
     "fix", "treatment", "grouping.variables", "param.idx0", "settings"
   ) %in% names(model)))
   # wisp() does not store built plot objects on its return value (see R/wspmm.R); regenerate
-  # plots on demand via plot.ratecount()/plot.timeseries()/plot.parameters()/etc. instead.
+  # plots on demand via plot(model, type = "ratecount"/"timeseries"/"parameters"/etc.) instead.
   expect_false("plots" %in% names(model))
+
+  # wisp() classes its return value "wisp" so that plot(model, type = ...) dispatches correctly.
+  expect_s3_class(model, "wisp")
 
   expect_equal(model$model.component.list, c("Rt", "tslope", "tpoint"))
   expect_type(model$fitted.parameters, "double")
@@ -72,9 +75,7 @@ test_that("the package's exported API surface hasn't grown or shrunk unintention
     "induce_SV",
     "make_count_data", "make_count_data_csv", "make_replicate", "matrix_transform",
     "model_attractor_simulation_wisp",
-    "parse_csv", "parse_hdf5", "plot_results",
-    "plot.decomposition", "plot.effect.dist", "plot.MCMC.bs.comparison", "plot.MCMC.walks",
-    "plot.parameters", "plot.ratecount", "plot.species.summary", "plot.timeseries",
+    "parse_csv", "parse_hdf5", "plot_results", "plot.wisp",
     "poly_sigmoid_R", "project_cp", "pvalues.samples", "rot_matrix",
     "run_attractor_sim_benchmarks", "sample.stats", "sigmoid_stable_R", "smooth_data",
     "snk.horizontal_rule", "snk.print_details", "snk.print_function", "snk.print_table",

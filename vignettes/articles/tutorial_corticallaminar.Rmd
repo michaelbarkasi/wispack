@@ -280,11 +280,12 @@ Notice that all of the parameter names end in "Tns/Blk1", "Tns/Blk2", "Tns/Blk3"
 
 It's difficult to get a handle on the results as pure effect numbers. A better way to understand the results is through visualization. Wispack provides a number of functions for [making intuitive spatial plots](tutorial_wispplots.html). Indeed; a strength of wisp models is their use of concrete spatial parameters. 
 
-The standard way to visualize a fitted wisp model, for an individual gene, is to plot gene expression level (e.g., total <span class = "code_variable">count</span> per bin) on the y-axis and spatial position (<span class = "code_variable">bin</span>) on the x-axis, with effects conditions represented by different colors. The <span class = "function">wisp</span> function automatically generates these plots as it fits (printing them, if requested), but does not store the built plot objects on the returned model -- call <span class = "function">plot.ratecount</span> directly to regenerate the one(s) you want. Here, for example, is the plot for <span class = "gene">RORB</span>:
+The standard way to visualize a fitted wisp model, for an individual gene, is to plot gene expression level (e.g., total <span class = "code_variable">count</span> per bin) on the y-axis and spatial position (<span class = "code_variable">bin</span>) on the x-axis, with effects conditions represented by different colors. The <span class = "function">wisp</span> function automatically generates these plots as it fits (printing them, if requested), but does not store the built plot objects on the returned model -- call <span class = "function">plot</span> with <span class = "code_variable">type = "ratecount"</span> directly to regenerate the one(s) you want. Here, for example, is the plot for <span class = "gene">RORB</span>:
 
 ```{r plot_RORB_ratecount}
-rc_plots <- plot.ratecount(
+rc_plots <- plot(
     model,
+    type           = "ratecount",
     dim.boundaries = colMeans(layer.boundary.bins),
     species        = "Rorb",
     verbose        = FALSE
@@ -296,10 +297,10 @@ The shading shows 95% confidence intervals for the rate estimates. Note that whi
 
 Regarding what this particular plot shows for <span class = "gene">RORB</span>, as expected there is a large peak in <span class = "gene">RORB</span> expression in L4. This peak is present for both left (green) and right (blue) hemispheres. However, the plot suggests that there is laterality at both ages, albeit with a swap in up-regulation. Specifically, at P12 the plot shows up-regulation in the right hemisphere (light blue) compared to the left (light green), while at P18 there is up-regulation in the left hemisphere (dark green) compared to the right (dark blue). 
 
-This swap is easy to see on a time-series plot. When a time series is provided (via the <span class = "code_variable">variables</span> argument), the <span class = "function">wisp</span> function automatically generates time-series plots for each gene (again, not stored on the returned model -- call <span class = "function">plot.timeseries</span> to regenerate).
+This swap is easy to see on a time-series plot. When a time series is provided (via the <span class = "code_variable">variables</span> argument), the <span class = "function">wisp</span> function automatically generates time-series plots for each gene (again, not stored on the returned model -- call <span class = "function">plot</span> with <span class = "code_variable">type = "timeseries"</span> to regenerate).
 
 ```{r plot_RORB_timeseries}
-ts_plots <- plot.timeseries(model, species = "Rorb", verbose = FALSE)
+ts_plots <- plot(model, type = "timeseries", species = "Rorb", verbose = FALSE)
 print(ts_plots$plot_pred_context_cortex_timeseries_Rorb)
 ```
 

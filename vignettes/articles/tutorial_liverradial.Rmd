@@ -265,8 +265,9 @@ The <span class = "function">wisp</span> function produces both a [rate-count pl
 To begin, consider <span class = "gene">GLUL</span> and <span class = "gene">ASS1</span>, which are expected to be primarily zonated, with <span class = "gene">GLUL</span> being higher in the central region and <span class = "gene">ASS1</span> being higher in the portal region. Their respective spatial gradients are easy to see in the rate-count plot:
 
 ```{r print_plots_zonation_space, fig.asp = 0.5}
-rc_plots <- plot.ratecount(
-  wisp.results     = radial.model,
+rc_plots <- plot(
+  radial.model,
+  type             = "ratecount",
   log.scale        = radial.model$plot.settings$log.scale,
   CI_style         = radial.model$plot.settings$CI_style,
   dim.boundaries   = radial.model$plot.settings$dim.bounds,
@@ -289,8 +290,9 @@ wispack:::.check_between(test_val, g$zonation_space_glul, "check 2")
 While the rate-count plots make clear the spatial gradients of <span class = "gene">GLUL</span> and <span class = "gene">ASS1</span>, temporal information can only be read off implicitly. For <span class = "gene">ASS1</span>, we seem to see a slight decrease in gene expression over the day, from ZT0 to ZT18. For <span class = "gene">GLUL</span>, expression seems constant across the day, except perhaps for some minor interaction between zone and time that has the central region decreasing in expression as the portal region increases. These temporal patterns can be seen more clearly by looking at the time-series plots. 
 
 ```{r print_plots_zonation_time, fig.asp = 0.5}
-ts_plots <- plot.timeseries(
-  wisp.results     = radial.model,
+ts_plots <- plot(
+  radial.model,
+  type             = "timeseries",
   splitting_factor = radial.model$plot.settings$splitting_factor,
   log.scale        = radial.model$plot.settings$log.scale,
   verbose          = FALSE

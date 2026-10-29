@@ -154,12 +154,13 @@ This code chunk is just for demonstration; it is not run. Also, the values shown
 
 <h3>Plotting walks</h3>
 
-Wispack includes the function <span class = "function">plot.MCMC.walks</span> for visualizing MCMC walks. 
+Wispack includes <span class = "function">plot</span> with <span class = "code_variable">type = "MCMC.walks"</span> for visualizing MCMC walks.
 
 ```{r make_MCMC_walk_plots}
-MCMC_walk_plots <- plot.MCMC.walks(
- model, 
- print.plots = FALSE, 
+MCMC_walk_plots <- plot(
+ model,
+ type        = "MCMC.walks",
+ print.plots = FALSE,
  verbose     = FALSE, 
  low_samples = 10
 )
@@ -191,7 +192,7 @@ Finally, we can inspect the neglative log-likelihood (NLL) across the MCMC steps
 print(MCMC_walk_plots$plot.walks.nll)
 ```
 
-Notice that the NLL is generally decreasing across the MCMC steps, but only by about $\sim 0.2\%$. This suggests that the MCMC walk is exploring a minima without much chance of escaping. This is good if it's the global minima, but bad if it's a local minima. We can get some insight into whether the MCMC walk has found the global minima by looking at how its NLL values compare to the NLL value found by the gradient-descent optimization (L-BFGS) used to fit the model to the data initially. The function <span class = "function">plot.MCMC.walks</span> makes this comparison easy, as it normalizes the NLL values from the MCMC walk by dividing them by the NLL value from the initial fit. The plot shows these values hover around $1.01$, meaning that the MCMC walk stays around $1\%$ worse than the initial fit. Hence, the walk is caught in a local minima. 
+Notice that the NLL is generally decreasing across the MCMC steps, but only by about $\sim 0.2\%$. This suggests that the MCMC walk is exploring a minima without much chance of escaping. This is good if it's the global minima, but bad if it's a local minima. We can get some insight into whether the MCMC walk has found the global minima by looking at how its NLL values compare to the NLL value found by the gradient-descent optimization (L-BFGS) used to fit the model to the data initially. <span class = "function">plot</span> with <span class = "code_variable">type = "MCMC.walks"</span> makes this comparison easy, as it normalizes the NLL values from the MCMC walk by dividing them by the NLL value from the initial fit. The plot shows these values hover around $1.01$, meaning that the MCMC walk stays around $1\%$ worse than the initial fit. Hence, the walk is caught in a local minima. 
 
 <h3>Reconciling MCMC and L-BFGS</h3>
 
@@ -216,7 +217,7 @@ wispack:::.check_between(test_val, g$mcmc_resample_param4, "check 4")
 Now, let's plot the values $\beta$ for <span class = "gene">RORB</span> for the effect of age in the left hemisphere. We will highlight the value found by the L-BFGS fit with a large yellow asterisk. Here are the distributions from the bootstrap resamples:
 
 ```{r plot_RORB_bootstrap, echo = TRUE, results = "hide", message = FALSE, warning = FALSE}
-plots.param <- plot.parameters(model, species = "Rorb", verbose = FALSE) 
+plots.param <- plot(model, type = "parameters", species = "Rorb", verbose = FALSE)
 print(
   plots.param$plot_treatment_18_cortex_Rorb + 
     scale_y_continuous(expand = expansion(mult = 0.1)) +
@@ -230,7 +231,7 @@ Notice that the L-BFGS fits mostly fall near the medians (i.e., peaks) of the di
 In contrast, by plotting the distributions from the MCMC walks, we can see that the L-BFGS fits never fall near the median, and often fall well outside the range of MCMC walk values. Within the MCMC walk results, the L-BFGS fit is often an outlier. 
 
 ```{r plot_RORB_MCMC, echo = TRUE, results = "hide", message = FALSE, warning = FALSE}
-plots.param_MCMC <- plot.parameters(model_MCMC, species = "Rorb", verbose = FALSE)
+plots.param_MCMC <- plot(model_MCMC, type = "parameters", species = "Rorb", verbose = FALSE)
 print(
   plots.param_MCMC$plot_treatment_18_cortex_Rorb + 
     scale_y_continuous(expand = expansion(mult = 0.1)) +
@@ -287,7 +288,7 @@ wispack:::.check_between(test_val, g$median_fit_param1, "check 5")
 Now, let's plot the age-effect parameters again, this time with the median estimate from the MCMC walk highlighted:
 
 ```{r plot_RORB_median, echo = TRUE, results = "hide", message = FALSE, warning = FALSE}
-median_plots.param <- plot.parameters(model_median, species = "Rorb", verbose = FALSE)
+median_plots.param <- plot(model_median, type = "parameters", species = "Rorb", verbose = FALSE)
 print(
   median_plots.param$plot_treatment_18_cortex_Rorb +
     scale_y_continuous(expand = expansion(mult = 0.1)) +
@@ -314,16 +315,17 @@ The second limitation is that the data supplied to <span class = "function">wisp
 
 <h3>Comparison with MCMC</h3>
 
-Beyond the comparisons already made, wispack provides the function <span class = "function">plot.MCMC.bs.comparison</span> for visualizing autocorrelation and normality in the resampled parameters. 
+Beyond the comparisons already made, wispack provides <span class = "function">plot</span> with <span class = "code_variable">type = "MCMC.bs.comparison"</span> for visualizing autocorrelation and normality in the resampled parameters.
 
 ```{r MCMC_bootstrap_comparison}
-bs_comp_plots <- plot.MCMC.bs.comparison(
-  model, 
+bs_comp_plots <- plot(
+  model,
+  type    = "MCMC.bs.comparison",
   verbose = FALSE
 )
 ```
 
-The function <span class = "function">plot.MCMC.bs.comparison</span> returns three plots in a list, labeled <span class = "code_variable">plot_sample_correlations</span>, <span class = "code_variable">plot_comparison_Shaprio</span>, and <span class = "code_variable">plot_comparison_density</span>. The first plot shows next-step autocorrelation for both MCMC walks and bootstrap resamples. The plot shows density of autocorrelation values over the population of resampled model parameters. As expected from plots of the MCMC walks, there are a high number of parameters with autocorrelation $>0.5$. In contrast, the bootstrap resamples show essentially zero autocorrelation. 
+<span class = "function">plot</span> with <span class = "code_variable">type = "MCMC.bs.comparison"</span> returns three plots in a list, labeled <span class = "code_variable">plot_sample_correlations</span>, <span class = "code_variable">plot_comparison_Shaprio</span>, and <span class = "code_variable">plot_comparison_density</span>. The first plot shows next-step autocorrelation for both MCMC walks and bootstrap resamples. The plot shows density of autocorrelation values over the population of resampled model parameters. As expected from plots of the MCMC walks, there are a high number of parameters with autocorrelation $>0.5$. In contrast, the bootstrap resamples show essentially zero autocorrelation. 
 
 ```{r plot_autocorrelation}
 print(
@@ -336,7 +338,7 @@ test_val <- ggplot_build(bs_comp_plots$plot_sample_correlations)$data[[1]][4,2]
 wispack:::.check_between(test_val, g$bs_comparison_correlation, "check 6")
 ```
 
-Another important consideration is the distribution of the resampled parameter values. The plots of the age effect show this distribution (for each parameter separately) as a violin plot. From these it's clear that the bootstrap resamples are more normal than the MCMC walk resamples. We can get a more complete picture by looking at the distribution of Shapiro-Wilk normality test $p$-values across all parameters, which is the second plot provided by the <span class = "function">plot.MCMC.bs.comparison</span> function. As seen in the plot, the two resampling methods produce mirror results: MCMC walks produce many parameter distributions with low $p$-values (i.e., non-normal distributions), while bootstrap resamples produce many parameter distributions with high $p$-values (i.e., normal distributions).
+Another important consideration is the distribution of the resampled parameter values. The plots of the age effect show this distribution (for each parameter separately) as a violin plot. From these it's clear that the bootstrap resamples are more normal than the MCMC walk resamples. We can get a more complete picture by looking at the distribution of Shapiro-Wilk normality test $p$-values across all parameters, which is the second plot provided by <span class = "function">plot</span> with <span class = "code_variable">type = "MCMC.bs.comparison"</span>. As seen in the plot, the two resampling methods produce mirror results: MCMC walks produce many parameter distributions with low $p$-values (i.e., non-normal distributions), while bootstrap resamples produce many parameter distributions with high $p$-values (i.e., normal distributions).
 
 ```{r plot_shapiro_wilk}
 print(
@@ -349,7 +351,7 @@ test_val <- ggplot_build(bs_comp_plots$plot_comparison_Shaprio)$data[[1]][4,2]
 wispack:::.check_between(test_val, g$bs_comparison_shapiro, "check 7")
 ```
 
-Finally, the third plot of the <span class = "function">plot.MCMC.bs.comparison</span> function provides another look at the parameter distributions produced by each method by plotting a few randomly chosen distributions: 
+Finally, the third plot of <span class = "function">plot</span> with <span class = "code_variable">type = "MCMC.bs.comparison"</span> provides another look at the parameter distributions produced by each method by plotting a few randomly chosen distributions:
 
 ```{r plot_random_parameter_distributions}
 print(
@@ -358,8 +360,8 @@ print(
 )
 ```
 ```{r check8, echo = FALSE}
-# Not wired to the shared .wisp_golden table like the other checks on this page: plot.MCMC.bs.comparison()
-# selects which parameter's distribution to plot here based on a Shapiro-Wilk p-value computed from a random
+# Not wired to the shared .wisp_golden table like the other checks on this page: plot(model, type =
+# "MCMC.bs.comparison") selects which parameter's distribution to plot here based on a Shapiro-Wilk p-value computed from a random
 # resample of that parameter's values (see R/wspmm.R), so the specific value at data row 4 depends on the exact
 # R-level RNG stream position at call time -- confirmed to differ by orders of magnitude between otherwise-
 # identical re-runs (plain script vs. testthat vs. knitr), not just a property of the fitted model. Checked

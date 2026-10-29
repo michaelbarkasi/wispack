@@ -13,3 +13,4 @@ importFrom(methods, new)
 importFrom(stats, coef, cor, density, dgamma, ecdf, integrate, lm, na.omit, nls, qnorm, qqnorm,
            quantile, rbeta, relevel, rnorm, rpois, runif, sd, shapiro.test, step, var)
 exportPattern("^[[:alpha:]]+")
+S3method(plot, wisp)
