@@ -77,7 +77,7 @@ To start, load this data and print its first few rows:
 countdata <- read.csv(
   system.file(
       "extdata", 
-      "S1_laminar_countdata_demo.csv", 
+      "S1_laminar_countdata_demo.csv.gz", 
       package = "wispack"
     )
   )
@@ -493,9 +493,9 @@ model <- wisp(
 ## Penalized nll: 11976.4
 ## 
 ## MCMC simulation complete... 
-## MCMC run time (total), minutes: 0.43
-## MCMC run time (per retained step), seconds: 0.023
-## MCMC run time (per step), seconds: 0.023
+## MCMC run time (total), minutes: 3.785
+## MCMC run time (per retained step), seconds: 0.206
+## MCMC run time (per step), seconds: 0.206
 ## 
 ## Computing p-values and CI for model parameters
 ## ----------------------------------------
@@ -587,7 +587,6 @@ for (n in names(model)) cat(n, ": ", paste0(class(model[[n]]), collapse = ", "),
 ## diagnostics.MCMC: data.frame
 ## pred_values: matrix, array
 ## stats: list
-## plots: list
 ## variables: list
 ```
 
@@ -680,12 +679,20 @@ The standard way to visualize a fitted wisp model, for an individual
 gene, is to plot gene expression level (e.g., total count per bin) on
 the y-axis and spatial position (bin) on the x-axis, with effects
 conditions represented by different colors. The wisp function
-automatically generates these plots and stores them in plots\$ratecount.
+automatically generates these plots as it fits (printing them, if
+requested), but does not store the built plot objects on the returned
+model – call plot.ratecount directly to regenerate the one(s) you want.
 Here, for example, is the plot for RORB:
 
 ``` r
 
-print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Rorb)
+rc_plots <- plot.ratecount(
+    model,
+    dim.boundaries = colMeans(layer.boundary.bins),
+    species        = "Rorb",
+    verbose        = FALSE
+  )
+print(rc_plots$plot_pred_context_cortex_fixEff_Rorb)
 ```
 
 ![](tutorial_corticallaminar_files/figure-html/plot_RORB_ratecount-1.png)
@@ -714,11 +721,13 @@ compared to the right (dark blue).
 
 This swap is easy to see on a time-series plot. When a time series is
 provided (via the variables argument), the wisp function automatically
-generates time-series plots for each gene.
+generates time-series plots for each gene (again, not stored on the
+returned model – call plot.timeseries to regenerate).
 
 ``` r
 
-print(model$plots$timeseries$plot_pred_context_cortex_timeseries_Rorb)
+ts_plots <- plot.timeseries(model, species = "Rorb", verbose = FALSE)
+print(ts_plots$plot_pred_context_cortex_timeseries_Rorb)
 ```
 
 ![](tutorial_corticallaminar_files/figure-html/plot_RORB_timeseries-1.png)

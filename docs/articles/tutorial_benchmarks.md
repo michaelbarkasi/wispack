@@ -73,7 +73,7 @@ and Vip (vasoactive intestinal peptide neurons).
 countdata <- read.csv(
   system.file(
       "extdata", 
-      "Allen_data.csv", 
+      "Allen_data.csv.gz", 
       package = "wispack"
     )
   )
@@ -98,7 +98,8 @@ print(head(countdata))
 
 ``` r
 
-if (countdata[1,5] < 3.485959 || countdata[1,5] > 3.485961) stop("failed check 1")
+g <- wispack:::.wisp_golden$benchmarks
+wispack:::.check_between(countdata[1,5], g$seed_data_val, "check 1")
 ```
 
 Let’s visualize the seed data:
@@ -296,7 +297,7 @@ than min_effect_size (by default, 0.05). In this example:
 
 ``` r
 
-for (g in c(1:4)) cat("\n", test_sim$genes[g], ": b = ", test_sim$effect[g], sep = "")
+for (gi in c(1:4)) cat("\n", test_sim$genes[gi], ": b = ", test_sim$effect[gi], sep = "")
 ```
 
 ``` scroll-output

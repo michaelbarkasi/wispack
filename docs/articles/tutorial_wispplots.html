@@ -8,8 +8,8 @@
 <title>Plotting wisp models • wispack</title>
 <!-- katex math --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script><script src="../katex-auto.js"></script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
 <meta property="og:title" content="Plotting wisp models">
@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -51,6 +51,9 @@
     <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">Plotting wisp models</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_benchmarks.html">Benchmarks and comparisons</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Design notes</h6></li>
+    <li><a class="dropdown-item" href="../articles/forking.html">Why wispack hand-rolls its own forking</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -87,7 +90,8 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">July 3, 2026 (v2.4)</h4>
+            <h4 data-toc-skip class="date">October 29, 2026
+(v2.5.1)</h4>
       
 
       <div class="d-none name"><code>tutorial_wispplots.Rmd</code></div>
@@ -123,57 +127,245 @@ Confidence intervals
 <p>The CI rate-count plot is a simplified line plot showing predicted
 rate as a function of spatial position, along with a 95% confidence
 interval for the rate at each spatial location. As a demonstration,
-let’s use a re-done version of the model of the laminar axis of
-somatosensory cortex from the <span class="gene">RORB</span> <a href="tutorial_corticallaminar.html">tutorial</a>:</p>
+let’s fit a model of the laminar axis of somatosensory cortex from the
+<span class="gene">RORB</span> <a href="tutorial_corticallaminar.html">tutorial</a>, under the same
+settings used there, except that the <span class="function">wisp</span>
+function is set, as in the following code chunk, to also run a thousand
+bootstraps in addition to the default MCMC walk. We want bootstraps
+because we will be plotting the model parameters below, and bootstraps
+generate more reliable <a href="tutorial_stats.html">parameter
+estimates</a> than the MCMC walk. As will be visible in the first
+rate-count plot below (at least, when compared to the same plot in the
+RORB tutorial), this has a big effect on the CI and parameter estimates.
+This is the same fit used in the <a href="tutorial_stats.html">stats
+tutorial</a>; we’ll also grab the layer-boundary points from the <a href="https://doi.org/10.1016/j.cell.2020.04.007" class="external-link">CCFv3</a> registration
+here, for use below in the rate-count plots (fitting takes a few
+minutes, owing to the bootstraps):</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Set random seed for reproducibility</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
 <span><span class="co"># Load wispack</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://michaelbarkasi.github.io/wispack/">wispack</a></span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="co"># Load demo model</span></span>
-<span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span></span>
+<span><span class="co"># Grab data</span></span>
+<span><span class="va">layer.boundary.bins</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
-<span>      <span class="st">"extdata"</span>, </span>
-<span>      <span class="st">"corticallaminar_model.rds"</span>, </span>
+<span>      <span class="st">"extdata"</span>,</span>
+<span>      <span class="st">"S1_layer_boundary_bins.csv"</span>,</span>
 <span>      package <span class="op">=</span> <span class="st">"wispack"</span></span>
 <span>    <span class="op">)</span></span>
-<span>  <span class="op">)</span></span></code></pre></div>
-<p>The saved model just loaded was made for the <a href="tutorial_stats.html">stats tutorial</a> under the same settings
-used in the <span class="gene">RORB</span> <a href="tutorial_corticallaminar.html">tutorial</a>, except that the <span class="function">wisp</span> function was set, as in the following code
-chunk, to also run a thousand bootstraps in addition to the default MCMC
-walk. We want bootstraps because we will be plotting the model
-parameters below, and bootstraps generate more reliable <a href="tutorial_stats.html">parameter estimates</a> than the MCMC walk.
-As will be visible in the first rate-count plot below (at least, when
-compared to the same plot in the RORB tutorial), this change has a big
-effect on the CI and parameter estimates.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="va">countdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
+<span>      <span class="st">"extdata"</span>,</span>
+<span>      <span class="st">"S1_laminar_countdata_demo.csv.gz"</span>,</span>
+<span>      package <span class="op">=</span> <span class="st">"wispack"</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="co"># Fit model</span></span>
+<span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
 <span>    count.data     <span class="op">=</span> <span class="va">countdata</span>,</span>
 <span>    variables      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>species <span class="op">=</span> <span class="st">"gene"</span>, ran <span class="op">=</span> <span class="st">"mouse"</span>, timeseries <span class="op">=</span> <span class="st">"age"</span><span class="op">)</span>,</span>
-<span>    model.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>LRO_cost <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span>, </span>
+<span>    model.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>LRO_cost <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span>,</span>
 <span>    plot.settings  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>      print.plots  <span class="op">=</span> <span class="cn">FALSE</span>, </span>
+<span>      print.plots  <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>      dim.bounds   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>    bootstraps.num <span class="op">=</span> <span class="fl">1000</span>, </span>
+<span>    bootstraps.num <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>    max.fork       <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>    verbose        <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p>For the rate-count plots, we can also grab the layer-boundary points
-from the <a href="https://doi.org/10.1016/j.cell.2020.04.007" class="external-link">CCFv3</a>
-registration for comparison:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">layer.boundary.bins</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
-<span>      <span class="st">"extdata"</span>, </span>
-<span>      <span class="st">"S1_layer_boundary_bins.csv"</span>, </span>
-<span>      package <span class="op">=</span> <span class="st">"wispack"</span></span>
-<span>    <span class="op">)</span></span>
-<span>  <span class="op">)</span></span></code></pre></div>
+<pre class="scroll-output"><code><span><span class="co">## </span></span>
+<span><span class="co">## Parsing data and settings for wisp model</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Model settings:</span></span>
+<span><span class="co">##  buffer_factor: 0.05</span></span>
+<span><span class="co">##  ctol: 1e-06</span></span>
+<span><span class="co">##  max_penalty_at_distance_factor: 0.01</span></span>
+<span><span class="co">##  LRO_cost: none</span></span>
+<span><span class="co">##  LROcutoff: 2</span></span>
+<span><span class="co">##  LROwindow_factor: 1.25</span></span>
+<span><span class="co">##  rise_threshold_factor: 0.8</span></span>
+<span><span class="co">##  max_evals: 1000</span></span>
+<span><span class="co">##  rng_seed: 42</span></span>
+<span><span class="co">##  warp_precision: 1e-07</span></span>
+<span><span class="co">##  round_none: TRUE</span></span>
+<span><span class="co">##  trtKO: none</span></span>
+<span><span class="co">##  max_bin: 0</span></span>
+<span><span class="co">##  inf_warp: 450359962.73705</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Plot settings:</span></span>
+<span><span class="co">##  print.plots: FALSE</span></span>
+<span><span class="co">##  dim.bounds: 78.5, 65.25, 44, 0</span></span>
+<span><span class="co">##  log.scale: FALSE</span></span>
+<span><span class="co">##  splitting_factor: </span></span>
+<span><span class="co">##  CI_style: TRUE</span></span>
+<span><span class="co">##  splitting_factor_colors: 120, 240</span></span>
+<span><span class="co">##  label_size: 5.5</span></span>
+<span><span class="co">##  title_size: 20</span></span>
+<span><span class="co">##  axis_size: 12</span></span>
+<span><span class="co">##  legend_size: 10</span></span>
+<span><span class="co">##  count_size: 1.5</span></span>
+<span><span class="co">##  count_jitter: 0.5</span></span>
+<span><span class="co">##  count.alpha.ran: 0.25</span></span>
+<span><span class="co">##  count.alpha.none: 0.25</span></span>
+<span><span class="co">##  pred.alpha.ran: 0.9</span></span>
+<span><span class="co">##  pred.alpha.none: 1</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## MCMC settings:</span></span>
+<span><span class="co">##  MCMC.burnin: 100</span></span>
+<span><span class="co">##  MCMC.steps: 1000</span></span>
+<span><span class="co">##  MCMC.step.size: 0.5</span></span>
+<span><span class="co">##  MCMC.prior: 1</span></span>
+<span><span class="co">##  MCMC.neighbor.filter: 1</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Variable dictionary:</span></span>
+<span><span class="co">##  count: count</span></span>
+<span><span class="co">##  bin: bin</span></span>
+<span><span class="co">##  context: context</span></span>
+<span><span class="co">##  species: gene</span></span>
+<span><span class="co">##  ran: mouse</span></span>
+<span><span class="co">##  timeseries: age</span></span>
+<span><span class="co">##  fixedeffects: hemisphere, age</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Parsed data (head only):</span></span>
+<span><span class="co">## ------------------------------</span></span>
+<span><span class="co">##   count bin context species ran hemisphere timeseries</span></span>
+<span><span class="co">## 1     0 100  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## 2     0  99  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## 3     0  93  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## 4     0  98  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## 5     0  94  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## 6     0  94  cortex  Bcl11b   1       left         12</span></span>
+<span><span class="co">## ----</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Initializing Cpp (wspc) model</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## Context grouping levels: "cortex"</span></span>
+<span><span class="co">## Species grouping levels: "Bcl11b" "Cux2" "Fezf2" "Nxph3" "Rorb" "Satb2"</span></span>
+<span><span class="co">## Random-effect grouping levels: "none" "1" "2" "3" "4"</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Infinity handling:</span></span>
+<span><span class="co">## machine epsilon: (eps_): 2.22045e-16</span></span>
+<span><span class="co">## pseudo-infinity (inf_): 1e+100</span></span>
+<span><span class="co">## warp_precision: 1e-07</span></span>
+<span><span class="co">## implied pseudo-infinity for unbounded warp (inf_warp): 4.5036e+08</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Extracting variables and data information:</span></span>
+<span><span class="co">## Max bin: 100</span></span>
+<span><span class="co">## Fixed effects: "hemisphere" "timeseries"</span></span>
+<span><span class="co">## Ref levels: "left" "12"</span></span>
+<span><span class="co">## Time series detected: "12" "18"</span></span>
+<span><span class="co">## Created treatment levels: "ref" "right" "18" "right18"</span></span>
+<span><span class="co">## Total rows in summed count data table: 12000</span></span>
+<span><span class="co">## Number of rows with unique model components: 120</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Running LRO change-point detection and setting initial parameters</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Estimated change points</span></span>
+<span><span class="co">## Estimated initial parameters</span></span>
+<span><span class="co">## Number of parameters: 300</span></span>
+<span><span class="co">## Size of boundary vector: 1260</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Estimating model parameters</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Running MCMC stimulations</span></span>
+<span><span class="co">## step: 1/1100</span></span>
+<span><span class="co">## step: 110/1100</span></span>
+<span><span class="co">## step: 220/1100</span></span>
+<span><span class="co">## step: 330/1100</span></span>
+<span><span class="co">## step: 440/1100</span></span>
+<span><span class="co">## step: 550/1100</span></span>
+<span><span class="co">## step: 660/1100</span></span>
+<span><span class="co">## step: 770/1100</span></span>
+<span><span class="co">## step: 880/1100</span></span>
+<span><span class="co">## step: 990/1100</span></span>
+<span><span class="co">## All complete!</span></span>
+<span><span class="co">## Acceptance rate (aim for 0.2-0.3): 0.246085</span></span>
+<span><span class="co">## Penalized nll: 11976.4</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## MCMC simulation complete... </span></span>
+<span><span class="co">## MCMC run time (total), minutes: 3.779</span></span>
+<span><span class="co">## MCMC run time (per retained step), seconds: 0.206</span></span>
+<span><span class="co">## MCMC run time (per step), seconds: 0.206</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Running bootstrap fits</span></span>
+<span><span class="co">## Performing initial fit of full data</span></span>
+<span><span class="co">## Penalized nll: 11976.4</span></span>
+<span><span class="co">## Batch: 1/50, 0.701648 sec/bs</span></span>
+<span><span class="co">## Batch: 5/50, 0.648595 sec/bs</span></span>
+<span><span class="co">## Batch: 10/50, 0.628511 sec/bs</span></span>
+<span><span class="co">## Batch: 15/50, 0.650552 sec/bs</span></span>
+<span><span class="co">## Batch: 20/50, 0.730031 sec/bs</span></span>
+<span><span class="co">## Batch: 25/50, 0.663684 sec/bs</span></span>
+<span><span class="co">## Batch: 30/50, 0.642421 sec/bs</span></span>
+<span><span class="co">## Batch: 35/50, 0.622834 sec/bs</span></span>
+<span><span class="co">## Batch: 40/50, 0.60915 sec/bs</span></span>
+<span><span class="co">## Batch: 45/50, 0.690686 sec/bs</span></span>
+<span><span class="co">## All complete!</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Bootstrap simulation complete... </span></span>
+<span><span class="co">## Bootstrap run time (total), minutes: 11.289</span></span>
+<span><span class="co">## Bootstrap run time (per sample), seconds: 0.677</span></span>
+<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 13.546</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Computing p-values and CI for model parameters</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Grabbing sample results, only resamples with converged fit... </span></span>
+<span><span class="co">## Computing 95% confidence intervals... </span></span>
+<span><span class="co">## Estimating p-values from resampled parameters... </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Recommended resample size for alpha = 0.05, 171 tests</span></span>
+<span><span class="co">## with bootstrapping/MCMC: 3420</span></span>
+<span><span class="co">## Actual resample size: 1001</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Stat summary (head only):</span></span>
+<span><span class="co">## ------------------------------</span></span>
+<span><span class="co">##                                  parameter      estimate      CI.low    CI.high   p.value p.value.adj    alpha.adj significance</span></span>
+<span><span class="co">## 1       baseline_cortex_Rt_Bcl11b_Tns/Blk1  3.3880114451  3.30500897 3.40212815        NA          NA           NA             </span></span>
+<span><span class="co">## 2   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk1 -0.0003773747 -0.07507784 0.07339858 0.9890110    2.967033 0.0166666667           ns</span></span>
+<span><span class="co">## 3      beta_Rt_cortex_Bcl11b_18_X_Tns/Blk1  0.6072410701  0.51496657 0.72377372 0.0000000    0.000000 0.0002923977          ***</span></span>
+<span><span class="co">## 4 beta_Rt_cortex_Bcl11b_right18_X_Tns/Blk1  0.0461743004 -0.08550940 0.14890972 0.2657343   13.818182 0.0009615385           ns</span></span>
+<span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2781929967  1.99837574 2.55129060        NA          NA           NA             </span></span>
+<span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.0822301676 -0.45766257 0.51713430 0.6013986   16.237762 0.0018518519           ns</span></span>
+<span><span class="co">## ----</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Computing 95% CI for predicated values by bin... </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Analyzing residuals</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Computing residuals... </span></span>
+<span><span class="co">## Making masks... </span></span>
+<span><span class="co">## Making plots and saving stats... </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Log-residual summary by grouping variables (head only):</span></span>
+<span><span class="co">## ------------------------------</span></span>
+<span><span class="co">##          group      mean        sd  variance</span></span>
+<span><span class="co">## 1          all 0.2389661 0.3918609 0.1535550</span></span>
+<span><span class="co">## 2 ran_lvl_none 0.2321238 0.3174750 0.1007903</span></span>
+<span><span class="co">## 3    ran_lvl_1 0.2384415 0.3968682 0.1575043</span></span>
+<span><span class="co">## 4    ran_lvl_2 0.2132537 0.3938506 0.1551183</span></span>
+<span><span class="co">## 5    ran_lvl_3 0.2751780 0.4605209 0.2120795</span></span>
+<span><span class="co">## 6    ran_lvl_4 0.2426757 0.4399106 0.1935213</span></span>
+<span><span class="co">## ----</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Making plots</span></span>
+<span><span class="co">## ----------------------------------------</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Making MCMC walks plots... </span></span>
+<span><span class="co">## Making MCMC vs bootstrap parameter distribution comparison plots... </span></span>
+<span><span class="co">## Making effect parameter distribution plots... </span></span>
+<span><span class="co">## Making rate-count plots... </span></span>
+<span><span class="co">## Making time series plots... </span></span>
+<span><span class="co">## Making parameter plots...</span></span></code></pre>
 <p>Let’s use the <span class="function">plot.ratecount</span> function
 to remake the <span class="gene">RORB</span> plot that was made and
 shown in the <span class="gene">RORB</span> <a href="tutorial_corticallaminar.html">tutorial</a>, this time using the
 bootstrap resamples for the CI instead of MCMC resamples:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot-ratecount.html">plot.ratecount</a></span><span class="op">(</span></span>
 <span>    <span class="va">model</span>,</span>
 <span>    dim.boundaries <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span>,</span>
@@ -200,7 +392,7 @@ for the four possible combinations of covariates (i.e., the reference
 condition of left-12, plus three treatment conditions).</p>
 <p>By default, both kinds of rate-count plots show rate as a raw value.
 However, it’s possible to rescale the vertical axis into log form:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot-ratecount.html">plot.ratecount</a></span><span class="op">(</span></span>
 <span>    <span class="va">model</span>,</span>
 <span>    dim.boundaries <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span>,</span>
@@ -219,7 +411,7 @@ rates with random effects) as dashed lines, and observed counts (plus
 interpolations for random-effect-free counts) as scatter points. It’s
 accessed via the <span class="code_variable">CI_style</span> argument in
 <span class="function">plot.ratecount</span>:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot-ratecount.html">plot.ratecount</a></span><span class="op">(</span></span>
 <span>    <span class="va">model</span>,</span>
 <span>    dim.boundaries <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span>,</span>
@@ -235,7 +427,7 @@ predicted rate.</p>
 how well the model fits the observed data, and also show the variability
 in individual replicates. Still, they can be visually crowded, so
 wispack provides a function to decompose them into their components.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plots.decomp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-decomposition.html">plot.decomposition</a></span><span class="op">(</span></span>
 <span>    <span class="va">model</span>,</span>
 <span>    dim.boundaries <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span>,</span>
@@ -244,7 +436,7 @@ wispack provides a function to decompose them into their components.</p>
 <p>First, let’s look at separate plots of counts (observed vs
 extrapolated without random effets) and predicted rates (fit of observed
 counts vs predicted rates without random effects):</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">grid.arrange</a></span><span class="op">(</span>grobs <span class="op">=</span> <span class="va">plots.decomp</span><span class="op">[</span><span class="fl">2</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_wispplots_files/figure-html/RORB_ran_decomposed_print1-1.png" class="r-plt" alt="" width="100%"></p>
 <p>The upper left plot (observed counts) shows one point for the total
@@ -259,7 +451,7 @@ the extrapolated counts, which stand in for the predicted rate without
 random effects.</p>
 <p>Next, let’s look at observed counts (points) and their fits (dashed
 lines) on the same plot, but broken out by sample:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">grid.arrange</a></span><span class="op">(</span>grobs <span class="op">=</span> <span class="va">plots.decomp</span><span class="op">[</span><span class="fl">7</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">plots.decomp</span><span class="op">)</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_wispplots_files/figure-html/RORB_ran_decomposed_print2-1.png" class="r-plt" alt="" width="100%"></p>
 <p>Notice how each plot has two dashed lines which fit the observed
@@ -280,7 +472,7 @@ with the <span class="function">plot.timeseries</span> function.
 Although there are only two ages in the cortical laminar data, we can
 still use this function to visualize how predicted rates change with
 age. Let’s look at the time-series plot for <span class="gene">RORB</span> again:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot-timeseries.html">plot.timeseries</a></span><span class="op">(</span></span>
 <span>    <span class="va">model</span>, </span>
 <span>    species <span class="op">=</span> <span class="st">"Rorb"</span>,</span>
@@ -307,7 +499,7 @@ implicitly) treatment conditions. However, with the exception of
 time-series plots showing rate parameters, these plots do not directly
 show the underlying rate, transition point, and slope parameters – or
 the corresponding random-effect scalars – that define a wisp model.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plots.param</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-parameters.html">plot.parameters</a></span><span class="op">(</span></span>
 <span>    <span class="va">model</span>,</span>
 <span>    species <span class="op">=</span> <span class="st">"Rorb"</span>,</span>
@@ -317,7 +509,7 @@ the corresponding random-effect scalars – that define a wisp model.</p>
 separate plots for the baseline (reference condition) parameters, the
 treatment condition parameters, and the random-effect scalars. Let’s
 look at the baseline parameters first:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plots.param</span><span class="op">$</span><span class="va">plot_baseline_cortex_Rorb</span></span></code></pre></div>
 <p><img src="tutorial_wispplots_files/figure-html/RORB_parameters_baseline-1.png" class="r-plt" alt="" width="700"></p>
 <p>There are three separate plots: Rorb.rate gives the baseline (left,
@@ -341,7 +533,7 @@ left hemisphere at P18, the right hemisphere at P12, and the right
 hemisphere at P18. Let’s look first at the parameters giving the effect
 of switching hemispheres in the reference condition, i.e., the shift
 from left to right hemisphere at P12:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plots.param</span><span class="op">$</span><span class="va">plot_treatment_right_cortex_Rorb</span></span></code></pre></div>
 <p><img src="tutorial_wispplots_files/figure-html/RORB_parameters_treatment1-1.png" class="r-plt" alt="" width="700"></p>
 <p>Notice that interpreting the parameters in the baseline condition is
@@ -358,18 +550,18 @@ of these tests are shown above the parameter in the typical notation:
 “ns” is not significant, “*” is <span class="math inline">p &lt;
 0.05</span>, “**” is <span class="math inline">p &lt; 0.01</span>, and
 “***” is <span class="math inline">p &lt; 0.001</span>.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plots.param</span><span class="op">$</span><span class="va">plot_treatment_18_cortex_Rorb</span></span></code></pre></div>
 <p><img src="tutorial_wispplots_files/figure-html/RORB_parameters_treatment2-1.png" class="r-plt" alt="" width="700"></p>
 <p>The above plot shows the parameters for the effect of age (the shift
 from P12 to P18) in the reference condition (left hemisphere). The next
 plot shows the interaction effect of age in the right hemisphere:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plots.param</span><span class="op">$</span><span class="va">plot_treatment_right18_cortex_Rorb</span></span></code></pre></div>
 <p><img src="tutorial_wispplots_files/figure-html/RORB_parameters_treatment3-1.png" class="r-plt" alt="" width="700"></p>
 <p>Finally, we can look at the random-effect scalars for each
 parameter:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plots.param</span><span class="op">$</span><span class="va">plot_ranEff_cortex_Rorb</span></span></code></pre></div>
 <p><img src="tutorial_wispplots_files/figure-html/RORB_parameters_random-1.png" class="r-plt" alt="" width="700"></p>
 <p>There is one scalar for each parameter type (rate, transition point,
@@ -389,7 +581,7 @@ of the random-effect parameters is discussed in the <a href="tutorial_warping.ht
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

@@ -2,7 +2,7 @@
 
 Michael Barkasi
 
-July 3, 2026 (v2.4)
+October 3, 2026 (v2.5.1)
 
 ## Introduction
 
@@ -320,6 +320,11 @@ Copyright (C) 2026, Michael Barkasi <barkasi@wustl.edu>
   analyses](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.md):
 - [Benchmarks and
   comparisons](https://michaelbarkasi.github.io/wispack/articles/tutorial_benchmarks.md):
+
+### Design notes
+
+- [Why wispack hand-rolls its own
+  forking](https://michaelbarkasi.github.io/wispack/articles/forking.md):
 
 ### Legal
 

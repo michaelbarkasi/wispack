@@ -6,5 +6,6 @@
 ^.*\.tar\.gz$
 vignettes/.*_cache(/|$)
 vignettes/output(/|$)
+vignettes/articles/output(/|$)
 ^wispack\.Rproj$
 ^benchmarks$

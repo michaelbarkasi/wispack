@@ -255,7 +255,7 @@ this package. We will load it directly.
 count_data <- read.csv(
   system.file(
       "extdata", 
-      "Droin_radial_count_data_sim.csv", 
+      "Droin_radial_count_data_sim.csv.gz", 
       package = "wispack"
     )
   )
@@ -440,22 +440,22 @@ radial.model <- wisp(
 ## Running bootstrap fits
 ## Performing initial fit of full data
 ## Penalized nll: 1047.02
-## Batch: 1/100, 0.0363976 sec/bs
-## Batch: 10/100, 0.0379782 sec/bs
-## Batch: 20/100, 0.0366889 sec/bs
-## Batch: 30/100, 0.0321997 sec/bs
-## Batch: 40/100, 0.0379793 sec/bs
-## Batch: 50/100, 0.0334089 sec/bs
-## Batch: 60/100, 0.0348776 sec/bs
-## Batch: 70/100, 0.0361681 sec/bs
-## Batch: 80/100, 0.0378 sec/bs
-## Batch: 90/100, 0.0389041 sec/bs
+## Batch: 1/100, 0.309185 sec/bs
+## Batch: 10/100, 0.342849 sec/bs
+## Batch: 20/100, 0.319256 sec/bs
+## Batch: 30/100, 0.281686 sec/bs
+## Batch: 40/100, 0.337657 sec/bs
+## Batch: 50/100, 0.293907 sec/bs
+## Batch: 60/100, 0.305486 sec/bs
+## Batch: 70/100, 0.317974 sec/bs
+## Batch: 80/100, 0.339967 sec/bs
+## Batch: 90/100, 0.345703 sec/bs
 ## All complete!
 ## 
 ## Bootstrap simulation complete... 
-## Bootstrap run time (total), minutes: 0.631
-## Bootstrap run time (per sample), seconds: 0.038
-## Bootstrap run time (per sample, per thread), seconds: 0.378
+## Bootstrap run time (total), minutes: 5.568
+## Bootstrap run time (per sample), seconds: 0.334
+## Bootstrap run time (per sample, per thread), seconds: 3.341
 ## 
 ## Computing p-values and CI for model parameters
 ## ----------------------------------------
@@ -532,11 +532,21 @@ to see in the rate-count plot:
 
 ``` r
 
-rc_plots <- radial.model[["plots"]][["ratecount"]]
-plt_glul <- rc_plots[["plot_pred.log_context_liver_fixEff_glul"]]
-plt_ass1 <- rc_plots[["plot_pred.log_context_liver_fixEff_ass1"]]
-g        <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
-grid.draw(g)
+rc_plots <- plot.ratecount(
+  wisp.results     = radial.model,
+  log.scale        = radial.model$plot.settings$log.scale,
+  CI_style         = radial.model$plot.settings$CI_style,
+  dim.boundaries   = radial.model$plot.settings$dim.bounds,
+  count.alpha.none = radial.model$plot.settings$count.alpha.none,
+  count.alpha.ran  = radial.model$plot.settings$count.alpha.ran,
+  pred.alpha.none  = radial.model$plot.settings$pred.alpha.none,
+  pred.alpha.ran   = radial.model$plot.settings$pred.alpha.ran,
+  verbose          = FALSE
+)
+plt_glul      <- rc_plots[["plot_pred.log_context_liver_fixEff_glul"]]
+plt_ass1      <- rc_plots[["plot_pred.log_context_liver_fixEff_ass1"]]
+combined_plot <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)
+grid.draw(combined_plot)
 ```
 
 ![](tutorial_liverradial_files/figure-html/print_plots_zonation_space-1.png)
@@ -552,11 +562,16 @@ time-series plots.
 
 ``` r
 
-ts_plots <- radial.model[["plots"]][["timeseries"]]
-plt_glul <- ts_plots[["plot_pred.log_context_liver_timeseries_glul"]]
-plt_ass1 <- ts_plots[["plot_pred.log_context_liver_timeseries_ass1"]]
-g <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
-grid.draw(g)
+ts_plots <- plot.timeseries(
+  wisp.results     = radial.model,
+  splitting_factor = radial.model$plot.settings$splitting_factor,
+  log.scale        = radial.model$plot.settings$log.scale,
+  verbose          = FALSE
+)
+plt_glul      <- ts_plots[["plot_pred.log_context_liver_timeseries_glul"]]
+plt_ass1      <- ts_plots[["plot_pred.log_context_liver_timeseries_ass1"]]
+combined_plot <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)
+grid.draw(combined_plot)
 ```
 
 ![](tutorial_liverradial_files/figure-html/print_plots_zonation_time-1.png)
@@ -581,8 +596,8 @@ and blue) that are elevated.
 
 plt_arntl <- rc_plots[["plot_pred.log_context_liver_fixEff_arntl"]]
 plt_dbp   <- rc_plots[["plot_pred.log_context_liver_fixEff_dbp"]]
-g         <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)
+grid.draw(combined_plot)
 ```
 
 ![](tutorial_liverradial_files/figure-html/print_plots_rhythm_space-1.png)
@@ -594,8 +609,8 @@ which clearly show the mid-ZT dip in ARNTL and the mid-ZT bump in DBP.
 
 plt_arntl <- ts_plots[["plot_pred.log_context_liver_timeseries_arntl"]]
 plt_dbp   <- ts_plots[["plot_pred.log_context_liver_timeseries_dbp"]]
-g         <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)
+grid.draw(combined_plot)
 ```
 
 ![](tutorial_liverradial_files/figure-html/print_plots_rhythm_time-1.png)
@@ -611,8 +626,8 @@ is expressed more in the portal region, just like ASS1.
 
 plt_elovl3 <- rc_plots[["plot_pred.log_context_liver_fixEff_elovl3"]]
 plt_pck1   <- rc_plots[["plot_pred.log_context_liver_fixEff_pck1"]]
-g          <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)
+grid.draw(combined_plot)
 ```
 
 ![](tutorial_liverradial_files/figure-html/print_plots_both_space-1.png)
@@ -625,8 +640,8 @@ to DBP, with a mid-ZT bump.
 
 plt_elovl3 <- ts_plots[["plot_pred.log_context_liver_timeseries_elovl3"]]
 plt_pck1   <- ts_plots[["plot_pred.log_context_liver_timeseries_pck1"]]
-g          <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)
+grid.draw(combined_plot)
 ```
 
 ![](tutorial_liverradial_files/figure-html/print_plots_both_time-1.png)

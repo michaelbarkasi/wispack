@@ -28,6 +28,11 @@
 - [Benchmarks and
   comparisons](https://michaelbarkasi.github.io/wispack/articles/tutorial_benchmarks.md):
 
+### Design notes
+
+- [Why wispack hand-rolls its own
+  forking](https://michaelbarkasi.github.io/wispack/articles/forking.md):
+
 ### Legal
 
 - [Dependency

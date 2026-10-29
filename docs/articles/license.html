@@ -8,8 +8,8 @@
 <title>Dependency licenses • wispack</title>
 <!-- katex math --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script><script src="../katex-auto.js"></script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
 <meta property="og:title" content="Dependency licenses">
@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -51,6 +51,9 @@
     <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">Plotting wisp models</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_benchmarks.html">Benchmarks and comparisons</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Design notes</h6></li>
+    <li><a class="dropdown-item" href="../articles/forking.html">Why wispack hand-rolls its own forking</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -92,30 +95,66 @@
 
     
     
-<p>The GPLv2 of Rcpp and the Apache 2.0 of the oneTBB package compiled
-with Stan are incompatible when bundled together as a single binary,
-which is why these scripts are being provided as a buildable R package
-on GitHub but not as a precompiled binary ready for installation.</p>
-<p>See: <a href="https://github.com/stan-dev/stan/wiki/Stan-Licensing" class="external-link uri">https://github.com/stan-dev/stan/wiki/Stan-Licensing</a></p>
+<p>wispack links three pieces of code whose licenses need to be read
+together: Rcpp (<code>GPL (&gt;= 2)</code>), Stan Math’s Intel TBB
+dependency (Apache License 2.0), and wispack’s own code
+(<code>GPL (&gt;= 3)</code>, see <code>LICENSE</code>). The Stan
+project’s own licensing page states a real conflict here, but it’s
+narrower than it sounds out of context, and it doesn’t block this
+package.</p>
+<p><strong>The conflict, as the Stan project states it:</strong> Apache
+License 2.0 and GPL version 2 cannot be combined into a single
+distributed binary. The Free Software Foundation has never considered
+Apache 2.0 compatible with GPLv2, because Apache 2.0’s
+patent-termination clause has no counterpart in GPLv2’s text. See the <a href="https://github.com/stan-dev/stan/wiki/Stan-Licensing" class="external-link">Stan wiki’s
+Licensing page</a> and the <a href="https://www.gnu.org/licenses/license-list.html" class="external-link">FSF’s license
+list</a> (entry for “Apache License 2.0”).</p>
+<p><strong>Why that doesn’t block wispack:</strong> GPLv3 was written
+specifically to fix this. Both the <a href="https://www.gnu.org/licenses/license-list.html" class="external-link">FSF’s license
+list</a> and the <a href="https://www.apache.org/licenses/GPL-compatibility" class="external-link">Apache Software
+Foundation’s own compatibility page</a> state that Apache 2.0 code can
+be combined with GPLv3 code and the combination distributed under GPLv3
+(the reverse – GPLv3 code going into an Apache-licensed project –
+doesn’t hold, but that’s not the direction this package needs).
+Separately, Rcpp’s own <code>License:</code> field is
+<code>GPL (&gt;= 2)</code> – “version 2 or any later version” – so Rcpp
+itself permits being used and redistributed under GPLv3 terms, not only
+GPLv2.</p>
+<p>Putting those together: wispack is licensed
+<code>GPL (&gt;= 3)</code>, and distributing the combination of wispack
++ Rcpp + Stan Math + TBB as a whole under GPLv3 is exactly the case both
+the FSF and the ASF say is fine. This isn’t a one-off argument specific
+to wispack, either – it’s the resolution the R/Stan ecosystem already
+relies on. <code>RcppParallel</code>, the CRAN package that actually
+ships the compiled TBB libraries wispack links against (via
+<code>StanHeaders</code>), is itself licensed <code>GPL (&gt;= 3)</code>
+for this exact reason, and
+<code>rstan</code>/<code>brms</code>/<code>rstanarm</code> all ship CRAN
+binaries bundling Stan Math + TBB under the identical pattern. (The
+conflict would only be a real blocker for a package that was itself
+locked to GPLv2-only with no “or later” clause – which is a choice, not
+something TBB or Stan Math force on a downstream package.)</p>
 <h1>
 Rcpp
 </h1>
 <p>by: Dirk Eddelbuettel, Romain Francois, JJ Allaire, Kevin Ushey,
 Qiang Kou, Nathan Russell, Iñaki Ucar, Doug Bates, and John Chambers</p>
 <p><a href="https://cran.r-project.org/web/packages/Rcpp/index.html" class="external-link uri">https://cran.r-project.org/web/packages/Rcpp/index.html</a><br><a href="https://github.com/RcppCore/Rcpp/tree/master" class="external-link uri">https://github.com/RcppCore/Rcpp/tree/master</a></p>
-<p>GNU General Public License v2.0<br><a href="https://github.com/RcppCore/Rcpp/blob/master/LICENSE" class="external-link uri">https://github.com/RcppCore/Rcpp/blob/master/LICENSE</a><br><a href="https://github.com/RcppCore/Rcpp/blob/0905d92e0046de5f171d4fde752d97e8733738be/LICENSE" class="external-link uri">https://github.com/RcppCore/Rcpp/blob/0905d92e0046de5f171d4fde752d97e8733738be/LICENSE</a></p>
+<p>GPL (&gt;= 2) – i.e. GPL version 2 or any later version, per Rcpp’s
+own DESCRIPTION file <a href="https://github.com/RcppCore/Rcpp/blob/master/LICENSE" class="external-link uri">https://github.com/RcppCore/Rcpp/blob/master/LICENSE</a> <a href="https://github.com/RcppCore/Rcpp/blob/0905d92e0046de5f171d4fde752d97e8733738be/LICENSE" class="external-link uri">https://github.com/RcppCore/Rcpp/blob/0905d92e0046de5f171d4fde752d97e8733738be/LICENSE</a></p>
 <h1>
 Stan Math
 </h1>
 <p>Bob Carpenter<br><a href="https://bob-carpenter.github.io/" class="external-link uri">https://bob-carpenter.github.io/</a></p>
 <p><a href="https://mc-stan.org/math/" class="external-link uri">https://mc-stan.org/math/</a><br><a href="https://github.com/stan-dev/math" class="external-link uri">https://github.com/stan-dev/math</a></p>
 <p>BSD 3-Clause License</p>
-<p>The Stan Math Library depends on the Intel TBB library which is
-licensed under the Apache 2.0 license. This dependency implies an
-additional restriction as compared to the new BSD license alone. The
-Apache 2.0 license is incompatible with GPL-2 licensed code if
-distributed as a unitary binary. You may refer to the Licensing page on
-the Stan wiki.</p>
+<p>The Stan Math Library depends on the Intel TBB library (via
+<code>RcppParallel</code>), which is licensed under the Apache 2.0
+license. This dependency implies an additional restriction as compared
+to the new BSD license alone: Apache 2.0 code can’t be combined with
+GPLv2-only code in one distributed binary. See the explanation at the
+top of this page for why that doesn’t affect wispack, which is licensed
+GPL (&gt;= 3).</p>
 <h1>
 Boost / BH
 </h1>
@@ -161,6 +200,17 @@ University.</p>
 <p><a href="https://computing.llnl.gov/projects/sundials" class="external-link uri">https://computing.llnl.gov/projects/sundials</a></p>
 <p>BSD 3-Clause License Copyright (c) 2002-2019</p>
 <h1>
+RcppParallel
+</h1>
+<p>Kevin Ushey, JJ Allaire, Romain Francois, Gregory Vandenbrouck, Dirk
+Eddelbuettel, and others</p>
+<p><a href="https://rcppcore.github.io/RcppParallel/" class="external-link uri">https://rcppcore.github.io/RcppParallel/</a> <a href="https://github.com/RcppCore/RcppParallel" class="external-link uri">https://github.com/RcppCore/RcppParallel</a></p>
+<p>GPL (&gt;= 3) – note this is the license RcppParallel itself (the R
+package, i.e. the glue code) is distributed under; it bundles the Apache
+2.0-licensed oneTBB library described below, which retains its own
+license for that bundled code. See the explanation at the top of this
+page.</p>
+<h1>
 oneTBB
 </h1>
 <p>Unified Acceleration (UXL) Foundation</p>
@@ -180,18 +230,18 @@ unistd.h, part of the C POSIX library
 <p><a href="https://pubs.opengroup.org/onlinepubs/7908799/xsh/unistd.h.html" class="external-link uri">https://pubs.opengroup.org/onlinepubs/7908799/xsh/unistd.h.html</a></p>
 <p>Available and licensed on your local system</p>
 <h1>
-dtwclust
+dtw
 </h1>
-<p>Alexis Sarda-Espinosa<br>
-Sarda-Espinosa A (2024). dtwclust: Time Series Clustering Along with
-Optimizations for the Dynamic Time Warping Distance. R package version
-6.0.0</p>
-<p>Specifically using DTW Barycenter Averaging, from:<br>
-Petitjean F, Ketterlin A and Gancarski P (2011). “A global averaging
-method for dynamic time warping, with applications to clustering.”
-Pattern Recognition, 44(3), pp. 678 - 693. ISSN 0031-3203, <a href="doi:10.1016/j.patcog.2010.09.013" class="uri">doi:10.1016/j.patcog.2010.09.013</a>, <a href="https://www.sciencedirect.com/science/article/pii/S003132031000453X" class="external-link uri">https://www.sciencedirect.com/science/article/pii/S003132031000453X</a></p>
-<p><a href="https://cran.r-project.org/package=dtwclust" class="external-link uri">https://cran.r-project.org/package=dtwclust</a><br><a href="https://github.com/asardaes/dtwclust" class="external-link uri">https://github.com/asardaes/dtwclust</a></p>
-<p>GPLv3</p>
+<p>Toni Giorgino Giorgino T (2009). “Computing and Visualizing Dynamic
+Time Warping Alignments in R: The dtw Package.” Journal of Statistical
+Software, 31(7), 1-24. <a href="doi:10.18637/jss.v031.i07" class="uri">doi:10.18637/jss.v031.i07</a></p>
+<p>For partial matching and normalization strategies, also: Tormene P,
+Giorgino T, Quaglini S, Stefanelli M (2008). “Matching Incomplete Time
+Series with Dynamic Time Warping: An Algorithm and an Application to
+Post-Stroke Rehabilitation.” Artificial Intelligence in Medicine, 45(1),
+11-34. <a href="doi:10.1016/j.artmed.2008.11.007" class="uri">doi:10.1016/j.artmed.2008.11.007</a></p>
+<p><a href="https://cran.r-project.org/package=dtw" class="external-link uri">https://cran.r-project.org/package=dtw</a> <a href="https://dynamictimewarping.github.io/" class="external-link uri">https://dynamictimewarping.github.io/</a></p>
+<p>GPL (&gt;= 2)</p>
 <h1>
 ggplot2
 </h1>
@@ -221,7 +271,7 @@ Source. bioart.niaid.nih.gov/bioart/565</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

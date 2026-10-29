@@ -1,20 +1,21 @@
-pandoc: 3.8.3
-pkgdown: 2.2.0
+pandoc: '3.10'
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
-  install: install.html
-  license: license.html
-  release_notes: release_notes.html
-  tutorial_benchmarks: tutorial_benchmarks.html
-  tutorial_corticallaminar: tutorial_corticallaminar.html
-  tutorial_liverradial: tutorial_liverradial.html
-  tutorial_multicontext: tutorial_multicontext.html
-  tutorial_Poisson: tutorial_Poisson.html
-  tutorial_stats: tutorial_stats.html
-  tutorial_timeseries: tutorial_timeseries.html
-  tutorial_warping: tutorial_warping.html
-  tutorial_wispplots: tutorial_wispplots.html
-last_built: 2026-07-03T21:52Z
+  articles/forking: forking.html
+  articles/install: install.html
+  articles/license: license.html
+  articles/release_notes: release_notes.html
+  articles/tutorial_benchmarks: tutorial_benchmarks.html
+  articles/tutorial_corticallaminar: tutorial_corticallaminar.html
+  articles/tutorial_liverradial: tutorial_liverradial.html
+  articles/tutorial_multicontext: tutorial_multicontext.html
+  articles/tutorial_Poisson: tutorial_Poisson.html
+  articles/tutorial_stats: tutorial_stats.html
+  articles/tutorial_timeseries: tutorial_timeseries.html
+  articles/tutorial_warping: tutorial_warping.html
+  articles/tutorial_wispplots: tutorial_wispplots.html
+last_built: 2026-10-29T11:38Z
 urls:
   reference: https://michaelbarkasi.github.io/wispack/reference
   article: https://michaelbarkasi.github.io/wispack/articles

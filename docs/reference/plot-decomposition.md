@@ -9,10 +9,10 @@ lines for individual random levels.
 
 ``` r
 plot.decomposition(
- wisp.results, 
- species, 
- log            = FALSE, 
- dim.boundaries = c(), 
+ wisp.results,
+ species,
+ log.scale      = FALSE,
+ dim.boundaries = c(),
  y.lim          = NULL
 )
 ```
@@ -45,3 +45,11 @@ plot.decomposition(
 ## Value
 
 List of ggplot objects containing the decomposed rate-count plots.
+
+## Note
+
+Despite the dotted name, this is not an S3 method:
+[`wisp()`](https://michaelbarkasi.github.io/wispack/reference/wisp.md)
+results are plain, unclassed lists, so the generic
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) will never
+dispatch here. Call `plot.decomposition(...)` directly.

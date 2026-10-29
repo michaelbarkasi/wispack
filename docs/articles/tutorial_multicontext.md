@@ -33,7 +33,7 @@ cell, holding all covariates constant.
 countdata <- read.csv(
   system.file(
       "extdata", 
-      "ACx_laminar_countdata_demo_with_celltype.csv", 
+      "ACx_laminar_countdata_demo_with_celltype.csv.gz", 
       package = "wispack"
     )
   )
@@ -309,15 +309,25 @@ and GABAergic neurons.
 
 ``` r
 
-rc_plots <- model[["plots"]][["ratecount"]]
+rc_plots <- plot.ratecount(
+  wisp.results     = model,
+  log.scale        = model$plot.settings$log.scale,
+  CI_style         = model$plot.settings$CI_style,
+  dim.boundaries   = model$plot.settings$dim.bounds,
+  count.alpha.none = model$plot.settings$count.alpha.none,
+  count.alpha.ran  = model$plot.settings$count.alpha.ran,
+  pred.alpha.none  = model$plot.settings$pred.alpha.none,
+  pred.alpha.ran   = model$plot.settings$pred.alpha.ran,
+  verbose          = FALSE
+)
 plt_Glut <- rc_plots[["plot_pred.log_context_Glut"]] + theme(legend.position = "bottom")
 plt_GABA <- rc_plots[["plot_pred.log_context_GABA"]] + theme(legend.position = "bottom")
 ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
 ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
+grid.draw(combined_plot)
 ```
 
 ![](tutorial_multicontext_files/figure-html/print_plots_ref_level-1.png)
@@ -364,8 +374,8 @@ plt_Glut1 <- plt_Glut1 + coord_cartesian(ylim = ylims)
 plt_GABA1 <- plt_GABA1 + coord_cartesian(ylim = ylims)
 plt_Glut2 <- plt_Glut2 + coord_cartesian(ylim = ylims)
 plt_GABA2 <- plt_GABA2 + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut1, plt_GABA1, plt_Glut2, plt_GABA2, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut1, plt_GABA1, plt_Glut2, plt_GABA2, ncol = 2)  
+grid.draw(combined_plot)
 ```
 
 ![](tutorial_multicontext_files/figure-html/print_plots_Bcl11bFezf2-1.png)
@@ -394,8 +404,8 @@ ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
 ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
+grid.draw(combined_plot)
 ```
 
 ![](tutorial_multicontext_files/figure-html/print_plots_Cux2-1.png)
@@ -414,8 +424,8 @@ ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
 ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
+grid.draw(combined_plot)
 ```
 
 ![](tutorial_multicontext_files/figure-html/print_plots_Rorb-1.png)
@@ -441,8 +451,8 @@ plt_Glut1 <- plt_Glut1 + coord_cartesian(ylim = ylims)
 plt_GABA1 <- plt_GABA1 + coord_cartesian(ylim = ylims)
 plt_Glut2 <- plt_Glut2 + coord_cartesian(ylim = ylims)
 plt_GABA2 <- plt_GABA2 + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut1, plt_GABA1, plt_Glut2, plt_GABA2, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut1, plt_GABA1, plt_Glut2, plt_GABA2, ncol = 2)  
+grid.draw(combined_plot)
 ```
 
 ![](tutorial_multicontext_files/figure-html/print_plots_Nxph3Satb2-1.png)
@@ -463,7 +473,12 @@ similar to that of SATB2.
 
 ``` r
 
-ts_plots  <- model[["plots"]][["timeseries"]]
+ts_plots  <- plot.timeseries(
+  wisp.results     = model,
+  splitting_factor = model$plot.settings$splitting_factor,
+  log.scale        = model$plot.settings$log.scale,
+  verbose          = FALSE
+)
 plt_Glut1 <- ts_plots[["plot_pred.log_context_Glut_timeseries_Bcl11b"]] + theme(plot.title = element_text(hjust = 0.0))
 plt_GABA1 <- ts_plots[["plot_pred.log_context_GABA_timeseries_Bcl11b"]] + theme(plot.title = element_text(hjust = 0.0))
 plt_Glut2 <- ts_plots[["plot_pred.log_context_Glut_timeseries_Satb2"]]  + theme(plot.title = element_text(hjust = 0.0))
@@ -476,8 +491,8 @@ plt_Glut1 <- plt_Glut1 + coord_cartesian(ylim = ylims)
 plt_GABA1 <- plt_GABA1 + coord_cartesian(ylim = ylims)
 plt_Glut2 <- plt_Glut2 + coord_cartesian(ylim = ylims)
 plt_GABA2 <- plt_GABA2 + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut1, plt_GABA1, plt_Glut2, plt_GABA2, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut1, plt_GABA1, plt_Glut2, plt_GABA2, ncol = 2)  
+grid.draw(combined_plot)
 ```
 
 ![](tutorial_multicontext_files/figure-html/print_timeseries_plots_Bcl11bSatb2-1.png)
@@ -503,8 +518,8 @@ ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
 ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
+grid.draw(combined_plot)
 ```
 
 ![](tutorial_multicontext_files/figure-html/print_timeseries_plots_Cux2-1.png)
@@ -527,8 +542,8 @@ ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
 ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
+grid.draw(combined_plot)
 ```
 
 ![](tutorial_multicontext_files/figure-html/print_timeseries_plots_Fezf2-1.png)
@@ -548,8 +563,8 @@ ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
 ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
+grid.draw(combined_plot)
 ```
 
 ![](tutorial_multicontext_files/figure-html/print_timeseries_plots_Nxph3-1.png)
@@ -567,8 +582,8 @@ ylims    <- ggplot_build(plt_Glut)$layout$panel_params[[1]]$y.range
 ylims    <- range(c(ylims, ggplot_build(plt_GABA)$layout$panel_params[[1]]$y.range))
 plt_Glut <- plt_Glut + coord_cartesian(ylim = ylims)
 plt_GABA <- plt_GABA + coord_cartesian(ylim = ylims)
-g <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_Glut, plt_GABA, ncol = 2)  
+grid.draw(combined_plot)
 ```
 
 ![](tutorial_multicontext_files/figure-html/print_timeseries_plots_Rorb-1.png)

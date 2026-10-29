@@ -8,9 +8,10 @@ include independent block boundaries for comparison if provided.
 
 ``` r
 plot.ratecount(
- wisp.results, 
+ wisp.results,
  log.scale        = FALSE,
- dim.boundaries   = c(), 
+ CI_style         = TRUE,
+ dim.boundaries   = c(),
  print.plots      = FALSE, 
  y.lim            = NA, 
  count.alpha.none = NA, 
@@ -92,3 +93,11 @@ plot.ratecount(
 ## Value
 
 List of ggplot objects for rate-count plots.
+
+## Note
+
+Despite the dotted name, this is not an S3 method:
+[`wisp()`](https://michaelbarkasi.github.io/wispack/reference/wisp.md)
+results are plain, unclassed lists, so the generic
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) will never
+dispatch here. Call `plot.ratecount(...)` directly.

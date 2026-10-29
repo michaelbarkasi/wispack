@@ -26,6 +26,15 @@
   distribution, and so any attempt to model them with wisp needs to
   account for this.
 
+## Version 2.5.1 (October 3, 2026)
+
+- Updated .Rbuildignore.
+
+## Version 2.5 (October 3, 2026)
+
+- Improved time series parsing.
+- Updated time series plots to allow for tertiary effects.
+
 ## Version 2.4 (July 3, 2026)
 
 - Part 2 of a major code refactor/optimization.

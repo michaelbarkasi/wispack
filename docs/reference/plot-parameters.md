@@ -8,11 +8,12 @@ available.
 
 ``` r
 plot.parameters(
- wisp.results, 
- species         = c(), 
- violin          = TRUE, 
- print.plots     = FALSE, 
- species.classes = NULL, 
+ wisp.results,
+ species         = c(),
+ violin          = TRUE,
+ print.plots     = FALSE,
+ species.classes = NULL,
+ mc_type         = NULL,
  verbose         = TRUE
 )
 ```
@@ -56,3 +57,11 @@ plot.parameters(
 ## Value
 
 List of ggplot objects for parameter plots.
+
+## Note
+
+Despite the dotted name, this is not an S3 method:
+[`wisp()`](https://michaelbarkasi.github.io/wispack/reference/wisp.md)
+results are plain, unclassed lists, so the generic
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) will never
+dispatch here. Call `plot.parameters(...)` directly.

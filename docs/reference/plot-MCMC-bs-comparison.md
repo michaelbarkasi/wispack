@@ -41,3 +41,11 @@ plot.MCMC.bs.comparison(
 List of ggplot objects containing plots of representative parameter
 distributions, Shapiro-Wilk normality test results, and autocorrelation
 plots for bootstrap and MCMC parameter estimates.
+
+## Note
+
+Despite the dotted name, this is not an S3 method:
+[`wisp()`](https://michaelbarkasi.github.io/wispack/reference/wisp.md)
+results are plain, unclassed lists, so the generic
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) will never
+dispatch here. Call `plot.MCMC.bs.comparison(...)` directly.

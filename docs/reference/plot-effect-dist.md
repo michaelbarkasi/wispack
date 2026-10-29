@@ -30,3 +30,11 @@ plot.effect.dist(
 ## Value
 
 List of ggplot objects containing histograms of fitted parameters.
+
+## Note
+
+Despite the dotted name, this is not an S3 method:
+[`wisp()`](https://michaelbarkasi.github.io/wispack/reference/wisp.md)
+results are plain, unclassed lists, so the generic
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) will never
+dispatch here. Call `plot.effect.dist(...)` directly.

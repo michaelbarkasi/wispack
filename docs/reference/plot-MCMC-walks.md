@@ -37,3 +37,11 @@ plot.MCMC.walks(
 List of ggplot objects containing plots of walks for low-value
 parameters, high-value parameters, and normalized negative log
 likelihood.
+
+## Note
+
+Despite the dotted name, this is not an S3 method:
+[`wisp()`](https://michaelbarkasi.github.io/wispack/reference/wisp.md)
+results are plain, unclassed lists, so the generic
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) will never
+dispatch here. Call `plot.MCMC.walks(...)` directly.

@@ -1,7 +1,7 @@
 ---
 title: "Benchmarks and comparisons"
 author: "Michael Barkasi"
-date: "July 3, 2026 (v2.4)"
+date: "`r wispack:::.wisp_build_stamp('tutorial_benchmarks')`"
 ---
 
 ```{r setup, include = FALSE}
@@ -175,8 +175,8 @@ The actual count $y$ at each point is then pulled from a Poisson distribution wi
 For genes like <span class = "gene">Slc17a7</span> not selected to exhibit FSEs, $b = 0.5$. For genes like <span class = "gene">Pvalb</span> and <span class = "gene">Tac2</span> selected to exhibit FSEs, $b$ is randomly chosen to be a value between zero and one but such that the absolute value of $4b^2 - 1$ is greater than <span class = "code_variable">min_effect_size</span> (by default, 0.05). In this example: 
 
 ```{r fetch_effects}
-for (g in c(1:4)) cat("\n", test_sim$genes[g], ": b = ", test_sim$effect[g], sep = "")
-``` 
+for (gi in c(1:4)) cat("\n", test_sim$genes[gi], ": b = ", test_sim$effect[gi], sep = "")
+```
 ```{r check4, echo = FALSE}
 test_val <- test_sim$effect[3]
 wispack:::.check_between(test_val, g$Tac2_effect, "check 4")

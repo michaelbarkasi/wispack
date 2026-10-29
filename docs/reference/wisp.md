@@ -192,14 +192,14 @@ wisp(
 
 - ran.seed:
 
-  = 1234: Integer, random seed for reproducibility. Used within R. If
-  NULL, no seed is set. Default is 1234.
+  Integer, random seed for reproducibility. Used within R. If NULL, no
+  seed is set. Default is 1234.
 
 ## Value
 
 List giving the results of the fitted model, including:
 
-- `model.component.list` = "Rt", "tslope", "tpoint": Character vector
+- `model.component.list`: Character vector `c("Rt", "tslope", "tpoint")`
   giving the main model components; always "Rt" = rate, "tslope" =
   transition-point slope, and "tpoint" = transition-point location.
 
@@ -211,10 +211,17 @@ List giving the results of the fitted model, including:
   `species`, `ran` (random-effect level), and `treatment` (treatment
   level).
 
+- `LRO.grid.search.results`: Matrix of grid-search results used to
+  select the LRO change-point detection settings (one row per candidate
+  `LROwindow_factor`/`LROcutoff` pair, with the resulting log-likelihood
+  and AIC/BIC-style cost columns). Empty when
+  `model.settings$LRO_cost = "none"`, since the grid search is then
+  skipped.
+
 - `fitted.parameters`: Vector of all fitted model parameters.
 
-- `gamma.disperson`: Matrix giving the estimated gamma dispersion of the
-  gamma-convolved Poisson model.
+- `gamma.dispersion`: Matrix giving the estimated gamma dispersion of
+  the gamma-convolved Poisson model.
 
 - `param.names`: Names of the model parameters, matching the order of
   `fitted.parameters`.
@@ -229,6 +236,10 @@ List giving the results of the fitted model, including:
   levels) and `components` (list, each element the names of the
   fixed-effect factor levels constituting that treatment level).
 
+- `weight.matrix`: Matrix of weights for reconstructing treatment-level
+  rates from the fitted model components; row `i` gives the weights
+  needed to compute treatment `i`.
+
 - `grouping.variables`: List containing character vectors
   `context.lvls`, `species.lvls`, and `ran.lvls` holding, respectively,
   the grouping levels of the context, species, and random-effect
@@ -237,6 +248,10 @@ List giving the results of the fitted model, including:
 - `param.idx0`: List containing zero-indexed index values for
   `fitted.parameters` for different combinations of treatment levels and
   grouping factors.
+
+- `token.pool`: List of integer vectors, one per row of
+  `count.data.summed`, giving the indices of the raw count tokens pooled
+  into that row; used internally to resample bootstrap replicates.
 
 - `settings`: A copy of the original model settings provided to the
   `wisp` function.
@@ -260,5 +275,13 @@ List giving the results of the fitted model, including:
   statistical analysis of the model parameters, plus data frames holding
   model residuals.
 
-- `plots`: List containing whatever plots where generated during the
-  model fit.
+- `plot.settings`: A copy of the (defaulted) plot settings provided to
+  the `wisp` function; used by the `plot.*` family of functions when
+  re-plotting a fitted model. Note that `wisp()` does not store built
+  plot objects in its return value (doing so for a large model could add
+  gigabytes); use the exported `plot.*` functions (e.g.
+  `plot.ratecount`, `plot.parameters`, `plot.species.summary`) to
+  regenerate specific plots on demand from this returned list.
+
+- `variables`: A copy of the resolved `variables` list (the column-name
+  mapping actually used for the fit, after defaults were filled in).

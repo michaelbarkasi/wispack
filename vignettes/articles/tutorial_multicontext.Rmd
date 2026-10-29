@@ -1,7 +1,7 @@
 ---
 title: "Modeling cell types"
 author: "Michael Barkasi"
-date: "July 3, 2026 (v2.4)"
+date: "`r wispack:::.wisp_build_stamp('tutorial_multicontext')`"
 ---
 
 ```{r setup, include = FALSE}

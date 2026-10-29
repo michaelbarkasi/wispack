@@ -59,7 +59,7 @@ cell.
 countdata <- read.csv(
   system.file(
       "extdata", 
-      "ACx_laminar_countdata_demo.csv", 
+      "ACx_laminar_countdata_demo.csv.gz", 
       package = "wispack"
     )
   )
@@ -381,7 +381,13 @@ which shows a temporally dynamic and lateralized profile in deep layers
 
 ``` r
 
-print(model$plots$ratecount$plot_pred_context_cortex_fixEff_Nxph3)
+rc_plots <- plot.ratecount(
+    model,
+    dim.boundaries = colMeans(layer.boundary.bins),
+    species        = "Nxph3",
+    verbose        = FALSE
+  )
+print(rc_plots$plot_pred_context_cortex_fixEff_Nxph3)
 ```
 
 ![](tutorial_timeseries_files/figure-html/plot_wisp-1.png)
@@ -410,7 +416,8 @@ plot.timeseries function.
 
 ``` r
 
-print(model$plots$timeseries$plot_pred_context_cortex_timeseries_Nxph3)
+ts_plots <- plot.timeseries(model, species = "Nxph3", verbose = FALSE)
+print(ts_plots$plot_pred_context_cortex_timeseries_Nxph3)
 ```
 
 ![](tutorial_timeseries_files/figure-html/plot_timeseries-1.png)

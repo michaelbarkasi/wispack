@@ -23,31 +23,31 @@ articles:
 - title: Installation
   navbar: Installation
   contents:
-  - install
-  - release_notes
+  - articles/install
+  - articles/release_notes
 
 - title: Tutorials
   navbar: Tutorials
-  contents: 
-  - tutorial_Poisson
-  - tutorial_warping
-  - tutorial_corticallaminar
-  - tutorial_timeseries
-  - tutorial_liverradial
-  - tutorial_multicontext
-  - tutorial_wispplots
-  - tutorial_stats
-  - tutorial_benchmarks
+  contents:
+  - articles/tutorial_Poisson
+  - articles/tutorial_warping
+  - articles/tutorial_corticallaminar
+  - articles/tutorial_timeseries
+  - articles/tutorial_liverradial
+  - articles/tutorial_multicontext
+  - articles/tutorial_wispplots
+  - articles/tutorial_stats
+  - articles/tutorial_benchmarks
 
 - title: Design notes
   navbar: Design notes
   contents:
-  - forking
+  - articles/forking
 
 - title: Legal
   navbar: Legal
   contents:
-  - license
+  - articles/license
 
 reference:
 - title: Main

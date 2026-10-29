@@ -1,50 +1,85 @@
 # Dependency licenses
 
-The GPLv2 of Rcpp and the Apache 2.0 of the oneTBB package compiled with
-Stan are incompatible when bundled together as a single binary, which is
-why these scripts are being provided as a buildable R package on GitHub
-but not as a precompiled binary ready for installation.
+wispack links three pieces of code whose licenses need to be read
+together: Rcpp (`GPL (>= 2)`), Stan Math’s Intel TBB dependency (Apache
+License 2.0), and wispack’s own code (`GPL (>= 3)`, see `LICENSE`). The
+Stan project’s own licensing page states a real conflict here, but it’s
+narrower than it sounds out of context, and it doesn’t block this
+package.
 
-See: <https://github.com/stan-dev/stan/wiki/Stan-Licensing>
+**The conflict, as the Stan project states it:** Apache License 2.0 and
+GPL version 2 cannot be combined into a single distributed binary. The
+Free Software Foundation has never considered Apache 2.0 compatible with
+GPLv2, because Apache 2.0’s patent-termination clause has no counterpart
+in GPLv2’s text. See the [Stan wiki’s Licensing
+page](https://github.com/stan-dev/stan/wiki/Stan-Licensing) and the
+[FSF’s license list](https://www.gnu.org/licenses/license-list.html)
+(entry for “Apache License 2.0”).
+
+**Why that doesn’t block wispack:** GPLv3 was written specifically to
+fix this. Both the [FSF’s license
+list](https://www.gnu.org/licenses/license-list.html) and the [Apache
+Software Foundation’s own compatibility
+page](https://www.apache.org/licenses/GPL-compatibility) state that
+Apache 2.0 code can be combined with GPLv3 code and the combination
+distributed under GPLv3 (the reverse – GPLv3 code going into an
+Apache-licensed project – doesn’t hold, but that’s not the direction
+this package needs). Separately, Rcpp’s own `License:` field is
+`GPL (>= 2)` – “version 2 or any later version” – so Rcpp itself permits
+being used and redistributed under GPLv3 terms, not only GPLv2.
+
+Putting those together: wispack is licensed `GPL (>= 3)`, and
+distributing the combination of wispack + Rcpp + Stan Math + TBB as a
+whole under GPLv3 is exactly the case both the FSF and the ASF say is
+fine. This isn’t a one-off argument specific to wispack, either – it’s
+the resolution the R/Stan ecosystem already relies on. `RcppParallel`,
+the CRAN package that actually ships the compiled TBB libraries wispack
+links against (via `StanHeaders`), is itself licensed `GPL (>= 3)` for
+this exact reason, and `rstan`/`brms`/`rstanarm` all ship CRAN binaries
+bundling Stan Math + TBB under the identical pattern. (The conflict
+would only be a real blocker for a package that was itself locked to
+GPLv2-only with no “or later” clause – which is a choice, not something
+TBB or Stan Math force on a downstream package.)
 
 # Rcpp
 
 by: Dirk Eddelbuettel, Romain Francois, JJ Allaire, Kevin Ushey, Qiang
 Kou, Nathan Russell, Iñaki Ucar, Doug Bates, and John Chambers
 
-<https://cran.r-project.org/web/packages/Rcpp/index.html>  
+<https://cran.r-project.org/web/packages/Rcpp/index.html>\
 <https://github.com/RcppCore/Rcpp/tree/master>
 
-GNU General Public License v2.0  
-<https://github.com/RcppCore/Rcpp/blob/master/LICENSE>  
+GPL (\>= 2) – i.e. GPL version 2 or any later version, per Rcpp’s own
+DESCRIPTION file <https://github.com/RcppCore/Rcpp/blob/master/LICENSE>
 <https://github.com/RcppCore/Rcpp/blob/0905d92e0046de5f171d4fde752d97e8733738be/LICENSE>
 
 # Stan Math
 
-Bob Carpenter  
+Bob Carpenter\
 <https://bob-carpenter.github.io/>
 
-<https://mc-stan.org/math/>  
+<https://mc-stan.org/math/>\
 <https://github.com/stan-dev/math>
 
 BSD 3-Clause License
 
-The Stan Math Library depends on the Intel TBB library which is licensed
-under the Apache 2.0 license. This dependency implies an additional
-restriction as compared to the new BSD license alone. The Apache 2.0
-license is incompatible with GPL-2 licensed code if distributed as a
-unitary binary. You may refer to the Licensing page on the Stan wiki.
+The Stan Math Library depends on the Intel TBB library (via
+`RcppParallel`), which is licensed under the Apache 2.0 license. This
+dependency implies an additional restriction as compared to the new BSD
+license alone: Apache 2.0 code can’t be combined with GPLv2-only code in
+one distributed binary. See the explanation at the top of this page for
+why that doesn’t affect wispack, which is licensed GPL (\>= 3).
 
 # Boost / BH
 
-Copyright Beman Dawes, David Abrahams, 1998-2005.  
+Copyright Beman Dawes, David Abrahams, 1998-2005.\
 Copyright Rene Rivera 2004-2007.
 
-<https://www.boost.org/>  
+<https://www.boost.org/>\
 <https://github.com/boostorg>
 
-Boost license 1.0  
-<https://www.boost.org/LICENSE_1_0.txt>  
+Boost license 1.0\
+<https://www.boost.org/LICENSE_1_0.txt>\
 <https://github.com/boostorg/boost/blob/master/LICENSE_1_0.txt>
 
 “Boost Software License - Version 1.0 - August 17th, 2003
@@ -79,10 +114,10 @@ The Eigen project was started by Benoît Jacob (founder) and Gaël
 Guennebaud (guru). Many other people have since contributed their
 talents to help make Eigen successful.
 
-<https://eigen.tuxfamily.org/>  
+<https://eigen.tuxfamily.org/>\
 <https://gitlab.com/libeigen/eigen>
 
-MPL2 (Mozilla Public License)  
+MPL2 (Mozilla Public License)\
 <https://www.mozilla.org/en-US/MPL/2.0/FAQ/>
 
 # SUNDIALS
@@ -93,54 +128,66 @@ Lawrence Livermore National Security and Southern Methodist University.
 
 BSD 3-Clause License Copyright (c) 2002-2019
 
+# RcppParallel
+
+Kevin Ushey, JJ Allaire, Romain Francois, Gregory Vandenbrouck, Dirk
+Eddelbuettel, and others
+
+<https://rcppcore.github.io/RcppParallel/>
+<https://github.com/RcppCore/RcppParallel>
+
+GPL (\>= 3) – note this is the license RcppParallel itself (the R
+package, i.e. the glue code) is distributed under; it bundles the Apache
+2.0-licensed oneTBB library described below, which retains its own
+license for that bundled code. See the explanation at the top of this
+page.
+
 # oneTBB
 
 Unified Acceleration (UXL) Foundation
 
 <https://github.com/uxlfoundation/oneTBB>
 
-Apache 2.0  
+Apache 2.0\
 <https://github.com/uxlfoundation/oneTBB/blob/master/LICENSE.txt>
 
 # nlopt
 
-Steven G. Johnson  
+Steven G. Johnson\
 The NLopt nonlinear-optimization package
 
-<http://github.com/stevengj/nlopt>  
+<http://github.com/stevengj/nlopt>\
 <https://nlopt.readthedocs.io/en/latest/>
 
-GNU Lesser General Public License (LGPL)  
+GNU Lesser General Public License (LGPL)\
 <https://nlopt.readthedocs.io/en/latest/NLopt_License_and_Copyright/>
 
 # unistd.h, part of the C POSIX library
 
-The IEEE and The Open Group  
-<https://pubs.opengroup.org/onlinepubs/9799919799/>  
+The IEEE and The Open Group\
+<https://pubs.opengroup.org/onlinepubs/9799919799/>\
 <https://www.opengroup.org/membership/forums/platform/unix>
 
 <https://pubs.opengroup.org/onlinepubs/7908799/xsh/unistd.h.html>
 
 Available and licensed on your local system
 
-# dtwclust
+# dtw
 
-Alexis Sarda-Espinosa  
-Sarda-Espinosa A (2024). dtwclust: Time Series Clustering Along with
-Optimizations for the Dynamic Time Warping Distance. R package version
-6.0.0
+Toni Giorgino Giorgino T (2009). “Computing and Visualizing Dynamic Time
+Warping Alignments in R: The dtw Package.” Journal of Statistical
+Software, 31(7), 1-24. <doi:10.18637/jss.v031.i07>
 
-Specifically using DTW Barycenter Averaging, from:  
-Petitjean F, Ketterlin A and Gancarski P (2011). “A global averaging
-method for dynamic time warping, with applications to clustering.”
-Pattern Recognition, 44(3), pp. 678 - 693. ISSN 0031-3203,
-<doi:10.1016/j.patcog.2010.09.013>,
-<https://www.sciencedirect.com/science/article/pii/S003132031000453X>
+For partial matching and normalization strategies, also: Tormene P,
+Giorgino T, Quaglini S, Stefanelli M (2008). “Matching Incomplete Time
+Series with Dynamic Time Warping: An Algorithm and an Application to
+Post-Stroke Rehabilitation.” Artificial Intelligence in Medicine, 45(1),
+11-34. <doi:10.1016/j.artmed.2008.11.007>
 
-<https://cran.r-project.org/package=dtwclust>  
-<https://github.com/asardaes/dtwclust>
+<https://cran.r-project.org/package=dtw>
+<https://dynamictimewarping.github.io/>
 
-GPLv3
+GPL (\>= 2)
 
 # ggplot2
 
@@ -148,7 +195,7 @@ by: ggplot2 core developer team
 
 <https://ggplot2.tidyverse.org/>
 
-The MIT license  
+The MIT license\
 <https://github.com/tidyverse/ggplot2>
 
 # Liver lobule data

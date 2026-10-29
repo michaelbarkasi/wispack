@@ -8,8 +8,8 @@
 <title>Time-series data • wispack</title>
 <!-- katex math --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script><script src="../katex-auto.js"></script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
 <meta property="og:title" content="Time-series data">
@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -51,6 +51,9 @@
     <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">Plotting wisp models</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_benchmarks.html">Benchmarks and comparisons</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Design notes</h6></li>
+    <li><a class="dropdown-item" href="../articles/forking.html">Why wispack hand-rolls its own forking</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -87,7 +90,8 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">July 3, 2026 (v2.4)</h4>
+            <h4 data-toc-skip class="date">October 29, 2026
+(v2.5.1)</h4>
       
 
       <div class="d-none name"><code>tutorial_timeseries.Rmd</code></div>
@@ -153,7 +157,7 @@ transcripts from an RNA species in a single cell.</p>
 <code class="sourceCode R"><span><span class="va">countdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
 <span>      <span class="st">"extdata"</span>, </span>
-<span>      <span class="st">"ACx_laminar_countdata_demo.csv"</span>, </span>
+<span>      <span class="st">"ACx_laminar_countdata_demo.csv.gz"</span>, </span>
 <span>      package <span class="op">=</span> <span class="st">"wispack"</span></span>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
@@ -503,7 +507,13 @@ the wisp plot for <span class="gene">NXPH3</span>, which shows a
 temporally dynamic and lateralized profile in deep layers (block 1), but
 almost no activity in superficial layers (block 2).</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">ratecount</span><span class="op">$</span><span class="va">plot_pred_context_cortex_fixEff_Nxph3</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">rc_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-ratecount.html">plot.ratecount</a></span><span class="op">(</span></span>
+<span>    <span class="va">model</span>,</span>
+<span>    dim.boundaries <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span>,</span>
+<span>    species        <span class="op">=</span> <span class="st">"Nxph3"</span>,</span>
+<span>    verbose        <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">rc_plots</span><span class="op">$</span><span class="va">plot_pred_context_cortex_fixEff_Nxph3</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_timeseries_files/figure-html/plot_wisp-1.png" class="r-plt" alt="" width="700"></p>
 <p>By default, when the <span class="code_variable">timeseries</span>
 factor is present, rate-count plots use an HCL color space, plotting
@@ -526,7 +536,8 @@ the trend obvious at a glance while also clarifying it. These
 time-series plots are made automatically by the <span class="function">wisp</span> function when a time series is provided or
 detected, through an internal call to the <span class="function">plot.timeseries</span> function.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">model</span><span class="op">$</span><span class="va">plots</span><span class="op">$</span><span class="va">timeseries</span><span class="op">$</span><span class="va">plot_pred_context_cortex_timeseries_Nxph3</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">ts_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-timeseries.html">plot.timeseries</a></span><span class="op">(</span><span class="va">model</span>, species <span class="op">=</span> <span class="st">"Nxph3"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">ts_plots</span><span class="op">$</span><span class="va">plot_pred_context_cortex_timeseries_Nxph3</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_timeseries_files/figure-html/plot_timeseries-1.png" class="r-plt" alt="" width="700"></p>
 <p>Wisp time-series plots keep the y-axis a representation of rate, but
 switch the x-axis to a representation of the time-series points.
@@ -558,7 +569,7 @@ also includes all plots.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

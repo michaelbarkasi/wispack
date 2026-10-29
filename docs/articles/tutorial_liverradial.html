@@ -8,8 +8,8 @@
 <title>Radial zonation in liver lobules • wispack</title>
 <!-- katex math --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script><script src="../katex-auto.js"></script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
 <meta property="og:title" content="Radial zonation in liver lobules">
@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -51,6 +51,9 @@
     <li><a class="dropdown-item" href="../articles/tutorial_wispplots.html">Plotting wisp models</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_stats.html">Customizing statistical analyses</a></li>
     <li><a class="dropdown-item" href="../articles/tutorial_benchmarks.html">Benchmarks and comparisons</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Design notes</h6></li>
+    <li><a class="dropdown-item" href="../articles/forking.html">Why wispack hand-rolls its own forking</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Legal</h6></li>
     <li><a class="dropdown-item" href="../articles/license.html">Dependency licenses</a></li>
@@ -87,7 +90,8 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">July 3, 2026 (v2.4)</h4>
+            <h4 data-toc-skip class="date">October 29, 2026
+(v2.5.1)</h4>
       
 
       <div class="d-none name"><code>tutorial_liverradial.Rmd</code></div>
@@ -427,7 +431,7 @@ this package. We will load it directly.</p>
 <code class="sourceCode R"><span><span class="va">count_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
 <span>      <span class="st">"extdata"</span>, </span>
-<span>      <span class="st">"Droin_radial_count_data_sim.csv"</span>, </span>
+<span>      <span class="st">"Droin_radial_count_data_sim.csv.gz"</span>, </span>
 <span>      package <span class="op">=</span> <span class="st">"wispack"</span></span>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
@@ -605,22 +609,22 @@ the number of MCMC steps to zero and the number of bootstraps to <span class="ma
 <span><span class="co">## Running bootstrap fits</span></span>
 <span><span class="co">## Performing initial fit of full data</span></span>
 <span><span class="co">## Penalized nll: 1047.02</span></span>
-<span><span class="co">## Batch: 1/100, 0.0363976 sec/bs</span></span>
-<span><span class="co">## Batch: 10/100, 0.0379782 sec/bs</span></span>
-<span><span class="co">## Batch: 20/100, 0.0366889 sec/bs</span></span>
-<span><span class="co">## Batch: 30/100, 0.0321997 sec/bs</span></span>
-<span><span class="co">## Batch: 40/100, 0.0379793 sec/bs</span></span>
-<span><span class="co">## Batch: 50/100, 0.0334089 sec/bs</span></span>
-<span><span class="co">## Batch: 60/100, 0.0348776 sec/bs</span></span>
-<span><span class="co">## Batch: 70/100, 0.0361681 sec/bs</span></span>
-<span><span class="co">## Batch: 80/100, 0.0378 sec/bs</span></span>
-<span><span class="co">## Batch: 90/100, 0.0389041 sec/bs</span></span>
+<span><span class="co">## Batch: 1/100, 0.309185 sec/bs</span></span>
+<span><span class="co">## Batch: 10/100, 0.342849 sec/bs</span></span>
+<span><span class="co">## Batch: 20/100, 0.319256 sec/bs</span></span>
+<span><span class="co">## Batch: 30/100, 0.281686 sec/bs</span></span>
+<span><span class="co">## Batch: 40/100, 0.337657 sec/bs</span></span>
+<span><span class="co">## Batch: 50/100, 0.293907 sec/bs</span></span>
+<span><span class="co">## Batch: 60/100, 0.305486 sec/bs</span></span>
+<span><span class="co">## Batch: 70/100, 0.317974 sec/bs</span></span>
+<span><span class="co">## Batch: 80/100, 0.339967 sec/bs</span></span>
+<span><span class="co">## Batch: 90/100, 0.345703 sec/bs</span></span>
 <span><span class="co">## All complete!</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Bootstrap simulation complete... </span></span>
-<span><span class="co">## Bootstrap run time (total), minutes: 0.631</span></span>
-<span><span class="co">## Bootstrap run time (per sample), seconds: 0.038</span></span>
-<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 0.378</span></span>
+<span><span class="co">## Bootstrap run time (total), minutes: 5.568</span></span>
+<span><span class="co">## Bootstrap run time (per sample), seconds: 0.334</span></span>
+<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 3.341</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Computing p-values and CI for model parameters</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
@@ -693,11 +697,21 @@ and <span class="gene">ASS1</span> being higher in the portal region.
 Their respective spatial gradients are easy to see in the rate-count
 plot:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">rc_plots</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"ratecount"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">plt_glul</span> <span class="op">&lt;-</span> <span class="va">rc_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_glul"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">plt_ass1</span> <span class="op">&lt;-</span> <span class="va">rc_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_ass1"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">g</span>        <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_glul</span>, <span class="va">plt_ass1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
-<span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">rc_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-ratecount.html">plot.ratecount</a></span><span class="op">(</span></span>
+<span>  wisp.results     <span class="op">=</span> <span class="va">radial.model</span>,</span>
+<span>  log.scale        <span class="op">=</span> <span class="va">radial.model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">log.scale</span>,</span>
+<span>  CI_style         <span class="op">=</span> <span class="va">radial.model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">CI_style</span>,</span>
+<span>  dim.boundaries   <span class="op">=</span> <span class="va">radial.model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">dim.bounds</span>,</span>
+<span>  count.alpha.none <span class="op">=</span> <span class="va">radial.model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">count.alpha.none</span>,</span>
+<span>  count.alpha.ran  <span class="op">=</span> <span class="va">radial.model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">count.alpha.ran</span>,</span>
+<span>  pred.alpha.none  <span class="op">=</span> <span class="va">radial.model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">pred.alpha.none</span>,</span>
+<span>  pred.alpha.ran   <span class="op">=</span> <span class="va">radial.model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">pred.alpha.ran</span>,</span>
+<span>  verbose          <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">plt_glul</span>      <span class="op">&lt;-</span> <span class="va">rc_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_glul"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">plt_ass1</span>      <span class="op">&lt;-</span> <span class="va">rc_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_ass1"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">combined_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_glul</span>, <span class="va">plt_ass1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">combined_plot</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_zonation_space-1.png" class="r-plt" alt="" width="700"></p>
 <p>While the rate-count plots make clear the spatial gradients of <span class="gene">GLUL</span> and <span class="gene">ASS1</span>, temporal
 information can only be read off implicitly. For <span class="gene">ASS1</span>, we seem to see a slight decrease in gene
@@ -707,11 +721,16 @@ the central region decreasing in expression as the portal region
 increases. These temporal patterns can be seen more clearly by looking
 at the time-series plots.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ts_plots</span> <span class="op">&lt;-</span> <span class="va">radial.model</span><span class="op">[[</span><span class="st">"plots"</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="st">"timeseries"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">plt_glul</span> <span class="op">&lt;-</span> <span class="va">ts_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_glul"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">plt_ass1</span> <span class="op">&lt;-</span> <span class="va">ts_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_ass1"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_glul</span>, <span class="va">plt_ass1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
-<span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">ts_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-timeseries.html">plot.timeseries</a></span><span class="op">(</span></span>
+<span>  wisp.results     <span class="op">=</span> <span class="va">radial.model</span>,</span>
+<span>  splitting_factor <span class="op">=</span> <span class="va">radial.model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">splitting_factor</span>,</span>
+<span>  log.scale        <span class="op">=</span> <span class="va">radial.model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">log.scale</span>,</span>
+<span>  verbose          <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">plt_glul</span>      <span class="op">&lt;-</span> <span class="va">ts_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_glul"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">plt_ass1</span>      <span class="op">&lt;-</span> <span class="va">ts_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_ass1"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="va">combined_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_glul</span>, <span class="va">plt_ass1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">combined_plot</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_zonation_time-1.png" class="r-plt" alt="" width="700"></p>
 <p>The time-series plot for <span class="gene">ASS1</span> shows some
 variation (generally downward) over time, but the magnitude of that
@@ -732,8 +751,8 @@ it’s ZT6 and ZT12 (green and blue) that are elevated.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plt_arntl</span> <span class="op">&lt;-</span> <span class="va">rc_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_arntl"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">plt_dbp</span>   <span class="op">&lt;-</span> <span class="va">rc_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_dbp"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">g</span>         <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_arntl</span>, <span class="va">plt_dbp</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
-<span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">combined_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_arntl</span>, <span class="va">plt_dbp</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">combined_plot</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_rhythm_space-1.png" class="r-plt" alt="" width="700"></p>
 <p>These temporal dynamics are made more clear in the time-series plots,
 which clearly show the mid-ZT dip in <span class="gene">ARNTL</span> and
@@ -741,8 +760,8 @@ the mid-ZT bump in <span class="gene">DBP</span>.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plt_arntl</span> <span class="op">&lt;-</span> <span class="va">ts_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_arntl"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">plt_dbp</span>   <span class="op">&lt;-</span> <span class="va">ts_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_dbp"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">g</span>         <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_arntl</span>, <span class="va">plt_dbp</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
-<span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">combined_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_arntl</span>, <span class="va">plt_dbp</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">combined_plot</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_rhythm_time-1.png" class="r-plt" alt="" width="700"></p>
 <h3>
 Zonated and rhythmic genes
@@ -755,16 +774,16 @@ hand, is expressed more in the portal region, just like <span class="gene">ASS1<
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plt_elovl3</span> <span class="op">&lt;-</span> <span class="va">rc_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_elovl3"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">plt_pck1</span>   <span class="op">&lt;-</span> <span class="va">rc_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_pck1"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">g</span>          <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_elovl3</span>, <span class="va">plt_pck1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
-<span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">combined_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_elovl3</span>, <span class="va">plt_pck1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">combined_plot</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_both_space-1.png" class="r-plt" alt="" width="700"></p>
 <p>However, unlike <span class="gene">GLUL</span> and <span class="gene">PCK1</span>, <span class="gene">ELOVL3</span> and <span class="gene">PCK1</span> have notable temporal rhythm. <span class="gene">ELOVL3</span> is similar to <span class="gene">ARNTL</span>, with a mid-ZT dip. <span class="gene">PCK1</span> is similar to <span class="gene">DBP</span>,
 with a mid-ZT bump.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plt_elovl3</span> <span class="op">&lt;-</span> <span class="va">ts_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_elovl3"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">plt_pck1</span>   <span class="op">&lt;-</span> <span class="va">ts_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_pck1"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">g</span>          <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_elovl3</span>, <span class="va">plt_pck1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>  </span>
-<span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">combined_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">arrangeGrob</a></span><span class="op">(</span><span class="va">plt_elovl3</span>, <span class="va">plt_pck1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/grid/grid.draw.html" class="external-link">grid.draw</a></span><span class="op">(</span><span class="va">combined_plot</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_liverradial_files/figure-html/print_plots_both_time-1.png" class="r-plt" alt="" width="700"></p>
 <h2>
 Advantages of wisp
@@ -792,7 +811,7 @@ random effect is linear.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>
