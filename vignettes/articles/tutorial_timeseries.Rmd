@@ -158,13 +158,15 @@ where $\beta$ are the effect parameters and $w$ are the weights. The rows of the
 
 <h2>Visualizing time series</h2>
 
-The [rate-count wisp plot](tutorial_wispplots.html) is made automatically with all calls of <span class = "function">wisp</span> by an internal call to <span class = "function">plot.ratecount</span>. This style of plot conveys the spatial distribution of a RNA species explicitly, by plotting space on the x-axis. It can only convey changes over a time series indirectly, via coloring of the levels of the <span class = "code_variable">timeseries</span> factor. For example, consider the wisp plot for <span class = "gene">NXPH3</span>, which shows a temporally dynamic and lateralized profile in deep layers (block 1), but almost no activity in superficial layers (block 2). 
+The [rate-count wisp plot](tutorial_wispplots.html) is made automatically with all calls of <span class = "function">wisp</span> by an internal call to <span class = "function">plot</span> with <span class = "code_variable">type = "ratecount"</span>. This style of plot conveys the spatial distribution of a RNA species explicitly, by plotting space on the x-axis. It can only convey changes over a time series indirectly, via coloring of the levels of the <span class = "code_variable">timeseries</span> factor. For example, consider the wisp plot for <span class = "gene">NXPH3</span>, which shows a temporally dynamic and lateralized profile in deep layers (block 1), but almost no activity in superficial layers (block 2).
 
 ```{r plot_wisp}
-rc_plots <- plot.ratecount(
+rc_plots <- plot(
     model,
+    type           = "ratecount",
     dim.boundaries = colMeans(layer.boundary.bins),
     species        = "Nxph3",
+    print.plots    = FALSE,
     verbose        = FALSE
   )
 print(rc_plots$plot_pred_context_cortex_fixEff_Nxph3)
@@ -179,10 +181,10 @@ wispack:::.check_between(test_val, g$ratecount_Nxph3, "end check")
 
 By default, when the <span class = "code_variable">timeseries</span> factor is present, rate-count plots use an HCL color space, plotting time series as graduated luminance and the other factors as categorical levels of hue and chroma. In this case, left-hemisphere treatment levels are in green and right-hemisphere levels are in blue, with earlier time points dull and later time points brighter. This makes the lateralization easy to see: the dull green line for the left hemisphere at P7 is much higher than any of the blue lines for the right hemisphere. However, the temporal dynamics are harder to see and only shown implicitly. If you look closely, you should be able to see that (for the deep layers) for both left (green) and right (blue), the dullest line (P7) is the highest, the medium-brightness line (P12) is the lowest, and the brightest line (P18) is in between. This suggests that <span class = "gene">NXPH3</span> expression in deep layers dips at P12 relative to P7, then rises again in P18.
 
-While this trend can be discerned from the spatial wisp plot, wispack offers another kind of plot for plotting time-series data which makes the trend obvious at a glance while also clarifying it. These time-series plots are made automatically by the <span class = "function">wisp</span> function when a time series is provided or detected, through an internal call to the <span class = "function">plot.timeseries</span> function. 
+While this trend can be discerned from the spatial wisp plot, wispack offers another kind of plot for plotting time-series data which makes the trend obvious at a glance while also clarifying it. These time-series plots are made automatically by the <span class = "function">wisp</span> function when a time series is provided or detected, through an internal call to <span class = "function">plot</span> with <span class = "code_variable">type = "timeseries"</span>.
 
 ```{r plot_timeseries}
-ts_plots <- plot.timeseries(model, species = "Nxph3", verbose = FALSE)
+ts_plots <- plot(model, type = "timeseries", species = "Nxph3", print.plots = FALSE, verbose = FALSE)
 print(ts_plots$plot_pred_context_cortex_timeseries_Nxph3)
 ```
 

@@ -19,8 +19,11 @@ test_that("wisp() returns the documented top-level structure", {
     "fix", "treatment", "grouping.variables", "param.idx0", "settings"
   ) %in% names(model)))
   # wisp() does not store built plot objects on its return value (see R/wspmm.R); regenerate
-  # plots on demand via plot.ratecount()/plot.timeseries()/plot.parameters()/etc. instead.
+  # plots on demand via plot(model, type = "ratecount"/"timeseries"/"parameters"/etc.) instead.
   expect_false("plots" %in% names(model))
+
+  # wisp() classes its return value "wisp" so that plot(model, type = ...) dispatches correctly.
+  expect_s3_class(model, "wisp")
 
   expect_equal(model$model.component.list, c("Rt", "tslope", "tpoint"))
   expect_type(model$fitted.parameters, "double")
@@ -64,7 +67,7 @@ test_that("the package's exported API surface hasn't grown or shrunk unintention
     ".__T__[:base", ".__T__[[<-:base", ".__T__[<-:base", ".__T__$:base", ".__T__$<-:base",
     "affine", "analyze_attractor_sim_benchmarks", "analyze.residuals",
     "attractor_simulation", "attractor_simulation_ground_truth",
-    "bin_data", "convergence_mask", "coordinate_binning", "coordinate_transform",
+    "bin_data", "coef.wisp", "confint.wisp", "convergence_mask", "coordinate_binning", "coordinate_transform",
     "cortical_coordinate_transform", "create.count.data.WSPmm", "create.count.data.WSPmm.allen",
     "demo.sigmoid.plots", "demo.warp.plots",
     "extract_pvalue_attractor_simulation_wisp", "extract_random_effect_attractor_simulation_wisp",
@@ -72,16 +75,15 @@ test_that("the package's exported API surface hasn't grown or shrunk unintention
     "induce_SV",
     "make_count_data", "make_count_data_csv", "make_replicate", "matrix_transform",
     "model_attractor_simulation_wisp",
-    "parse_csv", "parse_hdf5", "plot_results",
-    "plot.decomposition", "plot.effect.dist", "plot.MCMC.bs.comparison", "plot.MCMC.walks",
-    "plot.parameters", "plot.ratecount", "plot.species.summary", "plot.timeseries",
-    "poly_sigmoid_R", "project_cp", "pvalues.samples", "rot_matrix",
+    "parse_csv", "parse_hdf5", "plot_results", "plot.wisp",
+    "poly_sigmoid_R", "print.summary.wisp", "print.wisp", "project_cp", "pvalues.samples",
+    "residuals.wisp", "rot_matrix",
     "run_attractor_sim_benchmarks", "sample.stats", "sigmoid_stable_R", "smooth_data",
     "snk.horizontal_rule", "snk.print_details", "snk.print_function", "snk.print_table",
     "snk.print_var_charvec", "snk.print_var_list", "snk.print_vec", "snk.report", "snk.report...",
     "snk.section_break_reps", "snk.simple_break_reps", "snk.small_break_reps",
-    "snk.step_heading", "snk.step_number", "snk.summary_heading",
-    "warp_mc_R", "wisp", "wisp.sigmoid", "wisp.warp", "wspc"
+    "snk.step_heading", "snk.step_number", "snk.summary_heading", "summary.wisp",
+    "warp_mc_R", "wisp", "wisp_sigmoid", "wisp_warp", "wspc"
   ))
   expect_equal(current, expected)
 })

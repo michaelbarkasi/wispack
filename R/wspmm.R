@@ -78,7 +78,7 @@ NULL
 #'    \item \code{diagnostics.bs}: Diagnostic information for each bootstrap resample.
 #'    \item \code{diagnostics.MCMC}: Diagnostic information for each MCMC random-walk step (i.e., resample).
 #'    \item \code{stats}: List containing a main data frame \code{parameters} with the results (p-values, estimate, confidence intervals, etc) of the statistical analysis of the model parameters, plus data frames holding model residuals.
-#'    \item \code{plot.settings}: A copy of the (defaulted) plot settings provided to the \code{wisp} function; used by the \code{plot.*} family of functions when re-plotting a fitted model. Note that \code{wisp()} does not store built plot objects in its return value (doing so for a large model could add gigabytes); use the exported \code{plot.*} functions (e.g. \code{plot.ratecount}, \code{plot.parameters}, \code{plot.species.summary}) to regenerate specific plots on demand from this returned list.
+#'    \item \code{plot.settings}: A copy of the (defaulted) plot settings provided to the \code{wisp} function; used by \code{\link{plot.wisp}} when re-plotting a fitted model. Note that \code{wisp()} does not store built plot objects in its return value (doing so for a large model could add gigabytes); call \code{plot(model, type = ...)} (e.g. \code{type = "ratecount"}, \code{"parameters"}, \code{"species.summary"}) to regenerate specific plots on demand from this returned list.
 #'    \item \code{variables}: A copy of the resolved \code{variables} list (the column-name mapping actually used for the fit, after defaults were filled in).
 #'    }
 #' @export
@@ -404,8 +404,8 @@ wisp <- function(
       results[["plot.settings"]] <- plotset
       
       # Make rate plots (built only for their print.plots side effect; not stored on the
-      # returned model -- call plot.ratecount() directly on the fitted model to regenerate)
-      plot.ratecount(
+      # returned model -- call plot(model, type = "ratecount") directly on the fitted model to regenerate)
+      .plot_ratecount(
         wisp.results       = results,
         log.scale          = plotset$log.scale,
         print.plots        = plotset$print.plots,
@@ -420,7 +420,7 @@ wisp <- function(
 
       # Make timeseries plots (same: side-effect only, not stored)
       if (any(timeseries_mask)) {
-        plot.timeseries(
+        .plot_timeseries(
           wisp.results     = results,
           splitting_factor = plotset$splitting_factor,
           log.scale        = plotset$log.scale,
@@ -555,9 +555,9 @@ wisp <- function(
       # Make plots of results ####
       # NOTE: none of the plot.*() calls below are stored on the returned model -- they are
       # called here only for their print.plots side effect (printing to the graphics device
-      # during a live fit/knit). To regenerate any of these plots later, call the relevant
-      # plot.*() function directly on the fitted model (e.g. plot.ratecount(), plot.parameters(),
-      # plot.species.summary()).
+      # during a live fit/knit). To regenerate any of these plots later, call
+      # plot(model, type = ...) on the fitted model (e.g. type = "ratecount", "parameters",
+      # "species.summary").
 
       if (verbose) {
         snk.report("Making plots", initial_breaks = 1)
@@ -567,7 +567,7 @@ wisp <- function(
       # Plot MCMC walks, both parameters and negloglik
       if (!is.null(diagnostics.MCMC)) {
 
-        plot.MCMC.walks(
+        .plot_MCMC_walks(
           wisp.results   = results,
           print.plots    = plotset$print.plots,
           verbose        = verbose
@@ -575,7 +575,7 @@ wisp <- function(
 
         # Plot normality comparison of MCMC and bootstrap estimates
         if (bootstraps.num != 0) {
-          plot.MCMC.bs.comparison(
+          .plot_MCMC_bs_comparison(
             wisp.results = results,
             print.plots  = plotset$print.plots,
             verbose      = verbose
@@ -585,14 +585,14 @@ wisp <- function(
       }
 
       # Plot effect parameter distribution
-      plot.effect.dist(
+      .plot_effect_dist(
         wisp.results     = results,
         print.plots      = plotset$print.plots,
         verbose          = verbose
       )
 
       # Make rate plots
-      plot.ratecount(
+      .plot_ratecount(
         wisp.results     = results,
         log.scale        = plotset$log.scale,
         print.plots      = plotset$print.plots,
@@ -607,7 +607,7 @@ wisp <- function(
 
       # Make timeseries plots
       if (any(timeseries_mask)) {
-        plot.timeseries(
+        .plot_timeseries(
           wisp.results     = results,
           splitting_factor = plotset$splitting_factor,
           log.scale        = plotset$log.scale,
@@ -617,7 +617,7 @@ wisp <- function(
       }
 
       # Make parameter plots (side-effect only, not stored -- see note above; kept here,
-      # unconditionally, even though its return value is discarded, because plot.parameters()
+      # unconditionally, even though its return value is discarded, because .plot_parameters()
       # draws from the global RNG stream (see R/wspmm.R) to downsample points for its violin
       # plots, so skipping this call would shift the RNG stream state at the point wisp()
       # returns relative to prior releases, silently changing any RNG-sensitive computation a
@@ -627,7 +627,7 @@ wisp <- function(
         lapply(
           results$grouping.variables$species.lvls,
           function(sps) {
-            plot.parameters(
+            .plot_parameters(
               wisp.results = results,
               species      = sps,
               verbose      = FALSE
@@ -638,7 +638,7 @@ wisp <- function(
 
       # Print summary plots
       if (plotset$print.plots) {
-        plot.species.summary(
+        .plot_species_summary(
           wisp.results = results,
           contexts     = c(),
           species      = c(),
@@ -650,7 +650,10 @@ wisp <- function(
 
     # Add metadata to results
     results[["variables"]] <- variables
-    
+
+    # Classed so that plot(model, type = ...) dispatches to plot.wisp() below.
+    class(results) <- c("wisp", class(results))
+
     cpp_model$clear_stan_mem()
     return(results)
     
@@ -1035,47 +1038,422 @@ analyze.residuals <- function(
         plots     = plots.residuals
       )
     )
-    
+
   }
+
+# Standard S3 methods ###################################################################################################
+#
+# print.wisp(), summary.wisp()/print.summary.wisp(), residuals.wisp(), coef.wisp(), and confint.wisp() below are real,
+# dispatchable S3 methods for the "wisp" class, following the same lesson learned from the plot.wisp() rework above
+# (see the note at the top of the "Plotting methods" section): colorspace (a Depends: of this package) turns several
+# base generics into S4 generics for the whole session by calling setMethod() on them when it loads, which makes plain
+# exportPattern()-based S3 registration unreliable. So each of these methods carries both an explicit @method roxygen
+# tag and an explicit S3method() entry in NAMESPACE, rather than relying solely on exportPattern().
+
+#' Print a fitted wisp model
+#'
+#' Terse console summary of a fitted \code{\link{wisp}} model: number of fitted parameters, the grouping levels
+#' (context/species/random-effect) the model was fit over, and which resampling method (bootstraps and/or MCMC) was
+#' used to estimate parameter uncertainty. This is deliberately terse -- use \code{\link{summary.wisp}} for the full
+#' parameter table, or \code{\link{plot.wisp}} to visualize the fit.
+#'
+#' @param x List, output of the \code{\link{wisp}} function (an object of class \code{"wisp"}).
+#' @param ... Ignored; present only for S3 method consistency with \code{\link[base]{print}}.
+#' @return \code{x}, invisibly (as is standard for \code{print} methods).
+#' @method print wisp
+#' @export
+print.wisp <- function(x, ...) {
+
+  n_params  <- length(x$fitted.parameters)
+  grp       <- x$grouping.variables
+  n_context <- length(grp$context.lvls)
+  n_species <- length(grp$species.lvls)
+  n_ran     <- length(grp$ran.lvls[grp$ran.lvls != "none"])
+
+  n_bs   <- if (!is.null(x$sample.params.bs))   nrow(x$sample.params.bs)   else 0L
+  n_mcmc <- if (!is.null(x$sample.params.MCMC)) nrow(x$sample.params.MCMC) else 0L
+
+  cat("Fitted wisp model\n")
+  cat("-----------------\n")
+  cat("Parameters:    ", n_params, "\n", sep = "")
+  cat(
+    "Grouping:      ", n_context, " context level(s), ", n_species, " species level(s), ",
+    n_ran, " random-effect level(s)\n", sep = ""
+  )
+  if (n_bs == 0 && n_mcmc == 0) {
+    cat("Resampling:    none (fit_only run; no parameter uncertainty estimated)\n")
+  } else {
+    cat(
+      "Resampling:    ", n_bs, " bootstrap resample(s), ", n_mcmc, " MCMC step(s) retained ",
+      "(sample.params.type = \"", x$sample.params.type, "\")\n", sep = ""
+    )
+  }
+  if (is.null(x[["stats"]][["parameters"]])) {
+    cat("Stats:         not computed (see sample.stats())\n")
+  } else {
+    n_sig <- sum(x$stats$parameters$significance %in% c("*", "**", "***"))
+    cat("Stats:         ", nrow(x$stats$parameters), " parameter(s) tested, ", n_sig, " significant\n", sep = "")
+  }
+  cat("\nSee summary() for the full parameter table, or plot() to visualize the fit.\n")
+
+  invisible(x)
+
+}
+
+#' Summarize a fitted wisp model
+#'
+#' Builds an object of class \code{"summary.wisp"}, primarily wrapping the parameter table computed by
+#' \code{\link{sample.stats}} (\code{x$stats$parameters}), plus the same model-size/fit-setting context shown by
+#' \code{\link{print.wisp}}. Use \code{\link{print.summary.wisp}} (dispatched automatically by \code{print()}) to
+#' display the result.
+#'
+#' @param object List, output of the \code{\link{wisp}} function (an object of class \code{"wisp"}).
+#' @param ... Ignored; present only for S3 method consistency with \code{\link[base]{summary}}.
+#' @return An object of class \code{"summary.wisp"}: a list with elements \code{parameters} (the parameter table
+#'   from \code{object$stats$parameters}, or \code{NULL} if statistical analysis was never run -- e.g. the model
+#'   was fit with \code{fit_only = TRUE}), \code{n.context}, \code{n.species}, \code{n.ran}, \code{sample.params.type},
+#'   \code{n.bs}, and \code{n.mcmc}.
+#' @export
+summary.wisp <- function(object, ...) {
+
+  grp <- object$grouping.variables
+
+  out <- list(
+    parameters         = object[["stats"]][["parameters"]],
+    n.context          = length(grp$context.lvls),
+    n.species          = length(grp$species.lvls),
+    n.ran              = length(grp$ran.lvls[grp$ran.lvls != "none"]),
+    sample.params.type = object$sample.params.type,
+    n.bs               = if (!is.null(object$sample.params.bs))   nrow(object$sample.params.bs)   else 0L,
+    n.mcmc             = if (!is.null(object$sample.params.MCMC)) nrow(object$sample.params.MCMC) else 0L
+  )
+  class(out) <- "summary.wisp"
+  out
+
+}
+
+#' Print a wisp model summary
+#'
+#' Formats a \code{"summary.wisp"} object (as returned by \code{\link{summary.wisp}}) for console display.
+#'
+#' @param x An object of class \code{"summary.wisp"}, as returned by \code{\link{summary.wisp}}.
+#' @param ... Ignored; present only for S3 method consistency with \code{\link[base]{print}}.
+#' @return \code{x}, invisibly (as is standard for \code{print} methods).
+#' @method print summary.wisp
+#' @export
+print.summary.wisp <- function(x, ...) {
+
+  cat("Summary of fitted wisp model\n")
+  cat("-----------------------------\n")
+  cat(
+    "Grouping: ", x$n.context, " context level(s), ", x$n.species, " species level(s), ",
+    x$n.ran, " random-effect level(s)\n", sep = ""
+  )
+  if (x$n.bs == 0 && x$n.mcmc == 0) {
+    cat("Resampling: none (fit_only run; no parameter uncertainty estimated)\n\n")
+  } else {
+    cat(
+      "Resampling: ", x$n.bs, " bootstrap resample(s), ", x$n.mcmc, " MCMC step(s) retained ",
+      "(sample.params.type = \"", x$sample.params.type, "\")\n\n", sep = ""
+    )
+  }
+
+  if (is.null(x$parameters)) {
+    cat(
+      "No parameter statistics are available: this model was likely fit with fit_only = TRUE (or sample.stats() ",
+      "was otherwise never run). Call sample.stats() on the fitted model to compute parameter estimates, ",
+      "confidence intervals, and p-values.\n"
+    )
+  } else {
+    snk.print_table("Parameter estimates", x$parameters, head = FALSE, initial_breaks = 0, end_breaks = 0)
+  }
+
+  invisible(x)
+
+}
+
+#' Residuals from a fitted wisp model
+#'
+#' Returns the residual summary statistics (mean, sd, variance, by group) computed by
+#' \code{\link{analyze.residuals}} and stored on the fitted model, either for raw residuals or log-residuals.
+#'
+#' @param object List, output of the \code{\link{wisp}} function (an object of class \code{"wisp"}).
+#' @param type Character string, one of \code{"raw"} (default) or \code{"log"}, specifying whether to return the
+#'   summary statistics for raw residuals (\code{object$stats$residuals}) or log-residuals
+#'   (\code{object$stats$residuals.log}).
+#' @param ... Ignored; present only for S3 method consistency with \code{\link[stats]{residuals}}.
+#' @return A data frame of residual summary statistics by group (columns \code{group}, \code{mean}, \code{sd},
+#'   \code{variance}), or an error if statistical analysis was never run on this model (e.g. it was fit with
+#'   \code{fit_only = TRUE}).
+#' @method residuals wisp
+#' @export
+residuals.wisp <- function(object, type = c("raw", "log"), ...) {
+
+  type <- match.arg(type, choices = c("raw", "log"), several.ok = FALSE)
+
+  if (is.null(object[["stats"]][["residuals"]])) {
+    stop(
+      "No residual statistics are available on this model: it was likely fit with fit_only = TRUE (residual ",
+      "analysis runs only when resampling -- bootstraps or MCMC -- is performed). Re-fit with fit_only = FALSE, ",
+      "or call analyze.residuals() directly on the fitted model."
+    )
+  }
+
+  if (type == "raw") object$stats$residuals else object$stats$residuals.log
+
+}
+
+#' Fitted parameter estimates from a wisp model
+#'
+#' Returns the fitted wisp model parameter estimates as a plain named numeric vector, following the usual R
+#' convention for \code{coef()} methods.
+#'
+#' @param object List, output of the \code{\link{wisp}} function (an object of class \code{"wisp"}).
+#' @param ... Ignored; present only for S3 method consistency with \code{\link[stats]{coef}}.
+#' @return A named numeric vector of fitted parameter estimates (names are the parameter names, matching
+#'   \code{object$param.names}).
+#' @note \code{object$fitted.parameters} is used directly, rather than \code{object$stats$parameters$estimate},
+#'   as the source: it's already a named numeric vector (no extra reshaping needed to meet the \code{coef()}
+#'   convention), and -- unlike \code{object$stats$parameters$estimate} -- it's always present, even for a model
+#'   fit with \code{fit_only = TRUE} where no statistical analysis was ever run. The two are otherwise identical.
+#' @method coef wisp
+#' @export
+coef.wisp <- function(object, ...) {
+  object$fitted.parameters
+}
+
+#' Confidence intervals for wisp model parameters
+#'
+#' Returns confidence intervals for the fitted wisp model parameters. These were already computed once, at
+#' whatever significance level (\code{alpha}) was in effect when \code{\link{sample.stats}} last ran on this model
+#' (the default, both for \code{sample.stats()} and for the statistical analysis \code{\link{wisp}} runs
+#' internally, is \code{alpha = 0.05}, i.e. a 95\% confidence level), and are stored as the \code{CI.low}/\code{CI.high}
+#' columns of \code{object$stats$parameters}.
+#'
+#' If \code{level = 0.95} (the default, matching \code{sample.stats()}'s own default \code{alpha = 0.05}), the
+#' already-stored \code{CI.low}/\code{CI.high} columns are returned directly -- exactly as they were computed during
+#' the original fit (respecting whatever \code{Bonferroni}/\code{conv.resamples.only} choices were made then, even
+#' if those differ from \code{sample.stats()}'s own defaults). If a different \code{level} is requested,
+#' \code{\link{sample.stats}} is transparently re-run (with \code{alpha = 1 - level}, and otherwise its own
+#' defaults for \code{Bonferroni} and \code{conv.resamples.only}, since this model does not record which choices
+#' were used for its originally-stored statistics) to recompute the intervals at the requested level; this is cheap,
+#' since it only re-quantiles the resampled parameters already stored on the model; it does not refit anything.
+#'
+#' @param object List, output of the \code{\link{wisp}} function (an object of class \code{"wisp"}).
+#' @param parm Character vector, or NULL (default). Names of parameters to include (matching
+#'   \code{object$param.names}); if NULL, confidence intervals for all parameters are returned. Follows the same
+#'   \code{parm} semantics as \code{\link[stats]{confint}}.
+#' @param level Numeric, the confidence level required. Defaults to 0.95, matching the confidence level
+#'   \code{\link{wisp}}/\code{\link{sample.stats}} compute by default; see Details above for what happens when a
+#'   different level is requested.
+#' @param ... Additional arguments passed on to \code{\link{sample.stats}} when \code{level != 0.95} (e.g.
+#'   \code{Bonferroni}, \code{conv.resamples.only}, \code{verbose}).
+#' @return A matrix with one row per (selected) parameter and two columns, \code{CI.low} and \code{CI.high},
+#'   row-named by parameter.
+#' @method confint wisp
+#' @export
+confint.wisp <- function(object, parm = NULL, level = 0.95, ...) {
+
+  if (is.null(object[["stats"]][["parameters"]])) {
+    stop(
+      "No parameter statistics are available on this model: it was likely fit with fit_only = TRUE. Call ",
+      "sample.stats() on the fitted model first to compute confidence intervals."
+    )
+  }
+
+  if (isTRUE(all.equal(level, 0.95))) {
+    params_tab <- object$stats$parameters
+  } else {
+    alpha       <- 1 - level
+    object      <- sample.stats(object, alpha = alpha, verbose = FALSE, ...)
+    params_tab  <- object$stats$parameters
+  }
+
+  if (!is.null(parm)) {
+    params_tab <- params_tab[params_tab$parameter %in% parm, , drop = FALSE]
+  }
+
+  out <- as.matrix(params_tab[, c("CI.low", "CI.high")])
+  rownames(out) <- params_tab$parameter
+  out
+
+}
 
 # Plotting methods #####################################################################################################
 #
-# NOTE ON NAMING: the functions below (plot.ratecount, plot.timeseries, plot.parameters, plot.effect.dist,
-# plot.species.summary, plot.MCMC.walks, plot.decomposition, plot.MCMC.bs.comparison) are *not* S3 methods, despite
-# looking like them. wisp()'s return value (and the outputs of these plotting functions) are plain, unclassed
-# lists -- there is no "ratecount"/"timeseries"/etc. class for the `plot` generic to dispatch on. These must be
-# called by their full name (e.g. plot.ratecount(model, ...)), not via plot(model, ...); R's method dispatch will
-# never reach them through the generic. The dotted names are an established part of the public API and are kept
-# for that reason, not changed to avoid the S3-method-naming confusion -- hence this note instead.
-# (R CMD check's Rd-consistency checker still treats these as S3 methods by name pattern alone, which is why their
-# Rd files show a "should use \method markup" NOTE; that's a cosmetic consequence of the same naming choice.)
+# plot.wisp(), immediately below, is the real, exported S3 method for plotting wisp() results. It dispatches on the
+# "wisp" class via a `type` argument, replacing the old per-plot dotted names that only *looked* like S3 methods
+# but never were, since wisp() used to return a plain, unclassed list (see vignettes/articles/release_notes.Rmd
+# for the full old-name to type mapping). The functions after it are now internal helpers (leading dot, @noRd)
+# that plot.wisp() forwards to; they are not part of the public API and should not be called directly by users.
 
-#' Plot fitted model and data
+#' Plot a fitted wisp model
 #'
-#' This function takes wisp model results (a fitted line) and observed data (counts) and plots them together for visual comparison. It can also include independent block boundaries for comparison if provided.
+#' S3 method for plotting the results returned by \code{\link{wisp}}. This is the single public entry point for all
+#' wisp plotting: pick which plot to make with \code{type}, and pass that plot's own extra arguments through
+#' \code{...}. (This replaces the pre-2.6.0 API, where each plot had its own dotted, \code{plot.*}-named function
+#' that looked like an S3 method but never was, since \code{wisp()} results used to be plain, unclassed lists; see
+#' \code{vignette("release_notes", package = "wispack")} for the old-name to \code{type} mapping.)
 #'
-#' @name plot.ratecount
-#' @rdname plot-ratecount
-#' @usage plot.ratecount(
-#'  wisp.results,
-#'  log.scale        = FALSE,
-#'  CI_style         = TRUE,
-#'  dim.boundaries   = c(),
-#'  print.plots      = FALSE, 
-#'  y.lim            = NA, 
-#'  count.alpha.none = NA, 
-#'  count.alpha.ran  = NA, 
-#'  pred.alpha.none  = NA, 
-#'  pred.alpha.ran   = NA, 
-#'  rans.to.print    = c(), 
-#'  species          = c(), 
-#'  verbose          = TRUE
-#' )
+#' @param x List, output of the \code{\link{wisp}} function (an object of class \code{"wisp"}).
+#' @param type Character string, which plot to make. One of: \itemize{
+#'    \item \code{"ratecount"}: plot the fitted model and observed data (counts) together for visual comparison, optionally with independent block boundaries. Set \code{decompose = TRUE} to instead plot the individual pieces of this plot, for a single species, separately. See the "ratecount" section below for its extra arguments.
+#'    \item \code{"timeseries"}: plot timeseries effects, separated by a splitting factor (e.g., hemisphere). See the "timeseries" section below.
+#'    \item \code{"parameters"}: violin (or bar) plots of the fitted wisp parameters, including confidence intervals if available. See the "parameters" section below.
+#'    \item \code{"effect.dist"}: histograms of the fitted parameters. See the "effect.dist" section below.
+#'    \item \code{"species.summary"}: rate-count, residual, and parameter plots for one species level, combined on one plot. See the "species.summary" section below.
+#'    \item \code{"MCMC.walks"}: sampling of random walks and negative log likelihood from MCMC simulations. See the "MCMC.walks" section below.
+#'    \item \code{"MCMC.bs.comparison"}: visually compare normality and autocorrelation of bootstrap and MCMC parameter estimates. See the "MCMC.bs.comparison" section below.
+#' }
+#' @param print.plots Logical, defaults to TRUE. If TRUE, prints the plot(s) to the current graphics device as they are built; if FALSE, only returns them (without printing). Forwarded to every \code{type} except \code{"species.summary"}, which has no print-control of its own and always prints its combined plot (see the "species.summary" section below).
+#' @param verbose Logical, defaults to TRUE. If TRUE, prints updates about the plotting process. Forwarded to every \code{type}.
+#' @param species Character vector, or the string \code{"all"} (the default), giving which species level(s) to include. \code{"all"} is translated internally to \code{c()}, this package's own "no filter, include everything" convention. Only forwarded to \code{type \%in\% c("ratecount", "timeseries", "parameters", "species.summary")}, since only those underlying plotting functions have a \code{species} argument; passing a non-default \code{species} for any other \code{type} raises a warning and is otherwise ignored. When \code{decompose = TRUE}, \code{species} must resolve to exactly one species level (i.e. not \code{"all"}, and not a multi-element vector), or a clear error is raised.
+#' @param decompose Logical, defaults to FALSE. Only meaningful when \code{type = "ratecount"}; if TRUE, plots the individual pieces of the rate-count plot (data points only, fit lines only, and data points plus fit lines for individual random levels) for a single species separately, instead of the ordinary combined rate-count plot. This replaces the pre-2.6.0 \code{type = "decomposition"} (see \code{vignette("release_notes", package = "wispack")}). Setting \code{decompose = TRUE} for any other \code{type} is an error.
+#' @param ... Additional arguments passed on to the plotting function selected by \code{type}; see the sections below for each type's own arguments.
+#' @return The return value depends on \code{type}; see the sections below. Most types return a list of ggplot objects, except \code{type = "species.summary"}, which returns nothing (plots are printed to the current graphics device) and \code{type = "MCMC.walks"}, which returns \code{NULL} early if the model has no MCMC sampling.
+#'
+#' @section ratecount:
+#' Takes wisp model results (a fitted line) and observed data (counts) and plots them together for visual comparison. Can also include independent block boundaries for comparison if provided. With \code{decompose = TRUE}, instead returns the individual pieces of this plot (data points only, fit lines only, and data points plus fit lines for individual random levels) for a single species, plotted separately; \code{species} must then resolve to exactly one species level, or a clear error is raised.
+#' \itemize{
+#'    \item \code{log.scale} Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.
+#'    \item \code{CI_style} Logical, if TRUE, plots predicted lines with confidence interval style shading; if FALSE, plots predicted lines as solid lines with random levels and data points. Ignored when \code{decompose = TRUE}.
+#'    \item \code{dim.boundaries} Numeric vector, independent block boundaries to plot for comparison. If empty, the argument is ignored.
+#'    \item \code{y.lim} Numeric vector of length 2, limits for the y-axis of the plots. If NA (plain ratecount) or NULL (\code{decompose = TRUE}), defaults to automatic limits.
+#'    \item \code{count.alpha.none} Numeric, transparency for count points when random level is "none". If left NA, defaults to 0.25. Ignored when \code{decompose = TRUE}.
+#'    \item \code{count.alpha.ran} Numeric, transparency for count points when random level is not "none". If left NA, defaults to 0.25. Ignored when \code{decompose = TRUE}.
+#'    \item \code{pred.alpha.none} Numeric, transparency for predicted lines when random level is "none". If left NA, defaults to 1.0. Ignored when \code{decompose = TRUE}.
+#'    \item \code{pred.alpha.ran} Numeric, transparency for predicted lines when random level is not "none". If left NA, defaults to 0.9. Ignored when \code{decompose = TRUE}.
+#'    \item \code{rans.to.print} Character vector, list of random levels to include on each species plot. If c(), all random levels are included. Ignored when \code{decompose = TRUE}.
+#' }
+#' Returns a list of ggplot objects for rate-count plots (or, with \code{decompose = TRUE}, for the decomposed rate-count plots).
+#'
+#' @section timeseries:
+#' Plots timeseries effects from wisp results, separated by a splitting factor (e.g., hemisphere).
+#' \itemize{
+#'    \item \code{splitting_factor} Character string, the name of the fixed effect by which to split the timeseries. If empty, c(), the first non-timeseries fixed effect is used. If "none", will not split.
+#'    \item \code{tertiary_effects} Character vector, or NULL (default). Any fixed effects besides \code{timeseries} and the splitting factor are pruned down to a single level before rates are reconstructed (otherwise treatments belonging to different levels of those extra fixed effects would be mixed together). If NULL, each such fixed effect is pruned down to its reference level. Otherwise, for each additional fixed effect, if one of the levels named in \code{tertiary_effects} matches one of its levels, that level is used instead of the reference level.
+#'    \item \code{log.scale} Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.
+#' }
+#' Returns a list of ggplot objects for timeseries plots.
+#'
+#' @section parameters:
+#' Makes nicely formatted violin (or bar) plots of the fitted wisp parameters, including confidence intervals if stat information is available.
+#' \itemize{
+#'    \item \code{violin} Logical, if TRUE, plots violin plots for each parameter; if FALSE, uses bar plots.
+#'    \item \code{species.classes} List, a list of character vectors specifying which species levels to include together in plots. If NULL, all species levels are plotted separately.
+#'    \item \code{mc_type} Character string, type of model component to plot ("rate", "tpoint", "tslope"). If NULL, all model components are plotted.
+#' }
+#' Returns a list of ggplot objects for parameter plots.
+#'
+#' @section effect.dist:
+#' Makes nicely formatted histograms of fitted parameters from wisp results. Has no \code{species} argument; \code{species} is ignored (with a warning) if set to a non-default value for this type.
+#' Returns a list of ggplot objects containing histograms of fitted parameters.
+#'
+#' @section species.summary:
+#' Summarizes all important information (rate-count, residual, and parameter plots) for one or more individual species levels, each on one combined plot. Note that \code{wisp()} does not store built plot objects on its return value, so this always rebuilds the rate-count, residual, and parameter plots it needs fresh from \code{x} rather than reading them back from a stored \code{$plots} field. Unlike every other \code{type}, this one has no \code{print.plots} argument of its own and always prints its combined plots to the current graphics device; the dispatcher's \code{print.plots} argument has no effect here.
+#' \itemize{
+#'    \item \code{contexts} Character vector, optional, specifies which context levels to summarize. Defaults to all.
+#' }
+#' Returns nothing; plots are printed to the current graphics device.
+#'
+#' @section MCMC.walks:
+#' Makes nicely formatted plots of the random walks and (normalized) negative log likelihood sampled during MCMC simulation. Returns \code{NULL} early if the model has no MCMC sampling (i.e. \code{x$sample.params.MCMC} is empty/NULL). Has no \code{species} argument; \code{species} is ignored (with a warning) if set to a non-default value for this type.
+#' \itemize{
+#'    \item \code{low_samples} Integer, number of low-value parameters to plot. Defaults to 10.
+#' }
+#' Returns a list of ggplot objects containing plots of walks for low-value parameters, high-value parameters, and normalized negative log likelihood (or \code{NULL}, see above).
+#'
+#' @section MCMC.bs.comparison:
+#' Allows for visual comparison of the parameter estimates from bootstrapping vs MCMC simulation. Shows density for ten representative parameters from bootstrapping and MCMC walk, the distributions of Shapiro-Wilk p-values for bootstrapping vs MCMC walks, and the density of autocorrelation results for bootstrapping vs MCMC walks. Has no \code{species} argument; \code{species} is ignored (with a warning) if set to a non-default value for this type.
+#' \itemize{
+#'    \item \code{ran.seed} Integer, random seed for reproducibility. Defaults to 1234. If NULL, no seed set.
+#' }
+#' Returns a list of ggplot objects containing plots of representative parameter distributions, Shapiro-Wilk normality test results, and autocorrelation plots for bootstrap and MCMC parameter estimates.
+#'
+#' @method plot wisp
+#' @export
+plot.wisp <- function(x, type, print.plots = TRUE, verbose = TRUE, species = "all", decompose = FALSE, ...) {
+
+  type <- match.arg(
+    type,
+    choices = c(
+      "ratecount", "timeseries", "parameters", "effect.dist",
+      "species.summary", "MCMC.walks", "MCMC.bs.comparison"
+    ),
+    several.ok = FALSE
+  )
+
+  if (decompose && type != "ratecount") {
+    stop("decompose = TRUE is only valid when type = \"ratecount\"")
+  }
+
+  # Translate the "all" sentinel to this package's own c()-means-everything convention.
+  species.resolved <- species
+  if (identical(species, "all")) species.resolved <- c()
+
+  # species is only accepted by a subset of the underlying plotting functions; warn (rather than
+  # error) if the caller asked for a non-default species on a type that has no species argument.
+  species.aware.types <- c("ratecount", "timeseries", "parameters", "species.summary")
+  if (!identical(species, "all") && !(type %in% species.aware.types)) {
+    warning(
+      "species was set to a non-default value, but type = \"", type, "\" has no species argument of its own; ",
+      "species is being ignored for this plot."
+    )
+  }
+
+  switch(
+    type,
+    ratecount = if (decompose) {
+      if (length(species.resolved) != 1) {
+        stop(
+          "plot(model, type = \"ratecount\", decompose = TRUE) requires species to resolve to exactly one ",
+          "species level (got ", length(species.resolved), "). Pass a single species name, not \"all\" and ",
+          "not a multi-element vector."
+        )
+      }
+      .plot_ratecount_decomposed(
+        wisp.results = x,
+        species      = species.resolved,
+        print.plots  = print.plots,
+        verbose      = verbose,
+        ...
+      )
+    } else {
+      .plot_ratecount(
+        wisp.results = x,
+        species      = species.resolved,
+        print.plots  = print.plots,
+        verbose      = verbose,
+        ...
+      )
+    },
+    timeseries = .plot_timeseries(
+      wisp.results = x, species = species.resolved, print.plots = print.plots, verbose = verbose, ...
+    ),
+    parameters = .plot_parameters(
+      wisp.results = x, species = species.resolved, print.plots = print.plots, verbose = verbose, ...
+    ),
+    effect.dist = .plot_effect_dist(
+      wisp.results = x, print.plots = print.plots, verbose = verbose, ...
+    ),
+    species.summary = .plot_species_summary(
+      wisp.results = x, species = species.resolved, verbose = verbose, ...
+    ),
+    MCMC.walks = .plot_MCMC_walks(
+      wisp.results = x, print.plots = print.plots, verbose = verbose, ...
+    ),
+    MCMC.bs.comparison = .plot_MCMC_bs_comparison(
+      wisp.results = x, print.plots = print.plots, verbose = verbose, ...
+    )
+  )
+
+}
+
 #' @param wisp.results List, output of the wisp function.
 #' @param log.scale Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.
 #' @param CI_style Logical, if TRUE, plots predicted lines with confidence interval style shading; if FALSE, plots predicted lines as solid lines with random levels and data points
 #' @param dim.boundaries Numeric vector, independent block boundaries to plot for comparison. If empty, the argument is ignored.
-#' @param print.plots Logical, if TRUE, prints plots; if FALSE, only returns plots in list without printing any. 
+#' @param print.plots Logical, if TRUE, prints plots; if FALSE, only returns plots in list without printing any.
 #' @param y.lim Numeric vector of length 2, limits for the y-axis of the plots. If NA, defaults to automatic limits.
 #' @param count.alpha.none Numeric, transparency for count points when random level is "none". If left NA, defaults to 0.25.
 #' @param count.alpha.ran Numeric, transparency for count points when random level is not "none". If left NA, defaults to 0.25.
@@ -1085,9 +1463,8 @@ analyze.residuals <- function(
 #' @param species Character vector, list of species levels to plot. If c(), all species levels are plotted.
 #' @param verbose Logical, if TRUE, prints updates about the plotting process.
 #' @return List of ggplot objects for rate-count plots.
-#' @note Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.ratecount(...)} directly.
-#' @export
-plot.ratecount <- function(
+#' @noRd
+.plot_ratecount <- function(
     wisp.results,
     log.scale        = FALSE,
     CI_style         = TRUE,
@@ -1589,32 +1966,16 @@ plot.ratecount <- function(
     
   }
 
-#' Plot timeseries effects from wisp results
-#' 
-#' Function to plot timeseries effects from wisp results, separated by a splitting factor (e.g., hemisphere).
-#'
-#' @name plot.timeseries
-#' @rdname plot-timeseries
-#' @usage plot.timeseries(
-#'  wisp.results, 
-#'  splitting_factor = c(), 
-#'  tertiary_effects = NULL,
-#'  log.scale        = FALSE,
-#'  print.plots      = FALSE,
-#'  species          = c(),
-#'  verbose          = TRUE
-#' )
 #' @param wisp.results List, output of the wisp function.
 #' @param splitting_factor Character string, the name of the fixed effect by which to split the timeseries. If empty, c(), the first non-timeseries fixed effect is used. If "none", will not split.
 #' @param tertiary_effects Character vector, or NULL (default). Any fixed effects besides \code{timeseries} and the splitting factor are pruned down to a single level before rates are reconstructed (otherwise treatments belonging to different levels of those extra fixed effects would be mixed together). If NULL, each such fixed effect is pruned down to its reference level. Otherwise, for each additional fixed effect, if one of the levels named in \code{tertiary_effects} matches one of its levels, that level is used instead of the reference level.
 #' @param log.scale Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.
-#' @param print.plots Logical, if TRUE, prints plots; if FALSE, only returns plots in list without printing any. 
+#' @param print.plots Logical, if TRUE, prints plots; if FALSE, only returns plots in list without printing any.
 #' @param species Character vector, list of species levels to plot. If c(), all species levels are plotted.
 #' @param verbose Logical, if TRUE, prints updates about the plotting process.
 #' @return List of ggplot objects for timeseries plots.
-#' @note Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.timeseries(...)} directly.
-#' @export
-plot.timeseries <- function(
+#' @noRd
+.plot_timeseries <- function(
     wisp.results, 
     splitting_factor = c(),
     tertiary_effects = NULL,
@@ -2076,21 +2437,6 @@ plot.timeseries <- function(
     
   }
 
-#' Plot of wisp parameters
-#'
-#' Function to make nicely formatted violin (or bar) plots of the fitted wisp parameters, including confidence intervals if stat information is available.
-#'
-#' @name plot.parameters
-#' @rdname plot-parameters
-#' @usage plot.parameters(
-#'  wisp.results,
-#'  species         = c(),
-#'  violin          = TRUE,
-#'  print.plots     = FALSE,
-#'  species.classes = NULL,
-#'  mc_type         = NULL,
-#'  verbose         = TRUE
-#' )
 #' @param wisp.results List, output of the wisp function.
 #' @param species Character string, the species level to be plotted. If c(), all species levels are plotted.
 #' @param violin Logical, if TRUE, plots violin plots for each parameter; if FALSE, uses bar plots.
@@ -2099,9 +2445,8 @@ plot.timeseries <- function(
 #' @param mc_type Character string, type of model component to plot ("rate", "tpoint", "tslope"). If NULL, all model components are plotted.
 #' @param verbose Logical, if TRUE, prints updates about the plotting process.
 #' @return List of ggplot objects for parameter plots.
-#' @note Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.parameters(...)} directly.
-#' @export
-plot.parameters <- function(
+#' @noRd
+.plot_parameters <- function(
     wisp.results,
     species         = c(),
     violin          = TRUE,
@@ -2709,24 +3054,12 @@ plot.parameters <- function(
     
   }
 
-#' Plot parameter distributions from WISP results as histograms
-#'
-#' Function to make nicely formatted histograms of fitted parameters from WISP results.
-#'
-#' @name plot.effect.dist
-#' @rdname plot-effect-dist
-#' @usage plot.effect.dist(
-#'  wisp.results, 
-#'  print.plots = FALSE, 
-#'  verbose     = TRUE
-#' )
 #' @param wisp.results List, output of the wisp function.
 #' @param print.plots Logical, if TRUE, prints the plots to the current device.
 #' @param verbose Logical, if TRUE, prints information during plotting.
 #' @return List of ggplot objects containing histograms of fitted parameters.
-#' @note Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.effect.dist(...)} directly.
-#' @export
-plot.effect.dist <- function(
+#' @noRd
+.plot_effect_dist <- function(
     wisp.results,
     print.plots = FALSE,
     verbose     = TRUE 
@@ -2883,27 +3216,14 @@ plot.effect.dist <- function(
     
   }
 
-#' Print rate-count, residual, and parameter plots for one species level together.
-#'
-#' Function to summarize all important information for an individual species level on one plot.
-#'
-#' @name plot.species.summary
-#' @rdname plot-species-summary
-#' @usage plot.species.summary(
-#'  wisp.results, 
-#'  contexts = c(), 
-#'  species  = c(), 
-#'  verbose  = TRUE
-#' )
 #' @param wisp.results List, output of the wisp function.
-#' @param contexts Character vector, optional, specifies which context levels to summarize. Defaults to all. 
+#' @param contexts Character vector, optional, specifies which context levels to summarize. Defaults to all.
 #' @param species Character vector, optional, specifies which species levels to summarize. Defaults to all.
 #' @param verbose Logical, if TRUE, prints information during plotting.
 #' @return Nothing, plots are printed to the current graphics device.
-#' @note Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.species.summary(...)} directly.
-#' @note \code{wisp()} does not store built plot objects on its return value, so this function always rebuilds the rate-count, residual, and parameter plots it needs fresh from \code{wisp.results} (via \code{plot.ratecount()}, \code{analyze.residuals()}, and \code{plot.parameters()}) rather than reading them back from a stored \code{$plots} field.
-#' @export
-plot.species.summary <- function(
+#' @note \code{wisp()} does not store built plot objects on its return value, so this function always rebuilds the rate-count, residual, and parameter plots it needs fresh from \code{wisp.results} (via \code{.plot_ratecount()}, \code{analyze.residuals()}, and \code{.plot_parameters()}) rather than reading them back from a stored \code{$plots} field.
+#' @noRd
+.plot_species_summary <- function(
     wisp.results,
     contexts = c(),
     species  = c(),
@@ -2913,7 +3233,7 @@ plot.species.summary <- function(
     # Build the rate-count and residual plots fresh; these don't depend on which species
     # level is being summarized, so build them once up front and reuse across the loop below.
     # Rate-count plots use the same settings wisp() used to build them during the fit.
-    p1 <- plot.ratecount(
+    p1 <- .plot_ratecount(
       wisp.results     = wisp.results,
       log.scale        = wisp.results$plot.settings$log.scale,
       print.plots      = FALSE,
@@ -2956,7 +3276,7 @@ plot.species.summary <- function(
         }
 
         # Rebuild parameter plots fresh for this species level
-        p2 <- plot.parameters(
+        p2 <- .plot_parameters(
           wisp.results = wisp.results,
           species      = sps_lvl,
           print.plots  = FALSE,
@@ -3007,26 +3327,13 @@ plot.species.summary <- function(
     
   }
 
-#' Plot sampling of random walks and negative log likelihood from MCMC simulations
-#'
-#' Function to make nicely formatted histograms of fitted parameters from WISP results.
-#'
-#' @name plot.MCMC.walks
-#' @rdname plot-MCMC-walks
-#' @usage plot.MCMC.walks(
-#'  wisp.results, 
-#'  print.plots = FALSE, 
-#'  verbose     = TRUE, 
-#'  low_samples = 10
-#' )
 #' @param wisp.results List, output of the wisp function.
 #' @param print.plots Logical, if TRUE, prints the plots to the current device.
 #' @param verbose Logical, if TRUE, prints information during plotting.
 #' @param low_samples Integer, number of low-value parameters to plot. Defaults to 10.
 #' @return List of ggplot objects containing plots of walks for low-value parameters, high-value parameters, and normalized negative log likelihood.
-#' @note Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.MCMC.walks(...)} directly.
-#' @export
-plot.MCMC.walks <- function(
+#' @noRd
+.plot_MCMC_walks <- function(
     wisp.results,
     print.plots = FALSE,
     verbose     = TRUE,
@@ -3203,37 +3510,28 @@ plot.MCMC.walks <- function(
     
   }
 
-#' Plot individual components of wisp fit for a single species level
-#'
-#' Extension of \code{plot.ratecount} which plots the individual pieces of the rate-count plot for a single species separately. Returns individual plots for data points only, fit lines only, and data points plus fit lines for individual random levels.
-#'
-#' @name plot.decomposition
-#' @rdname plot-decomposition
-#' @usage plot.decomposition(
-#'  wisp.results,
-#'  species,
-#'  log.scale      = FALSE,
-#'  dim.boundaries = c(),
-#'  y.lim          = NULL
-#' )
 #' @param wisp.results List, output of the wisp function.
-#' @param species Character string, the species level to plot. Must be provided, and only one at a time. 
+#' @param species Character string, the species level to plot. Must be provided, and only one at a time.
 #' @param log.scale Logical, if TRUE, plots on a log scale. Defaults to FALSE.
 #' @param dim.boundaries Numeric vector, independent block boundaries to plot for comparison. If empty, the argument is ignored.
 #' @param y.lim Numeric vector of length 2, limits for the y-axis of the plots. If NA, defaults to automatic limits.
+#' @param print.plots Logical, if TRUE, prints the plots to the current device; if FALSE, only returns them.
+#' @param verbose Logical, if TRUE, prints information during plotting.
 #' @return List of ggplot objects containing the decomposed rate-count plots.
-#' @note Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.decomposition(...)} directly.
-#' @export
-plot.decomposition <- function(
+#' @noRd
+.plot_ratecount_decomposed <- function(
     wisp.results,
-    species, 
-    log.scale      = FALSE, 
-    dim.boundaries = c(), 
-    y.lim          = NULL
+    species,
+    log.scale      = FALSE,
+    dim.boundaries = c(),
+    y.lim          = NULL,
+    print.plots    = FALSE,
+    verbose        = TRUE
   ) {
-    
+
     # Check length of species and get number of contexts
-    if (length(species) != 1) stop("plot.decomposition can only be given one species at a time.")
+    if (length(species) != 1) stop("plot(model, type = \"ratecount\", decompose = TRUE) can only be given one species at a time.")
+    if (verbose) snk.report...("Making decomposed rate-count plots")
     n_contexts <- length(wisp.results$grouping.variables$context.lvls)
     
     # Set y limits
@@ -3316,7 +3614,7 @@ plot.decomposition <- function(
       
       rans.to.print <- input$rans.to.print[r]
       if (r == 1 | r == 2 | r == 4) rans.to.print <- ran_lvls
-      plots.all <- plot.ratecount(
+      plots.all <- .plot_ratecount(
         wisp.results     = wisp.results,
         log.scale        = log.scale,
         CI_style         = FALSE,
@@ -3341,31 +3639,24 @@ plot.decomposition <- function(
       }
       
     }
-    
+
+    if (print.plots) {
+      for (i in seq_along(plots.decomp)) {
+        print(plots.decomp[[i]])
+      }
+    }
+
     return(plots.decomp)
-    
+
   }
 
-#' Visually compare normality and autocorrelation of bootstrap and MCMC parameter estimates
-#'
-#' Function allowing for visual comparison of the parameter estimates from bootstrapping vs MCMC simulation. Shows density for ten representative parameters from bootstrapping and MCMC walk, the distributions of Shapiro-Walk p-values for bootstrapping vs MCMC walks, and the density of autocorrelation results for bootstrapping vs MCMC walks.
-#'
-#' @name plot.MCMC.bs.comparison
-#' @rdname plot-MCMC-bs-comparison
-#' @usage plot.MCMC.bs.comparison(
-#'  wisp.results, 
-#'  print.plots = FALSE, 
-#'  verbose     = TRUE,
-#'  ran.seed    = 1234
-#' )
 #' @param wisp.results List, output of the wisp function.
 #' @param print.plots Logical, if TRUE, prints the plots to the current graphics device.
 #' @param verbose Logical, if TRUE, prints information during plotting.
-#' @param ran.seed Integer, random seed for reproducibility. Defaults to 1234. If NULL, no seed set. 
+#' @param ran.seed Integer, random seed for reproducibility. Defaults to 1234. If NULL, no seed set.
 #' @return List of ggplot objects containing plots of representative parameter distributions, Shapiro-Wilk normality test results, and autocorrelation plots for bootstrap and MCMC parameter estimates.
-#' @note Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.MCMC.bs.comparison(...)} directly.
-#' @export
-plot.MCMC.bs.comparison <- function(
+#' @noRd
+.plot_MCMC_bs_comparison <- function(
     wisp.results,
     print.plots = FALSE,
     verbose     = TRUE,
@@ -3665,14 +3956,14 @@ project_cp <- function(
 
 #' Wisp warping function, implemented in R
 #' 
-#' This function provides an R implementation of the warping function used to warp model components before input into \code{wisp.sigmoid}.
+#' This function provides an R implementation of the warping function used to warp model components before input into \code{wisp_sigmoid}.
 #' 
 #' @param z Numeric vector or matrix, values to warp. Scalar values fine as well. Matrix must be 2D.
 #' @param b Numeric, warping bound (must be a single value).
 #' @param w Numeric, warping factor (must be a single value).
 #' @return Numeric vector or matrix, warped values. Returned object will have the same dimensions as input z.
 #' @export
-wisp.warp <- function( 
+wisp_warp <- function( 
     z,
     b, 
     w  
@@ -3704,7 +3995,7 @@ wisp.warp <- function(
 
 #' Wisp sigmoid function, implemented in R
 #' 
-#' This function provides an R implementation of the wisp sigmoid function. It assumes the parameters Rt, tslope, and tpoint have already been warped by \code{wisp.warp}.
+#' This function provides an R implementation of the wisp sigmoid function. It assumes the parameters Rt, tslope, and tpoint have already been warped by \code{wisp_warp}.
 #' 
 #' @param x Numeric, input spatial position, either a scalar, vector, or 2D array/matrix
 #' @param Rt Numeric vector, rate parameters for the wisp function. Degree of the wisp model will be length of this vector minus 1.
@@ -3712,7 +4003,7 @@ wisp.warp <- function(
 #' @param tpoint Numeric vector, transition points for the wisp function. Must be one less than the length of Rt.
 #' @return Numeric vector or matrix, wisp sigmoid values for given input. Returned object will have the same dimensions as input x.
 #' @export
-wisp.sigmoid <- function(
+wisp_sigmoid <- function(
     x, 
     Rt,
     tslope,
@@ -3779,10 +4070,10 @@ demo.warp.plots <- function(
     x     <- (1:n)/10
     b     <- 100
     y     <- x
-    y1    <- wisp.warp(x, b, w)
-    y2    <- wisp.warp(x, b, -w)
-    y_pos <- wisp.warp(point_pos, b, w)
-    y_neg <- wisp.warp(point_neg, b, -w)
+    y1    <- wisp_warp(x, b, w)
+    y2    <- wisp_warp(x, b, -w)
+    y_pos <- wisp_warp(point_pos, b, w)
+    y_neg <- wisp_warp(point_neg, b, -w)
     
     # Organize into a data frame
     df <- data.frame(
@@ -3852,9 +4143,9 @@ demo.warp.plots <- function(
     
     # Construct poly-sigmoid curve, with warping
     yw      <- rep(NA, n)
-    Rtw     <- wisp.warp(Rt,     100000, w_factors[1])
-    tslopew <- wisp.warp(tslope, 100000, w_factors[2])
-    tpointw <- wisp.warp(tpoint, 100,    w_factors[3])
+    Rtw     <- wisp_warp(Rt,     100000, w_factors[1])
+    tslopew <- wisp_warp(tslope, 100000, w_factors[2])
+    tpointw <- wisp_warp(tpoint, 100,    w_factors[3])
     for (i in 1:n) yw[i] <- poly_sigmoid_R(
       x[i],    # input 
       deg,     # degree 

@@ -47,10 +47,11 @@
     ratecount_Rorb        = c(lo = 9.2,      hi = 9.3),
     decomposition_panel3  = c(lo = 16.3,     hi = 16.4),
     timeseries_Rorb       = c(lo = 11.11764, hi = 11.11766)
-    # NOTE: the vignette's check4 (plot.parameters' ranEff plot, data row 2) is deliberately not reproduced here.
-    # plot.parameters() appears to draw its displayed random-effect points from the global RNG stream at call
-    # time rather than from a fixed stored sample, so that bound only ever held because of knitr's chunk-level
-    # RNG-state caching across the vignette's specific rendering order -- it isn't a property of the fitted model.
+    # NOTE: the vignette's check4 (plot(model, type = "parameters")'s ranEff plot, data row 2) is deliberately
+    # not reproduced here. plot(model, type = "parameters") appears to draw its displayed random-effect points
+    # from the global RNG stream at call time rather than from a fixed stored sample, so that bound only ever
+    # held because of knitr's chunk-level RNG-state caching across the vignette's specific rendering order --
+    # it isn't a property of the fitted model.
     # See the corresponding (structural, not value-based) test in tests/testthat/test-slow-stats-wispplots-fixture.R.
   ),
 
@@ -62,9 +63,9 @@
     median_fit_param1          = c(lo = 3.4,     hi = 3.5),
     bs_comparison_correlation  = c(lo = 0.003,   hi = 0.004),
     bs_comparison_shapiro      = c(lo = 0.8,     hi = 0.9)
-    # NOTE: the vignette's check8 (plot.MCMC.bs.comparison's plot_comparison_density, data row 4) is
-    # deliberately not reproduced here, for the same reason as the wispplots group's check4 below:
-    # plot.MCMC.bs.comparison() ranks parameters by a Shapiro-Wilk p-value computed from a *random* resample
+    # NOTE: the vignette's check8 (plot(model, type = "MCMC.bs.comparison")'s plot_comparison_density, data
+    # row 4) is deliberately not reproduced here, for the same reason as the wispplots group's check4 below:
+    # plot(model, type = "MCMC.bs.comparison") ranks parameters by a Shapiro-Wilk p-value computed from a *random* resample
     # of each parameter's bootstrap/MCMC values (see R/wspmm.R), so which column ends up selected for display
     # depends on the exact R-level RNG stream position at call time -- confirmed empirically to differ by
     # orders of magnitude between otherwise-identical re-runs (plain script vs. testthat vs. knitr all land on

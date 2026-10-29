@@ -22,8 +22,9 @@ test_that("wisp() on the ACx laminar timeseries data matches the vignette narrat
     verbose        = FALSE
   )
 
-  rc_plots <- plot.ratecount(
-    wisp.results     = model,
+  rc_plots <- plot(
+    model,
+    type             = "ratecount",
     log.scale        = model$plot.settings$log.scale,
     CI_style         = model$plot.settings$CI_style,
     dim.boundaries   = model$plot.settings$dim.bounds,
