@@ -265,11 +265,21 @@ The <span class = "function">wisp</span> function produces both a [rate-count pl
 To begin, consider <span class = "gene">GLUL</span> and <span class = "gene">ASS1</span>, which are expected to be primarily zonated, with <span class = "gene">GLUL</span> being higher in the central region and <span class = "gene">ASS1</span> being higher in the portal region. Their respective spatial gradients are easy to see in the rate-count plot:
 
 ```{r print_plots_zonation_space, fig.asp = 0.5}
-rc_plots <- radial.model[["plots"]][["ratecount"]]
-plt_glul <- rc_plots[["plot_pred.log_context_liver_fixEff_glul"]]
-plt_ass1 <- rc_plots[["plot_pred.log_context_liver_fixEff_ass1"]]
-g        <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
-grid.draw(g)
+rc_plots <- plot.ratecount(
+  wisp.results     = radial.model,
+  log.scale        = radial.model$plot.settings$log.scale,
+  CI_style         = radial.model$plot.settings$CI_style,
+  dim.boundaries   = radial.model$plot.settings$dim.bounds,
+  count.alpha.none = radial.model$plot.settings$count.alpha.none,
+  count.alpha.ran  = radial.model$plot.settings$count.alpha.ran,
+  pred.alpha.none  = radial.model$plot.settings$pred.alpha.none,
+  pred.alpha.ran   = radial.model$plot.settings$pred.alpha.ran,
+  verbose          = FALSE
+)
+plt_glul      <- rc_plots[["plot_pred.log_context_liver_fixEff_glul"]]
+plt_ass1      <- rc_plots[["plot_pred.log_context_liver_fixEff_ass1"]]
+combined_plot <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)
+grid.draw(combined_plot)
 ```
 ```{r check2, echo = FALSE}
 test_val <- ggplot_build(plt_glul)$data[[1]][4,2]
@@ -279,11 +289,16 @@ wispack:::.check_between(test_val, g$zonation_space_glul, "check 2")
 While the rate-count plots make clear the spatial gradients of <span class = "gene">GLUL</span> and <span class = "gene">ASS1</span>, temporal information can only be read off implicitly. For <span class = "gene">ASS1</span>, we seem to see a slight decrease in gene expression over the day, from ZT0 to ZT18. For <span class = "gene">GLUL</span>, expression seems constant across the day, except perhaps for some minor interaction between zone and time that has the central region decreasing in expression as the portal region increases. These temporal patterns can be seen more clearly by looking at the time-series plots. 
 
 ```{r print_plots_zonation_time, fig.asp = 0.5}
-ts_plots <- radial.model[["plots"]][["timeseries"]]
-plt_glul <- ts_plots[["plot_pred.log_context_liver_timeseries_glul"]]
-plt_ass1 <- ts_plots[["plot_pred.log_context_liver_timeseries_ass1"]]
-g <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)  
-grid.draw(g)
+ts_plots <- plot.timeseries(
+  wisp.results     = radial.model,
+  splitting_factor = radial.model$plot.settings$splitting_factor,
+  log.scale        = radial.model$plot.settings$log.scale,
+  verbose          = FALSE
+)
+plt_glul      <- ts_plots[["plot_pred.log_context_liver_timeseries_glul"]]
+plt_ass1      <- ts_plots[["plot_pred.log_context_liver_timeseries_ass1"]]
+combined_plot <- arrangeGrob(plt_glul, plt_ass1, ncol = 2)
+grid.draw(combined_plot)
 ```
 ```{r check3, echo = FALSE}
 test_val <- ggplot_build(plt_glul)$data[[1]][17,2]
@@ -299,8 +314,8 @@ For the two rhythmic genes, the spatial rate-count plots show two times with rel
 ```{r print_plots_rhythm_space, fig.asp = 0.5}
 plt_arntl <- rc_plots[["plot_pred.log_context_liver_fixEff_arntl"]]
 plt_dbp   <- rc_plots[["plot_pred.log_context_liver_fixEff_dbp"]]
-g         <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)
+grid.draw(combined_plot)
 ```
 ```{r check4, echo = FALSE}
 test_val <- ggplot_build(plt_arntl)$data[[1]][4,2]
@@ -312,8 +327,8 @@ These temporal dynamics are made more clear in the time-series plots, which clea
 ```{r print_plots_rhythm_time, fig.asp = 0.5}
 plt_arntl <- ts_plots[["plot_pred.log_context_liver_timeseries_arntl"]]
 plt_dbp   <- ts_plots[["plot_pred.log_context_liver_timeseries_dbp"]]
-g         <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_arntl, plt_dbp, ncol = 2)
+grid.draw(combined_plot)
 ```
 ```{r check5, echo = FALSE}
 test_val <- ggplot_build(plt_arntl)$data[[1]][4,2]
@@ -327,8 +342,8 @@ Finally, we have <span class = "gene">ELOVL3</span> and <span class = "gene">PCK
 ```{r print_plots_both_space, fig.asp = 0.5}
 plt_elovl3 <- rc_plots[["plot_pred.log_context_liver_fixEff_elovl3"]]
 plt_pck1   <- rc_plots[["plot_pred.log_context_liver_fixEff_pck1"]]
-g          <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)
+grid.draw(combined_plot)
 ```
 ```{r check6, echo = FALSE}
 test_val <- ggplot_build(plt_elovl3)$data[[1]][4,2]
@@ -340,8 +355,8 @@ However, unlike <span class = "gene">GLUL</span> and <span class = "gene">PCK1</
 ```{r print_plots_both_time, fig.asp = 0.5}
 plt_elovl3 <- ts_plots[["plot_pred.log_context_liver_timeseries_elovl3"]]
 plt_pck1   <- ts_plots[["plot_pred.log_context_liver_timeseries_pck1"]]
-g          <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)  
-grid.draw(g)
+combined_plot <- arrangeGrob(plt_elovl3, plt_pck1, ncol = 2)
+grid.draw(combined_plot)
 ```
 ```{r check7, echo = FALSE}
 test_val <- ggplot_build(plt_elovl3)$data[[1]][4,2]

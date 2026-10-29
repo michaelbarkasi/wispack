@@ -28,4 +28,6 @@ Function to summarize all important information for an individual species level 
 }
 \note{
 Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.species.summary(...)} directly.
+
+\code{wisp()} does not store built plot objects on its return value, so this function always rebuilds the rate-count, residual, and parameter plots it needs fresh from \code{wisp.results} (via \code{plot.ratecount()}, \code{analyze.residuals()}, and \code{plot.parameters()}) rather than reading them back from a stored \code{$plots} field.
 }

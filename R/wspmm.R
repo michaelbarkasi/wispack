@@ -78,8 +78,7 @@ NULL
 #'    \item \code{diagnostics.bs}: Diagnostic information for each bootstrap resample.
 #'    \item \code{diagnostics.MCMC}: Diagnostic information for each MCMC random-walk step (i.e., resample).
 #'    \item \code{stats}: List containing a main data frame \code{parameters} with the results (p-values, estimate, confidence intervals, etc) of the statistical analysis of the model parameters, plus data frames holding model residuals.
-#'    \item \code{plot.settings}: A copy of the (defaulted) plot settings provided to the \code{wisp} function; used by the \code{plot.*} family of functions when re-plotting a fitted model.
-#'    \item \code{plots}: List containing whatever plots where generated during the model fit.
+#'    \item \code{plot.settings}: A copy of the (defaulted) plot settings provided to the \code{wisp} function; used by the \code{plot.*} family of functions when re-plotting a fitted model. Note that \code{wisp()} does not store built plot objects in its return value (doing so for a large model could add gigabytes); use the exported \code{plot.*} functions (e.g. \code{plot.ratecount}, \code{plot.parameters}, \code{plot.species.summary}) to regenerate specific plots on demand from this returned list.
 #'    \item \code{variables}: A copy of the resolved \code{variables} list (the column-name mapping actually used for the fit, after defaults were filled in).
 #'    }
 #' @export
@@ -404,8 +403,9 @@ wisp <- function(
       results                    <- cpp_model$results()
       results[["plot.settings"]] <- plotset
       
-      # Make rate plots 
-      plots.ratecount <- plot.ratecount(
+      # Make rate plots (built only for their print.plots side effect; not stored on the
+      # returned model -- call plot.ratecount() directly on the fitted model to regenerate)
+      plot.ratecount(
         wisp.results       = results,
         log.scale          = plotset$log.scale,
         print.plots        = plotset$print.plots,
@@ -417,31 +417,20 @@ wisp <- function(
         pred.alpha.ran     = plotset$pred.alpha.ran,
         verbose            = verbose
       )
-      
-      # Make timeseries plots 
+
+      # Make timeseries plots (same: side-effect only, not stored)
       if (any(timeseries_mask)) {
-        plots.timeseries <- plot.timeseries(
+        plot.timeseries(
           wisp.results     = results,
           splitting_factor = plotset$splitting_factor,
           log.scale        = plotset$log.scale,
           print.plots      = plotset$print.plots,
           verbose          = verbose
         )
-      } else {
-        plots.timeseries <- NULL
       }
-      
-      # Gather plots
-      plots <- list(
-        ratecount  = plots.ratecount,
-        timeseries = plots.timeseries
-      )
-      
-      # Add plots to results
-      results[["plots"]]     <- plots
-      
+
     } else {
-      
+
       # Estimate model parameters with MCMC or bootstrapping ####
       if (verbose) {
         snk.report("Estimating model parameters", initial_breaks = 1)
@@ -562,49 +551,48 @@ wisp <- function(
       )
       results$stats$residuals     <- residuals$stats
       results$stats$residuals.log <- residuals$stats.log
-      plots.residuals             <- residuals$plots
-      
+
       # Make plots of results ####
-      
+      # NOTE: none of the plot.*() calls below are stored on the returned model -- they are
+      # called here only for their print.plots side effect (printing to the graphics device
+      # during a live fit/knit). To regenerate any of these plots later, call the relevant
+      # plot.*() function directly on the fitted model (e.g. plot.ratecount(), plot.parameters(),
+      # plot.species.summary()).
+
       if (verbose) {
         snk.report("Making plots", initial_breaks = 1)
         snk.horizontal_rule(reps = snk.simple_break_reps)
       }
-      
+
       # Plot MCMC walks, both parameters and negloglik
       if (!is.null(diagnostics.MCMC)) {
-        
-        plots.MCMC <- plot.MCMC.walks(
+
+        plot.MCMC.walks(
           wisp.results   = results,
           print.plots    = plotset$print.plots,
           verbose        = verbose
         )
-        
+
         # Plot normality comparison of MCMC and bootstrap estimates
         if (bootstraps.num != 0) {
-          plots.MCMC.bs.comparison <- plot.MCMC.bs.comparison(
+          plot.MCMC.bs.comparison(
             wisp.results = results,
             print.plots  = plotset$print.plots,
             verbose      = verbose
           )
-        } else {
-          plots.MCMC.bs.comparison <- list()
         }
-        
-      } else {
-        plots.MCMC                 <- list()
-        plots.MCMC.bs.comparison   <- list()
+
       }
-      
+
       # Plot effect parameter distribution
-      plots.effect.dist <- plot.effect.dist(
+      plot.effect.dist(
         wisp.results     = results,
         print.plots      = plotset$print.plots,
         verbose          = verbose
       )
-      
-      # Make rate plots 
-      plots.ratecount <- plot.ratecount(
+
+      # Make rate plots
+      plot.ratecount(
         wisp.results     = results,
         log.scale        = plotset$log.scale,
         print.plots      = plotset$print.plots,
@@ -616,26 +604,28 @@ wisp <- function(
         pred.alpha.ran   = plotset$pred.alpha.ran,
         verbose          = verbose
       )
-      
-      # Make timeseries plots 
+
+      # Make timeseries plots
       if (any(timeseries_mask)) {
-        plots.timeseries <- plot.timeseries(
+        plot.timeseries(
           wisp.results     = results,
           splitting_factor = plotset$splitting_factor,
           log.scale        = plotset$log.scale,
           print.plots      = plotset$print.plots,
           verbose          = verbose
         )
-      } else {
-        plots.timeseries <- NULL
       }
-      
-      # Make parameter plots 
+
+      # Make parameter plots (side-effect only, not stored -- see note above; kept here,
+      # unconditionally, even though its return value is discarded, because plot.parameters()
+      # draws from the global RNG stream (see R/wspmm.R) to downsample points for its violin
+      # plots, so skipping this call would shift the RNG stream state at the point wisp()
+      # returns relative to prior releases, silently changing any RNG-sensitive computation a
+      # caller runs afterward on the returned model)
       if (verbose) snk.report...("Making parameter plots")
-      plots.parameters <- do.call(
-        c, 
+      invisible(
         lapply(
-          results$grouping.variables$species.lvls, 
+          results$grouping.variables$species.lvls,
           function(sps) {
             plot.parameters(
               wisp.results = results,
@@ -645,21 +635,7 @@ wisp <- function(
           }
         )
       )
-     
-      # Gather plots
-      plots <- list(
-        residuals           = plots.residuals,
-        ratecount           = plots.ratecount,
-        timeseries          = plots.timeseries,
-        parameters          = plots.parameters,
-        MCMC                = plots.MCMC,
-        parameter.normality = plots.MCMC.bs.comparison, 
-        effect.dist         = plots.effect.dist
-      )
-      
-      # Add plots to results
-      results[["plots"]]     <- plots
-      
+
       # Print summary plots
       if (plotset$print.plots) {
         plot.species.summary(
@@ -669,11 +645,10 @@ wisp <- function(
           verbose      = verbose
         )
       }
-      
+
     }
-    
+
     # Add metadata to results
-    results[["plots"]]     <- plots
     results[["variables"]] <- variables
     
     cpp_model$clear_stan_mem()
@@ -2926,6 +2901,7 @@ plot.effect.dist <- function(
 #' @param verbose Logical, if TRUE, prints information during plotting.
 #' @return Nothing, plots are printed to the current graphics device.
 #' @note Despite the dotted name, this is not an S3 method: \code{wisp()} results are plain, unclassed lists, so the generic \code{plot()} will never dispatch here. Call \code{plot.species.summary(...)} directly.
+#' @note \code{wisp()} does not store built plot objects on its return value, so this function always rebuilds the rate-count, residual, and parameter plots it needs fresh from \code{wisp.results} (via \code{plot.ratecount()}, \code{analyze.residuals()}, and \code{plot.parameters()}) rather than reading them back from a stored \code{$plots} field.
 #' @export
 plot.species.summary <- function(
     wisp.results,
@@ -2933,47 +2909,60 @@ plot.species.summary <- function(
     species  = c(),
     verbose  = TRUE
   ) {
-    
+
+    # Build the rate-count and residual plots fresh; these don't depend on which species
+    # level is being summarized, so build them once up front and reuse across the loop below.
+    # Rate-count plots use the same settings wisp() used to build them during the fit.
+    p1 <- plot.ratecount(
+      wisp.results     = wisp.results,
+      log.scale        = wisp.results$plot.settings$log.scale,
+      print.plots      = FALSE,
+      CI_style         = wisp.results$plot.settings$CI_style,
+      dim.boundaries   = wisp.results$plot.settings$dim.bounds,
+      count.alpha.none = wisp.results$plot.settings$count.alpha.none,
+      count.alpha.ran  = wisp.results$plot.settings$count.alpha.ran,
+      pred.alpha.none  = wisp.results$plot.settings$pred.alpha.none,
+      pred.alpha.ran   = wisp.results$plot.settings$pred.alpha.ran,
+      verbose          = FALSE
+    )
+    p3 <- analyze.residuals(
+      wisp.results = wisp.results,
+      verbose      = FALSE
+    )$plots
+
     # Check for needed plots
-    if (
-      length(wisp.results$plots$ratecount)  == 0 || 
-      length(wisp.results$plots$parameters) == 0 ||
-      length(wisp.results$plots$residuals)  == 0
-      ) {
-      stop("No rate, parameter, or residual plots found in wisp.results")
+    if (length(p1) == 0 || length(p3) == 0) {
+      stop("Unable to build rate or residual plots from wisp.results")
     }
-    
+
     # Specify context and species levels to summarize
     cxt_lvls <- as.character(wisp.results$grouping.variables$context.lvls)
     if (length(contexts) != 0) cxt_lvls <- cxt_lvls[cxt_lvls %in% contexts]
     sps_lvls <- as.character(wisp.results$grouping.variables$species.lvls)
     if (length(species) != 0) sps_lvls <- sps_lvls[sps_lvls %in% species]
-    
+
     for (cxt_lvl in cxt_lvls) {
-      
+
       if (verbose) snk.report(paste0("Printing species summary plots for ", cxt_lvl, ": "))
       first_print <- TRUE
-      
+
       for (sps_lvl in sps_lvls) {
-        
+
         if (verbose && first_print) {
           cat(sps_lvl)
           first_print <- FALSE
         } else if (verbose) {
           cat(",", sps_lvl)
         }
-        wisp.results$plots$parameters <- plot.parameters(
+
+        # Rebuild parameter plots fresh for this species level
+        p2 <- plot.parameters(
           wisp.results = wisp.results,
-          species      = sps_lvl, 
-          print.plots  = FALSE, 
-          verbose      = FALSE 
+          species      = sps_lvl,
+          print.plots  = FALSE,
+          verbose      = FALSE
         )
-        
-        # Grab / make plots
-        p1 <- wisp.results$plots$ratecount
-        p2 <- wisp.results$plots$parameters
-        p3 <- wisp.results$plots$residuals
-        
+
         # Find plots for this context
         p_mask1 <- grepl(cxt_lvl, names(p1))
         p_mask2 <- grepl(cxt_lvl, names(p2))

@@ -22,7 +22,19 @@ test_that("wisp() on the ACx laminar timeseries data matches the vignette narrat
     verbose        = FALSE
   )
 
-  gb <- ggplot2::ggplot_build(model$plots$ratecount$plot_pred_context_cortex_fixEff_Nxph3)
+  rc_plots <- plot.ratecount(
+    wisp.results     = model,
+    log.scale        = model$plot.settings$log.scale,
+    CI_style         = model$plot.settings$CI_style,
+    dim.boundaries   = model$plot.settings$dim.bounds,
+    count.alpha.none = model$plot.settings$count.alpha.none,
+    count.alpha.ran  = model$plot.settings$count.alpha.ran,
+    pred.alpha.none  = model$plot.settings$pred.alpha.none,
+    pred.alpha.ran   = model$plot.settings$pred.alpha.ran,
+    print.plots      = FALSE,
+    verbose          = FALSE
+  )
+  gb <- ggplot2::ggplot_build(rc_plots$plot_pred_context_cortex_fixEff_Nxph3)
   layer_data <- gb$data[[1]]
   test_val <- layer_data[, c("x", "y")][4, 2]
   expect_between(test_val, bounds = g$ratecount_Nxph3)

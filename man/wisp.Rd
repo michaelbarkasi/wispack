@@ -95,8 +95,7 @@ List giving the results of the fitted model, including: \itemize{
 \item \code{diagnostics.bs}: Diagnostic information for each bootstrap resample.
 \item \code{diagnostics.MCMC}: Diagnostic information for each MCMC random-walk step (i.e., resample).
 \item \code{stats}: List containing a main data frame \code{parameters} with the results (p-values, estimate, confidence intervals, etc) of the statistical analysis of the model parameters, plus data frames holding model residuals.
-\item \code{plot.settings}: A copy of the (defaulted) plot settings provided to the \code{wisp} function; used by the \code{plot.*} family of functions when re-plotting a fitted model.
-\item \code{plots}: List containing whatever plots where generated during the model fit.
+\item \code{plot.settings}: A copy of the (defaulted) plot settings provided to the \code{wisp} function; used by the \code{plot.*} family of functions when re-plotting a fitted model. Note that \code{wisp()} does not store built plot objects in its return value (doing so for a large model could add gigabytes); use the exported \code{plot.*} functions (e.g. \code{plot.ratecount}, \code{plot.parameters}, \code{plot.species.summary}) to regenerate specific plots on demand from this returned list.
 \item \code{variables}: A copy of the resolved \code{variables} list (the column-name mapping actually used for the fit, after defaults were filled in).
 }
 }

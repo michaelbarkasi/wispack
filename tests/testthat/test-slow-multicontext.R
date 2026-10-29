@@ -40,7 +40,18 @@ test_that("wisp() on the multicontext (celltype) data matches the vignette narra
   test_val <- model[["fitted.parameters"]][["beta_Rt_GABA_Bcl11b_right18_X_Tns/Blk2"]]
   expect_between(test_val, bounds = g$beta_Rt_GABA_Bcl11b_right18_Blk2)
 
-  rc_plots <- model[["plots"]][["ratecount"]]
+  rc_plots <- plot.ratecount(
+    wisp.results     = model,
+    log.scale        = model$plot.settings$log.scale,
+    CI_style         = model$plot.settings$CI_style,
+    dim.boundaries   = model$plot.settings$dim.bounds,
+    count.alpha.none = model$plot.settings$count.alpha.none,
+    count.alpha.ran  = model$plot.settings$count.alpha.ran,
+    pred.alpha.none  = model$plot.settings$pred.alpha.none,
+    pred.alpha.ran   = model$plot.settings$pred.alpha.ran,
+    print.plots      = FALSE,
+    verbose          = FALSE
+  )
 
   # check4
   test_val <- ggplot2::ggplot_build(rc_plots[["plot_pred.log_context_Glut"]])$data[[1]][4, 2]
@@ -62,7 +73,13 @@ test_that("wisp() on the multicontext (celltype) data matches the vignette narra
   test_val <- ggplot2::ggplot_build(rc_plots[["plot_pred.log_context_Glut_fixEff_Nxph3"]])$data[[1]][4, 2]
   expect_between(test_val, bounds = g$ratecount_Glut_Nxph3)
 
-  ts_plots <- model[["plots"]][["timeseries"]]
+  ts_plots <- plot.timeseries(
+    wisp.results     = model,
+    splitting_factor = model$plot.settings$splitting_factor,
+    log.scale        = model$plot.settings$log.scale,
+    print.plots      = FALSE,
+    verbose          = FALSE
+  )
 
   # check9
   test_val <- ggplot2::ggplot_build(ts_plots[["plot_pred.log_context_Glut_timeseries_Bcl11b"]])$data[[1]][4, 2]
