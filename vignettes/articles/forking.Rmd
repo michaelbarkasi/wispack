@@ -1,0 +1,144 @@
+---
+title: "Why wispack hand-rolls its own forking"
+---
+
+`wisp()`'s bootstrap-resampling step (`bs_batch()`, implemented in `src/wspc.cpp` and
+`src/fork_utils.h`) distributes many independent per-resample model fits -- each an NLopt
+optimization over a Stan Math autodiff model -- across forked child processes, rather than
+using base R's `parallel::mclapply()`. A CRAN reviewer may reasonably ask why a package forks
+its own processes at the C++ level instead of calling a standard, already-reviewed base-R
+parallelism primitive. This page is that justification, backed by a reproducible benchmark
+rather than assertion.
+
+**Short answer:** for the small models in this package's own tests and tutorials,
+`mclapply()` is actually a little *faster*. For the large models this package is designed for
+in practice (the kind of fit a user runs with 1,000+ parameters and many bootstraps), the
+result reverses -- `mclapply()` becomes measurably *slower*, and uses measurably more peak
+memory, because its long-lived worker processes accumulate heap-allocator-retained memory
+across many sequential bootstrap fits. The hand-rolled forking code avoids this because it
+forks a fresh batch of short-lived children for every batch of resamples; each child's entire
+address space, including whatever it allocated, is reclaimed by the OS the moment it exits.
+Memory safety at the scale this package targets, not just raw speed, is the reason for the
+custom implementation.
+
+## The comparison
+
+Both the hand-rolled path and the `mclapply()` alternative are variations on the same idea:
+fork worker processes, have each do some share of the bootstrap resampling, and collect the
+results back in the parent. They differ in process lifetime:
+
+- `fork_utils.h`'s `run_forked_batches()` forks a **fresh** batch of up to `max.fork` children
+  for every batch of resamples. A child does its one resample's fit, writes its result back
+  through a pipe, and calls `_exit()`. The next batch forks brand-new children from the
+  parent's own (bounded) memory state -- not from whatever the previous batch's children had
+  grown their heaps to.
+- `parallel::mclapply(mc.preschedule = TRUE)` forks exactly `mc.cores` workers **once**, and
+  each worker processes its entire assigned share of the task list sequentially, in-process,
+  before exiting.
+
+Two benchmarks compare them directly, holding everything else fixed: same underlying
+`cpp_model` object (freshly initialized, not yet fit), same bootstrap count, same number of
+workers, nothing else running in either arm. The real `bs_batch()` production path is one arm;
+`mclapply()` over the package's internal per-resample fit function is the other.
+
+## Result 1: a small, realistic model (276 parameters)
+
+Using this package's own `liverradial` tutorial/test fixture (882,144 simulated count-data
+rows, 276 fitted parameters -- see `tests/testthat/test-slow-liverradial.R` and
+`benchmarks/RESULTS.md` for the full methodology and raw numbers):
+
+| bootstraps | workers | `bs_batch()` | `mclapply()` | `mclapply` vs. `bs_batch()` |
+|---|---|---|---|---|
+| 100  | 2  | 137.1s | 130.2s | 1.05x faster |
+| 100  | 10 | 33.7s  | 32.1s  | 1.05x faster |
+| 1000 | 20 | 189.0s | 157.1s | 1.20x faster |
+
+At this scale, `mclapply()` is consistently 5-20% faster. The reason is simple: each fork in
+`fork_utils.h` costs a `fork()` syscall plus pipe setup/teardown (sub-millisecond to
+low-single-digit milliseconds), and `bs_batch()` pays that cost on every one of the 1,000
+bootstraps, while `mclapply()` pays its (slightly different) fixed per-worker cost only once
+per worker. At ~0.15-0.3s of real optimization work per bootstrap, that per-fork overhead is a
+real, if modest, fraction of total time.
+
+**Taken in isolation, this result would argue for switching to `mclapply()`.** It does not
+tell the whole story.
+
+## Result 2: a large model (4,788 parameters), the regime this package is actually built for
+
+The package's own author has, outside of testing, fit models with 1,000+ parameters that
+collectively use 50+ GB of RAM across concurrent bootstrap fits -- a regime the 276-parameter
+benchmark above does not probe. To test whether the result above generalizes, the same
+benchmark was repeated on a 4,788-parameter model built from this package's real
+multi-context tutorial data (`ACx_laminar_countdata_demo_with_celltype.csv.gz`, keeping 12 of
+the data's 31 real MapMyCells cell types instead of the tutorial's own simplifying collapse to
+2 -- no fabricated data; see `benchmarks/RESULTS_large_model.md` for full methodology):
+
+| bootstraps | workers | `bs_batch()` | `mclapply()` | `mclapply` vs. `bs_batch()` |
+|---|---|---|---|---|
+| 20 | 4  | 204.3s | 224.3s | 0.91x (9% **slower**) |
+| 20 | 10 | 125.8s | 136.7s | 0.92x (8% **slower**) |
+| 20 | 20 | 104.5s | 124.7s | 0.84x (16% **slower**) |
+| 40 | 20 | 138.7s | 148.0s | 0.94x (6% **slower**) |
+
+**The result reverses completely.** Every grid point flips sign: `bs_batch()` is now
+consistently faster than `mclapply()`, by 6-16%.
+
+Peak combined memory (RSS, summed across all worker processes) shows why:
+
+| bootstraps | workers | `bs_batch()` peak RSS | `mclapply()` peak RSS | ratio |
+|---|---|---|---|---|
+| 20 | 4  | 15.5 GB | 23.8 GB | 1.54x |
+| 20 | 10 | 37.3 GB | 41.0 GB | 1.10x |
+| 40 | 20 | 57.7 GB | 89.4 GB | 1.55x |
+
+The clearest pattern: holding the number of workers fixed at 20 and doubling the bootstrap
+count from 20 to 40 (so each `mclapply` worker now does 2 sequential fits instead of 1 before
+exiting) makes `mclapply`'s peak RSS almost exactly double. `bs_batch()`'s peak RSS barely
+moves under the same change, because `fork_utils.h` forks an entirely fresh batch of children
+every batch regardless of how many total batches run.
+
+## Why: this is heap-allocator behavior, not a Stan memory leak
+
+Both code paths correctly call `clear_stan_mem()` (`stan::math::recover_memory()`) after every
+individual bootstrap fit -- `bs_batch()`'s serial path does this explicitly
+(`src/wspc.cpp`, `bs_fit(b, true)`), and the benchmark's `mclapply` arm calls the identical
+exposed `bs_fit()` method. So this is not a case of Stan's autodiff arena silently growing
+across calls within a worker; that is actively guarded against in both arms, on every call.
+
+The accumulation is instead ordinary process-memory behavior: a long-lived process's `malloc`
+implementation generally retains freed pages, mapped for reuse, rather than returning them to
+the OS immediately -- especially for the large, variably-sized allocations a multi-thousand-
+parameter NLopt fit makes on every bootstrap resample. An `mclapply` worker that runs several
+such fits sequentially, in the same process, can retain a high-water-mark of these pages
+across its entire assigned sequence. A `fork_utils.h` child, by contrast, is a distinct OS
+process for exactly one bootstrap fit: when it calls `_exit()`, the OS reclaims its *entire*
+address space in one shot, freed-but-retained allocator pages included. The next batch's
+freshly forked children start from the parent's own bounded memory state, never from whatever
+the previous batch's children grew their heaps to -- regardless of how many total bootstraps
+the model asks for.
+
+At 276 parameters, this same mechanism is present (`mclapply`'s RSS is higher there too, by
+1.06-1.97x across configurations) but the absolute memory at stake is small enough that it
+costs nothing in wall-clock time; `mclapply`'s one-time-fork-cost advantage dominates instead.
+At 4,788 parameters, the same mechanism costs tens of gigabytes, which is large enough -- more
+TLB/cache pressure, slower allocator searches, more OS paging -- to flip the net timing result.
+For the even larger models (1,000+ parameters, 50+ GB combined across concurrent bootstraps)
+this package is actually used for, this is the regime that matters.
+
+## Conclusion
+
+The hand-rolled forking in `src/fork_utils.h` is not a case of reinventing a wheel CRAN's
+`parallel` package already provides for free. It is a deliberate choice, made because this
+package's bootstrap-resampling workload -- many repeated, memory-heavy Stan/NLopt fits,
+at model sizes that routinely reach the tens-of-gigabytes range in combined memory --
+sits in exactly the regime where long-lived worker processes accumulate retained memory in a
+way that short-lived, re-forked-every-batch children do not. The benchmark scripts
+(`benchmarks/mclapply_vs_fork_general.R`, `benchmarks/configs/*.R`) and raw results (`benchmarks/RESULTS.md`,
+`benchmarks/RESULTS_large_model.md`) are included in the repository so this comparison is
+reproducible rather than taken on faith.
+
+This is not a criticism of `parallel::mclapply()`, which remains a better fit for workloads
+made of many short, memory-light tasks -- precisely because it avoids `fork_utils.h`'s
+per-task fork overhead in that regime, as Result 1 shows. It is a statement that the right
+choice is workload-dependent, and this package's own workload lands on the side that favors
+re-forking short-lived children over long-lived persistent workers.

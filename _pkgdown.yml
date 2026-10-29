@@ -39,6 +39,11 @@ articles:
   - tutorial_stats
   - tutorial_benchmarks
 
+- title: Design notes
+  navbar: Design notes
+  contents:
+  - forking
+
 - title: Legal
   navbar: Legal
   contents:
