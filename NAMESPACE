@@ -7,10 +7,15 @@
 # @export tag in its source. S3-dispatched methods (print.wisp, summary.wisp, etc.) are registered
 # only via S3method(), not export() -- normal generic dispatch (print(x), summary(x), ...) finds them
 # through that table without the dotted method name itself needing to be exported.
+#
+# No dtw import: project_cp() used to call back into R via Rcpp::Function("project_cp") (which called
+# dtw::dtw(..., step.pattern = dtw::symmetricP05)), requiring project_cp to be exported even though it
+# was purely an internal implementation detail. That DTW alignment is now implemented natively in C++
+# (src/model_fit.cpp's dtw_symmetricP05_align()), so neither the R callback, project_cp's export, nor
+# the dtw package dependency are needed any more.
 useDynLib(wispack, .registration = TRUE)
 importFrom(Rcpp, evalCpp)
 importFrom(RColorBrewer, brewer.pal)
-importFrom(dtw, dtw, symmetricP05)
 importFrom(utils, globalVariables)
 import(ggplot2)
 import(grid)

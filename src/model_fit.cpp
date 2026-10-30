@@ -1,6 +1,10 @@
 
 // model_fit.cpp
 #include "wspc.h"
+#include <cmath>
+#include <limits>
+#include <algorithm>
+#include <utility>
 
 // Random draw from uniform distribution, integers
 int rUnifi(
@@ -501,7 +505,187 @@ dVec LROcp_logRatio(
     dVec loglik_ratio = vsubtract(loglik_cp, loglik_null);
     
     return loglik_ratio;
-    
+
+  }
+
+// Dynamic-time-warp alignment under the Sakoe-Chiba symmetric step pattern of slope 0.5 (symmetricP05;
+// Sakoe & Chiba 1978), used by project_cp() below to project a change point found on a cross-series
+// centroid back onto one individual series. Ported from R (this package's former R-level project_cp(),
+// which called dtw::dtw(..., step.pattern = dtw::symmetricP05)) so the compiled model-fitting code no
+// longer needs to call back into R for this. The recursion and backtrace mirror dtw:::globalCostMatrix()'s
+// interpreted fallback and dtw:::backtrack() line for line (confirmed by reading the dtw package's R
+// source directly), validated against dtw's own output on this package's test fixtures before this
+// replaced the R callback (see tests/testthat/test-dtw-port.R):
+//
+//   g[i,j] = min(
+//     g[i-1,j-3] + 2*d[i,  j-2] +   d[i,  j-1] +   d[i,j],
+//     g[i-1,j-2] + 2*d[i,  j-1] +   d[i,j],
+//     g[i-1,j-1] + 2*d[i,j],
+//     g[i-2,j-1] + 2*d[i-1,j  ] +   d[i,j],
+//     g[i-3,j-1] + 2*d[i-2,j  ] +   d[i-1,j] + d[i,j]
+//   )
+//
+// with local cost d[i,j] = |query[i] - ref[j]| (dtw()'s default dist.method = "Euclidean" reduces to
+// absolute difference for 1-D series), global alignment (no open begin/end -- dtw()'s defaults, left
+// unchanged by the original call), and no window restriction (dtw()'s default window.type = "none").
+void dtw_symmetricP05_align(
+    const dVec& query,     // series to align, length n
+    const dVec& ref,       // reference/centroid series, length m
+    iVec&       index1,    // out: aligned positions in query (1-indexed, dtw()'s index1 convention)
+    iVec&       index2     // out: aligned positions in ref (1-indexed, dtw()'s index2 convention)
+  ) {
+
+    int n = query.size();
+    int m = ref.size();
+
+    auto d = [&](int i, int j) { return std::fabs(query[i - 1] - ref[j - 1]); }; // 1-indexed access
+
+    // Global cost matrix (1-indexed; row/col 0 unused) and chosen-pattern matrix (0 = unreachable).
+    // Only cm[1][1] is seeded -- every other cell is computed only if reachable via one of the 5
+    // patterns below, exactly mirroring dtw:::globalCostMatrix()'s cm[1,1] <- lm[1,1] seed with every
+    // other cell left NA until (and unless) a valid predecessor is found.
+    const double NA_ = std::numeric_limits<double>::quiet_NaN();
+    std::vector<std::vector<double>> cm(n + 1, std::vector<double>(m + 1, NA_));
+    std::vector<std::vector<int>>    sm(n + 1, std::vector<int>(m + 1, 0));
+    cm[1][1] = d(1, 1);
+
+    for (int j = 1; j <= m; j++) {
+      for (int i = 1; i <= n; i++) {
+        if (i == 1 && j == 1) continue;
+        double best = NA_;
+        int bestp = 0;
+        if (i - 1 >= 1 && j - 3 >= 1 && !std::isnan(cm[i-1][j-3])) {
+          double c = cm[i-1][j-3] + 2*d(i,j-2) + d(i,j-1) + d(i,j);
+          if (std::isnan(best) || c < best) { best = c; bestp = 1; }
+        }
+        if (i - 1 >= 1 && j - 2 >= 1 && !std::isnan(cm[i-1][j-2])) {
+          double c = cm[i-1][j-2] + 2*d(i,j-1) + d(i,j);
+          if (std::isnan(best) || c < best) { best = c; bestp = 2; }
+        }
+        if (i - 1 >= 1 && j - 1 >= 1 && !std::isnan(cm[i-1][j-1])) {
+          double c = cm[i-1][j-1] + 2*d(i,j);
+          if (std::isnan(best) || c < best) { best = c; bestp = 3; }
+        }
+        if (i - 2 >= 1 && j - 1 >= 1 && !std::isnan(cm[i-2][j-1])) {
+          double c = cm[i-2][j-1] + 2*d(i-1,j) + d(i,j);
+          if (std::isnan(best) || c < best) { best = c; bestp = 4; }
+        }
+        if (i - 3 >= 1 && j - 1 >= 1 && !std::isnan(cm[i-3][j-1])) {
+          double c = cm[i-3][j-1] + 2*d(i-2,j) + d(i-1,j) + d(i,j);
+          if (std::isnan(best) || c < best) { best = c; bestp = 5; }
+        }
+        if (bestp > 0) { cm[i][j] = best; sm[i][j] = bestp; }
+      }
+    }
+
+    if (std::isnan(cm[n][m])) {
+      Rcpp::stop("dtw_symmetricP05_align: no warping path exists between the given series");
+    }
+
+    // Backtrack from (n, m) to (1, 1): replay each winning pattern's intermediate points
+    // (nearest-to-farthest -- dtw:::.extractpattern()'s row order after its reversal), then jump to
+    // its anchor cell and repeat, exactly mirroring dtw:::backtrack().
+    index1.clear(); index2.clear();
+    index1.push_back(n); index2.push_back(m);
+    int i = n, j = m;
+    while (!(i == 1 && j == 1)) {
+      int p = sm[i][j];
+      if (p == 0) break; // mirrors dtw:::backtrack()'s is.na(s) guard; shouldn't occur for a valid path
+      std::vector<std::pair<int,int>> steps; // (di, dj) offsets from (i,j); last entry is the anchor
+      switch (p) {
+        case 1: steps = {{0,1},{0,2},{1,3}}; break;
+        case 2: steps = {{0,1},{1,2}};       break;
+        case 3: steps = {{1,1}};             break;
+        case 4: steps = {{1,0},{2,1}};       break;
+        case 5: steps = {{1,0},{2,0},{3,1}}; break;
+      }
+      for (auto& st : steps) {
+        index1.push_back(i - st.first);
+        index2.push_back(j - st.second);
+      }
+      i -= steps.back().first;
+      j -= steps.back().second;
+    }
+    std::reverse(index1.begin(), index1.end());
+    std::reverse(index2.begin(), index2.end());
+
+  }
+
+// Round to nearest integer, ties to even (matches R's round(), IEC 60559). Exact for the small
+// integer-valued averages computed in project_cp() below (series index positions), where
+// floating-point representation of a x.5 halfway value is exact at these magnitudes.
+int round_half_even(
+    double x
+  ) {
+    double fl = std::floor(x);
+    double frac = x - fl;
+    int fi = (int) fl;
+    if (frac < 0.5) return fi;
+    if (frac > 0.5) return fi + 1;
+    return (fi % 2 == 0) ? fi : fi + 1;
+  }
+
+// Project change points found on the across-series centroid back onto each individual series, via DTW
+// alignment of each series to the centroid (dtw_symmetricP05_align() above). Ports what was formerly
+// an R-level function (project_cp(), which did the same thing by calling dtw::dtw(...,
+// step.pattern = dtw::symmetricP05)) to C++, so the compiled model-fitting code no longer needs to call
+// back into R for this -- and project_cp need not be an exported R function any more.
+IntegerMatrix project_cp(
+    const IntegerVector& found_cp,     // change-point indices on centroid (1-indexed)
+    const NumericVector& centroid,     // across-series centroid, length n_samples
+    const NumericMatrix& X_lik         // per-series data the centroid was computed from (n_samples x n_series)
+  ) {
+
+    int n_cp      = found_cp.size();
+    int n_series  = X_lik.ncol();
+    int n_samples = X_lik.nrow();
+
+    if (n_cp == 0 || centroid.size() == 0 || n_series == 0) {
+      IntegerMatrix err(1, 1);
+      err(0, 0) = -1;
+      return err;
+    }
+
+    dVec centroid_v = to_dVec(centroid);
+    IntegerMatrix out(n_cp, n_series);
+
+    for (int s = 0; s < n_series; s++) {
+
+      // Series for this column, with any NA replaced by 1 (matches R's Xi[is.na(Xi)] <- 1)
+      dVec series(n_samples);
+      for (int k = 0; k < n_samples; k++) {
+        double v = X_lik(k, s);
+        series[k] = std::isnan(v) ? 1.0 : v;
+      }
+
+      iVec index1, index2;
+      dtw_symmetricP05_align(series, centroid_v, index1, index2);
+
+      for (int c = 0; c < n_cp; c++) {
+        int cp = found_cp[c];
+        double sum = 0.0;
+        int count = 0;
+        for (size_t k = 0; k < index2.size(); k++) {
+          if (index2[k] == cp) { sum += index1[k]; count++; }
+        }
+        out(c, s) = round_half_even(sum / count);
+      }
+
+    }
+
+    return out;
+
+  }
+
+// Internal-only test hook for project_cp()'s DTW port (tests/testthat/test-dtw-port.R), accessed via
+// wispack:::.project_cp_test_hook() -- not in NAMESPACE's export() list, so not part of the public API.
+// [[Rcpp::export(name = ".project_cp_test_hook")]]
+IntegerMatrix project_cp_test_hook(
+    const IntegerVector& found_cp,
+    const NumericVector& centroid,
+    const NumericMatrix& X_lik
+  ) {
+    return project_cp(found_cp, centroid, X_lik);
   }
 
 // Likelihood ratio outlier change-point detection, arrays
@@ -555,9 +739,8 @@ IntegerMatrix LROcp_array(
     
     if (found_cp.size() > 0) {
       
-      // Project found_cp back to original series 
-      Function project_cp("project_cp");
-      IntegerMatrix found_cp_array = project_cp(found_cp, centroid.column(1), loglik_ratio_array_midpass);
+      // Project found_cp back to original series
+      IntegerMatrix found_cp_array = project_cp(found_cp, NumericVector(centroid.column(1)), loglik_ratio_array_midpass);
       // ... ^ in this matrix, rows are change points (by deg), columns are trt x ran interactions
       if (found_cp_array(0,0) == -1) {Rcpp::stop("Problem running project_cp");}
      

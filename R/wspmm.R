@@ -3905,55 +3905,6 @@ plot.wisp <- function(x, type, print.plots = TRUE, verbose = TRUE, species = "al
 
 # Debugging and misc ###################################################################################################
 
-# Function used (in Cpp) in the initial change-point estimation, to project change points found on the
-# across-series centroid back onto each individual series
-project_cp <- function(
-    found_cp, # vector of change points
-    centroid, # centroid from which those cp were estimated
-    X_lik     # data from which that centroid was computed
-  ) {
-    # Function will return the implied change points in the original data
-    # ... rows are change points (by deg), columns as trt x ran interactions
-
-    # Uses R package dtw, with step pattern derived from:
-    # H. Sakoe and S. Chiba, "Dynamic programming algorithm optimization for spoken word recognition,"
-    #   in IEEE Transactions on Acoustics, Speech, and Signal Processing, vol. 26, no. 1, pp. 43-49, February 1978, doi: 10.1109/TASSP.1978.1163055.
-    #   This step pattern chosen to enforce a very shallow slope.
-
-    # Check input
-    if (is.null(dim(X_lik))) return(-1)
-    if (length(found_cp) == 0) return(-1)
-    if (length(centroid) == 0) return(-1)
-
-    # Get alignment indices
-    # ... take transpose, so rows are trt x ran interactions, columns are time points
-    X  <- t(X_lik)
-    if (ncol(X_lik) == 0) return(-1)
-    # ... initialize list to store alignment indices
-    aX <- list()
-    # ... for each row of X (i.e., each trt x ran interaction), find the indices to align it to the centroid
-    for (i in 1:nrow(X)) {
-      Xi            <- X[i,]
-      Xi[is.na(Xi)] <- 1
-      alignment_idx <- dtw::dtw(Xi, centroid, step.pattern = dtw::symmetricP05, distance.only = FALSE)
-      aX[[i]]       <- cbind(alignment_idx$index1, alignment_idx$index2)
-    }
-    
-    # Project alignment indices to original data
-    X_likp <- array(NA, dim = c(length(found_cp), ncol(X_lik)))
-    for (c in 1:ncol(X_lik)) {
-      a_idx            <- aX[[c]]
-      for (cpi in 1:length(found_cp)) {
-        cp             <- found_cp[cpi]                     # index of change point on the centroid
-        cp_a_idx       <- which(a_idx[,2] == cp)            # second column is the centroid alignment indices
-        X_likp[cpi, c] <- round(mean(a_idx[cp_a_idx, 1]))   # project back, take mean, and round to integer
-      }
-    }
-    
-    return(X_likp)
-    
-  }
-
 #' Wisp warping function, implemented in R
 #' 
 #' This function provides an R implementation of the warping function used to warp model components before input into \code{wisp_sigmoid}.

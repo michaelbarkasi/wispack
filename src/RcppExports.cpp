@@ -50,6 +50,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// project_cp_test_hook
+IntegerMatrix project_cp_test_hook(const IntegerVector& found_cp, const NumericVector& centroid, const NumericMatrix& X_lik);
+RcppExport SEXP _wispack_project_cp_test_hook(SEXP found_cpSEXP, SEXP centroidSEXP, SEXP X_likSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const IntegerVector& >::type found_cp(found_cpSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type centroid(centroidSEXP);
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type X_lik(X_likSEXP);
+    rcpp_result_gen = Rcpp::wrap(project_cp_test_hook(found_cp, centroid, X_lik));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 RcppExport SEXP _rcpp_module_boot_wspc();
 
@@ -57,6 +70,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_wispack_warp_mc_R", (DL_FUNC) &_wispack_warp_mc_R, 3},
     {"_wispack_sigmoid_stable_R", (DL_FUNC) &_wispack_sigmoid_stable_R, 1},
     {"_wispack_poly_sigmoid_R", (DL_FUNC) &_wispack_poly_sigmoid_R, 5},
+    {"_wispack_project_cp_test_hook", (DL_FUNC) &_wispack_project_cp_test_hook, 3},
     {"_rcpp_module_boot_wspc", (DL_FUNC) &_rcpp_module_boot_wspc, 0},
     {NULL, NULL, 0}
 };

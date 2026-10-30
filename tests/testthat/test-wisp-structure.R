@@ -60,10 +60,13 @@ test_that("the package's exported API surface hasn't grown or shrunk unintention
   # intended export, update the vector below in the same commit.
   current <- sort(getNamespaceExports("wispack"))
   expected <- sort(c(
-    ".__C__C++Object", ".__C__Rcpp_wspc",
     # S4 method-table registration artifacts re-exported by import(ggplot2)/import(grid)/import(gridExtra)
     # (those packages setMethod() some base generics on their own S4 classes; importing them re-exports
-    # the method-table entries too). Not something wispack defines itself.
+    # the method-table entries too). Not something wispack defines itself. NOTE: .__C__C++Object and
+    # .__C__Rcpp_wspc (the Rcpp module's own S4 class metadata) are NOT in this list -- confirmed empirically
+    # that they disappear once "wspc" itself is no longer in NAMESPACE's export() list, i.e. that class
+    # metadata's exposure is tied to the module generator's own export status, not to importing ggplot2/grid/
+    # gridExtra.
     ".__T__[:base", ".__T__[[<-:base", ".__T__[<-:base", ".__T__$:base", ".__T__$<-:base",
     "analyze_attractor_sim_benchmarks", "analyze.residuals",
     "attractor_simulation", "attractor_simulation_ground_truth",

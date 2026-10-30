@@ -718,6 +718,30 @@ dVec LROcp_logRatio(
     const int&  ws                                // Running window size
   );
 
+// Dynamic-time-warp alignment of one series onto a reference/centroid series, under the Sakoe-Chiba
+// symmetric step pattern of slope 0.5 (symmetricP05; Sakoe & Chiba 1978). Ported from
+// dtw::dtw(..., step.pattern = dtw::symmetricP05) so project_cp() below need not call back into R.
+void dtw_symmetricP05_align(
+    const dVec& query,                            // series to align, length n
+    const dVec& ref,                              // reference/centroid series, length m
+    iVec&       index1,                           // out: aligned positions in query (1-indexed)
+    iVec&       index2                            // out: aligned positions in ref (1-indexed)
+  );
+
+// Round to nearest integer, ties to even (matches R's round(), IEC 60559)
+int round_half_even(
+    double x
+  );
+
+// Project change points found on the across-series centroid back onto each individual series, by
+// aligning each series to the centroid (dtw_symmetricP05_align() above) and projecting the centroid's
+// change-point indices onto each series' own index scale (mean of all aligned positions, rounded).
+IntegerMatrix project_cp(
+    const IntegerVector& found_cp,                // change-point indices on centroid, 1-indexed
+    const NumericVector& centroid,                // across-series centroid, length n_samples
+    const NumericMatrix& X_lik                    // per-series data the centroid was computed from (n_samples x n_series)
+  );
+
 // Likelihood ratio outlier change-point detection, array input and output
 IntegerMatrix LROcp_array(
     const eMat&   series_array,                   // 2D matrix of points to test for change points

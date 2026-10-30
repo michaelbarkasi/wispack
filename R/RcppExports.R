@@ -13,3 +13,7 @@ poly_sigmoid_R <- function(b, deg, Rt, tslope, tpoint) {
     .Call(`_wispack_poly_sigmoid_R`, b, deg, Rt, tslope, tpoint)
 }
 
+.project_cp_test_hook <- function(found_cp, centroid, X_lik) {
+    .Call(`_wispack_project_cp_test_hook`, found_cp, centroid, X_lik)
+}
+
