@@ -432,10 +432,10 @@ make_count_data <- function(
       files_short <- files_short[1]
       }
     if (verbose) {
-      snk.report("Loading raw data")
-      snk.horizontal_rule(reps = snk.simple_break_reps)
-      snk.report...(paste("Found", length(files), "HDF5 files."))
-      snk.print_var_list("File names",files_short)
+      .snk_report("Loading raw data")
+      .snk_horizontal_rule(reps = .snk_simple_break_reps)
+      .snk_report_progress(paste("Found", length(files), "HDF5 files."))
+      .snk_print_var_list("File names",files_short)
     }
     
     # Loop through each file and parse it
@@ -474,9 +474,9 @@ make_count_data <- function(
     
     # Check the mean of each run to see if there's some reason to suspect a systematic difference
     if (verbose) {
-      snk.print_vec("Mean transcript counts per cell for each mouse", mean_rates)
-      snk.print_vec("Mean of means", mean(mean_rates))
-      snk.print_vec("Standard deviation of means", sd(mean_rates))
+      .snk_print_vec("Mean transcript counts per cell for each mouse", mean_rates)
+      .snk_print_vec("Mean of means", mean(mean_rates))
+      .snk_print_vec("Standard deviation of means", sd(mean_rates))
     }
     
     # Combine data from all mice, keeping only columns common to all files
@@ -500,16 +500,16 @@ make_count_data <- function(
     
     # Print summary
     if (verbose) {
-      snk.print_table(
+      .snk_print_table(
         "Total cells by type (Map My Cells)", 
         table(count_data$celltype_MMC),
         head = FALSE,
         initial_breaks = 1
       )
-      snk.print_vec("Number of mice", length(files))
-      snk.print_vec("Cells per mouse", cells_per_mouse)
-      snk.print_vec("Means cells per mouse", mean(cells_per_mouse))
-      snk.print_vec("Total cells", nrow(count_data))
+      .snk_print_vec("Number of mice", length(files))
+      .snk_print_vec("Cells per mouse", cells_per_mouse)
+      .snk_print_vec("Means cells per mouse", mean(cells_per_mouse))
+      .snk_print_vec("Total cells", nrow(count_data))
     }
     
     # Initialize new coordinate columns 
@@ -561,10 +561,10 @@ make_count_data_csv <- function(
       files_short <- files_short[1]
     }
     if (verbose) {
-      snk.report("Loading raw data")
-      snk.horizontal_rule(reps = snk.simple_break_reps)
-      snk.report...(paste("Found", length(files), "files."))
-      snk.print_var_list("File names",files_short)
+      .snk_report("Loading raw data")
+      .snk_horizontal_rule(reps = .snk_simple_break_reps)
+      .snk_report_progress(paste("Found", length(files), "files."))
+      .snk_print_var_list("File names",files_short)
     }
     
     # Loop through each file and parse it
@@ -586,8 +586,8 @@ make_count_data_csv <- function(
     
     # Print summary
     if (verbose) {
-      snk.print_vec("Number of mice", length(files))
-      snk.print_vec("Total transcripts", nrow(count_data))
+      .snk_print_vec("Number of mice", length(files))
+      .snk_print_vec("Total transcripts", nrow(count_data))
     }
     
     # Initialize new coordinate columns 
@@ -690,7 +690,7 @@ coordinate_transform <- function(
     verbose        = TRUE
   ) {
     
-    if (verbose) snk.report...("Grabbing coordinates and defining layers and hemispheres")
+    if (verbose) .snk_report_progress("Grabbing coordinates and defining layers and hemispheres")
     
     # Grab indexes
     mask        <- df$mouse == mouse_num 
@@ -761,7 +761,7 @@ coordinate_transform <- function(
     plot_list <- list(plot_untransformed = plot_untransformed)
     
     # Step 1: Center each patch (left and right) around the mean point of L5
-    if (verbose) snk.report...("Step 1, centering each patch around the mean point of L5")
+    if (verbose) .snk_report_progress("Step 1, centering each patch around the mean point of L5")
     # Helper function for recentering data
       recenter_coordinates <- function(
       coord, 
@@ -833,7 +833,7 @@ coordinate_transform <- function(
     }
     
     # Step 2: Rotate each patch so that L4 aligns with the x-axis and L1 (or L23, if L1 removed) is on top
-    if (verbose) snk.report...(paste0("Step 2, rotating each patch so that ", leveling_layer, " aligns with the x-axis with anterior in positive y direction"))
+    if (verbose) .snk_report_progress(paste0("Step 2, rotating each patch so that ", leveling_layer, " aligns with the x-axis with anterior in positive y direction"))
     coordinates[mask_right,] <- level_layer(coordinates, "right", mask_right, layer_rows_right[[leveling_layer]], natural_right = nat_right, verbose = FALSE)
     coordinates[mask_left,]  <- level_layer(coordinates, "left",  mask_left,  layer_rows_left[[leveling_layer]],  natural_left  = nat_left,  verbose = FALSE)
     
@@ -845,7 +845,7 @@ coordinate_transform <- function(
     plot_list <- c(plot_list, list(plot_leveled = plot_leveled))
     
     # Step 3: Model and flatten laminar curve based on L4
-    if (verbose) snk.report...("Step 3, modeling and flattening laminar curve based on L4")
+    if (verbose) .snk_report_progress("Step 3, modeling and flattening laminar curve based on L4")
     
     # Helper function for flattening data
     flatten <- function(
@@ -929,7 +929,7 @@ coordinate_binning <- function(
     mask_right <- mask & df[,"hemisphere"] == "right"
     
     # Apply coordinate transform to those rows
-    if (verbose) snk.report...("Performing coordinate transform")
+    if (verbose) .snk_report_progress("Performing coordinate transform")
     coord_trans <- coordinate_transform(mouse_num, df, leveling_layer = leveling_layer, nat_left = nat_left, nat_right = nat_right)
     plot_list <- coord_trans$plot_list
     coord_trans <- coord_trans$coord
@@ -941,7 +941,7 @@ coordinate_binning <- function(
     bin_ticks_y <- seq(0, max_y + 1, length.out = total_bins+1)
     
     # Bin the transformed coordinates
-    if (verbose) snk.report...("Binning transformed coordinates")
+    if (verbose) .snk_report_progress("Binning transformed coordinates")
     x_bins <- findInterval(coord_trans[, 1], bin_ticks_x)
     y_bins <- findInterval(coord_trans[, 2], bin_ticks_y)
     
@@ -952,7 +952,7 @@ coordinate_binning <- function(
     df[mask,"y_bins"] <- y_bins
     
     # Apply nonlinear smoothing to bins 
-    if (verbose) snk.report...("Smoothing bin edges with nonlinear transformation")
+    if (verbose) .snk_report_progress("Smoothing bin edges with nonlinear transformation")
     stretch_to_fill <- function(
       df_, 
       hemisphere_mask,
@@ -1099,7 +1099,7 @@ coordinate_binning <- function(
     plot_list <- c(plot_list, list(plot_nonlinear_smoothing = plot_nonlinear_smoothing))
     
     # Estimate layer boundaries
-    if (verbose) snk.report...("Estimating layer boundaries")
+    if (verbose) .snk_report_progress("Estimating layer boundaries")
     layer_boundary_bins <- rep(0, length(layer_names))
     for (lb_num in seq_along(layer_names)) {
       # "layer boundary" will mean the floor of the named layer; the floor of L6b is zero, by definition.
@@ -1150,8 +1150,8 @@ cortical_coordinate_transform <- function(
     # Count_data input should have genes across in columns, not stacked in rows
     
     if (verbose) {
-      snk.report("Transforming raw data into laminar and columnar coordinates")
-      snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 0)
+      .snk_report("Transforming raw data into laminar and columnar coordinates")
+      .snk_horizontal_rule(reps = .snk_simple_break_reps, end_breaks = 0)
     }
     
     # Extract list and slice plots 
@@ -1166,7 +1166,7 @@ cortical_coordinate_transform <- function(
     
     # Loop through mice
     for (mouse_num in unique(count_data$mouse)) {
-      if (verbose) snk.report(paste("Mouse number", mouse_num))
+      if (verbose) .snk_report(paste("Mouse number", mouse_num))
       
       # Grab slice plot
       assign(paste0("plot_list_m", mouse_num), list(slice_plot = slice_plots[[paste0("slice_plot", mouse_num)]]))

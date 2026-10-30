@@ -1,24 +1,24 @@
 
-# Helper functions for printing to output.txt
+# Internal console helpers for the verbose = TRUE progress output printed during model fitting and
+# data preprocessing (R/wspmm.R, R/merfish_preprocessing.R). Not exported -- see leading dot and @noRd.
 
 # Aesthetic parameters ####
 
-snk.step_number <- 0
-snk.section_break_reps <- 120
-snk.simple_break_reps <- 40
-snk.small_break_reps <- 15
+.snk_section_break_reps <- 120
+.snk_simple_break_reps <- 40
 
 # Horizontal rule marks ####
 
-snk.horizontal_rule <- function(
+#' @noRd
+.snk_horizontal_rule <- function(
     mark = "-",
-    reps = snk.section_break_reps,
+    reps = .snk_section_break_reps,
     initial_breaks = 1,
     end_breaks = 1
   ) {
     cat(
-      paste(rep("\n", initial_breaks)), 
-      rep(mark, reps), 
+      paste(rep("\n", initial_breaks)),
+      rep(mark, reps),
       paste(rep("\n", end_breaks)),
       sep=""
       )
@@ -26,81 +26,39 @@ snk.horizontal_rule <- function(
 
 # Report headers ####
 
-snk.report <- function(
+#' @noRd
+.snk_report <- function(
     label,
     initial_breaks = 2,
     end_breaks = 0
   ) {
     cat(
-      paste(rep("\n", initial_breaks)), 
-      label, #": ", 
+      paste(rep("\n", initial_breaks)),
+      label, #": ",
       paste(rep("\n", end_breaks)),
       sep=""
       )
   }
 
-snk.report... <- function(
-    label, 
-    initial_breaks = 1, 
+#' @noRd
+.snk_report_progress <- function(
+    label,
+    initial_breaks = 1,
     end_breaks = 0
   ) {
     cat(
-      paste(rep("\n", initial_breaks)), 
-      label, "... ", 
-      paste(rep("\n", end_breaks)), 
+      paste(rep("\n", initial_breaks)),
+      label, "... ",
+      paste(rep("\n", end_breaks)),
       sep=""
     )
   }
 
-snk.step_heading <- function(
-    title, 
-    prefix = "Step", 
-    reset = FALSE, 
-    initial_breaks = 2,
-    end_breaks = 0
-  ) {
-    snk.horizontal_rule("=", initial_breaks = initial_breaks)
-    if (!reset) snk.step_number <<- snk.step_number + 1
-    else snk.step_number <<- 1
-    cat(
-      prefix, " ", snk.step_number, ": ", 
-      title, 
-      paste(rep("\n", end_breaks)), 
-      sep="")
-  }
-
-snk.summary_heading <- function() {
-    cat("Summary:\n", sep="")
-    cat(rep("-", 40), "\n", sep="")
-  }
-
-snk.print_details <- function(
-    label, 
-    details
-  ) {
-    cat("\n\n", label, ":\n", sep="")
-    cat(rep("-", 30), "\n", sep="")
-    cat(details)
-    cat("\n")
-    cat(rep("-", 4), sep="")
-  }
-
 # Print large objects ####
 
-snk.print_var_charvec <- function(
+#' @noRd
+.snk_print_var_list <- function(
     main,
-    vars
-  ) {
-    # vars should be a character vector of variable names
-    if (class(vars) != "character") stop("vars must be a character vector")
-    cat("\n\n", main, ":", sep="")
-    for (var in vars) {
-      cat("\n\t", var, ": ", paste(round(get(var), 2), collapse = ", "), sep="")
-    }
-  }
-
-snk.print_var_list <- function(
-    main, 
     vars,
     vert = TRUE,
     end_breaks = 1
@@ -119,19 +77,11 @@ snk.print_var_list <- function(
     cat(paste(rep("\n", end_breaks)))
   }
 
-snk.print_function <- function(
-    func
-  ) {
-    if (class(func) != "character") stop("func must be a character string naming a function")
-    cat("\n\n", func, " definition:\n",rep("-", 30),"\n", sep="")
-    print(get(func))
-    cat(rep("-", 4), sep = "")
-  }
-
-snk.print_table <- function(
-    label, 
-    tab, 
-    head = TRUE, 
+#' @noRd
+.snk_print_table <- function(
+    label,
+    tab,
+    head = TRUE,
     initial_breaks = 0,
     end_breaks = 1
   ) {
@@ -146,7 +96,8 @@ snk.print_table <- function(
     cat(paste(rep("\n", end_breaks)))
   }
 
-snk.print_vec <- function(
+#' @noRd
+.snk_print_vec <- function(
     label,
     vec,
     rnd = 3,

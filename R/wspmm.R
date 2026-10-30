@@ -327,7 +327,7 @@ wisp <- function(
       # Confirm forking is possible
       if (!(Sys.info()["sysname"] == "Darwin" || Sys.info()["sysname"] == "Linux")) {
         if (bootstraps.num > 0 && max.fork > 1) {
-          if (verbose) snk.report...("Forking not available on Windows, cannot bootstrap in parallel, setting max fork to 1")
+          if (verbose) .snk_report_progress("Forking not available on Windows, cannot bootstrap in parallel, setting max fork to 1")
           max.fork <- 1
         }
       } 
@@ -349,38 +349,38 @@ wisp <- function(
       }
       
       if (verbose) {
-        snk.report("Parsing data and settings for wisp model", initial_breaks = 1)
-        snk.horizontal_rule(reps = snk.simple_break_reps,                end_breaks = 1)
-        snk.print_var_list("Model settings",      sets,     vert = TRUE, end_breaks = 1)
-        snk.print_var_list("Plot settings",       plotset,  vert = TRUE, end_breaks = 1)
-        snk.print_var_list("MCMC settings",       MCMCset,  vert = TRUE, end_breaks = 1)
-        snk.print_var_list("Variable dictionary", vars,     vert = TRUE, end_breaks = 1)
-        snk.print_table("Parsed data",            data,                  end_breaks = 0)
+        .snk_report("Parsing data and settings for wisp model", initial_breaks = 1)
+        .snk_horizontal_rule(reps = .snk_simple_break_reps,                end_breaks = 1)
+        .snk_print_var_list("Model settings",      sets,     vert = TRUE, end_breaks = 1)
+        .snk_print_var_list("Plot settings",       plotset,  vert = TRUE, end_breaks = 1)
+        .snk_print_var_list("MCMC settings",       MCMCset,  vert = TRUE, end_breaks = 1)
+        .snk_print_var_list("Variable dictionary", vars,     vert = TRUE, end_breaks = 1)
+        .snk_print_table("Parsed data",            data,                  end_breaks = 0)
       }
       
     } else {
       
       if (verbose) {
-        snk.report("Parsing data and settings for wisp model", initial_breaks = 1)
-        snk.horizontal_rule(reps = snk.simple_break_reps,                end_breaks = 1)
-        snk.print_var_list("Model settings",      sets,     vert = TRUE, end_breaks = 1)
-        snk.print_var_list("Plot settings",       plotset,  vert = TRUE, end_breaks = 1)
-        snk.print_var_list("Variable dictionary", vars,     vert = TRUE, end_breaks = 1)
-        snk.print_table("Parsed data",            data,                  end_breaks = 0)
+        .snk_report("Parsing data and settings for wisp model", initial_breaks = 1)
+        .snk_horizontal_rule(reps = .snk_simple_break_reps,                end_breaks = 1)
+        .snk_print_var_list("Model settings",      sets,     vert = TRUE, end_breaks = 1)
+        .snk_print_var_list("Plot settings",       plotset,  vert = TRUE, end_breaks = 1)
+        .snk_print_var_list("Variable dictionary", vars,     vert = TRUE, end_breaks = 1)
+        .snk_print_table("Parsed data",            data,                  end_breaks = 0)
       }
       
     }
     
     # Initialize cpp model ####
     if (verbose) {
-      snk.report("Initializing Cpp (wspc) model")
-      snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 1)
+      .snk_report("Initializing Cpp (wspc) model")
+      .snk_horizontal_rule(reps = .snk_simple_break_reps, end_breaks = 1)
     }
     cpp_model <- new(wspc, data, sets, verbose)
     
     if (verbose) {
-      snk.report("Running LRO change-point detection and setting initial parameters", initial_breaks = 1)
-      snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 2)
+      .snk_report("Running LRO change-point detection and setting initial parameters", initial_breaks = 1)
+      .snk_horizontal_rule(reps = .snk_simple_break_reps, end_breaks = 2)
     }
     
     # Search for best LRO parameters
@@ -394,8 +394,8 @@ wisp <- function(
     if (fit_only) {
       
       if (verbose) {
-        snk.report("Fitting model to data", initial_breaks = 1)
-        snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 2)
+        .snk_report("Fitting model to data", initial_breaks = 1)
+        .snk_horizontal_rule(reps = .snk_simple_break_reps, end_breaks = 2)
       }
       
       # Fit model and grab results
@@ -433,14 +433,14 @@ wisp <- function(
 
       # Estimate model parameters with MCMC or bootstrapping ####
       if (verbose) {
-        snk.report("Estimating model parameters", initial_breaks = 1)
-        snk.horizontal_rule(reps = snk.simple_break_reps, end_breaks = 0)
+        .snk_report("Estimating model parameters", initial_breaks = 1)
+        .snk_horizontal_rule(reps = .snk_simple_break_reps, end_breaks = 0)
       }
       
       # Run MCMC simulation
       if (MCMCset$MCMC.steps > 0) {
         
-        if (verbose) snk.report("Running MCMC stimulations", end_breaks = 1)
+        if (verbose) .snk_report("Running MCMC stimulations", end_breaks = 1)
         start_time_MCMC <- Sys.time()
         MCMC_walk <- cpp_model$MCMC(
           MCMCset$MCMC.burnin,
@@ -454,10 +454,10 @@ wisp <- function(
         )
         rtMCMC <- Sys.time() - start_time_MCMC
         if (verbose) {
-          snk.report...("MCMC simulation complete")
-          snk.print_vec("MCMC run time (total), minutes",             c( as.numeric(rtMCMC, units = "mins")))
-          snk.print_vec("MCMC run time (per retained step), seconds", c( as.numeric(rtMCMC, units = "secs") / (MCMCset$MCMC.steps + MCMCset$MCMC.burnin)))
-          snk.print_vec("MCMC run time (per step), seconds",          c((as.numeric(rtMCMC, units = "secs") / (MCMCset$MCMC.steps + MCMCset$MCMC.burnin)) / MCMCset$MCMC.neighbor.filter), end_breaks = 0)
+          .snk_report_progress("MCMC simulation complete")
+          .snk_print_vec("MCMC run time (total), minutes",             c( as.numeric(rtMCMC, units = "mins")))
+          .snk_print_vec("MCMC run time (per retained step), seconds", c( as.numeric(rtMCMC, units = "secs") / (MCMCset$MCMC.steps + MCMCset$MCMC.burnin)))
+          .snk_print_vec("MCMC run time (per step), seconds",          c((as.numeric(rtMCMC, units = "secs") / (MCMCset$MCMC.steps + MCMCset$MCMC.burnin)) / MCMCset$MCMC.neighbor.filter), end_breaks = 0)
         }
         
         # Save MCMC estimates and diagnostics
@@ -484,7 +484,7 @@ wisp <- function(
         }
         
         start_time_bs <- Sys.time()
-        if (verbose) snk.report("Running bootstrap fits", end_breaks = 1)
+        if (verbose) .snk_report("Running bootstrap fits", end_breaks = 1)
         sample_results <- cpp_model$bs_batch(
           bootstraps.num, 
           max.fork,
@@ -493,10 +493,10 @@ wisp <- function(
         )
         rtbs <- Sys.time() - start_time_bs
         if (verbose) {
-          snk.report...("Bootstrap simulation complete")
-          snk.print_vec("Bootstrap run time (total), minutes",                  c(as.numeric(rtbs, units = "mins")))
-          snk.print_vec("Bootstrap run time (per sample), seconds",             c(as.numeric(rtbs, units = "secs") / bootstraps.num))
-          snk.print_vec("Bootstrap run time (per sample, per thread), seconds", c(as.numeric(rtbs, units = "secs") * max.fork / bootstraps.num), end_breaks = 0)
+          .snk_report_progress("Bootstrap simulation complete")
+          .snk_print_vec("Bootstrap run time (total), minutes",                  c(as.numeric(rtbs, units = "mins")))
+          .snk_print_vec("Bootstrap run time (per sample), seconds",             c(as.numeric(rtbs, units = "secs") / bootstraps.num))
+          .snk_print_vec("Bootstrap run time (per sample, per thread), seconds", c(as.numeric(rtbs, units = "secs") * max.fork / bootstraps.num), end_breaks = 0)
         }
         
         # Save bs estimates and diagnostics
@@ -560,8 +560,8 @@ wisp <- function(
       # "species.summary").
 
       if (verbose) {
-        snk.report("Making plots", initial_breaks = 1)
-        snk.horizontal_rule(reps = snk.simple_break_reps)
+        .snk_report("Making plots", initial_breaks = 1)
+        .snk_horizontal_rule(reps = .snk_simple_break_reps)
       }
 
       # Plot MCMC walks, both parameters and negloglik
@@ -622,7 +622,7 @@ wisp <- function(
       # plots, so skipping this call would shift the RNG stream state at the point wisp()
       # returns relative to prior releases, silently changing any RNG-sensitive computation a
       # caller runs afterward on the returned model)
-      if (verbose) snk.report...("Making parameter plots")
+      if (verbose) .snk_report_progress("Making parameter plots")
       invisible(
         lapply(
           results$grouping.variables$species.lvls,
@@ -718,21 +718,21 @@ sample.stats <- function(
     
     # Run stats on results
     if (verbose) {
-      snk.report("Computing p-values and CI for model parameters", initial_breaks = 2)
-      snk.horizontal_rule(reps = snk.simple_break_reps)
+      .snk_report("Computing p-values and CI for model parameters", initial_breaks = 2)
+      .snk_horizontal_rule(reps = .snk_simple_break_reps)
     }
    
     # Grab results
     sampled_params <- wisp.results[[paste0("sample.params.", wisp.results$sample.params.type)]]
     if (conv.resamples.only && wisp.results$sample.params.type == "bs") {
-      if (verbose) snk.report...("Grabbing sample results, only resamples with converged fit")
+      if (verbose) .snk_report_progress("Grabbing sample results, only resamples with converged fit")
       sampled_params <- sampled_params[convergence_mask(wisp.results),]
     } else {
-      if (verbose) snk.report...("Grabbing sample results")
+      if (verbose) .snk_report_progress("Grabbing sample results")
     }
     # ... check they exist
     if (length(sampled_params) == 0 || is.null(dim(sampled_params))) {
-      snk.report...("\nNo samples to analyze") 
+      .snk_report_progress("\nNo samples to analyze") 
       return(wisp.results)
     }
    
@@ -740,11 +740,11 @@ sample.stats <- function(
     test_mask        <- grepl("beta_Rt|beta_tslope|beta_tpoint", wisp.results$param.names)
     
     # Compute 95% confidence intervals
-    if (verbose) snk.report...("Computing 95% confidence intervals")
+    if (verbose) .snk_report_progress("Computing 95% confidence intervals")
     sample.params_ci <- apply(sampled_params, 2, quantile, probs = c(alpha/2, 1 - alpha/2), na.rm = TRUE)
     
     # Estimate p_values from samples
-    if (verbose) snk.report...("Estimating p-values from resampled parameters")
+    if (verbose) .snk_report_progress("Estimating p-values from resampled parameters")
     n_params         <- length(wisp.results$fitted.parameters)
     p_values         <- rep(NA,  n_params)
     p_values_adj     <- rep(NA,  n_params)
@@ -760,9 +760,9 @@ sample.stats <- function(
     num_of_tests     <- sum(test_mask)
     recommended_resample_size <- num_of_tests / alpha
     if (verbose) {
-      snk.report(paste0("Recommended resample size for alpha = ", alpha, ", ", num_of_tests, " tests"))
-      snk.print_vec("with bootstrapping/MCMC", c(recommended_resample_size))
-      snk.print_vec("Actual resample size", c(nrow(sampled_params)))
+      .snk_report(paste0("Recommended resample size for alpha = ", alpha, ", ", num_of_tests, " tests"))
+      .snk_print_vec("with bootstrapping/MCMC", c(recommended_resample_size))
+      .snk_print_vec("Actual resample size", c(nrow(sampled_params)))
     }
     
     # Estimate significance, adjusting for multiple comparisons
@@ -806,10 +806,10 @@ sample.stats <- function(
     rownames(wisp.results[["stats"]][["parameters"]]) <- NULL
     
     # Print summary table of stat analysis 
-    if (verbose) snk.print_table("Stat summary", wisp.results[["stats"]][["parameters"]], head = TRUE, initial_breaks = 1)
+    if (verbose) .snk_print_table("Stat summary", wisp.results[["stats"]][["parameters"]], head = TRUE, initial_breaks = 1)
     
     # Compute 95% CI for predicated values by bin 
-    if (verbose) {snk.report...("Computing 95% CI for predicated values by bin", initial_breaks = 1)}
+    if (verbose) {.snk_report_progress("Computing 95% CI for predicated values by bin", initial_breaks = 1)}
     pred_values <- wisp.results$pred_values
     if (conv.resamples.only && wisp.results$sample.params.type == "bs") pred_values <- pred_values[,convergence_mask(wisp.results)]
     # ... ^^ columns contain predicted values for a given sampled parameter set, rows are bins interacting with covariates.
@@ -840,11 +840,11 @@ analyze.residuals <- function(
   ) {
     
     if (verbose) {
-      snk.report("Analyzing residuals", initial_breaks = 2)
-      snk.horizontal_rule(reps = snk.simple_break_reps)
+      .snk_report("Analyzing residuals", initial_breaks = 2)
+      .snk_horizontal_rule(reps = .snk_simple_break_reps)
     }
     
-    if (verbose) snk.report...("Computing residuals")
+    if (verbose) .snk_report_progress("Computing residuals")
     # Compute residuals 
     wisp.results$count.data.summed$residuals     <- wisp.results$count.data.summed$pred - wisp.results$count.data.summed$count
     wisp.results$count.data.summed$residuals.log <- wisp.results$count.data.summed$pred.log - wisp.results$count.data.summed$count.log
@@ -942,7 +942,7 @@ analyze.residuals <- function(
       
     }
     
-    if (verbose) snk.report...("Making masks")
+    if (verbose) .snk_report_progress("Making masks")
     # Grab masks for subsets of interest
     mask_list          <- list()
     mask_list[["all"]] <- rep(TRUE, ncol(wisp.results$count.data.summed))
@@ -961,7 +961,7 @@ analyze.residuals <- function(
       }
     }
     
-    if (verbose) snk.report...("Making plots and saving stats")
+    if (verbose) .snk_report_progress("Making plots and saving stats")
     plots.residuals               <- list()
     length(plots.residuals)       <- 3 * length(mask_list)
     names(plots.residuals)        <- c(paste0(names(mask_list),"_qq"), paste0(names(mask_list),"_hist"), paste0(names(mask_list),"_resid"))
@@ -1024,7 +1024,7 @@ analyze.residuals <- function(
     
     # Print results 
     if (verbose) {
-      snk.print_table(
+      .snk_print_table(
         "Log-residual summary by grouping variables", 
         stats.residuals.log,
         initial_breaks = 1
@@ -1165,7 +1165,7 @@ print.summary.wisp <- function(x, ...) {
       "confidence intervals, and p-values.\n"
     )
   } else {
-    snk.print_table("Parameter estimates", x$parameters, head = FALSE, initial_breaks = 0, end_breaks = 0)
+    .snk_print_table("Parameter estimates", x$parameters, head = FALSE, initial_breaks = 0, end_breaks = 0)
   }
 
   invisible(x)
@@ -1480,7 +1480,7 @@ plot.wisp <- function(x, type, print.plots = TRUE, verbose = TRUE, species = "al
     verbose          = TRUE
   ) {
     
-    if (verbose) snk.report...("Making rate-count plots")
+    if (verbose) .snk_report_progress("Making rate-count plots")
     
     # Set y-axis scale 
     pred.type    <- "pred"
@@ -1985,7 +1985,7 @@ plot.wisp <- function(x, type, print.plots = TRUE, verbose = TRUE, species = "al
     verbose          = TRUE
   ) {
     
-    if (verbose) snk.report...("Making time series plots")
+    if (verbose) .snk_report_progress("Making time series plots")
     
     # Set y-axis scale 
     pred.type    <- "pred"
@@ -2471,13 +2471,13 @@ plot.wisp <- function(x, type, print.plots = TRUE, verbose = TRUE, species = "al
       print_stats <- FALSE
       if (violin) {
         violin <- FALSE
-        if (verbose) snk.report...("sample.params not found, setting violin = FALSE and not printing stats")
+        if (verbose) .snk_report_progress("sample.params not found, setting violin = FALSE and not printing stats")
       } 
     } else {
       downsample_size <- min(1e2, nrow(sample.params))
     }
     
-    if (verbose) snk.report...("Making parameter plots")
+    if (verbose) .snk_report_progress("Making parameter plots")
     
     # Grab fitted parameters 
     fitted_params <- wisp.results$fitted.parameters
@@ -3065,7 +3065,7 @@ plot.wisp <- function(x, type, print.plots = TRUE, verbose = TRUE, species = "al
     verbose     = TRUE 
   ) {
     
-    if (verbose) snk.report...("Making effect parameter distribution plots")
+    if (verbose) .snk_report_progress("Making effect parameter distribution plots")
     
     plots.effects_dist <- list()
     fitted_params <- wisp.results[[paste0("sample.params.", wisp.results$sample.params.type)]]
@@ -3263,7 +3263,7 @@ plot.wisp <- function(x, type, print.plots = TRUE, verbose = TRUE, species = "al
 
     for (cxt_lvl in cxt_lvls) {
 
-      if (verbose) snk.report(paste0("Printing species summary plots for ", cxt_lvl, ": "))
+      if (verbose) .snk_report(paste0("Printing species summary plots for ", cxt_lvl, ": "))
       first_print <- TRUE
 
       for (sps_lvl in sps_lvls) {
@@ -3343,7 +3343,7 @@ plot.wisp <- function(x, type, print.plots = TRUE, verbose = TRUE, species = "al
     # Grab sampled parameters
     sampled_params <- wisp.results$sample.params.MCMC
     if (length(sampled_params) == 0 || is.null(sampled_params)) return(NULL)
-    if (verbose) snk.report...("Making MCMC walks plots")
+    if (verbose) .snk_report_progress("Making MCMC walks plots")
     sampled_params <- sampled_params[-c(nrow(sampled_params)), , drop = FALSE]  # Remove last row, which contains L-BFGS values
     
     # Find high-value parameters
@@ -3531,7 +3531,7 @@ plot.wisp <- function(x, type, print.plots = TRUE, verbose = TRUE, species = "al
 
     # Check length of species and get number of contexts
     if (length(species) != 1) stop("plot(model, type = \"ratecount\", decompose = TRUE) can only be given one species at a time.")
-    if (verbose) snk.report...("Making decomposed rate-count plots")
+    if (verbose) .snk_report_progress("Making decomposed rate-count plots")
     n_contexts <- length(wisp.results$grouping.variables$context.lvls)
     
     # Set y limits
@@ -3683,7 +3683,7 @@ plot.wisp <- function(x, type, print.plots = TRUE, verbose = TRUE, species = "al
       return(NULL)
     }
     
-    if (verbose) snk.report...("Making MCMC vs bootstrap parameter distribution comparison plots")
+    if (verbose) .snk_report_progress("Making MCMC vs bootstrap parameter distribution comparison plots")
     
     # Find mean "normality" (p-value of shaprio test) for each parameter, on each method
     dens_list <- lapply(

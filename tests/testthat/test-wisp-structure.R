@@ -79,10 +79,7 @@ test_that("the package's exported API surface hasn't grown or shrunk unintention
     "poly_sigmoid_R", "print.summary.wisp", "print.wisp", "project_cp", "pvalues.samples",
     "residuals.wisp", "rot_matrix",
     "run_attractor_sim_benchmarks", "sample.stats", "sigmoid_stable_R", "smooth_data",
-    "snk.horizontal_rule", "snk.print_details", "snk.print_function", "snk.print_table",
-    "snk.print_var_charvec", "snk.print_var_list", "snk.print_vec", "snk.report", "snk.report...",
-    "snk.section_break_reps", "snk.simple_break_reps", "snk.small_break_reps",
-    "snk.step_heading", "snk.step_number", "snk.summary_heading", "summary.wisp",
+    "summary.wisp",
     "warp_mc_R", "wisp", "wisp_sigmoid", "wisp_warp", "wspc"
   ))
   expect_equal(current, expected)
