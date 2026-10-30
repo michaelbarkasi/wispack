@@ -1300,22 +1300,37 @@ create.count.data.WSPmm <- function(
     
   }
 
-# Function to convert to WSPmm format
+#' Function to convert Allen-formatted MERFISH data to WSPmm format
+#'
+#' This is the \code{\link{create.count.data.WSPmm}} counterpart for MERFISH data already in Allen Brain Atlas
+#' format, i.e. already in long form with one row per gene/cell pair (columns \code{trscrpt_gene_symb},
+#' \code{trscrpt_ct}, \code{cluster_id}, \code{mouse}), rather than the wide, one-column-per-gene form that
+#' \code{create.count.data.WSPmm} expects. Because the data is already long, no \code{gene.list} argument is
+#' needed here: genes are read directly from \code{trscrpt_gene_symb}. An \code{age} fixed effect, if requested
+#' via \code{fixed.effect.names}, is always set to \code{"p5x"} for every row, since this function was written
+#' for a single age cohort; include \code{"age"} in \code{fixed.effect.names} only when that is the cohort you
+#' are working with.
+#'
+#' @param df.merfish A data frame of Allen-formatted MERFISH data, in long form with one row per gene/cell pair
+#' @param bin.dim A character string specifying the dimension by which to bin the data; must be either "x_bins" or "y_bins"
+#' @param fixed.effect.names A character vector of column names in \code{df.merfish} to include as fixed effects in the count data
+#' @param context A character string specifying the context level for fixed effects; if NULL, will use "context" literally for every row; otherwise must be the name of an existing column in \code{df.merfish}, whose values are used as the context level
+#' @return A data frame in count data format suitable for input into the WSPmm model
+#' @export
 create.count.data.WSPmm.allen <- function(
     df.merfish,                                    # data frame of MERFISH data, produced by the above functions
     bin.dim = c("x_bins", "y_bins"),               # dimension by which to bin; must be one of these two; will collapse along the other
-    fixed.effect.names, 
+    fixed.effect.names,
     context = NULL                                 # context level for fixed effects; if NULL, will use "context"
-  ) { 
-    
-    # Make count data column names and find its dimensions 
-    num_genes <- length(gene.list)
+  ) {
+
+    # Make count data column names and find its dimensions
     if (is.null(context)) context <- "context"
     numrow <- nrow(df.merfish)
-    
-    # Make context column 
+
+    # Make context column
     if (context == "context") context_col <- rep("context", numrow)
-    else context_col <- rep(df.merfish[,context], num_genes)
+    else context_col <- df.merfish[,context]
     
     # Grab data
     count_data <- data.frame(

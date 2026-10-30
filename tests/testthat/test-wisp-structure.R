@@ -53,11 +53,11 @@ test_that("wisp() is deterministic given the same seed and settings", {
 })
 
 test_that("the package's exported API surface hasn't grown or shrunk unintentionally", {
-  # wispack's NAMESPACE uses exportPattern("^[[:alpha:]]+"), which exports *every* top-level alphabetic-starting
-  # object, not a curated list -- so an internal helper (or a leftover S4 class-registration artifact from the
-  # Rcpp module) can become "public API" just by being defined at top level. This test freezes the current
-  # surface so that change is visible and intentional. When you add a genuinely new, intended export, update the
-  # vector below in the same commit.
+  # wispack's NAMESPACE now uses a curated export() list (one export() per function carrying a roxygen
+  # @export tag in R/*.R) instead of a blanket exportPattern, so internal helpers and Rcpp-module/S4
+  # artifacts no longer leak into the public surface just by being defined at top level. This test
+  # freezes the current surface so that change is visible and intentional. When you add a genuinely new,
+  # intended export, update the vector below in the same commit.
   current <- sort(getNamespaceExports("wispack"))
   expected <- sort(c(
     ".__C__C++Object", ".__C__Rcpp_wspc",
@@ -65,22 +65,17 @@ test_that("the package's exported API surface hasn't grown or shrunk unintention
     # (those packages setMethod() some base generics on their own S4 classes; importing them re-exports
     # the method-table entries too). Not something wispack defines itself.
     ".__T__[:base", ".__T__[[<-:base", ".__T__[<-:base", ".__T__$:base", ".__T__$<-:base",
-    "affine", "analyze_attractor_sim_benchmarks", "analyze.residuals",
+    "analyze_attractor_sim_benchmarks", "analyze.residuals",
     "attractor_simulation", "attractor_simulation_ground_truth",
-    "bin_data", "coef.wisp", "confint.wisp", "convergence_mask", "coordinate_binning", "coordinate_transform",
     "cortical_coordinate_transform", "create.count.data.WSPmm", "create.count.data.WSPmm.allen",
     "demo.sigmoid.plots", "demo.warp.plots",
-    "extract_pvalue_attractor_simulation_wisp", "extract_random_effect_attractor_simulation_wisp",
-    "extract_rate_effect_attractor_simulation_wisp", "extract_wisp_attractor_simulation_results",
-    "induce_SV",
-    "make_count_data", "make_count_data_csv", "make_replicate", "matrix_transform",
+    "make_count_data", "make_count_data_csv",
     "model_attractor_simulation_wisp",
-    "parse_csv", "parse_hdf5", "plot_results", "plot.wisp",
-    "poly_sigmoid_R", "print.summary.wisp", "print.wisp", "project_cp", "pvalues.samples",
-    "residuals.wisp", "rot_matrix",
-    "run_attractor_sim_benchmarks", "sample.stats", "sigmoid_stable_R", "smooth_data",
-    "summary.wisp",
-    "warp_mc_R", "wisp", "wisp_sigmoid", "wisp_warp", "wspc"
+    "run_attractor_sim_benchmarks", "sample.stats",
+    "wisp", "wisp_sigmoid", "wisp_warp"
+    # coef.wisp, confint.wisp, plot.wisp, print.wisp, print.summary.wisp, residuals.wisp, and summary.wisp
+    # are S3 methods: they dispatch via the S3method() entries in NAMESPACE and don't need (and no longer
+    # have) a separate export() entry for the dotted method name itself.
   ))
   expect_equal(current, expected)
 })
