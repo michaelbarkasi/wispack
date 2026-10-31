@@ -38,3 +38,25 @@ A list containing two components: \code{results}, a data frame compiling the res
 \description{
 This function benchmarks a provided list of modeling methods on attractor-based simulation datasets. It simulates data multiple times, fits each modeling method to the simulated data, and records the results and computation times for each step.
 }
+\examples{
+# A toy seed large enough per bin/replicate for the bootstrap resamples
+# inside model_attractor_simulation_wisp() to converge reliably.
+set.seed(1)
+toy_seed <- data.frame(
+  gene    = rep(c("geneA", "geneB"), each = 100),
+  coord_x = runif(200, 0, 10),
+  coord_y = runif(200, 0, 10),
+  count   = rpois(200, 20)
+)
+
+# n_sims = 1 and a small bs_num keep this fast; a real benchmark would use
+# many more simulations and bootstrap resamples.
+bm <- run_attractor_sim_benchmarks(
+  toy_seed,
+  n_sims                 = 1,
+  n_bins                 = 10,
+  n_replicates           = 3,
+  modeling_function_args = list(wisp = list(bs_num = 8, max_fork = 1))
+)
+bm$results
+}

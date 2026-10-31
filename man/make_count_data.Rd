@@ -38,3 +38,11 @@ A list containing the combined count data and a list of slice plots for each mou
 \description{
 Loads MERFISH data from an HDF5 file, or multiple files in a directory, and combines them into a single data frame. This function was written for "in house" use by Michael Barkasi, and was not intended for general use. You can try it, but it may not work for your data and isn't documented in a user-friendly way.
 }
+\examples{
+\dontrun{
+# Not runnable without real MERFISH HDF5 files on disk (and the 'hdf5r' package):
+# this reads every "*_withCCF.hdf5" file in data_path and combines them.
+md <- make_count_data("path/to/hdf5/files")
+str(md$count_data)
+}
+}

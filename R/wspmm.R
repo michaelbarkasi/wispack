@@ -2,7 +2,6 @@
 #' @useDynLib wispack, .registration = TRUE
 #' @import Rcpp
 #' @import methods
-#' @import RcppEigen
 NULL
 
 .onLoad <- function(libname, pkgname) {
@@ -81,6 +80,25 @@ NULL
 #'    \item \code{plot.settings}: A copy of the (defaulted) plot settings provided to the \code{wisp} function; used by \code{\link{plot.wisp}} when re-plotting a fitted model. Note that \code{wisp()} does not store built plot objects in its return value (doing so for a large model could add gigabytes); call \code{plot(model, type = ...)} (e.g. \code{type = "ratecount"}, \code{"parameters"}, \code{"species.summary"}) to regenerate specific plots on demand from this returned list.
 #'    \item \code{variables}: A copy of the resolved \code{variables} list (the column-name mapping actually used for the fit, after defaults were filled in).
 #'    }
+#' @examples
+#' # A tiny synthetic count-data set with one obvious transition point: two
+#' # spatial blocks of 10 bins each, with Poisson-process counts at rates 2 and 8.
+#' set.seed(1)
+#' n_bins <- 20
+#' bin <- sample(seq_len(n_bins), 400, replace = TRUE)
+#' lambda <- rep(c(2, 8), each = n_bins / 2)
+#' countdata <- data.frame(bin = bin, count = rpois(400, lambda[bin]))
+#'
+#' # fit_only = TRUE skips MCMC/bootstrap resampling, so this fits in well under
+#' # a second; see sample.stats() for estimating parameter uncertainty.
+#' model <- wisp(
+#'   countdata,
+#'   fit_only       = TRUE,
+#'   model.settings = list(LRO_cost = "none"),
+#'   plot.settings  = list(print.plots = FALSE),
+#'   verbose        = FALSE
+#' )
+#' model$fitted.parameters
 #' @export
 wisp <- function(
     count.data, 
@@ -112,7 +130,7 @@ wisp <- function(
       # ... check if variables are provided 
       if (length(user_input) > 0) {
         # ... check that provided input is a list with valid names
-        if (class(user_input) != "list") {
+        if (!inherits(user_input, "list")) {
           stop(paste0(list_name, " must be a list"))
         } else if (is.null(names(user_input))) {
           stop(paste0(list_name, " must be a list with named elements"))
@@ -154,7 +172,7 @@ wisp <- function(
     
     # Relabel and rearrange data columns 
     # ... check that count.data is a dataframe
-    if (class(count.data) != "data.frame") {
+    if (!inherits(count.data, "data.frame")) {
       stop("count.data must be a data frame")
     }
     # ... check for context, species, and ran in data frame
@@ -277,7 +295,7 @@ wisp <- function(
         }
       }
       if (s == "trtKO") {
-        if (class(ms) != "character") {
+        if (!inherits(ms, "character")) {
           stop("model.settings$trtKO must be a character vector of treatment names to knock out for the model fit")
         }
       }
@@ -699,7 +717,36 @@ convergence_mask <- function(
 #' @param Bonferroni Logical, if TRUE, uses the Bonferroni correction for multiple comparisons; if FALSE, uses the Holm-Bonferroni method. Default is FALSE.
 #' @param conv.resamples.only Logical, if TRUE, only resamples with a converged fit are used for statistical analysis; if FALSE, all resamples are used. Default is TRUE.
 #' @param verbose Logical, if TRUE, prints information during the statistical analysis.
-#' @return A copy of wisp.results with (1) a new entry \code{parameters} under \code{stats} holding a data frame giving, for each parameter, its name, estimate, confidence interval (CI.low, CI.high), p-value, adjusted p-value (p.value.adj), adjusted alpha (alpha.adj), and significance level (significance), and also (2) 95% confidence interval range columns in \code{count.data.summed} for predicted log count by bin. 
+#' @return A copy of wisp.results with (1) a new entry \code{parameters} under \code{stats} holding a data frame giving, for each parameter, its name, estimate, confidence interval (CI.low, CI.high), p-value, adjusted p-value (p.value.adj), adjusted alpha (alpha.adj), and significance level (significance), and also (2) 95% confidence interval range columns in \code{count.data.summed} for predicted log count by bin.
+#' @examples
+#' # A small synthetic data set with a transition point, a two-level fixed
+#' # effect ("age"), and two random-effect levels ("ran"), fit with a handful
+#' # of bootstrap resamples so sample.stats() has something to work with.
+#' set.seed(1)
+#' grid <- expand.grid(bin = 1:20, age = c(12, 18), ran = c("r1", "r2"), rep = 1:6)
+#' base_rate <- ifelse(grid$bin <= 10, 3, 9)
+#' age_effect <- ifelse(grid$age == 18, 1.5, 1)
+#' grid$count <- rpois(nrow(grid), base_rate * age_effect)
+#' countdata <- data.frame(
+#'   bin = grid$bin, count = grid$count, age = grid$age, ran = grid$ran,
+#'   species = "demoGene", context = "demoContext"
+#' )
+#'
+#' model <- wisp(
+#'   countdata,
+#'   variables      = list(timeseries = "age"),
+#'   model.settings = list(LRO_cost = "none"),
+#'   plot.settings  = list(print.plots = FALSE),
+#'   MCMC.settings  = list(MCMC.steps = 100, MCMC.burnin = 20),
+#'   bootstraps.num = 10,
+#'   max.fork       = 1,
+#'   verbose        = FALSE
+#' )
+#'
+#' # wisp() already ran sample.stats() internally (stats are in model$stats);
+#' # call it again directly to recompute at a stricter significance level.
+#' model_99 <- sample.stats(model, alpha = 0.01, verbose = FALSE)
+#' head(model_99$stats$parameters)
 #' @export
 sample.stats <- function(
     wisp.results,
@@ -832,7 +879,25 @@ sample.stats <- function(
 #'
 #' @param wisp.results List, output of the wisp function.
 #' @param verbose Logical, if TRUE, prints information during the statistical analysis.
-#' @return A list containing data frames \code{stats} and \code{stats.log} holding summary stats for residuals and log-residuals, respectively, plus a list of plots visualizing these stats. 
+#' @return A list containing data frames \code{stats} and \code{stats.log} holding summary stats for residuals and log-residuals, respectively, plus a list of plots visualizing these stats.
+#' @examples
+#' set.seed(1)
+#' n_bins <- 20
+#' bin <- sample(seq_len(n_bins), 400, replace = TRUE)
+#' lambda <- rep(c(2, 8), each = n_bins / 2)
+#' countdata <- data.frame(bin = bin, count = rpois(400, lambda[bin]))
+#'
+#' # analyze.residuals() only needs predicted vs. observed counts, so it works
+#' # even on a fit_only = TRUE model (no resampling required).
+#' model <- wisp(
+#'   countdata,
+#'   fit_only       = TRUE,
+#'   model.settings = list(LRO_cost = "none"),
+#'   plot.settings  = list(print.plots = FALSE),
+#'   verbose        = FALSE
+#' )
+#' resid_summary <- analyze.residuals(model, verbose = FALSE)
+#' resid_summary$stats
 #' @export
 analyze.residuals <- function(
     wisp.results,
@@ -1060,6 +1125,20 @@ analyze.residuals <- function(
 #' @param x List, output of the \code{\link{wisp}} function (an object of class \code{"wisp"}).
 #' @param ... Ignored; present only for S3 method consistency with \code{\link[base]{print}}.
 #' @return \code{x}, invisibly (as is standard for \code{print} methods).
+#' @examples
+#' set.seed(1)
+#' n_bins <- 20
+#' bin <- sample(seq_len(n_bins), 400, replace = TRUE)
+#' lambda <- rep(c(2, 8), each = n_bins / 2)
+#' countdata <- data.frame(bin = bin, count = rpois(400, lambda[bin]))
+#' model <- wisp(
+#'   countdata,
+#'   fit_only       = TRUE,
+#'   model.settings = list(LRO_cost = "none"),
+#'   plot.settings  = list(print.plots = FALSE),
+#'   verbose        = FALSE
+#' )
+#' print(model)
 #' @method print wisp
 #' @export
 print.wisp <- function(x, ...) {
@@ -1113,6 +1192,27 @@ print.wisp <- function(x, ...) {
 #'   from \code{object$stats$parameters}, or \code{NULL} if statistical analysis was never run -- e.g. the model
 #'   was fit with \code{fit_only = TRUE}), \code{n.context}, \code{n.species}, \code{n.ran}, \code{sample.params.type},
 #'   \code{n.bs}, and \code{n.mcmc}.
+#' @examples
+#' set.seed(1)
+#' grid <- expand.grid(bin = 1:20, age = c(12, 18), ran = c("r1", "r2"), rep = 1:6)
+#' base_rate <- ifelse(grid$bin <= 10, 3, 9)
+#' age_effect <- ifelse(grid$age == 18, 1.5, 1)
+#' grid$count <- rpois(nrow(grid), base_rate * age_effect)
+#' countdata <- data.frame(
+#'   bin = grid$bin, count = grid$count, age = grid$age, ran = grid$ran,
+#'   species = "demoGene", context = "demoContext"
+#' )
+#' model <- wisp(
+#'   countdata,
+#'   variables      = list(timeseries = "age"),
+#'   model.settings = list(LRO_cost = "none"),
+#'   plot.settings  = list(print.plots = FALSE),
+#'   MCMC.settings  = list(MCMC.steps = 100, MCMC.burnin = 20),
+#'   bootstraps.num = 10,
+#'   max.fork       = 1,
+#'   verbose        = FALSE
+#' )
+#' summary(model)
 #' @export
 summary.wisp <- function(object, ...) {
 
@@ -1139,6 +1239,21 @@ summary.wisp <- function(object, ...) {
 #' @param x An object of class \code{"summary.wisp"}, as returned by \code{\link{summary.wisp}}.
 #' @param ... Ignored; present only for S3 method consistency with \code{\link[base]{print}}.
 #' @return \code{x}, invisibly (as is standard for \code{print} methods).
+#' @examples
+#' set.seed(1)
+#' n_bins <- 20
+#' bin <- sample(seq_len(n_bins), 400, replace = TRUE)
+#' lambda <- rep(c(2, 8), each = n_bins / 2)
+#' countdata <- data.frame(bin = bin, count = rpois(400, lambda[bin]))
+#' model <- wisp(
+#'   countdata,
+#'   fit_only       = TRUE,
+#'   model.settings = list(LRO_cost = "none"),
+#'   plot.settings  = list(print.plots = FALSE),
+#'   verbose        = FALSE
+#' )
+#' # print() dispatches to print.summary.wisp() automatically for a "summary.wisp" object
+#' print(summary(model))
 #' @method print summary.wisp
 #' @export
 print.summary.wisp <- function(x, ...) {
@@ -1185,6 +1300,28 @@ print.summary.wisp <- function(x, ...) {
 #' @return A data frame of residual summary statistics by group (columns \code{group}, \code{mean}, \code{sd},
 #'   \code{variance}), or an error if statistical analysis was never run on this model (e.g. it was fit with
 #'   \code{fit_only = TRUE}).
+#' @examples
+#' set.seed(1)
+#' grid <- expand.grid(bin = 1:20, age = c(12, 18), ran = c("r1", "r2"), rep = 1:6)
+#' base_rate <- ifelse(grid$bin <= 10, 3, 9)
+#' age_effect <- ifelse(grid$age == 18, 1.5, 1)
+#' grid$count <- rpois(nrow(grid), base_rate * age_effect)
+#' countdata <- data.frame(
+#'   bin = grid$bin, count = grid$count, age = grid$age, ran = grid$ran,
+#'   species = "demoGene", context = "demoContext"
+#' )
+#' model <- wisp(
+#'   countdata,
+#'   variables      = list(timeseries = "age"),
+#'   model.settings = list(LRO_cost = "none"),
+#'   plot.settings  = list(print.plots = FALSE),
+#'   MCMC.settings  = list(MCMC.steps = 100, MCMC.burnin = 20),
+#'   bootstraps.num = 10,
+#'   max.fork       = 1,
+#'   verbose        = FALSE
+#' )
+#' residuals(model)
+#' residuals(model, type = "log")
 #' @method residuals wisp
 #' @export
 residuals.wisp <- function(object, type = c("raw", "log"), ...) {
@@ -1216,6 +1353,20 @@ residuals.wisp <- function(object, type = c("raw", "log"), ...) {
 #'   as the source: it's already a named numeric vector (no extra reshaping needed to meet the \code{coef()}
 #'   convention), and -- unlike \code{object$stats$parameters$estimate} -- it's always present, even for a model
 #'   fit with \code{fit_only = TRUE} where no statistical analysis was ever run. The two are otherwise identical.
+#' @examples
+#' set.seed(1)
+#' n_bins <- 20
+#' bin <- sample(seq_len(n_bins), 400, replace = TRUE)
+#' lambda <- rep(c(2, 8), each = n_bins / 2)
+#' countdata <- data.frame(bin = bin, count = rpois(400, lambda[bin]))
+#' model <- wisp(
+#'   countdata,
+#'   fit_only       = TRUE,
+#'   model.settings = list(LRO_cost = "none"),
+#'   plot.settings  = list(print.plots = FALSE),
+#'   verbose        = FALSE
+#' )
+#' coef(model)
 #' @method coef wisp
 #' @export
 coef.wisp <- function(object, ...) {
@@ -1250,6 +1401,28 @@ coef.wisp <- function(object, ...) {
 #'   \code{Bonferroni}, \code{conv.resamples.only}, \code{verbose}).
 #' @return A matrix with one row per (selected) parameter and two columns, \code{CI.low} and \code{CI.high},
 #'   row-named by parameter.
+#' @examples
+#' set.seed(1)
+#' grid <- expand.grid(bin = 1:20, age = c(12, 18), ran = c("r1", "r2"), rep = 1:6)
+#' base_rate <- ifelse(grid$bin <= 10, 3, 9)
+#' age_effect <- ifelse(grid$age == 18, 1.5, 1)
+#' grid$count <- rpois(nrow(grid), base_rate * age_effect)
+#' countdata <- data.frame(
+#'   bin = grid$bin, count = grid$count, age = grid$age, ran = grid$ran,
+#'   species = "demoGene", context = "demoContext"
+#' )
+#' model <- wisp(
+#'   countdata,
+#'   variables      = list(timeseries = "age"),
+#'   model.settings = list(LRO_cost = "none"),
+#'   plot.settings  = list(print.plots = FALSE),
+#'   MCMC.settings  = list(MCMC.steps = 100, MCMC.burnin = 20),
+#'   bootstraps.num = 10,
+#'   max.fork       = 1,
+#'   verbose        = FALSE
+#' )
+#' confint(model)
+#' confint(model, level = 0.90)
 #' @method confint wisp
 #' @export
 confint.wisp <- function(object, parm = NULL, level = 0.95, ...) {
@@ -1370,6 +1543,21 @@ confint.wisp <- function(object, parm = NULL, level = 0.95, ...) {
 #' }
 #' Returns a list of ggplot objects containing plots of representative parameter distributions, Shapiro-Wilk normality test results, and autocorrelation plots for bootstrap and MCMC parameter estimates.
 #'
+#' @examples
+#' set.seed(1)
+#' n_bins <- 20
+#' bin <- sample(seq_len(n_bins), 400, replace = TRUE)
+#' lambda <- rep(c(2, 8), each = n_bins / 2)
+#' countdata <- data.frame(bin = bin, count = rpois(400, lambda[bin]))
+#' model <- wisp(
+#'   countdata,
+#'   fit_only       = TRUE,
+#'   model.settings = list(LRO_cost = "none"),
+#'   plot.settings  = list(print.plots = FALSE),
+#'   verbose        = FALSE
+#' )
+#' rc <- plot(model, type = "ratecount", print.plots = FALSE, verbose = FALSE)
+#' names(rc)
 #' @method plot wisp
 #' @export
 plot.wisp <- function(x, type, print.plots = TRUE, verbose = TRUE, species = "all", decompose = FALSE, ...) {
@@ -2522,10 +2710,10 @@ plot.wisp <- function(x, type, print.plots = TRUE, verbose = TRUE, species = "al
     
     # Check species.classes
     if (length(species.classes) != 0) {
-      if (class(species.classes) != "list") stop("species.classes must be a list")
+      if (!inherits(species.classes, "list")) stop("species.classes must be a list")
       for (cc in 1:length(species.classes)) {
         if (length(species.classes[[cc]]) == 0) stop("species.classes must have at least one element")
-        if (class(species.classes[[cc]]) != "character") stop("species.classes must be a list of character vectors")
+        if (!inherits(species.classes[[cc]], "character")) stop("species.classes must be a list of character vectors")
         if (!all(species.classes[[cc]] %in% as.character(wisp.results$grouping.variables$species.lvls))) {
           stop("species.classes must be a list of character vectors containing only levels of the species grouping variable")
           }
@@ -3913,8 +4101,17 @@ plot.wisp <- function(x, type, print.plots = TRUE, verbose = TRUE, species = "al
 #' @param b Numeric, warping bound (must be a single value).
 #' @param w Numeric, warping factor (must be a single value).
 #' @return Numeric vector or matrix, warped values. Returned object will have the same dimensions as input z.
+#' @examples
+#' # No warping (w = 0) returns the input unchanged
+#' wisp_warp(c(1, 5, 10), b = 10, w = 0)
+#'
+#' # Positive warping factor compresses values toward the bound b
+#' wisp_warp(c(1, 5, 10), b = 10, w = 2)
+#'
+#' # Works on a matrix too, preserving its dimensions
+#' wisp_warp(matrix(1:4, 2, 2), b = 10, w = 1)
 #' @export
-wisp_warp <- function( 
+wisp_warp <- function(
     z,
     b, 
     w  
@@ -3953,6 +4150,13 @@ wisp_warp <- function(
 #' @param tslope Numeric vector, slope scalars for the wisp function. Must be one less than the length of Rt.
 #' @param tpoint Numeric vector, transition points for the wisp function. Must be one less than the length of Rt.
 #' @return Numeric vector or matrix, wisp sigmoid values for given input. Returned object will have the same dimensions as input x.
+#' @examples
+#' # A single rate block (degree 0) is just a constant
+#' wisp_sigmoid(c(1, 5, 10), Rt = 3, tslope = numeric(0), tpoint = numeric(0))
+#'
+#' # Two rate blocks separated by one transition point: far from the transition
+#' # point, the sigmoid recovers each block's asymptotic rate
+#' wisp_sigmoid(c(-1e3, 1e3), Rt = c(1, 9), tslope = 1, tpoint = 0)
 #' @export
 wisp_sigmoid <- function(
     x, 
@@ -3998,6 +4202,18 @@ wisp_sigmoid <- function(
 #' @param w_factors Numeric vector, warping factors for the wisp function. Must be length 3. First element is the warping factor for Rt, second for tslope, and third for tpoint. Note that this is more restrictive than the real wisp model, which not only allows for different warping factors across the model components (Rt, tslope, and tpoint), but also across the different elements within each model component as well.
 #' @param return_plots Logical, if TRUE, returns two separate plots; otherwise, returns nothing and prints combined plot.
 #' @return Nothing. A ggplot object is printed to console.
+#' @examples
+#' warp_plots <- demo.warp.plots(
+#'   w            = 2,
+#'   point_pos    = 60,
+#'   point_neg    = 40,
+#'   Rt           = c(6, 3, 0.2, 6) * 4.65,
+#'   tslope       = c(0.4, 0.75, 1),
+#'   tpoint       = c(15, 38, 80),
+#'   w_factors    = c(0.6, -0.9, 0.5),
+#'   return_plots = TRUE
+#' )
+#' names(warp_plots)
 #' @export
 demo.warp.plots <- function(
     w            = 2,  
@@ -4253,6 +4469,9 @@ demo.warp.plots <- function(
 #' @param tpoint Numeric vector, transition points for the wisp function. Must be one less than the length of Rt.
 #' @param return_plots Logical, if true, returns two separate plots; otherwise, returns nothing and prints combined plot
 #' @return Nothing. A ggplot object is printed to console.
+#' @examples
+#' sigmoid_plots <- demo.sigmoid.plots(return_plots = TRUE)
+#' names(sigmoid_plots)
 #' @export
 demo.sigmoid.plots <- function(
     r            = 4,  

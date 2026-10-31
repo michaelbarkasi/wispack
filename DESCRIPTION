@@ -1,18 +1,17 @@
 Package: wispack
 Type: Package
 Encoding: UTF-8
-Title: Warped-sigmoid Poisson-process mixed-effects models (WSPmm)
+Title: Warped-Sigmoid Poisson-Process Mixed-Effects Models (WSPmm)
 Version: 2.6.0
-Date: 2025-10-03
-Author: Michael Barkasi
-Maintainer: Michael Barkasi <barkasi@wustl.edu>
+Date: 2026-10-30
+Authors@R: person(given = "Michael", family = "Barkasi", role = c("aut", "cre"), email = "barkasi@wustl.edu")
 Description: WSPmm are intended for hypothesis testing of spatially or temporally variable count data. They parameterize data in terms of blocks separated by transition points, each block having a process rate and each transition point having both a position and slope.
-License: GPL (>= 3) + file LICENSE
-Imports: Rcpp (>= 1.0.13-1), RcppEigen, methods, RColorBrewer, utils
+License: GPL (>= 3)
+Imports: Rcpp (>= 1.0.13-1), methods, RColorBrewer, utils
 LinkingTo: Rcpp, RcppEigen, StanHeaders, BH, RcppParallel
 Depends: ggplot2, grid, gridExtra, colorspace
 Suggests: testthat (>= 3.0.0), data.table, hdf5r, scales
-SystemRequirements: NLopt, C++17
+SystemRequirements: NLopt, C++17, GNU make
 Roxygen: list(markdown = TRUE)
 URL: https://michaelbarkasi.github.io/wispack/
 Config/roxygen2/version: 8.1.1

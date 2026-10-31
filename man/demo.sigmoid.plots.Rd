@@ -32,3 +32,7 @@ Nothing. A ggplot object is printed to console.
 \description{
 This function takes user-provided values for wisp function parameters and produces a panel of plots showing how the wisp model is determined by the Rt, slope, and tpoint parameters.
 }
+\examples{
+sigmoid_plots <- demo.sigmoid.plots(return_plots = TRUE)
+names(sigmoid_plots)
+}

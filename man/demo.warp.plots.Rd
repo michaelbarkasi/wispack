@@ -38,3 +38,16 @@ Nothing. A ggplot object is printed to console.
 \description{
 This function takes user-provided values for wisp function parameters and produces a panel of plots showing how the wisp model is warped by the warping factors
 }
+\examples{
+warp_plots <- demo.warp.plots(
+  w            = 2,
+  point_pos    = 60,
+  point_neg    = 40,
+  Rt           = c(6, 3, 0.2, 6) * 4.65,
+  tslope       = c(0.4, 0.75, 1),
+  tpoint       = c(15, 38, 80),
+  w_factors    = c(0.6, -0.9, 0.5),
+  return_plots = TRUE
+)
+names(warp_plots)
+}

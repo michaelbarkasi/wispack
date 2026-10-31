@@ -38,3 +38,14 @@ A list containing the transformed count data, layer boundary estimates, and opti
 \description{
 This function transforms the raw x,y coordinates of cells into laminar (y) and columnar (x) coordinates, bins the data, and estimates layer boundaries for each mouse in the dataset. It generates plots to visualize the transformation process and can optionally save these plots. This function was written for "in house" use by Michael Barkasi, and was not intended for general use. You can try it, but it may not work for your data and isn't documented in a user-friendly way.
 }
+\examples{
+\dontrun{
+# Not runnable on synthetic data: this expects the specific nested
+# count_data/slice_plots structure produced by make_count_data() or
+# make_count_data_csv() from real cortical MERFISH data, with real layer
+# and hemisphere geometry to align on.
+md <- make_count_data("path/to/hdf5/files")
+transformed <- cortical_coordinate_transform(md, total_bins = 100)
+str(transformed$df)
+}
+}

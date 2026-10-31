@@ -106,6 +106,17 @@ bin_data <- function(
 #' 
 #' @param sim A list object returned by the \code{attractor_simulation} function, containing the simulation data and parameters.
 #' @return A list containing the following components: \code{fse_true}, \code{ran_true}, \code{SVGs}, and \code{FSEs}.
+#' @examples
+#' set.seed(1)
+#' toy_seed <- data.frame(
+#'   gene    = rep(c("geneA", "geneB"), each = 20),
+#'   coord_x = runif(40, 0, 10),
+#'   coord_y = runif(40, 0, 10),
+#'   count   = rpois(40, 5)
+#' )
+#' sim <- attractor_simulation(toy_seed, n_bins = 5, n_replicates = 2)
+#' truth <- attractor_simulation_ground_truth(sim)
+#' truth$SVGs
 #' @export
 attractor_simulation_ground_truth <- function(
     sim
@@ -144,6 +155,19 @@ attractor_simulation_ground_truth <- function(
 #' @param min_effect_size A numeric value specifying the minimum effect size for functional spatial effects (FSEs) in each simulation. Default is 0.05. Max positive effect size is always 4, i.e., a 4x change in rate. There is no max to the min effect size, i.e., an effect can drop the rate to zero.
 #' @param print_plots A logical value indicating whether to return plots of the simulation process for each gene. Default is FALSE.
 #' @return A list containing the following components: \code{genes}, \code{SVGs_idx}, \code{SVGs}, \code{FSEs_idx}, \code{FSEs}, \code{attractor}, \code{effect}, \code{replicate_rate_scalars}, \code{data}, and \code{plots}.
+#' @examples
+#' # A tiny seed data set with two genes, enough for attractor_simulation() to
+#' # pick spatially variable genes and simulate replicates quickly.
+#' set.seed(1)
+#' toy_seed <- data.frame(
+#'   gene    = rep(c("geneA", "geneB"), each = 20),
+#'   coord_x = runif(40, 0, 10),
+#'   coord_y = runif(40, 0, 10),
+#'   count   = rpois(40, 5)
+#' )
+#' sim <- attractor_simulation(toy_seed, n_bins = 5, n_replicates = 2)
+#' sim$genes
+#' sim$SVGs
 #' @export
 attractor_simulation <- function(
     seed_data, 
@@ -368,7 +392,23 @@ extract_wisp_attractor_simulation_results <- function(model) {
 #' @param LRO_cost Passed to the \code{wisp} function. Character string giving cost function to use when evaluating likelihood-ratio outlier (LRO) parameters for testing for expression-rate transition points in the data ("AIC", "BIC", "NLL"; anything else defaults to the hand-specified LROcutoff and LROwindow_factor).
 #' @param bs_num An integer specifying the number of bootstrap resamples to run.
 #' @param max_fork An integer specifying the number of forks to run when computing bootstraps in parallel. For Windows, must be 1.
-#' @return A data frame containing the estimated values (\code{est}), ground-truth values (\code{true}), parameter types (\code{param}), parameter-associated gene or replicate (\code{id}), modeling method used (\code{method}), and simulation number (\code{sim}). 
+#' @return A data frame containing the estimated values (\code{est}), ground-truth values (\code{true}), parameter types (\code{param}), parameter-associated gene or replicate (\code{id}), modeling method used (\code{method}), and simulation number (\code{sim}).
+#' @examples
+#' # A larger toy seed than attractor_simulation()'s own example: fitting a wisp
+#' # model needs enough data per bin/replicate for the bootstrap resamples to
+#' # converge reliably.
+#' set.seed(1)
+#' toy_seed <- data.frame(
+#'   gene    = rep(c("geneA", "geneB"), each = 100),
+#'   coord_x = runif(200, 0, 10),
+#'   coord_y = runif(200, 0, 10),
+#'   count   = rpois(200, 20)
+#' )
+#' sim <- attractor_simulation(toy_seed, n_bins = 10, n_replicates = 3)
+#'
+#' # Small bs_num keeps this fast; a real benchmark would use many more resamples.
+#' results <- model_attractor_simulation_wisp(sim, sim_num = 1, bs_num = 8, max_fork = 1)
+#' results
 #' @export
 model_attractor_simulation_wisp <- function(
     sim, 
@@ -441,6 +481,27 @@ model_attractor_simulation_wisp <- function(
 #' @param modeling_functions A named list of modeling functions to benchmark. Each function should take at least the arguments \code{sim} (the simulation object produced by \code{attractor_simulation}) and \code{sim_num} (the simulation number). Default is a list containing only the \code{model_attractor_simulation_wisp} function. Functions provided in this list should return a dataframe with columns \code{est}, \code{true}, \code{param}, \code{id}, \code{method}, and \code{sim}. The \code{true} column should contain, for each simulation and each applicable parameter, the ground-truth value returned by the \code{attractor_simulation_ground_truth} function. The \code{est} column should contain the corresponding estimated value from the modeling function. The \code{param} column should contain the name of the parameter (one of "rate_effect", "random_effect", "FSE", or "SVG"). The \code{id} column should contain the name of the gene or replicate associated with the parameter. The \code{method} column should contain the name of the modeling method used. The \code{sim} column should contain the simulation number.
 #' @param modeling_function_args A named list of lists, where each sub-list contains additional arguments to pass to the corresponding modeling function in \code{modeling_functions}. Default is a list containing arguments for the \code{model_attractor_simulation_wisp} function.
 #' @return A list containing two components: \code{results}, a data frame compiling the results from all simulations and modeling methods; and \code{times}, a data frame recording the computation times for data simulation and each modeling method for each simulation.
+#' @examples
+#' # A toy seed large enough per bin/replicate for the bootstrap resamples
+#' # inside model_attractor_simulation_wisp() to converge reliably.
+#' set.seed(1)
+#' toy_seed <- data.frame(
+#'   gene    = rep(c("geneA", "geneB"), each = 100),
+#'   coord_x = runif(200, 0, 10),
+#'   coord_y = runif(200, 0, 10),
+#'   count   = rpois(200, 20)
+#' )
+#'
+#' # n_sims = 1 and a small bs_num keep this fast; a real benchmark would use
+#' # many more simulations and bootstrap resamples.
+#' bm <- run_attractor_sim_benchmarks(
+#'   toy_seed,
+#'   n_sims                 = 1,
+#'   n_bins                 = 10,
+#'   n_replicates           = 3,
+#'   modeling_function_args = list(wisp = list(bs_num = 8, max_fork = 1))
+#' )
+#' bm$results
 #' @export
 run_attractor_sim_benchmarks <- function(
     seed_data, 
@@ -535,6 +596,18 @@ run_attractor_sim_benchmarks <- function(
 #' @param results The output of the \code{run_attractor_sim_benchmarks} function, either in its native form as a list, or converted into a data frame. 
 #' @param sig_thresh A named list specifying the significance threshold for each modeling method when computing FPR, FDR, and power. Default is a list with a single entry for the "wisp" method set to 0.05. If a value is not specified for a method found in results, will use 0.05.
 #' @return A data frame summarizing the performance metrics for each modeling method.
+#' @examples
+#' # A toy results/times list in the same shape run_attractor_sim_benchmarks() returns.
+#' toy_results <- data.frame(
+#'   est    = c(0.1, 0.05, 0.02, 0.06),
+#'   true   = c(FALSE, FALSE, TRUE, TRUE),
+#'   param  = "FSE",
+#'   id     = c("geneA", "geneB", "geneA", "geneB"),
+#'   method = "wisp",
+#'   sim    = c(1, 1, 2, 2)
+#' )
+#' toy_times <- data.frame(data_simulation = c(0.1, 0.1), wisp = c(0.5, 0.5))
+#' analyze_attractor_sim_benchmarks(list(results = toy_results, times = toy_times))
 #' @export
 analyze_attractor_sim_benchmarks <- function(
     results,
@@ -542,7 +615,7 @@ analyze_attractor_sim_benchmarks <- function(
   ) {
    
     # Check input
-    if (class(results) == "data.frame") {
+    if (inherits(results, "data.frame")) {
       res_cols <- grepl("results.", colnames(results))
       res_col_names <- gsub("results.", "", colnames(results)[res_cols])
       time_cols <- grepl("times.", colnames(results))
@@ -555,7 +628,7 @@ analyze_attractor_sim_benchmarks <- function(
       } else {
         stop("results data.frame not in recognized format")
       }
-    } else if (class(results) == "list") {
+    } else if (inherits(results, "list")) {
       if (length(results) == 2 && all(names(results) == c("results","times"))) {
         times <- results$times
         results <- results$results

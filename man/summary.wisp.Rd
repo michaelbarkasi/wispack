@@ -23,3 +23,25 @@ Builds an object of class \code{"summary.wisp"}, primarily wrapping the paramete
 \code{\link{print.wisp}}. Use \code{\link{print.summary.wisp}} (dispatched automatically by \code{print()}) to
 display the result.
 }
+\examples{
+set.seed(1)
+grid <- expand.grid(bin = 1:20, age = c(12, 18), ran = c("r1", "r2"), rep = 1:6)
+base_rate <- ifelse(grid$bin <= 10, 3, 9)
+age_effect <- ifelse(grid$age == 18, 1.5, 1)
+grid$count <- rpois(nrow(grid), base_rate * age_effect)
+countdata <- data.frame(
+  bin = grid$bin, count = grid$count, age = grid$age, ran = grid$ran,
+  species = "demoGene", context = "demoContext"
+)
+model <- wisp(
+  countdata,
+  variables      = list(timeseries = "age"),
+  model.settings = list(LRO_cost = "none"),
+  plot.settings  = list(print.plots = FALSE),
+  MCMC.settings  = list(MCMC.steps = 100, MCMC.burnin = 20),
+  bootstraps.num = 10,
+  max.fork       = 1,
+  verbose        = FALSE
+)
+summary(model)
+}

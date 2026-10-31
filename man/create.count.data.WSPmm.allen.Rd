@@ -33,3 +33,19 @@ via \code{fixed.effect.names}, is always set to \code{"p5x"} for every row, sinc
 for a single age cohort; include \code{"age"} in \code{fixed.effect.names} only when that is the cohort you
 are working with.
 }
+\examples{
+# A tiny toy data frame in the long, one-row-per-gene/cell-pair Allen format.
+toy_allen <- data.frame(
+  mouse             = rep(1, 4),
+  cluster_id        = 1:4,
+  y_bins            = c(1, 1, 2, 2),
+  trscrpt_gene_symb = c("geneA", "geneB", "geneA", "geneB"),
+  trscrpt_ct        = c(3, 1, 4, 2),
+  hemisphere        = c("left", "right", "left", "right")
+)
+create.count.data.WSPmm.allen(
+  toy_allen,
+  bin.dim            = "y_bins",
+  fixed.effect.names = "hemisphere"
+)
+}

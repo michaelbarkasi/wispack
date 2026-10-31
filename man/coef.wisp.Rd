@@ -25,3 +25,18 @@ as the source: it's already a named numeric vector (no extra reshaping needed to
 convention), and -- unlike \code{object$stats$parameters$estimate} -- it's always present, even for a model
 fit with \code{fit_only = TRUE} where no statistical analysis was ever run. The two are otherwise identical.
 }
+\examples{
+set.seed(1)
+n_bins <- 20
+bin <- sample(seq_len(n_bins), 400, replace = TRUE)
+lambda <- rep(c(2, 8), each = n_bins / 2)
+countdata <- data.frame(bin = bin, count = rpois(400, lambda[bin]))
+model <- wisp(
+  countdata,
+  fit_only       = TRUE,
+  model.settings = list(LRO_cost = "none"),
+  plot.settings  = list(print.plots = FALSE),
+  verbose        = FALSE
+)
+coef(model)
+}

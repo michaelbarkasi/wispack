@@ -17,3 +17,22 @@ A list containing data frames \code{stats} and \code{stats.log} holding summary 
 \description{
 This function takes a vector \code{mu.B} of sampled values of a variable X, and a single observation \code{mu.obs} of the same variable, and computes the p-value of \code{mu.obs} using the empirical cumulative distribution function (ecdf) of \code{mu.B}.
 }
+\examples{
+set.seed(1)
+n_bins <- 20
+bin <- sample(seq_len(n_bins), 400, replace = TRUE)
+lambda <- rep(c(2, 8), each = n_bins / 2)
+countdata <- data.frame(bin = bin, count = rpois(400, lambda[bin]))
+
+# analyze.residuals() only needs predicted vs. observed counts, so it works
+# even on a fit_only = TRUE model (no resampling required).
+model <- wisp(
+  countdata,
+  fit_only       = TRUE,
+  model.settings = list(LRO_cost = "none"),
+  plot.settings  = list(print.plots = FALSE),
+  verbose        = FALSE
+)
+resid_summary <- analyze.residuals(model, verbose = FALSE)
+resid_summary$stats
+}

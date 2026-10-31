@@ -17,3 +17,19 @@
 \description{
 Formats a \code{"summary.wisp"} object (as returned by \code{\link{summary.wisp}}) for console display.
 }
+\examples{
+set.seed(1)
+n_bins <- 20
+bin <- sample(seq_len(n_bins), 400, replace = TRUE)
+lambda <- rep(c(2, 8), each = n_bins / 2)
+countdata <- data.frame(bin = bin, count = rpois(400, lambda[bin]))
+model <- wisp(
+  countdata,
+  fit_only       = TRUE,
+  model.settings = list(LRO_cost = "none"),
+  plot.settings  = list(print.plots = FALSE),
+  verbose        = FALSE
+)
+# print() dispatches to print.summary.wisp() automatically for a "summary.wisp" object
+print(summary(model))
+}

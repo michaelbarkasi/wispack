@@ -29,3 +29,20 @@ A data frame containing the estimated values (\code{est}), ground-truth values (
 \description{
 This function fits a wisp model to an attractor-based simulation dataset and extracts the estimated functional spatial effects, replicate random effects, and p-values for functional spatial effects. It then compiles these results along with the ground-truth values from the simulation for comparison.
 }
+\examples{
+# A larger toy seed than attractor_simulation()'s own example: fitting a wisp
+# model needs enough data per bin/replicate for the bootstrap resamples to
+# converge reliably.
+set.seed(1)
+toy_seed <- data.frame(
+  gene    = rep(c("geneA", "geneB"), each = 100),
+  coord_x = runif(200, 0, 10),
+  coord_y = runif(200, 0, 10),
+  count   = rpois(200, 20)
+)
+sim <- attractor_simulation(toy_seed, n_bins = 10, n_replicates = 3)
+
+# Small bs_num keeps this fast; a real benchmark would use many more resamples.
+results <- model_attractor_simulation_wisp(sim, sim_num = 1, bs_num = 8, max_fork = 1)
+results
+}

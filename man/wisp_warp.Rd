@@ -19,3 +19,13 @@ Numeric vector or matrix, warped values. Returned object will have the same dime
 \description{
 This function provides an R implementation of the warping function used to warp model components before input into \code{wisp_sigmoid}.
 }
+\examples{
+# No warping (w = 0) returns the input unchanged
+wisp_warp(c(1, 5, 10), b = 10, w = 0)
+
+# Positive warping factor compresses values toward the bound b
+wisp_warp(c(1, 5, 10), b = 10, w = 2)
+
+# Works on a matrix too, preserving its dimensions
+wisp_warp(matrix(1:4, 2, 2), b = 10, w = 1)
+}

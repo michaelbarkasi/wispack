@@ -3,6 +3,13 @@
 # plus aggregating a precomputed benchmark-results CSV with analyze_attractor_sim_benchmarks(). Check 7, which
 # calls model_attractor_simulation_wisp() (100 bootstrap resamples), is the one part of this vignette that
 # actually fits a model; it lives in test-slow-benchmarks.R.
+#
+# inst/extdata/Allen_data.csv.gz ships pre-filtered to just this seed patch (slice_num == 33, the coord_x/coord_y
+# window below) rather than the full 3-slice, ~424k-row Allen MERFISH dataset, to keep the installed package
+# small. The slice_num/coord filter below is therefore a no-op on the shipped file -- kept so the code still
+# documents which subset this is, and still correct if ever pointed at the unfiltered file. The vignette
+# (vignettes/articles/tutorial_benchmarks.Rmd) keeps its own full copy for the illustrative all-slices plot, and
+# re-derives this same seed_patch from it, so the golden values below match either source.
 
 g <- .wisp_golden$benchmarks
 
@@ -74,7 +81,7 @@ test_that("ground truth extracted from an attractor simulation matches its own s
 })
 
 test_that("analyze_attractor_sim_benchmarks on the precomputed results matches the vignette narrative", {
-  path <- skip_unless_extdata("benchmark_results_final250.csv")
+  path <- skip_unless_extdata("benchmark_results_final250.csv.gz")
   benchmark_results <- read.csv(path)
   benchmark_metrics <- analyze_attractor_sim_benchmarks(benchmark_results)
 

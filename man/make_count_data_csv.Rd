@@ -29,3 +29,12 @@ A list containing the combined count data and a list of slice plots for each mou
 \description{
 Loads MERFISH data from a csv file, or multiple files in a directory, and combines them into a single data frame. This function was written for "in house" use by Michael Barkasi, and was not intended for general use. You can try it, but it may not work for your data and isn't documented in a user-friendly way.
 }
+\examples{
+\dontrun{
+# Not runnable in general: parse_csv() (called internally) recognizes only a
+# handful of hardcoded file paths from the original data collection, so this
+# only works on those specific files.
+md <- make_count_data_csv("path/to/csv/files")
+str(md$count_data)
+}
+}

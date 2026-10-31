@@ -102,3 +102,23 @@ List giving the results of the fitted model, including: \itemize{
 \description{
 This function takes a data frame of wisp variables (as columns) and fits a wisp model to it. Statistical analyses and plots are generated from the fitted model.
 }
+\examples{
+# A tiny synthetic count-data set with one obvious transition point: two
+# spatial blocks of 10 bins each, with Poisson-process counts at rates 2 and 8.
+set.seed(1)
+n_bins <- 20
+bin <- sample(seq_len(n_bins), 400, replace = TRUE)
+lambda <- rep(c(2, 8), each = n_bins / 2)
+countdata <- data.frame(bin = bin, count = rpois(400, lambda[bin]))
+
+# fit_only = TRUE skips MCMC/bootstrap resampling, so this fits in well under
+# a second; see sample.stats() for estimating parameter uncertainty.
+model <- wisp(
+  countdata,
+  fit_only       = TRUE,
+  model.settings = list(LRO_cost = "none"),
+  plot.settings  = list(print.plots = FALSE),
+  verbose        = FALSE
+)
+model$fitted.parameters
+}

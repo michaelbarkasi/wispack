@@ -20,3 +20,18 @@ Terse console summary of a fitted \code{\link{wisp}} model: number of fitted par
 used to estimate parameter uncertainty. This is deliberately terse -- use \code{\link{summary.wisp}} for the full
 parameter table, or \code{\link{plot.wisp}} to visualize the fit.
 }
+\examples{
+set.seed(1)
+n_bins <- 20
+bin <- sample(seq_len(n_bins), 400, replace = TRUE)
+lambda <- rep(c(2, 8), each = n_bins / 2)
+countdata <- data.frame(bin = bin, count = rpois(400, lambda[bin]))
+model <- wisp(
+  countdata,
+  fit_only       = TRUE,
+  model.settings = list(LRO_cost = "none"),
+  plot.settings  = list(print.plots = FALSE),
+  verbose        = FALSE
+)
+print(model)
+}

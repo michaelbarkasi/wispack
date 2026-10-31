@@ -402,6 +402,13 @@ parse_csv <- function(
 #' @param load_first_file_only Logical, whether to load only the first file found (default is FALSE)
 #' @param verbose Logical, whether to print progress messages (default is TRUE)
 #' @return A list containing the combined count data and a list of slice plots for each mouse
+#' @examples
+#' \dontrun{
+#' # Not runnable without real MERFISH HDF5 files on disk (and the 'hdf5r' package):
+#' # this reads every "*_withCCF.hdf5" file in data_path and combines them.
+#' md <- make_count_data("path/to/hdf5/files")
+#' str(md$count_data)
+#' }
 #' @export
 make_count_data <- function(
     data_path, 
@@ -534,6 +541,14 @@ make_count_data <- function(
 #' @param load_first_file_only Logical, whether to load only the first file found (default is FALSE)
 #' @param verbose Logical, whether to print progress messages (default is TRUE)
 #' @return A list containing the combined count data and a list of slice plots for each mouse
+#' @examples
+#' \dontrun{
+#' # Not runnable in general: parse_csv() (called internally) recognizes only a
+#' # handful of hardcoded file paths from the original data collection, so this
+#' # only works on those specific files.
+#' md <- make_count_data_csv("path/to/csv/files")
+#' str(md$count_data)
+#' }
 #' @export
 make_count_data_csv <- function(
     data_path, 
@@ -1131,6 +1146,16 @@ coordinate_binning <- function(
 #' @param leveling_layer Character string, the layer to use when leveling tissue patch in coordinate transformation (default is)
 #' @param verbose Logical, whether to print progress messages (default is TRUE)
 #' @return A list containing the transformed count data, layer boundary estimates, and optionally the generated plots
+#' @examples
+#' \dontrun{
+#' # Not runnable on synthetic data: this expects the specific nested
+#' # count_data/slice_plots structure produced by make_count_data() or
+#' # make_count_data_csv() from real cortical MERFISH data, with real layer
+#' # and hemisphere geometry to align on.
+#' md <- make_count_data("path/to/hdf5/files")
+#' transformed <- cortical_coordinate_transform(md, total_bins = 100)
+#' str(transformed$df)
+#' }
 #' @export
 cortical_coordinate_transform <- function(
     count_data,
@@ -1238,8 +1263,25 @@ cortical_coordinate_transform <- function(
 #' @param bin.dim A character string specifying the dimension by which to bin the data; must be either "x_bins" or "y_bins"
 #' @param gene.list A character vector of genes to include in the count data, which will form the "species" level of the model
 #' @param fixed.effect.names A character vector of column names in \code{df.merfish} to include as fixed effects in the count data
-#' @param context A character string specifying the context level for fixed effects; if NULL, will use "context", if not a col name of df.merfish, will rep the value 
+#' @param context A character string specifying the context level for fixed effects; if NULL, will use "context", if not a col name of df.merfish, will rep the value
 #' @return A data frame in count data format suitable for input into the WSPmm model
+#' @examples
+#' # A tiny toy data frame in the wide, one-column-per-gene shape that
+#' # cortical_coordinate_transform() would normally produce.
+#' toy_merfish <- data.frame(
+#'   mouse      = rep(1, 6),
+#'   cell_num   = 1:6,
+#'   x_bins     = c(1, 1, 2, 2, 3, 3),
+#'   geneA      = c(2, 0, 5, 1, 3, 4),
+#'   geneB      = c(1, 2, 0, 3, 2, 1),
+#'   hemisphere = rep(c("left", "right"), 3)
+#' )
+#' create.count.data.WSPmm(
+#'   toy_merfish,
+#'   bin.dim            = "x_bins",
+#'   gene.list          = c("geneA", "geneB"),
+#'   fixed.effect.names = "hemisphere"
+#' )
 #' @export
 create.count.data.WSPmm <- function(
     df.merfish,                                    # data frame of MERFISH data, produced by cortical_coordinate_transform function
@@ -1316,6 +1358,21 @@ create.count.data.WSPmm <- function(
 #' @param fixed.effect.names A character vector of column names in \code{df.merfish} to include as fixed effects in the count data
 #' @param context A character string specifying the context level for fixed effects; if NULL, will use "context" literally for every row; otherwise must be the name of an existing column in \code{df.merfish}, whose values are used as the context level
 #' @return A data frame in count data format suitable for input into the WSPmm model
+#' @examples
+#' # A tiny toy data frame in the long, one-row-per-gene/cell-pair Allen format.
+#' toy_allen <- data.frame(
+#'   mouse             = rep(1, 4),
+#'   cluster_id        = 1:4,
+#'   y_bins            = c(1, 1, 2, 2),
+#'   trscrpt_gene_symb = c("geneA", "geneB", "geneA", "geneB"),
+#'   trscrpt_ct        = c(3, 1, 4, 2),
+#'   hemisphere        = c("left", "right", "left", "right")
+#' )
+#' create.count.data.WSPmm.allen(
+#'   toy_allen,
+#'   bin.dim            = "y_bins",
+#'   fixed.effect.names = "hemisphere"
+#' )
 #' @export
 create.count.data.WSPmm.allen <- function(
     df.merfish,                                    # data frame of MERFISH data, produced by the above functions

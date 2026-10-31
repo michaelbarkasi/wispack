@@ -9,3 +9,11 @@ vignettes/output(/|$)
 vignettes/articles/output(/|$)
 ^wispack\.Rproj$
 ^benchmarks$
+^man/figures$
+^vignettes/articles$
+^_pkgdown\.yml$
+^pkgdown$
+^build_install\.sh$
+^requirements\.R$
+^LICENSE$
+Rplots\.pdf$

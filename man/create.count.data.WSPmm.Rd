@@ -29,3 +29,21 @@ A data frame in count data format suitable for input into the WSPmm model
 \description{
 This function converts a data frame of MERFISH data produced by the \code{cortical_coordinate_transform} function into a count data format suitable for input into the WSPmm model. The function bins the data along a specified dimension (either x or y), collapses along the other dimension, and includes specified genes and fixed effects in the output. The resulting count data frame contains counts for each gene in each cell, along with associated metadata such as bin number, context, mouse identifier, and cell number.
 }
+\examples{
+# A tiny toy data frame in the wide, one-column-per-gene shape that
+# cortical_coordinate_transform() would normally produce.
+toy_merfish <- data.frame(
+  mouse      = rep(1, 6),
+  cell_num   = 1:6,
+  x_bins     = c(1, 1, 2, 2, 3, 3),
+  geneA      = c(2, 0, 5, 1, 3, 4),
+  geneB      = c(1, 2, 0, 3, 2, 1),
+  hemisphere = rep(c("left", "right"), 3)
+)
+create.count.data.WSPmm(
+  toy_merfish,
+  bin.dim            = "x_bins",
+  gene.list          = c("geneA", "geneB"),
+  fixed.effect.names = "hemisphere"
+)
+}

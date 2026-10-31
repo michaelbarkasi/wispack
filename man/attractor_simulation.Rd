@@ -32,3 +32,17 @@ A list containing the following components: \code{genes}, \code{SVGs_idx}, \code
 \description{
 This function takes a seed dataset and simulates spatially variable genes (SVGs) with functional spatial effects (FSEs) based on attractor points. It generates multiple replicates for reference and treatment conditions, applying random spatial transformations and rate scalars.
 }
+\examples{
+# A tiny seed data set with two genes, enough for attractor_simulation() to
+# pick spatially variable genes and simulate replicates quickly.
+set.seed(1)
+toy_seed <- data.frame(
+  gene    = rep(c("geneA", "geneB"), each = 20),
+  coord_x = runif(40, 0, 10),
+  coord_y = runif(40, 0, 10),
+  count   = rpois(40, 5)
+)
+sim <- attractor_simulation(toy_seed, n_bins = 5, n_replicates = 2)
+sim$genes
+sim$SVGs
+}

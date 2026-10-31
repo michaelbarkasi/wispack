@@ -29,3 +29,33 @@ A copy of wisp.results with (1) a new entry \code{parameters} under \code{stats}
 \description{
 Runs statistical analysis on the resampled parameters from the wisp function. It computes p-values and confidence intervals for each parameter, adjusting for multiple comparisons using either the Bonferroni correction or the Holm-Bonferroni method.
 }
+\examples{
+# A small synthetic data set with a transition point, a two-level fixed
+# effect ("age"), and two random-effect levels ("ran"), fit with a handful
+# of bootstrap resamples so sample.stats() has something to work with.
+set.seed(1)
+grid <- expand.grid(bin = 1:20, age = c(12, 18), ran = c("r1", "r2"), rep = 1:6)
+base_rate <- ifelse(grid$bin <= 10, 3, 9)
+age_effect <- ifelse(grid$age == 18, 1.5, 1)
+grid$count <- rpois(nrow(grid), base_rate * age_effect)
+countdata <- data.frame(
+  bin = grid$bin, count = grid$count, age = grid$age, ran = grid$ran,
+  species = "demoGene", context = "demoContext"
+)
+
+model <- wisp(
+  countdata,
+  variables      = list(timeseries = "age"),
+  model.settings = list(LRO_cost = "none"),
+  plot.settings  = list(print.plots = FALSE),
+  MCMC.settings  = list(MCMC.steps = 100, MCMC.burnin = 20),
+  bootstraps.num = 10,
+  max.fork       = 1,
+  verbose        = FALSE
+)
+
+# wisp() already ran sample.stats() internally (stats are in model$stats);
+# call it again directly to recompute at a stricter significance level.
+model_99 <- sample.stats(model, alpha = 0.01, verbose = FALSE)
+head(model_99$stats$parameters)
+}

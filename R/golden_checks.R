@@ -112,7 +112,7 @@
   ),
 
   benchmarks = list(
-    seed_data_val          = c(lo = 3.485959,   hi = 3.485961),
+    seed_data_val          = c(lo = 2.180366,   hi = 2.180368),
     Vip_smoothed           = c(lo = 2.116861,   hi = 2.116863),
     Slc17a7_SVG            = c(lo = 2.063262,   hi = 2.063264),
     Tac2_effect            = c(lo = -0.4785649, hi = -0.4785647),

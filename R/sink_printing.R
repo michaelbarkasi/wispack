@@ -67,7 +67,7 @@
     cat("\n", main, ":", sep="")
     if (vert) {
       for ( v in seq_along(vars) ) {
-        if ( class(vars) == "list" ) cat("\n\t", names(vars)[v], ": ", paste(vars[[v]],collapse = ", "), sep="")
+        if ( inherits(vars, "list") ) cat("\n\t", names(vars)[v], ": ", paste(vars[[v]],collapse = ", "), sep="")
         else cat("\n\t", names(vars)[v], ": ", paste(vars[v],collapse = ", "), sep="")
       }
     } else {
@@ -106,7 +106,7 @@
   ) {
     cat(paste(rep("\n", initial_breaks)))
     if (is.numeric(vec)) cat(label, ": ", paste(round(unlist(vec),rnd), collapse = ", "), sep="")
-    else if (class(vec) == "difftime") cat(label, ": ", paste(round(unlist(vec),rnd), collapse = ", "), " (", units(vec), ")", sep="")
+    else if (inherits(vec, "difftime")) cat(label, ": ", paste(round(unlist(vec),rnd), collapse = ", "), " (", units(vec), ")", sep="")
     else cat(label, ": ", paste(unlist(vec), collapse = ", "), sep="")
     cat(paste(rep("\n", end_breaks)))
   }

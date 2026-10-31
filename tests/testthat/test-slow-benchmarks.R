@@ -1,7 +1,8 @@
 # Port of tutorial_benchmarks.Rmd's check 7, the one check in that vignette which fits actual wisp models
 # (model_attractor_simulation_wisp with 100 bootstrap resamples, max_fork = 10; ~15s). Checks 1-6 and 8
 # (data loading, attractor_simulation(), and aggregating a precomputed benchmark CSV) don't fit any model and
-# live in test-attractor-benchmarks-fast.R (fast tier).
+# live in test-attractor-benchmarks-fast.R (fast tier). See that file's header for why the slice_num/coord
+# filter below is a no-op on the shipped (pre-filtered) Allen_data.csv.gz.
 
 g <- .wisp_golden$benchmarks
 

@@ -27,3 +27,16 @@ This function analyzes the results from benchmarking modeling methods on attract
 }
 The exact interpretation will depend on what's returned by the modeling functions used. For example, \code{model_attractor_simulation_wisp} returns \emph{p}-values for the rate-effect parameter only and returns it under the "FSE" parameter type, so FPR, FDR, and power for the "FSE" parameter type will be computed based on the rate-effect estimates only.
 }
+\examples{
+# A toy results/times list in the same shape run_attractor_sim_benchmarks() returns.
+toy_results <- data.frame(
+  est    = c(0.1, 0.05, 0.02, 0.06),
+  true   = c(FALSE, FALSE, TRUE, TRUE),
+  param  = "FSE",
+  id     = c("geneA", "geneB", "geneA", "geneB"),
+  method = "wisp",
+  sim    = c(1, 1, 2, 2)
+)
+toy_times <- data.frame(data_simulation = c(0.1, 0.1), wisp = c(0.5, 0.5))
+analyze_attractor_sim_benchmarks(list(results = toy_results, times = toy_times))
+}

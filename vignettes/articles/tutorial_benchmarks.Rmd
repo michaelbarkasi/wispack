@@ -34,26 +34,20 @@ Wispack comes with a function, <span class = "function">attractor_simulation</sp
 We begin with real spatial transcriptomics data from the [Allen Institute](https://alleninstitute.org/). This [data set](https://alleninstitute.github.io/abc_atlas_access/descriptions/MERFISH-C57BL6J-638850.html), described by [Yao et al 2023](https://www.nature.com/articles/s41586-023-06812-z), contains coronal brain slices from an adult male mouse imaged with the Vizgen MERSCOPE platform with a 500 gene panel. Wispack includes a csv file with counts for four marker genes from three slices: <span class = "gene">Pvalb</span> (parvalbumin neurons), <span class = "gene">Slc17a7</span> (glutamatergic neurons), <span class = "gene"><span class = "gene">Tac2</span></span> (somatostatin neurons), and <span class = "gene">Vip</span> (vasoactive intestinal peptide neurons). 
 
 ```{r load_data}
-countdata <- read.csv(
-  system.file(
-      "extdata", 
-      "Allen_data.csv.gz", 
-      package = "wispack"
-    )
-  )
+countdata <- read.csv("Allen_data.csv.gz")
 ```
 
-Here is the head of the imported seed data: 
+(This reads a full copy of the dataset kept alongside this article for the all-slices plot below; the package
+itself ships only the $2\times 2$ mm seed patch derived from it in the next section, to keep the installed
+package small -- see `inst/extdata/Allen_data.csv.gz`.)
+
+Here is the head of the imported seed data:
 
 ```{r print_data_head}
 print(head(countdata))
 ```
-```{r check1}
-g <- wispack:::.wisp_golden$benchmarks
-wispack:::.check_between(countdata[1,5], g$seed_data_val, "check 1")
-```
 
-Let's visualize the seed data: 
+Let's visualize the seed data:
 
 ```{r preview_data, fig.width = 10, fig.height = 9, out.width="100%"}
 ggplot(countdata, aes(x = coord_x, y = coord_y, color = gene)) +
@@ -76,6 +70,13 @@ seed_patch <- countdata[
     countdata$coord_y >= 2 & countdata$coord_y <= 4 &
     countdata$coord_x >= 1 & countdata$coord_x <= 3,]
 ```
+```{r check1}
+g <- wispack:::.wisp_golden$benchmarks
+wispack:::.check_between(seed_patch[1,5], g$seed_data_val, "check 1")
+```
+
+This is also exactly the patch shipped with the package itself (`inst/extdata/Allen_data.csv.gz`), pre-filtered
+to keep the installed package small, so `check1` above verifies both copies agree.
 
 Let's visualize the seed patch. Note that in this plot (and the previous one), a single dot is used for each cell coordinate containing at least one transcript from each gene. Some dots represent multiple transcripts from the same gene in the same cell.
 
@@ -1022,8 +1023,8 @@ The results of this run are provided with wispack:[^5]
 ```{r load_benchmark_results}
 benchmark_results <- read.csv(
   system.file(
-      "extdata", 
-      "benchmark_results_final250.csv", 
+      "extdata",
+      "benchmark_results_final250.csv.gz",
       package = "wispack"
     )
   )
