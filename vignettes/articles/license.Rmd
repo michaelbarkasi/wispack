@@ -107,14 +107,31 @@ https://github.com/uxlfoundation/oneTBB/blob/master/LICENSE.txt
 
 <h1> nlopt </h1>
 
-Steven G. Johnson  
-The NLopt nonlinear-optimization package 
+Steven G. Johnson
+The NLopt nonlinear-optimization package
 
-http://github.com/stevengj/nlopt  
+http://github.com/stevengj/nlopt
 https://nlopt.readthedocs.io/en/latest/
 
-GNU Lesser General Public License (LGPL)  
+GNU Lesser General Public License (LGPL)
 https://nlopt.readthedocs.io/en/latest/NLopt_License_and_Copyright/
+
+wispack no longer links a system NLopt install directly. It instead gets NLopt through the CRAN
+package `nloptr` (`LinkingTo`), calling into NLopt's C API via `nloptr`'s registered `R_GetCCallable` routines
+(`src/wisp_nlopt.h`) rather than linking against `-lnlopt`. This is a portability fix, not a license change:
+`nloptr` bundles/builds the same upstream NLopt library described above and is itself licensed
+`LGPL (>= 3)` -- see below.
+
+<h1> nloptr </h1>
+
+Jelmer Ypma, Aymeric Stamm, and other contributors (full list in its own `DESCRIPTION`)
+An R interface to NLopt, used here only for its C API (not its R-level solver functions)
+
+https://github.com/astamm/nloptr
+https://astamm.github.io/nloptr/
+
+LGPL (>= 3)
+https://github.com/astamm/nloptr/blob/main/LICENSE
 
 <h1> unistd.h, part of the C POSIX library </h1>
 

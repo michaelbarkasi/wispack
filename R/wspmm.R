@@ -7,6 +7,7 @@ NULL
 .onLoad <- function(libname, pkgname) {
   Rcpp::loadModule("wspc", TRUE)
   loadNamespace("colorspace")
+  loadNamespace("nloptr") # ensures its registered NLopt C routines are resolvable via R_GetCCallable
 }
 
 # Main function for generating WSPmm model #############################################################################

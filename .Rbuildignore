@@ -9,6 +9,7 @@ vignettes/output(/|$)
 vignettes/articles/output(/|$)
 ^wispack\.Rproj$
 ^benchmarks$
+^cran-comments\.md$
 ^man/figures$
 ^vignettes/articles$
 ^_pkgdown\.yml$

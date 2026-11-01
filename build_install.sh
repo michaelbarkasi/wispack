@@ -1,9 +1,11 @@
 #!/bin/bash
 
-# On Linux, system dependencies are: libxml2 for roxygen2 && r-base-dev, libnlopt-dev (or libnlopt-cxx-dev) for Rcpp, RcppEigen, and StanHeaders
+# On Linux, system dependencies are: libxml2 for roxygen2 && r-base-dev for Rcpp, RcppEigen, and StanHeaders
+# NLopt comes from the CRAN package nloptr; cmake is only needed the first time nloptr itself installs,
+# and only if no suitable system NLopt (>= 2.7.0) is already present for it to use instead.
 # Additionally, for PDF documentation generation, pdflatex should be installed
 #
-# sudo apt install libxml2 r-base-dev libnlopt-dev libnlopt-cxx-dev texlive-latex-base texlive-fonts-recommended texlive-fonts-extra texlive-latex-extra
+# sudo apt install libxml2 r-base-dev cmake texlive-latex-base texlive-fonts-recommended texlive-fonts-extra texlive-latex-extra
 # 
 # And for hd5f functionality, need: sudo apt-get install libhdf5-dev
 

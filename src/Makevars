@@ -1,8 +1,9 @@
 CXX_STD = CXX17
-PKG_CXXFLAGS = $(shell pkg-config --cflags nlopt)
 
+# NLopt comes from the CRAN package nloptr (LinkingTo) rather than a system install: its
+# headers declare the same C API nloptr registers as R_GetCCallable routines (src/wisp_nlopt.h),
+# so no -lnlopt/-L linking is needed at all, only its include path.
 PKG_CPPFLAGS = $(shell $(R_HOME)/bin/Rscript -e "cat(StanHeaders:::CxxFlags(TRUE))") \
-               -I$(shell pkg-config --variable=includedir nlopt)
+               -I$(shell $(R_HOME)/bin/Rscript -e "cat(system.file('include', package = 'nloptr'))")
 
-PKG_LIBS = $(shell pkg-config --libs nlopt) \
-           $(shell $(R_HOME)/bin/Rscript -e "cat(StanHeaders:::LdFlags(TRUE))")
+PKG_LIBS = $(shell $(R_HOME)/bin/Rscript -e "cat(StanHeaders:::LdFlags(TRUE))")

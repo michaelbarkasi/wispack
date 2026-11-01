@@ -7,12 +7,13 @@
 // [[Rcpp::depends(BH)]]
 // [[Rcpp::depends(RcppEigen)]]
 // [[Rcpp::depends(StanHeaders)]]
+// [[Rcpp::depends(nloptr)]]
 #include <stan/math.hpp>                      // pulls in everything from rev/ and prim/
 #include <stan/math/memory/stack_alloc.hpp>   // for better/faster stack memory allocation
 #include <Rcpp.h>
 #include <RcppEigen.h>
 #include <Rcpp/Benchmark/Timer.h>
-#include <nlopt.hpp>
+#include "wisp_nlopt.h"                       // NLopt via nloptr's C API (R_GetCCallable), not a system library
 #include <random>                             // for thread-safe random number generation
 #include "fork_utils.h"                       // run_forked_batches(); guards fork()/pipe()/waitpid() on Windows
 using namespace Rcpp;

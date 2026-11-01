@@ -9,6 +9,7 @@ load_libs <- function(bundle = "wispack") {
       "dtwclust",
       "StanHeaders",
       "BH",
+      "nloptr",
       "ggplot2",
       "grid",
       "gridExtra",

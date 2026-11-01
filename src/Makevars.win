@@ -1,4 +1,8 @@
 CXX_STD = CXX17
-PKG_CXXFLAGS = -IC:/local/nlopt/include
-PKG_CPPFLAGS = $(shell "${R_HOME}/bin/Rscript.exe" -e "StanHeaders:::CxxFlags(TRUE)")
-PKG_LIBS = -LC:/local/nlopt/lib -lnlopt $(shell "${R_HOME}/bin/Rscript.exe" -e "StanHeaders:::LdFlags(TRUE)")
+
+# NLopt comes from the CRAN package nloptr (LinkingTo) rather than a hardcoded local path:
+# see src/Makevars for why (same reasoning, both platforms).
+PKG_CPPFLAGS = $(shell "${R_HOME}/bin/Rscript.exe" -e "StanHeaders:::CxxFlags(TRUE)") \
+               -I$(shell "${R_HOME}/bin/Rscript.exe" -e "cat(system.file('include', package = 'nloptr'))")
+
+PKG_LIBS = $(shell "${R_HOME}/bin/Rscript.exe" -e "StanHeaders:::LdFlags(TRUE)")

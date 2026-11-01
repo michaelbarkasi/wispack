@@ -1101,7 +1101,7 @@ void wspc::fit(const bool verbose) {
     size_t n = x.size();
     
     // Set up NLopt optimizer
-    nlopt::opt opt(nlopt::LD_LBFGS, n);    // Might try? LD_LBFGS, LN_SBPLX, LN_COBYLA, GN_DIRECT
+    wisp_nlopt::opt opt(wisp_nlopt::LD_LBFGS, n);    // Might try? LD_LBFGS, LN_SBPLX, LN_COBYLA, GN_DIRECT
     opt.set_min_objective(wspc::compute_bnll_NLopt, this);
     opt.set_ftol_rel(mf.ctol);             // Stop when iteration changes objective fn value by less than this fraction 
     opt.set_maxeval(mf.max_evals);         // Maximum number of evaluations to try
@@ -1120,7 +1120,7 @@ void wspc::fit(const bool verbose) {
     int    sc = 0;
     double min_fx;
     try {
-      nlopt::result sc_ = opt.optimize(x, min_fx);
+      wisp_nlopt::result sc_ = opt.optimize(x, min_fx);
       sc                = static_cast<int>(sc_);
     } catch (std::exception& e) { 
       if (verbose) {
@@ -1812,7 +1812,7 @@ void wspc::check_parameter_feasibility(const sVec& parameters_var) {
       size_t n = x.size();
       
       // Set up NLopt optimizer
-      nlopt::opt opt(nlopt::LD_LBFGS, n);
+      wisp_nlopt::opt opt(wisp_nlopt::LD_LBFGS, n);
       opt.set_max_objective(wspc::min_boundary_dist_NLopt, this);
       opt.set_ftol_rel(mf.ctol);               // stop when iteration changes objective fn value by less than this fraction 
       opt.set_maxeval(mf.max_evals);           // Maximum number of evaluations to try 
@@ -1838,7 +1838,7 @@ void wspc::check_parameter_feasibility(const sVec& parameters_var) {
         }
         // Run nlopt 
         try {
-          nlopt::result sc_ = opt.optimize(x, max_fx);
+          wisp_nlopt::result sc_ = opt.optimize(x, max_fx);
           sc = static_cast<int>(sc_);
         } catch (std::exception& e) {
           sc = 0;
