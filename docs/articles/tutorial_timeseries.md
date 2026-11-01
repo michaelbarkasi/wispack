@@ -371,20 +371,23 @@ effects related to all earlier ages, e.g., P12.
 
 The [rate-count wisp
 plot](https://michaelbarkasi.github.io/wispack/articles/tutorial_wispplots.md)
-is made automatically with all calls of wisp by an internal call to
-plot.ratecount. This style of plot conveys the spatial distribution of a
-RNA species explicitly, by plotting space on the x-axis. It can only
-convey changes over a time series indirectly, via coloring of the levels
-of the timeseries factor. For example, consider the wisp plot for NXPH3,
-which shows a temporally dynamic and lateralized profile in deep layers
-(block 1), but almost no activity in superficial layers (block 2).
+is made automatically with all calls of wisp by an internal call to plot
+with type = “ratecount”. This style of plot conveys the spatial
+distribution of a RNA species explicitly, by plotting space on the
+x-axis. It can only convey changes over a time series indirectly, via
+coloring of the levels of the timeseries factor. For example, consider
+the wisp plot for NXPH3, which shows a temporally dynamic and
+lateralized profile in deep layers (block 1), but almost no activity in
+superficial layers (block 2).
 
 ``` r
 
-rc_plots <- plot.ratecount(
+rc_plots <- plot(
     model,
+    type           = "ratecount",
     dim.boundaries = colMeans(layer.boundary.bins),
     species        = "Nxph3",
+    print.plots    = FALSE,
     verbose        = FALSE
   )
 print(rc_plots$plot_pred_context_cortex_fixEff_Nxph3)
@@ -411,12 +414,12 @@ While this trend can be discerned from the spatial wisp plot, wispack
 offers another kind of plot for plotting time-series data which makes
 the trend obvious at a glance while also clarifying it. These
 time-series plots are made automatically by the wisp function when a
-time series is provided or detected, through an internal call to the
-plot.timeseries function.
+time series is provided or detected, through an internal call to plot
+with type = “timeseries”.
 
 ``` r
 
-ts_plots <- plot.timeseries(model, species = "Nxph3", verbose = FALSE)
+ts_plots <- plot(model, type = "timeseries", species = "Nxph3", print.plots = FALSE, verbose = FALSE)
 print(ts_plots$plot_pred_context_cortex_timeseries_Nxph3)
 ```
 

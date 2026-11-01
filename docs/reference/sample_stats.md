@@ -1,0 +1,101 @@
+# Estimate p-values and confidence intervals from resampled parameters
+
+Runs statistical analysis on the resampled parameters from the wisp
+function. It computes p-values and confidence intervals for each
+parameter, adjusting for multiple comparisons using either the
+Bonferroni correction or the Holm-Bonferroni method.
+
+## Usage
+
+``` r
+sample_stats(
+  wisp.results,
+  alpha = 0.05,
+  Bonferroni = FALSE,
+  conv.resamples.only = TRUE,
+  verbose = TRUE
+)
+```
+
+## Arguments
+
+- wisp.results:
+
+  List, output of the wisp function.
+
+- alpha:
+
+  Numeric value giving significance level for p-values and confidence
+  intervals. Default is 0.05.
+
+- Bonferroni:
+
+  Logical, if TRUE, uses the Bonferroni correction for multiple
+  comparisons; if FALSE, uses the Holm-Bonferroni method. Default is
+  FALSE.
+
+- conv.resamples.only:
+
+  Logical, if TRUE, only resamples with a converged fit are used for
+  statistical analysis; if FALSE, all resamples are used. Default is
+  TRUE.
+
+- verbose:
+
+  Logical, if TRUE, prints information during the statistical analysis.
+
+## Value
+
+A copy of wisp.results with (1) a new entry `parameters` under `stats`
+holding a data frame giving, for each parameter, its name, estimate,
+confidence interval (CI.low, CI.high), p-value, adjusted p-value
+(p.value.adj), adjusted alpha (alpha.adj), and significance level
+(significance), and also (2) 95% confidence interval range columns in
+`count.data.summed` for predicted log count by bin.
+
+## Examples
+
+``` r
+# A small synthetic data set with a transition point, a two-level fixed
+# effect ("age"), and two random-effect levels ("ran"), fit with a handful
+# of bootstrap resamples so sample_stats() has something to work with.
+set.seed(1)
+grid <- expand.grid(bin = 1:20, age = c(12, 18), ran = c("r1", "r2"), rep = 1:6)
+base_rate <- ifelse(grid$bin <= 10, 3, 9)
+age_effect <- ifelse(grid$age == 18, 1.5, 1)
+grid$count <- rpois(nrow(grid), base_rate * age_effect)
+countdata <- data.frame(
+  bin = grid$bin, count = grid$count, age = grid$age, ran = grid$ran,
+  species = "demoGene", context = "demoContext"
+)
+
+model <- wisp(
+  countdata,
+  variables      = list(timeseries = "age"),
+  model.settings = list(LRO_cost = "none"),
+  plot.settings  = list(print.plots = FALSE),
+  MCMC.settings  = list(MCMC.steps = 100, MCMC.burnin = 20),
+  bootstraps.num = 10,
+  max.fork       = 1,
+  verbose        = FALSE
+)
+
+# wisp() already ran sample_stats() internally (stats are in model$stats);
+# call it again directly to recompute at a stricter significance level.
+model_99 <- sample_stats(model, alpha = 0.01, verbose = FALSE)
+head(model_99$stats$parameters)
+#>                                        parameter  estimate    CI.low    CI.high
+#> 1      baseline_demoContext_Rt_demoGene_Tns/Blk1 3.0084384 3.0100461  3.1327764
+#> 2     beta_Rt_demoContext_demoGene_18_X_Tns/Blk1 0.4178568 0.2123208  0.4170332
+#> 3      baseline_demoContext_Rt_demoGene_Tns/Blk2 4.0925047 4.0732160  4.1668650
+#> 4     beta_Rt_demoContext_demoGene_18_X_Tns/Blk2 0.3931142 0.3134148  0.3953914
+#> 5  baseline_demoContext_tslope_demoGene_Tns/Blk1 5.5107477 5.5125121 14.6314621
+#> 6 beta_tslope_demoContext_demoGene_18_X_Tns/Blk1 2.1021691 1.7584406  4.8977641
+#>   p.value p.value.adj   alpha.adj significance
+#> 1      NA          NA          NA             
+#> 2       0           0 0.002500000          ***
+#> 3      NA          NA          NA             
+#> 4       0           0 0.003333333          ***
+#> 5      NA          NA          NA             
+#> 6       0           0 0.005000000          ***
+```

@@ -276,12 +276,44 @@ List giving the results of the fitted model, including:
   model residuals.
 
 - `plot.settings`: A copy of the (defaulted) plot settings provided to
-  the `wisp` function; used by the `plot.*` family of functions when
-  re-plotting a fitted model. Note that `wisp()` does not store built
-  plot objects in its return value (doing so for a large model could add
-  gigabytes); use the exported `plot.*` functions (e.g.
-  `plot.ratecount`, `plot.parameters`, `plot.species.summary`) to
+  the `wisp` function; used by
+  [`plot.wisp`](https://michaelbarkasi.github.io/wispack/reference/plot.wisp.md)
+  when re-plotting a fitted model. Note that `wisp()` does not store
+  built plot objects in its return value (doing so for a large model
+  could add gigabytes); call `plot(model, type = ...)` (e.g.
+  `type = "ratecount"`, `"parameters"`, `"species.summary"`) to
   regenerate specific plots on demand from this returned list.
 
 - `variables`: A copy of the resolved `variables` list (the column-name
   mapping actually used for the fit, after defaults were filled in).
+
+## Examples
+
+``` r
+# A tiny synthetic count-data set with one obvious transition point: two
+# spatial blocks of 10 bins each, with Poisson-process counts at rates 2 and 8.
+set.seed(1)
+n_bins <- 20
+bin <- sample(seq_len(n_bins), 400, replace = TRUE)
+lambda <- rep(c(2, 8), each = n_bins / 2)
+countdata <- data.frame(bin = bin, count = rpois(400, lambda[bin]))
+
+# fit_only = TRUE skips MCMC/bootstrap resampling, so this fits in well under
+# a second; see sample_stats() for estimating parameter uncertainty.
+model <- wisp(
+  countdata,
+  fit_only       = TRUE,
+  model.settings = list(LRO_cost = "none"),
+  plot.settings  = list(print.plots = FALSE),
+  verbose        = FALSE
+)
+model$fitted.parameters
+#>     baseline_context_Rt_species_Tns/Blk1 
+#>                                 3.890853 
+#>     baseline_context_Rt_species_Tns/Blk2 
+#>                                 5.061927 
+#> baseline_context_tslope_species_Tns/Blk1 
+#>                                 7.494465 
+#> baseline_context_tpoint_species_Tns/Blk1 
+#>                                10.699851 
+```

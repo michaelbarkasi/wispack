@@ -309,8 +309,9 @@ and GABAergic neurons.
 
 ``` r
 
-rc_plots <- plot.ratecount(
-  wisp.results     = model,
+rc_plots <- plot(
+  model,
+  type             = "ratecount",
   log.scale        = model$plot.settings$log.scale,
   CI_style         = model$plot.settings$CI_style,
   dim.boundaries   = model$plot.settings$dim.bounds,
@@ -318,6 +319,7 @@ rc_plots <- plot.ratecount(
   count.alpha.ran  = model$plot.settings$count.alpha.ran,
   pred.alpha.none  = model$plot.settings$pred.alpha.none,
   pred.alpha.ran   = model$plot.settings$pred.alpha.ran,
+  print.plots      = FALSE,
   verbose          = FALSE
 )
 plt_Glut <- rc_plots[["plot_pred.log_context_Glut"]] + theme(legend.position = "bottom")
@@ -473,10 +475,12 @@ similar to that of SATB2.
 
 ``` r
 
-ts_plots  <- plot.timeseries(
-  wisp.results     = model,
+ts_plots  <- plot(
+  model,
+  type             = "timeseries",
   splitting_factor = model$plot.settings$splitting_factor,
   log.scale        = model$plot.settings$log.scale,
+  print.plots      = FALSE,
   verbose          = FALSE
 )
 plt_Glut1 <- ts_plots[["plot_pred.log_context_Glut_timeseries_Bcl11b"]] + theme(plot.title = element_text(hjust = 0.0))

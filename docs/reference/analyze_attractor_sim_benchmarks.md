@@ -51,3 +51,29 @@ analyze_attractor_sim_benchmarks(results, sig_thresh = list(wisp = 0.05))
 
 A data frame summarizing the performance metrics for each modeling
 method.
+
+## Examples
+
+``` r
+# A toy results/times list in the same shape run_attractor_sim_benchmarks() returns.
+toy_results <- data.frame(
+  est    = c(0.1, 0.05, 0.02, 0.06),
+  true   = c(FALSE, FALSE, TRUE, TRUE),
+  param  = "FSE",
+  id     = c("geneA", "geneB", "geneA", "geneB"),
+  method = "wisp",
+  sim    = c(1, 1, 2, 2)
+)
+toy_times <- data.frame(data_simulation = c(0.1, 0.1), wisp = c(0.5, 0.5))
+analyze_attractor_sim_benchmarks(list(results = toy_results, times = toy_times))
+#>                   wisp
+#> cor_rate            NA
+#> cor_ran             NA
+#> FPR_svg             NA
+#> FDR_svg             NA
+#> power_svg           NA
+#> FPR_fse            0.0
+#> FDR_fse            0.0
+#> power_fse          0.5
+#> mean_sec_to_model  0.5
+```

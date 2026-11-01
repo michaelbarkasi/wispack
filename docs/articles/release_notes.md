@@ -26,6 +26,97 @@
   distribution, and so any attempt to model them with wisp needs to
   account for this.
 
+## Version 2.6.0 (October 29, 2026)
+
+- **Breaking API change**: the eight dotted plotting functions
+  (plot.ratecount, plot.timeseries, plot.parameters, plot.effect.dist,
+  plot.species.summary, plot.MCMC.walks, plot.decomposition,
+  plot.MCMC.bs.comparison) have been removed. They looked like S3
+  methods but never were one, since wisp() used to return a plain,
+  unclassed list, so plot() could never dispatch to them; users had to
+  call each by its full dotted name. wisp() now classes its return value
+  “wisp”, and all plotting goes through one real, exported S3 method,
+  plot.wisp, selected with a type argument. All other arguments to each
+  old function are unchanged and are simply passed through …. The
+  old-name to new-call mapping is:
+  - plot.ratecount(model, …) → plot(model, type = “ratecount”, …)
+  - plot.timeseries(model, …) → plot(model, type = “timeseries”, …)
+  - plot.parameters(model, …) → plot(model, type = “parameters”, …)
+  - plot.effect.dist(model, …) → plot(model, type = “effect.dist”, …)
+  - plot.species.summary(model, …) → plot(model, type =
+    “species.summary”, …)
+  - plot.MCMC.walks(model, …) → plot(model, type = “MCMC.walks”, …)
+  - plot.decomposition(model, …) → plot(model, type = “decomposition”,
+    …)
+  - plot.MCMC.bs.comparison(model, …) → plot(model, type =
+    “MCMC.bs.comparison”, …)
+- plot.wisp’s print.plots, verbose, and species arguments, previously
+  only available by name on the underlying per-type functions (and so
+  only reachable through …), are now named formals on plot.wisp itself:
+  plot.wisp(x, type, print.plots = TRUE, verbose = TRUE, species =
+  “all”, decompose = FALSE, …). Two of these are **breaking changes**:
+  - print.plots now defaults to TRUE at the plot.wisp level (every
+    underlying function’s own old default was FALSE). A call that relied
+    on the old default to stay silent (e.g. in a script or
+    non-interactive context) must now pass print.plots = FALSE
+    explicitly to keep the old behavior.
+  - species now defaults to the string “all” (translated internally to
+    c()) rather than c() directly; this is purely a more readable public
+    spelling of the same default and changes nothing about which species
+    are plotted. species is only forwarded to type %in% c(“ratecount”,
+    “timeseries”, “parameters”, “species.summary”) (the types whose
+    underlying function actually has a species argument); passing a
+    non-default species for any other type now raises a warning and is
+    otherwise ignored, rather than erroring with “unused argument” or
+    being silently (and confusingly) absorbed by ….
+  - verbose defaults to TRUE, matching every underlying function’s own
+    existing default, so this is not a behavior change.
+- **Breaking API change**: type = “decomposition” has been removed as a
+  standalone plot.wisp type and folded into type = “ratecount” as a
+  display mode, selected with a new decompose argument. plot(model, type
+  = “decomposition”, species = “X”, …) becomes plot(model, type =
+  “ratecount”, species = “X”, decompose = TRUE, …). As before, decompose
+  = TRUE requires species to resolve to exactly one species level (not
+  “all”, not a multi-element vector), or a clear error is raised;
+  setting decompose = TRUE for any type other than “ratecount” is also
+  an error. Unlike the old standalone type, the decomposed rate-count
+  plots now honor the dispatcher’s shared print.plots and verbose
+  arguments, just like every other type.
+- Added five new, real, dispatchable S3 methods for the “wisp” class,
+  for the same reason plot.wisp was made a real S3 method in the
+  breaking change above (plain exportPattern-based registration is not
+  reliably found by dispatch once colorspace, a Depends: of this
+  package, turns a base generic into an S4 generic for the session – so
+  each of these also carries an explicit @method roxygen tag and an
+  explicit S3method() NAMESPACE entry):
+  - print.wisp(x, …): terse console digest of a fitted model (parameter
+    count, grouping levels, resampling method/counts, and a stats
+    summary).
+  - summary.wisp(object, …) / print.summary.wisp(x, …): summary()
+    returns an object of class “summary.wisp” wrapping
+    objectstatsparameters plus model-size/fit-setting context; print()
+    formats it for console display.
+  - residuals.wisp(object, type = c(“raw”, “log”), …): returns the
+    residual summary statistics (by group) computed during the fit, for
+    either raw residuals or log-residuals.
+  - coef.wisp(object, …): returns the fitted parameter estimates as a
+    plain named numeric vector, per the usual R coef() convention.
+  - confint.wisp(object, parm = NULL, level = 0.95, …): returns the
+    already-computed confidence intervals (stored at whatever alpha was
+    used when sample_stats last ran, default 95%) directly when level =
+    0.95; for any other level, transparently re-runs sample_stats
+    (cheaply – it only re-quantiles the already-stored resampled
+    parameters, without refitting) to recompute at the requested level.
+  - All five give a clear, specific error (or message) rather than a
+    cryptic one when called on a model fit with fit_only = TRUE (i.e. no
+    statistical analysis was ever run).
+- Renamed the two exported warping/sigmoid math utilities wisp.warp and
+  wisp.sigmoid to wisp_warp and wisp_sigmoid (dot to underscore). This
+  is a pure rename with no change to arguments or behavior; it removes
+  the last two function names in the package that looked like (but never
+  were) S3 methods for a wisp generic (wisp() is the model-fitting
+  function itself, not a generic, and never will be one).
+
 ## Version 2.5.1 (October 3, 2026)
 
 - Updated .Rbuildignore.

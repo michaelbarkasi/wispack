@@ -45,3 +45,15 @@ make_count_data_csv(
 
 A list containing the combined count data and a list of slice plots for
 each mouse
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+# Not runnable in general: parse_csv() (called internally) recognizes only a
+# handful of hardcoded file paths from the original data collection, so this
+# only works on those specific files.
+md <- make_count_data_csv("path/to/csv/files")
+str(md$count_data)
+} # }
+```

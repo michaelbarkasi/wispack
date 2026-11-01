@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,8 +90,8 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">October 29, 2026
-(v2.5.1)</h4>
+            <h4 data-toc-skip class="date">November 01, 2026
+(v2.6.0)</h4>
       
 
       <div class="d-none name"><code>tutorial_liverradial.Rmd</code></div>
@@ -609,22 +609,22 @@ the number of MCMC steps to zero and the number of bootstraps to <span class="ma
 <span><span class="co">## Running bootstrap fits</span></span>
 <span><span class="co">## Performing initial fit of full data</span></span>
 <span><span class="co">## Penalized nll: 1047.02</span></span>
-<span><span class="co">## Batch: 1/100, 0.309185 sec/bs</span></span>
-<span><span class="co">## Batch: 10/100, 0.342849 sec/bs</span></span>
-<span><span class="co">## Batch: 20/100, 0.319256 sec/bs</span></span>
-<span><span class="co">## Batch: 30/100, 0.281686 sec/bs</span></span>
-<span><span class="co">## Batch: 40/100, 0.337657 sec/bs</span></span>
-<span><span class="co">## Batch: 50/100, 0.293907 sec/bs</span></span>
-<span><span class="co">## Batch: 60/100, 0.305486 sec/bs</span></span>
-<span><span class="co">## Batch: 70/100, 0.317974 sec/bs</span></span>
-<span><span class="co">## Batch: 80/100, 0.339967 sec/bs</span></span>
-<span><span class="co">## Batch: 90/100, 0.345703 sec/bs</span></span>
+<span><span class="co">## Batch: 1/100, 0.42964 sec/bs</span></span>
+<span><span class="co">## Batch: 10/100, 0.473374 sec/bs</span></span>
+<span><span class="co">## Batch: 20/100, 0.443038 sec/bs</span></span>
+<span><span class="co">## Batch: 30/100, 0.399849 sec/bs</span></span>
+<span><span class="co">## Batch: 40/100, 0.468403 sec/bs</span></span>
+<span><span class="co">## Batch: 50/100, 0.405122 sec/bs</span></span>
+<span><span class="co">## Batch: 60/100, 0.422158 sec/bs</span></span>
+<span><span class="co">## Batch: 70/100, 0.439278 sec/bs</span></span>
+<span><span class="co">## Batch: 80/100, 0.470695 sec/bs</span></span>
+<span><span class="co">## Batch: 90/100, 0.4745 sec/bs</span></span>
 <span><span class="co">## All complete!</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Bootstrap simulation complete... </span></span>
-<span><span class="co">## Bootstrap run time (total), minutes: 5.568</span></span>
-<span><span class="co">## Bootstrap run time (per sample), seconds: 0.334</span></span>
-<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 3.341</span></span>
+<span><span class="co">## Bootstrap run time (total), minutes: 7.656</span></span>
+<span><span class="co">## Bootstrap run time (per sample), seconds: 0.459</span></span>
+<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 4.594</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Computing p-values and CI for model parameters</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
@@ -697,8 +697,9 @@ and <span class="gene">ASS1</span> being higher in the portal region.
 Their respective spatial gradients are easy to see in the rate-count
 plot:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">rc_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-ratecount.html">plot.ratecount</a></span><span class="op">(</span></span>
-<span>  wisp.results     <span class="op">=</span> <span class="va">radial.model</span>,</span>
+<code class="sourceCode R"><span><span class="va">rc_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
+<span>  <span class="va">radial.model</span>,</span>
+<span>  type             <span class="op">=</span> <span class="st">"ratecount"</span>,</span>
 <span>  log.scale        <span class="op">=</span> <span class="va">radial.model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">log.scale</span>,</span>
 <span>  CI_style         <span class="op">=</span> <span class="va">radial.model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">CI_style</span>,</span>
 <span>  dim.boundaries   <span class="op">=</span> <span class="va">radial.model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">dim.bounds</span>,</span>
@@ -706,6 +707,7 @@ plot:</p>
 <span>  count.alpha.ran  <span class="op">=</span> <span class="va">radial.model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">count.alpha.ran</span>,</span>
 <span>  pred.alpha.none  <span class="op">=</span> <span class="va">radial.model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">pred.alpha.none</span>,</span>
 <span>  pred.alpha.ran   <span class="op">=</span> <span class="va">radial.model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">pred.alpha.ran</span>,</span>
+<span>  print.plots      <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose          <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">plt_glul</span>      <span class="op">&lt;-</span> <span class="va">rc_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_fixEff_glul"</span><span class="op">]</span><span class="op">]</span></span>
@@ -721,10 +723,12 @@ the central region decreasing in expression as the portal region
 increases. These temporal patterns can be seen more clearly by looking
 at the time-series plots.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ts_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-timeseries.html">plot.timeseries</a></span><span class="op">(</span></span>
-<span>  wisp.results     <span class="op">=</span> <span class="va">radial.model</span>,</span>
+<code class="sourceCode R"><span><span class="va">ts_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
+<span>  <span class="va">radial.model</span>,</span>
+<span>  type             <span class="op">=</span> <span class="st">"timeseries"</span>,</span>
 <span>  splitting_factor <span class="op">=</span> <span class="va">radial.model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">splitting_factor</span>,</span>
 <span>  log.scale        <span class="op">=</span> <span class="va">radial.model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">log.scale</span>,</span>
+<span>  print.plots      <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose          <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">plt_glul</span>      <span class="op">&lt;-</span> <span class="va">ts_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_liver_timeseries_glul"</span><span class="op">]</span><span class="op">]</span></span>

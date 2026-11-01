@@ -70,14 +70,13 @@ and Vip (vasoactive intestinal peptide neurons).
 
 ``` r
 
-countdata <- read.csv(
-  system.file(
-      "extdata", 
-      "Allen_data.csv.gz", 
-      package = "wispack"
-    )
-  )
+countdata <- read.csv("Allen_data.csv.gz")
 ```
+
+(This reads a full copy of the dataset kept alongside this article for
+the all-slices plot below; the package itself ships only the 2\times 2
+mm seed patch derived from it in the next section, to keep the installed
+package small – see `inst/extdata/Allen_data.csv.gz`.)
 
 Here is the head of the imported seed data:
 
@@ -94,12 +93,6 @@ print(head(countdata))
 ## 4     1   1018093344101180865        29 Slc17a7 4.062627 5.040059
 ## 5     2   1018093344100990765        29 Slc17a7 3.502277 4.956870
 ## 6     1 1018093344102270476-1        29   Pvalb 6.834409 5.008881
-```
-
-``` r
-
-g <- wispack:::.wisp_golden$benchmarks
-wispack:::.check_between(countdata[1,5], g$seed_data_val, "check 1")
 ```
 
 Let’s visualize the seed data:
@@ -132,6 +125,16 @@ seed_patch <- countdata[
     countdata$coord_y >= 2 & countdata$coord_y <= 4 &
     countdata$coord_x >= 1 & countdata$coord_x <= 3,]
 ```
+
+``` r
+
+g <- wispack:::.wisp_golden$benchmarks
+wispack:::.check_between(seed_patch[1,5], g$seed_data_val, "check 1")
+```
+
+This is also exactly the patch shipped with the package itself
+(`inst/extdata/Allen_data.csv.gz`), pre-filtered to keep the installed
+package small, so `check1` above verifies both copies agree.
 
 Let’s visualize the seed patch. Note that in this plot (and the previous
 one), a single dot is used for each cell coordinate containing at least
@@ -1339,8 +1342,8 @@ The results of this run are provided with wispack:[^5]
 
 benchmark_results <- read.csv(
   system.file(
-      "extdata", 
-      "benchmark_results_final250.csv", 
+      "extdata",
+      "benchmark_results_final250.csv.gz",
       package = "wispack"
     )
   )

@@ -87,3 +87,45 @@ A list containing two components: `results`, a data frame compiling the
 results from all simulations and modeling methods; and `times`, a data
 frame recording the computation times for data simulation and each
 modeling method for each simulation.
+
+## Examples
+
+``` r
+# A toy seed large enough per bin/replicate for the bootstrap resamples
+# inside model_attractor_simulation_wisp() to converge reliably.
+set.seed(1)
+toy_seed <- data.frame(
+  gene    = rep(c("geneA", "geneB"), each = 100),
+  coord_x = runif(200, 0, 10),
+  coord_y = runif(200, 0, 10),
+  count   = rpois(200, 20)
+)
+
+# n_sims = 1 and a small bs_num keep this fast; a real benchmark would use
+# many more simulations and bootstrap resamples.
+bm <- run_attractor_sim_benchmarks(
+  toy_seed,
+  n_sims                 = 1,
+  n_bins                 = 10,
+  n_replicates           = 3,
+  modeling_function_args = list(wisp = list(bs_num = 8, max_fork = 1))
+)
+#> 
+#> 
+#> ----------------------
+#> Running simulation  1 / 1
+#>  data sim time: 0.002 s
+#> 
+#> Modeling with  wisp ...
+#>   wisp time: 22.045 s
+bm$results
+#>            est       true         param         id method sim
+#> 1 -0.098954514  0.0000000   rate_effect      geneA   wisp   1
+#> 2  0.007648286  0.0000000   rate_effect      geneB   wisp   1
+#> 3 -0.257198208 -0.3297745 random_effect replicate1   wisp   1
+#> 4  0.189563699 -0.2851778 random_effect replicate2   wisp   1
+#> 5 -0.362414149 -0.3631447 random_effect replicate3   wisp   1
+#> 6  0.401671078 -0.1792952 random_effect replicate4   wisp   1
+#> 7  0.200000000  0.0000000           FSE      geneA   wisp   1
+#> 8  0.172839506  0.0000000           FSE      geneB   wisp   1
+```

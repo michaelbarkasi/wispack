@@ -493,9 +493,9 @@ model <- wisp(
 ## Penalized nll: 11976.4
 ## 
 ## MCMC simulation complete... 
-## MCMC run time (total), minutes: 3.785
-## MCMC run time (per retained step), seconds: 0.206
-## MCMC run time (per step), seconds: 0.206
+## MCMC run time (total), minutes: 7.747
+## MCMC run time (per retained step), seconds: 0.423
+## MCMC run time (per step), seconds: 0.423
 ## 
 ## Computing p-values and CI for model parameters
 ## ----------------------------------------
@@ -681,15 +681,17 @@ the y-axis and spatial position (bin) on the x-axis, with effects
 conditions represented by different colors. The wisp function
 automatically generates these plots as it fits (printing them, if
 requested), but does not store the built plot objects on the returned
-model – call plot.ratecount directly to regenerate the one(s) you want.
-Here, for example, is the plot for RORB:
+model – call plot with type = “ratecount” directly to regenerate the
+one(s) you want. Here, for example, is the plot for RORB:
 
 ``` r
 
-rc_plots <- plot.ratecount(
+rc_plots <- plot(
     model,
+    type           = "ratecount",
     dim.boundaries = colMeans(layer.boundary.bins),
     species        = "Rorb",
+    print.plots    = FALSE,
     verbose        = FALSE
   )
 print(rc_plots$plot_pred_context_cortex_fixEff_Rorb)
@@ -722,11 +724,11 @@ compared to the right (dark blue).
 This swap is easy to see on a time-series plot. When a time series is
 provided (via the variables argument), the wisp function automatically
 generates time-series plots for each gene (again, not stored on the
-returned model – call plot.timeseries to regenerate).
+returned model – call plot with type = “timeseries” to regenerate).
 
 ``` r
 
-ts_plots <- plot.timeseries(model, species = "Rorb", verbose = FALSE)
+ts_plots <- plot(model, type = "timeseries", species = "Rorb", print.plots = FALSE, verbose = FALSE)
 print(ts_plots$plot_pred_context_cortex_timeseries_Rorb)
 ```
 

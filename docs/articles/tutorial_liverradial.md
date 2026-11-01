@@ -440,22 +440,22 @@ radial.model <- wisp(
 ## Running bootstrap fits
 ## Performing initial fit of full data
 ## Penalized nll: 1047.02
-## Batch: 1/100, 0.309185 sec/bs
-## Batch: 10/100, 0.342849 sec/bs
-## Batch: 20/100, 0.319256 sec/bs
-## Batch: 30/100, 0.281686 sec/bs
-## Batch: 40/100, 0.337657 sec/bs
-## Batch: 50/100, 0.293907 sec/bs
-## Batch: 60/100, 0.305486 sec/bs
-## Batch: 70/100, 0.317974 sec/bs
-## Batch: 80/100, 0.339967 sec/bs
-## Batch: 90/100, 0.345703 sec/bs
+## Batch: 1/100, 0.42964 sec/bs
+## Batch: 10/100, 0.473374 sec/bs
+## Batch: 20/100, 0.443038 sec/bs
+## Batch: 30/100, 0.399849 sec/bs
+## Batch: 40/100, 0.468403 sec/bs
+## Batch: 50/100, 0.405122 sec/bs
+## Batch: 60/100, 0.422158 sec/bs
+## Batch: 70/100, 0.439278 sec/bs
+## Batch: 80/100, 0.470695 sec/bs
+## Batch: 90/100, 0.4745 sec/bs
 ## All complete!
 ## 
 ## Bootstrap simulation complete... 
-## Bootstrap run time (total), minutes: 5.568
-## Bootstrap run time (per sample), seconds: 0.334
-## Bootstrap run time (per sample, per thread), seconds: 3.341
+## Bootstrap run time (total), minutes: 7.656
+## Bootstrap run time (per sample), seconds: 0.459
+## Bootstrap run time (per sample, per thread), seconds: 4.594
 ## 
 ## Computing p-values and CI for model parameters
 ## ----------------------------------------
@@ -532,8 +532,9 @@ to see in the rate-count plot:
 
 ``` r
 
-rc_plots <- plot.ratecount(
-  wisp.results     = radial.model,
+rc_plots <- plot(
+  radial.model,
+  type             = "ratecount",
   log.scale        = radial.model$plot.settings$log.scale,
   CI_style         = radial.model$plot.settings$CI_style,
   dim.boundaries   = radial.model$plot.settings$dim.bounds,
@@ -541,6 +542,7 @@ rc_plots <- plot.ratecount(
   count.alpha.ran  = radial.model$plot.settings$count.alpha.ran,
   pred.alpha.none  = radial.model$plot.settings$pred.alpha.none,
   pred.alpha.ran   = radial.model$plot.settings$pred.alpha.ran,
+  print.plots      = FALSE,
   verbose          = FALSE
 )
 plt_glul      <- rc_plots[["plot_pred.log_context_liver_fixEff_glul"]]
@@ -562,10 +564,12 @@ time-series plots.
 
 ``` r
 
-ts_plots <- plot.timeseries(
-  wisp.results     = radial.model,
+ts_plots <- plot(
+  radial.model,
+  type             = "timeseries",
   splitting_factor = radial.model$plot.settings$splitting_factor,
   log.scale        = radial.model$plot.settings$log.scale,
+  print.plots      = FALSE,
   verbose          = FALSE
 )
 plt_glul      <- ts_plots[["plot_pred.log_context_liver_timeseries_glul"]]

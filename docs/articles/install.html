@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,8 +90,8 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi, Cody Nhan Pham</h4>
             
-            <h4 data-toc-skip class="date">October 29, 2026
-(v2.5.1)</h4>
+            <h4 data-toc-skip class="date">November 01, 2026
+(v2.6.0)</h4>
       
 
       <div class="d-none name"><code>install.Rmd</code></div>
@@ -129,16 +129,17 @@ the relevant gfortran-[version]-universal.pkg</li>
 <li>Follow the instructions at this same website to install LaTeX for
 R</li>
 </ol>
-<p>Ensure pkg-config and nlopt are installed, e.g., using Homebrew in a
-terminal:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="ex">brew</span> install pkg-config</span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="ex">brew</span> install nlopt</span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="bu">export</span> <span class="va">PKG_CONFIG_PATH</span><span class="op">=</span><span class="st">"/opt/homebrew/lib/pkgconfig:</span><span class="va">$PKG_CONFIG_PATH</span><span class="st">"</span></span></code></pre></div>
+<p>(NLopt itself comes from the CRAN package <code>nloptr</code>,
+installed automatically as a dependency – no separate
+<code>brew install nlopt</code>/<code>pkg-config</code> step needed.
+<code>nloptr</code> builds its own copy of NLopt via CMake if no
+suitable system one is found, so a <code>cmake</code> install may be
+needed the first time <code>nloptr</code> itself installs.)</p>
 <p>Install Homebrew if needed:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="ex">/bin/bash</span> <span class="at">-c</span> <span class="st">"</span><span class="va">$(</span><span class="ex">curl</span> <span class="at">-fsSL</span> https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh<span class="va">)</span><span class="st">"</span></span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="bu">echo</span> <span class="op">&gt;&gt;</span> /Users/<span class="pp">[</span><span class="ss">name</span><span class="pp">]</span>/.zprofile</span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="bu">echo</span> <span class="st">'eval "$(/opt/homebrew/bin/brew shellenv zsh)"'</span> <span class="op">&gt;&gt;</span> /Users/<span class="pp">[</span><span class="ss">name</span><span class="pp">]</span>/.zprofile</span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="bu">eval</span> <span class="st">"</span><span class="va">$(</span><span class="ex">/opt/homebrew/bin/brew</span> shellenv zsh<span class="va">)</span><span class="st">"</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="ex">/bin/bash</span> <span class="at">-c</span> <span class="st">"</span><span class="va">$(</span><span class="ex">curl</span> <span class="at">-fsSL</span> https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh<span class="va">)</span><span class="st">"</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="bu">echo</span> <span class="op">&gt;&gt;</span> /Users/<span class="pp">[</span><span class="ss">name</span><span class="pp">]</span>/.zprofile</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="bu">echo</span> <span class="st">'eval "$(/opt/homebrew/bin/brew shellenv zsh)"'</span> <span class="op">&gt;&gt;</span> /Users/<span class="pp">[</span><span class="ss">name</span><span class="pp">]</span>/.zprofile</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="bu">eval</span> <span class="st">"</span><span class="va">$(</span><span class="ex">/opt/homebrew/bin/brew</span> shellenv zsh<span class="va">)</span><span class="st">"</span></span></code></pre></div>
 <p>Rebuild and cleanly install Rcpp and Stan, in R:
 <code>install.packages(c("Rcpp", "RcppEigen", "RcppParallel", "StanHeaders"))</code></p>
 </div>
@@ -146,26 +147,27 @@ terminal:</p>
 <h2 id="linux">Linux<a class="anchor" aria-label="anchor" href="#linux"></a>
 </h2>
 <p>Need to install the following system dependencies: -
-<code>libxml2</code> for roxygen2 - <code>r-base-dev</code>,
-<code>libnlopt-dev</code> (or <code>libnlopt-cxx-dev</code>) for Rcpp,
-RcppEigen, and StanHeaders</p>
+<code>libxml2</code> for roxygen2 - <code>r-base-dev</code> for Rcpp,
+RcppEigen, and StanHeaders - <code>cmake</code>, only needed the first
+time the CRAN package <code>nloptr</code> itself installs, and only if
+no suitable system NLopt (&gt;= 2.7.0) is already present for it to use
+instead</p>
 <p>For PDF documentation generation, <code>pdflatex</code> should also
 be installed</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">sudo</span> apt install <span class="dt">\</span></span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>    libxml2 <span class="dt">\</span></span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>    r-base-dev <span class="dt">\</span></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>    libnlopt-dev <span class="dt">\</span></span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>    libnlopt-cxx-dev <span class="dt">\</span></span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>    texlive-latex-base <span class="dt">\</span></span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>    texlive-fonts-recommended <span class="dt">\</span></span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>    texlive-fonts-extra <span class="dt">\</span></span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>    texlive-latex-extra</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">sudo</span> apt install <span class="dt">\</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>    libxml2 <span class="dt">\</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>    r-base-dev <span class="dt">\</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>    cmake <span class="dt">\</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>    texlive-latex-base <span class="dt">\</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>    texlive-fonts-recommended <span class="dt">\</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>    texlive-fonts-extra <span class="dt">\</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>    texlive-latex-extra</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="build-documentation">Build documentation<a class="anchor" aria-label="anchor" href="#build-documentation"></a>
 </h2>
 <p>In R, run:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_articles.html" class="external-link">build_article</a></span><span class="op">(</span><span class="st">"&lt;article name&gt;"</span><span class="op">)</span></span></code></pre></div>
@@ -182,7 +184,7 @@ minute): synthetic data and precomputed fixtures only – no real model
 fitting against the data used in the tutorials. This is what runs
 automatically with <code>R CMD check</code> or:</li>
 </ul>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <ul>
 <li>
@@ -192,7 +194,7 @@ the same extdata and the same bootstrap/MCMC settings as the tutorials
 themselves. These are gated behind an environment variable so they don’t
 slow down routine testing:</li>
 </ul>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>WISPACK_RUN_SLOW_TESTS <span class="op">=</span> <span class="st">"true"</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>(equivalently,

@@ -29,14 +29,11 @@ First, ensure your Mac has the necessary backend dependencies:
     download and run the relevant gfortran-\[version\]-universal.pkg
 3.  Follow the instructions at this same website to install LaTeX for R
 
-Ensure pkg-config and nlopt are installed, e.g., using Homebrew in a
-terminal:
-
-``` bash
-brew install pkg-config
-brew install nlopt
-export PKG_CONFIG_PATH="/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH"
-```
+(NLopt itself comes from the CRAN package `nloptr`, installed
+automatically as a dependency – no separate
+`brew install nlopt`/`pkg-config` step needed. `nloptr` builds its own
+copy of NLopt via CMake if no suitable system one is found, so a `cmake`
+install may be needed the first time `nloptr` itself installs.)
 
 Install Homebrew if needed:
 
@@ -53,8 +50,10 @@ Rebuild and cleanly install Rcpp and Stan, in R:
 ## Linux
 
 Need to install the following system dependencies: - `libxml2` for
-roxygen2 - `r-base-dev`, `libnlopt-dev` (or `libnlopt-cxx-dev`) for
-Rcpp, RcppEigen, and StanHeaders
+roxygen2 - `r-base-dev` for Rcpp, RcppEigen, and StanHeaders - `cmake`,
+only needed the first time the CRAN package `nloptr` itself installs,
+and only if no suitable system NLopt (\>= 2.7.0) is already present for
+it to use instead
 
 For PDF documentation generation, `pdflatex` should also be installed
 
@@ -62,8 +61,7 @@ For PDF documentation generation, `pdflatex` should also be installed
 sudo apt install \
     libxml2 \
     r-base-dev \
-    libnlopt-dev \
-    libnlopt-cxx-dev \
+    cmake \
     texlive-latex-base \
     texlive-fonts-recommended \
     texlive-fonts-extra \

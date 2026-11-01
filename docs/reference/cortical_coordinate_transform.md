@@ -69,3 +69,17 @@ cortical_coordinate_transform(
 
 A list containing the transformed count data, layer boundary estimates,
 and optionally the generated plots
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+# Not runnable on synthetic data: this expects the specific nested
+# count_data/slice_plots structure produced by make_count_data() or
+# make_count_data_csv() from real cortical MERFISH data, with real layer
+# and hemisphere geometry to align on.
+md <- make_count_data("path/to/hdf5/files")
+transformed <- cortical_coordinate_transform(md, total_bins = 100)
+str(transformed$df)
+} # }
+```

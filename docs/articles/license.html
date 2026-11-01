@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -219,10 +219,26 @@ oneTBB
 <h1>
 nlopt
 </h1>
-<p>Steven G. Johnson<br>
-The NLopt nonlinear-optimization package</p>
-<p><a href="http://github.com/stevengj/nlopt" class="external-link uri">http://github.com/stevengj/nlopt</a><br><a href="https://nlopt.readthedocs.io/en/latest/" class="external-link uri">https://nlopt.readthedocs.io/en/latest/</a></p>
-<p>GNU Lesser General Public License (LGPL)<br><a href="https://nlopt.readthedocs.io/en/latest/NLopt_License_and_Copyright/" class="external-link uri">https://nlopt.readthedocs.io/en/latest/NLopt_License_and_Copyright/</a></p>
+<p>Steven G. Johnson The NLopt nonlinear-optimization package</p>
+<p><a href="http://github.com/stevengj/nlopt" class="external-link uri">http://github.com/stevengj/nlopt</a> <a href="https://nlopt.readthedocs.io/en/latest/" class="external-link uri">https://nlopt.readthedocs.io/en/latest/</a></p>
+<p>GNU Lesser General Public License (LGPL) <a href="https://nlopt.readthedocs.io/en/latest/NLopt_License_and_Copyright/" class="external-link uri">https://nlopt.readthedocs.io/en/latest/NLopt_License_and_Copyright/</a></p>
+<p>wispack no longer links a system NLopt install directly. It instead
+gets NLopt through the CRAN package <code>nloptr</code>
+(<code>LinkingTo</code>), calling into NLopt’s C API via
+<code>nloptr</code>’s registered <code>R_GetCCallable</code> routines
+(<code>src/wisp_nlopt.h</code>) rather than linking against
+<code>-lnlopt</code>. This is a portability fix, not a license change:
+<code>nloptr</code> bundles/builds the same upstream NLopt library
+described above and is itself licensed <code>LGPL (&gt;= 3)</code> – see
+below.</p>
+<h1>
+nloptr
+</h1>
+<p>Jelmer Ypma, Aymeric Stamm, and other contributors (full list in its
+own <code>DESCRIPTION</code>) An R interface to NLopt, used here only
+for its C API (not its R-level solver functions)</p>
+<p><a href="https://github.com/astamm/nloptr" class="external-link uri">https://github.com/astamm/nloptr</a> <a href="https://astamm.github.io/nloptr/" class="external-link uri">https://astamm.github.io/nloptr/</a></p>
+<p>LGPL (&gt;= 3) <a href="https://github.com/astamm/nloptr/blob/main/LICENSE" class="external-link uri">https://github.com/astamm/nloptr/blob/main/LICENSE</a></p>
 <h1>
 unistd.h, part of the C POSIX library
 </h1>

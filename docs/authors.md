@@ -2,18 +2,18 @@
 
 ## Authors
 
-- **Michael Barkasi**. Maintainer.
+- **Michael Barkasi**. Author, maintainer.
 
 ## Citation
 
-Barkasi M (2026). *wispack: Warped-sigmoid Poisson-process mixed-effects
-models (WSPmm)*. R package version 2.5.1,
+Barkasi M (2026). *wispack: Warped-Sigmoid Poisson-Process Mixed-Effects
+Models (WSPmm)*. R package version 2.6.0,
 <https://michaelbarkasi.github.io/wispack/>.
 
     @Manual{,
-      title = {wispack: Warped-sigmoid Poisson-process mixed-effects models (WSPmm)},
+      title = {wispack: Warped-Sigmoid Poisson-Process Mixed-Effects Models (WSPmm)},
       author = {Michael Barkasi},
       year = {2026},
-      note = {R package version 2.5.1},
+      note = {R package version 2.6.0},
       url = {https://michaelbarkasi.github.io/wispack/},
     }

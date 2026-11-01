@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,8 +90,8 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">October 29, 2026
-(v2.5.1)</h4>
+            <h4 data-toc-skip class="date">November 01, 2026
+(v2.6.0)</h4>
       
 
       <div class="d-none name"><code>tutorial_multicontext.Rmd</code></div>
@@ -373,8 +373,9 @@ function will make different rate-count and time-series plots for each
 context. For the big picture, let’s compare the reference levels for all
 genes between glutamatergic and GABAergic neurons.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">rc_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-ratecount.html">plot.ratecount</a></span><span class="op">(</span></span>
-<span>  wisp.results     <span class="op">=</span> <span class="va">model</span>,</span>
+<code class="sourceCode R"><span><span class="va">rc_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
+<span>  <span class="va">model</span>,</span>
+<span>  type             <span class="op">=</span> <span class="st">"ratecount"</span>,</span>
 <span>  log.scale        <span class="op">=</span> <span class="va">model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">log.scale</span>,</span>
 <span>  CI_style         <span class="op">=</span> <span class="va">model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">CI_style</span>,</span>
 <span>  dim.boundaries   <span class="op">=</span> <span class="va">model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">dim.bounds</span>,</span>
@@ -382,6 +383,7 @@ genes between glutamatergic and GABAergic neurons.</p>
 <span>  count.alpha.ran  <span class="op">=</span> <span class="va">model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">count.alpha.ran</span>,</span>
 <span>  pred.alpha.none  <span class="op">=</span> <span class="va">model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">pred.alpha.none</span>,</span>
 <span>  pred.alpha.ran   <span class="op">=</span> <span class="va">model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">pred.alpha.ran</span>,</span>
+<span>  print.plots      <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose          <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">plt_Glut</span> <span class="op">&lt;-</span> <span class="va">rc_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_Glut"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span></span>
@@ -513,10 +515,12 @@ example, while <span class="gene">BCL11B</span> shares a spatial pattern
 with <span class="gene">FEZF2</span>, its temporal pattern is more
 similar to that of <span class="gene">SATB2</span>.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ts_plots</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-timeseries.html">plot.timeseries</a></span><span class="op">(</span></span>
-<span>  wisp.results     <span class="op">=</span> <span class="va">model</span>,</span>
+<code class="sourceCode R"><span><span class="va">ts_plots</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
+<span>  <span class="va">model</span>,</span>
+<span>  type             <span class="op">=</span> <span class="st">"timeseries"</span>,</span>
 <span>  splitting_factor <span class="op">=</span> <span class="va">model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">splitting_factor</span>,</span>
 <span>  log.scale        <span class="op">=</span> <span class="va">model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">log.scale</span>,</span>
+<span>  print.plots      <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose          <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">plt_Glut1</span> <span class="op">&lt;-</span> <span class="va">ts_plots</span><span class="op">[[</span><span class="st">"plot_pred.log_context_Glut_timeseries_Bcl11b"</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>hjust <span class="op">=</span> <span class="fl">0.0</span><span class="op">)</span><span class="op">)</span></span>

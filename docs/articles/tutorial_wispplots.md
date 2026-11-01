@@ -200,29 +200,29 @@ model <- wisp(
 ## Penalized nll: 11976.4
 ## 
 ## MCMC simulation complete... 
-## MCMC run time (total), minutes: 3.779
-## MCMC run time (per retained step), seconds: 0.206
-## MCMC run time (per step), seconds: 0.206
+## MCMC run time (total), minutes: 7.75
+## MCMC run time (per retained step), seconds: 0.423
+## MCMC run time (per step), seconds: 0.423
 ## 
 ## Running bootstrap fits
 ## Performing initial fit of full data
 ## Penalized nll: 11976.4
-## Batch: 1/50, 0.701648 sec/bs
-## Batch: 5/50, 0.648595 sec/bs
-## Batch: 10/50, 0.628511 sec/bs
-## Batch: 15/50, 0.650552 sec/bs
-## Batch: 20/50, 0.730031 sec/bs
-## Batch: 25/50, 0.663684 sec/bs
-## Batch: 30/50, 0.642421 sec/bs
-## Batch: 35/50, 0.622834 sec/bs
-## Batch: 40/50, 0.60915 sec/bs
-## Batch: 45/50, 0.690686 sec/bs
+## Batch: 1/50, 1.3771 sec/bs
+## Batch: 5/50, 1.38154 sec/bs
+## Batch: 10/50, 1.25118 sec/bs
+## Batch: 15/50, 1.33929 sec/bs
+## Batch: 20/50, 1.3941 sec/bs
+## Batch: 25/50, 1.34529 sec/bs
+## Batch: 30/50, 1.31748 sec/bs
+## Batch: 35/50, 1.2562 sec/bs
+## Batch: 40/50, 1.23773 sec/bs
+## Batch: 45/50, 1.34562 sec/bs
 ## All complete!
 ## 
 ## Bootstrap simulation complete... 
-## Bootstrap run time (total), minutes: 11.289
-## Bootstrap run time (per sample), seconds: 0.677
-## Bootstrap run time (per sample, per thread), seconds: 13.546
+## Bootstrap run time (total), minutes: 22.666
+## Bootstrap run time (per sample), seconds: 1.36
+## Bootstrap run time (per sample, per thread), seconds: 27.199
 ## 
 ## Computing p-values and CI for model parameters
 ## ----------------------------------------
@@ -277,7 +277,7 @@ model <- wisp(
 ## Making parameter plots...
 ```
 
-Let’s use the plot.ratecount function to remake the RORB plot that was
+Let’s use plot with type = “ratecount” to remake the RORB plot that was
 made and shown in the RORB
 [tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.md),
 this time using the bootstrap resamples for the CI instead of MCMC
@@ -285,10 +285,12 @@ resamples:
 
 ``` r
 
-plot.ratecount(
+plot(
     model,
+    type           = "ratecount",
     dim.boundaries = colMeans(layer.boundary.bins),
     species        = "Rorb",
+    print.plots    = FALSE,
     verbose        = FALSE
   )
 ```
@@ -320,11 +322,13 @@ However, it’s possible to rescale the vertical axis into log form:
 
 ``` r
 
-plot.ratecount(
+plot(
     model,
+    type           = "ratecount",
     dim.boundaries = colMeans(layer.boundary.bins),
     species        = "Rorb",
     log.scale      = TRUE,
+    print.plots    = FALSE,
     verbose        = FALSE
   )
 ```
@@ -338,15 +342,17 @@ more complex plot showing predicted rate without random effects as a
 line, model fit to individual replicates (i.e., predicted rates with
 random effects) as dashed lines, and observed counts (plus
 interpolations for random-effect-free counts) as scatter points. It’s
-accessed via the CI_style argument in plot.ratecount:
+accessed via the CI_style argument to plot with type = “ratecount”:
 
 ``` r
 
-plot.ratecount(
+plot(
     model,
+    type           = "ratecount",
     dim.boundaries = colMeans(layer.boundary.bins),
     CI_style       = FALSE,
     species        = "Rorb",
+    print.plots    = FALSE,
     verbose        = FALSE
   )
 ```
@@ -360,14 +366,18 @@ predicted rate.
 The main advantages of scatter rate-count plots are that they show how
 well the model fits the observed data, and also show the variability in
 individual replicates. Still, they can be visually crowded, so wispack
-provides a function to decompose them into their components.
+provides a way to decompose them into their components: set decompose =
+TRUE on plot with type = “ratecount”.
 
 ``` r
 
-plots.decomp <- plot.decomposition(
+plots.decomp <- plot(
     model,
+    type           = "ratecount",
     dim.boundaries = colMeans(layer.boundary.bins),
-    species        = "Rorb"
+    species        = "Rorb",
+    decompose      = TRUE,
+    print.plots    = FALSE
   )
 ```
 
@@ -417,18 +427,20 @@ in that sample.
 
 For models fit with a covariate specified as a [time
 series](https://michaelbarkasi.github.io/wispack/articles/tutorial_timeseries.md),
-wispack provides a function to plot predicted rates as a function of
-time. This is done with the plot.timeseries function. Although there are
-only two ages in the cortical laminar data, we can still use this
-function to visualize how predicted rates change with age. Let’s look at
-the time-series plot for RORB again:
+wispack provides a way to plot predicted rates as a function of time.
+This is done with plot and type = “timeseries”. Although there are only
+two ages in the cortical laminar data, we can still use this to
+visualize how predicted rates change with age. Let’s look at the
+time-series plot for RORB again:
 
 ``` r
 
-plot.timeseries(
-    model, 
-    species = "Rorb",
-    verbose = FALSE
+plot(
+    model,
+    type        = "timeseries",
+    species     = "Rorb",
+    print.plots = FALSE,
+    verbose     = FALSE
   )
 ```
 
@@ -458,14 +470,16 @@ the corresponding random-effect scalars – that define a wisp model.
 
 ``` r
 
-plots.param <- plot.parameters(
+plots.param <- plot(
     model,
-    species = "Rorb",
-    verbose = FALSE
+    type        = "parameters",
+    species     = "Rorb",
+    print.plots = FALSE,
+    verbose     = FALSE
   )
 ```
 
-The plot.parameters function produces separate plots for the baseline
+plot with type = “parameters” produces separate plots for the baseline
 (reference condition) parameters, the treatment condition parameters,
 and the random-effect scalars. Let’s look at the baseline parameters
 first:

@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,8 +90,8 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">October 29, 2026
-(v2.5.1)</h4>
+            <h4 data-toc-skip class="date">November 01, 2026
+(v2.6.0)</h4>
       
 
       <div class="d-none name"><code>tutorial_timeseries.Rmd</code></div>
@@ -499,18 +499,20 @@ Visualizing time series
 </h2>
 <p>The <a href="tutorial_wispplots.html">rate-count wisp plot</a> is
 made automatically with all calls of <span class="function">wisp</span>
-by an internal call to <span class="function">plot.ratecount</span>.
-This style of plot conveys the spatial distribution of a RNA species
-explicitly, by plotting space on the x-axis. It can only convey changes
-over a time series indirectly, via coloring of the levels of the <span class="code_variable">timeseries</span> factor. For example, consider
+by an internal call to <span class="function">plot</span> with <span class="code_variable">type = “ratecount”</span>. This style of plot
+conveys the spatial distribution of a RNA species explicitly, by
+plotting space on the x-axis. It can only convey changes over a time
+series indirectly, via coloring of the levels of the <span class="code_variable">timeseries</span> factor. For example, consider
 the wisp plot for <span class="gene">NXPH3</span>, which shows a
 temporally dynamic and lateralized profile in deep layers (block 1), but
 almost no activity in superficial layers (block 2).</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">rc_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-ratecount.html">plot.ratecount</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">rc_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
 <span>    <span class="va">model</span>,</span>
+<span>    type           <span class="op">=</span> <span class="st">"ratecount"</span>,</span>
 <span>    dim.boundaries <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span>,</span>
 <span>    species        <span class="op">=</span> <span class="st">"Nxph3"</span>,</span>
+<span>    print.plots    <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    verbose        <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">rc_plots</span><span class="op">$</span><span class="va">plot_pred_context_cortex_fixEff_Nxph3</span><span class="op">)</span></span></code></pre></div>
@@ -534,9 +536,10 @@ P12 relative to P7, then rises again in P18.</p>
 offers another kind of plot for plotting time-series data which makes
 the trend obvious at a glance while also clarifying it. These
 time-series plots are made automatically by the <span class="function">wisp</span> function when a time series is provided or
-detected, through an internal call to the <span class="function">plot.timeseries</span> function.</p>
+detected, through an internal call to <span class="function">plot</span>
+with <span class="code_variable">type = “timeseries”</span>.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ts_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-timeseries.html">plot.timeseries</a></span><span class="op">(</span><span class="va">model</span>, species <span class="op">=</span> <span class="st">"Nxph3"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">ts_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">model</span>, type <span class="op">=</span> <span class="st">"timeseries"</span>, species <span class="op">=</span> <span class="st">"Nxph3"</span>, print.plots <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">ts_plots</span><span class="op">$</span><span class="va">plot_pred_context_cortex_timeseries_Nxph3</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_timeseries_files/figure-html/plot_timeseries-1.png" class="r-plt" alt="" width="700"></p>
 <p>Wisp time-series plots keep the y-axis a representation of rate, but

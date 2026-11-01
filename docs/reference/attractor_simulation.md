@@ -58,3 +58,22 @@ attractor_simulation(
 A list containing the following components: `genes`, `SVGs_idx`, `SVGs`,
 `FSEs_idx`, `FSEs`, `attractor`, `effect`, `replicate_rate_scalars`,
 `data`, and `plots`.
+
+## Examples
+
+``` r
+# A tiny seed data set with two genes, enough for attractor_simulation() to
+# pick spatially variable genes and simulate replicates quickly.
+set.seed(1)
+toy_seed <- data.frame(
+  gene    = rep(c("geneA", "geneB"), each = 20),
+  coord_x = runif(40, 0, 10),
+  coord_y = runif(40, 0, 10),
+  count   = rpois(40, 5)
+)
+sim <- attractor_simulation(toy_seed, n_bins = 5, n_replicates = 2)
+sim$genes
+#> [1] "geneA" "geneB"
+sim$SVGs
+#> [1] "geneA" "geneB"
+```

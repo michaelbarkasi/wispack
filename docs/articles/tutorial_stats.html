@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,8 +90,8 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">October 29, 2026
-(v2.5.1)</h4>
+            <h4 data-toc-skip class="date">November 01, 2026
+(v2.6.0)</h4>
       
 
       <div class="d-none name"><code>tutorial_stats.Rmd</code></div>
@@ -322,29 +322,29 @@ model (this takes a few minutes, owing to the bootstraps):</p>
 <span><span class="co">## Penalized nll: 11976.4</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## MCMC simulation complete... </span></span>
-<span><span class="co">## MCMC run time (total), minutes: 3.786</span></span>
-<span><span class="co">## MCMC run time (per retained step), seconds: 0.207</span></span>
-<span><span class="co">## MCMC run time (per step), seconds: 0.207</span></span>
+<span><span class="co">## MCMC run time (total), minutes: 7.767</span></span>
+<span><span class="co">## MCMC run time (per retained step), seconds: 0.424</span></span>
+<span><span class="co">## MCMC run time (per step), seconds: 0.424</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Running bootstrap fits</span></span>
 <span><span class="co">## Performing initial fit of full data</span></span>
 <span><span class="co">## Penalized nll: 11976.4</span></span>
-<span><span class="co">## Batch: 1/50, 0.728245 sec/bs</span></span>
-<span><span class="co">## Batch: 5/50, 0.641289 sec/bs</span></span>
-<span><span class="co">## Batch: 10/50, 0.621619 sec/bs</span></span>
-<span><span class="co">## Batch: 15/50, 0.654804 sec/bs</span></span>
-<span><span class="co">## Batch: 20/50, 0.696489 sec/bs</span></span>
-<span><span class="co">## Batch: 25/50, 0.663757 sec/bs</span></span>
-<span><span class="co">## Batch: 30/50, 0.690029 sec/bs</span></span>
-<span><span class="co">## Batch: 35/50, 0.612663 sec/bs</span></span>
-<span><span class="co">## Batch: 40/50, 0.606312 sec/bs</span></span>
-<span><span class="co">## Batch: 45/50, 0.664101 sec/bs</span></span>
+<span><span class="co">## Batch: 1/50, 1.37783 sec/bs</span></span>
+<span><span class="co">## Batch: 5/50, 1.29867 sec/bs</span></span>
+<span><span class="co">## Batch: 10/50, 1.24703 sec/bs</span></span>
+<span><span class="co">## Batch: 15/50, 1.33617 sec/bs</span></span>
+<span><span class="co">## Batch: 20/50, 1.39959 sec/bs</span></span>
+<span><span class="co">## Batch: 25/50, 1.34385 sec/bs</span></span>
+<span><span class="co">## Batch: 30/50, 1.3104 sec/bs</span></span>
+<span><span class="co">## Batch: 35/50, 1.24457 sec/bs</span></span>
+<span><span class="co">## Batch: 40/50, 1.24104 sec/bs</span></span>
+<span><span class="co">## Batch: 45/50, 1.34292 sec/bs</span></span>
 <span><span class="co">## All complete!</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Bootstrap simulation complete... </span></span>
-<span><span class="co">## Bootstrap run time (total), minutes: 11.277</span></span>
-<span><span class="co">## Bootstrap run time (per sample), seconds: 0.677</span></span>
-<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 13.532</span></span>
+<span><span class="co">## Bootstrap run time (total), minutes: 22.536</span></span>
+<span><span class="co">## Bootstrap run time (per sample), seconds: 1.352</span></span>
+<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 27.043</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Computing p-values and CI for model parameters</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
@@ -414,11 +414,11 @@ Holm-Bonferroni correction.</p>
 <span><span class="co">## 5       baseline_cortex_Rt_Bcl11b_Tns/Blk2  2.2781929967  1.99837574 2.55129060        NA          NA           NA             </span></span>
 <span><span class="co">## 6   beta_Rt_cortex_Bcl11b_right_X_Tns/Blk2  0.0822301676 -0.45766257 0.51713430 0.6013986   16.237762 0.0018518519           ns</span></span></code></pre>
 <p>To customize the computations for <span class="math inline">p</span>-values and CIs, we can use the function
-<span class="function">sample.stats</span>. This function assumes that
+<span class="function">sample_stats</span>. This function assumes that
 resamples have already been generated, by either MCMC walk or
 bootstrapping. It itself does not run these resamples; it merely
 extracts <span class="math inline">p</span>-values and CIs from them.
-The function <span class="function">sample.stats</span> allows for
+The function <span class="function">sample_stats</span> allows for
 setting a new alpha level and for switching between Holm-Bonferroni and
 Bonferroni corrections. It returns a copy of <span class="code_variable">model</span> with (1) a new or (if it already
 existed) re-written entry <span class="code_variable">parameters</span>
@@ -429,7 +429,7 @@ alpha (alpha.adj), and significance level (significance), and also (2)
 new (or re-written) 95% confidence interval range columns in <span class="code_variable">count.data.summed</span> for predicted log count
 by bin.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.stats.html">sample.stats</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample_stats.html">sample_stats</a></span><span class="op">(</span></span>
 <span>    <span class="va">model</span>,</span>
 <span>    alpha      <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>    Bonferroni <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -463,11 +463,11 @@ by bin.</p>
 <p>Above we switched from <span class="math inline">\alpha = 0.05</span>
 to <span class="math inline">\alpha = 0.01</span> and from a
 Holm-Bonferroni to a Bonferroni correction. As can be seen in the print
-out, if <span class="code_variable">verbose</span> is set to <span class="code_variable">TRUE</span>, <span class="function">sample.stats</span> will print out both the head of
+out, if <span class="code_variable">verbose</span> is set to <span class="code_variable">TRUE</span>, <span class="function">sample_stats</span> will print out both the head of
 <span class="code_variable">model$stats$parameters</span> and also
 information about the threshold <span class="math inline">\alpha</span>
 and the number of hypothesis tests run. In this case, <span class="math inline">\alpha = 0.01</span> and 171 tests were run. In
-addition, the function <span class="function">sample.stats</span>
+addition, the function <span class="function">sample_stats</span>
 estimates the number of resamples needed for threshold <span class="math inline">\alpha</span> and outputs both this number and the
 actual number of resamples used. In this case, it’s recommended that
 17,100 resamples are used, but only 1,001 are given (the thousand
@@ -539,11 +539,13 @@ samples.</li>
 <h3>
 Plotting walks
 </h3>
-<p>Wispack includes the function <span class="function">plot.MCMC.walks</span> for visualizing MCMC walks.</p>
+<p>Wispack includes <span class="function">plot</span> with <span class="code_variable">type = “MCMC.walks”</span> for visualizing MCMC
+walks.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">MCMC_walk_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-MCMC-walks.html">plot.MCMC.walks</a></span><span class="op">(</span></span>
-<span> <span class="va">model</span>, </span>
-<span> print.plots <span class="op">=</span> <span class="cn">FALSE</span>, </span>
+<code class="sourceCode R"><span><span class="va">MCMC_walk_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
+<span> <span class="va">model</span>,</span>
+<span> type        <span class="op">=</span> <span class="st">"MCMC.walks"</span>,</span>
+<span> print.plots <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span> verbose     <span class="op">=</span> <span class="cn">FALSE</span>, </span>
 <span> low_samples <span class="op">=</span> <span class="fl">10</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -582,12 +584,14 @@ escaping. This is good if it’s the global minima, but bad if it’s a
 local minima. We can get some insight into whether the MCMC walk has
 found the global minima by looking at how its NLL values compare to the
 NLL value found by the gradient-descent optimization (L-BFGS) used to
-fit the model to the data initially. The function <span class="function">plot.MCMC.walks</span> makes this comparison easy, as
-it normalizes the NLL values from the MCMC walk by dividing them by the
-NLL value from the initial fit. The plot shows these values hover around
-<span class="math inline">1.01</span>, meaning that the MCMC walk stays
-around <span class="math inline">1\%</span> worse than the initial fit.
-Hence, the walk is caught in a local minima.</p>
+fit the model to the data initially. <span class="function">plot</span>
+with <span class="code_variable">type = “MCMC.walks”</span> makes this
+comparison easy, as it normalizes the NLL values from the MCMC walk by
+dividing them by the NLL value from the initial fit. The plot shows
+these values hover around <span class="math inline">1.01</span>, meaning
+that the MCMC walk stays around <span class="math inline">1\%</span>
+worse than the initial fit. Hence, the walk is caught in a local
+minima.</p>
 <h3>
 Reconciling MCMC and L-BFGS
 </h3>
@@ -605,7 +609,7 @@ used:</p>
 <p>The matrices <span class="code_variable">sample.params.bs</span> and
 <span class="code_variable">sample.params.MCMC</span> contain the
 bootstrap and MCMC resamples, respectively. The matrix <span class="code_variable">sample.params.&lt;sample.params.type&gt;</span> is
-used by the <span class="function">sample.stats</span> function. If
+used by the <span class="function">sample_stats</span> function. If
 <span class="code_variable">sample.params.bs</span> is present, then
 <span class="code_variable">sample.params.type</span> will be “bs”,
 otherwise it will be “MCMC”. Thus, when both MCMC walks and bootstrap
@@ -617,7 +621,7 @@ analysis on it:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model_MCMC</span>                    <span class="op">&lt;-</span> <span class="va">model</span></span>
 <span><span class="va">model_MCMC</span><span class="op">$</span><span class="va">sample.params.type</span> <span class="op">&lt;-</span> <span class="st">"MCMC"</span></span>
-<span><span class="va">model_MCMC</span>                    <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.stats.html">sample.stats</a></span><span class="op">(</span><span class="va">model_MCMC</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">model_MCMC</span>                    <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample_stats.html">sample_stats</a></span><span class="op">(</span><span class="va">model_MCMC</span><span class="op">)</span></span></code></pre></div>
 <pre class="scroll-output"><code><span><span class="co">## </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Computing p-values and CI for model parameters</span></span>
@@ -649,7 +653,7 @@ hemisphere. We will highlight the value found by the L-BFGS fit with a
 large yellow asterisk. Here are the distributions from the bootstrap
 resamples:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plots.param</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-parameters.html">plot.parameters</a></span><span class="op">(</span><span class="va">model</span>, species <span class="op">=</span> <span class="st">"Rorb"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> </span>
+<code class="sourceCode R"><span><span class="va">plots.param</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">model</span>, type <span class="op">=</span> <span class="st">"parameters"</span>, species <span class="op">=</span> <span class="st">"Rorb"</span>, print.plots <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span></span>
 <span>  <span class="va">plots.param</span><span class="op">$</span><span class="va">plot_treatment_18_cortex_Rorb</span> <span class="op">+</span> </span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/expansion.html" class="external-link">expansion</a></span><span class="op">(</span>mult <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -667,7 +671,7 @@ can see that the L-BFGS fits never fall near the median, and often fall
 well outside the range of MCMC walk values. Within the MCMC walk
 results, the L-BFGS fit is often an outlier.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plots.param_MCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-parameters.html">plot.parameters</a></span><span class="op">(</span><span class="va">model_MCMC</span>, species <span class="op">=</span> <span class="st">"Rorb"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">plots.param_MCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">model_MCMC</span>, type <span class="op">=</span> <span class="st">"parameters"</span>, species <span class="op">=</span> <span class="st">"Rorb"</span>, print.plots <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span></span>
 <span>  <span class="va">plots.param_MCMC</span><span class="op">$</span><span class="va">plot_treatment_18_cortex_Rorb</span> <span class="op">+</span> </span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/expansion.html" class="external-link">expansion</a></span><span class="op">(</span>mult <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -845,9 +849,9 @@ example, we can re-run the model:</p>
 <span><span class="co">## Acceptance rate (aim for 0.2-0.3): 0.246085</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## MCMC simulation complete... </span></span>
-<span><span class="co">## MCMC run time (total), minutes: 3.679</span></span>
-<span><span class="co">## MCMC run time (per retained step), seconds: 0.201</span></span>
-<span><span class="co">## MCMC run time (per step), seconds: 0.201</span></span>
+<span><span class="co">## MCMC run time (total), minutes: 7.5</span></span>
+<span><span class="co">## MCMC run time (per retained step), seconds: 0.409</span></span>
+<span><span class="co">## MCMC run time (per step), seconds: 0.409</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Computing p-values and CI for model parameters</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
@@ -902,7 +906,7 @@ example, we can re-run the model:</p>
 <p>Now, let’s plot the age-effect parameters again, this time with the
 median estimate from the MCMC walk highlighted:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">median_plots.param</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-parameters.html">plot.parameters</a></span><span class="op">(</span><span class="va">model_median</span>, species <span class="op">=</span> <span class="st">"Rorb"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">median_plots.param</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">model_median</span>, type <span class="op">=</span> <span class="st">"parameters"</span>, species <span class="op">=</span> <span class="st">"Rorb"</span>, print.plots <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span></span>
 <span>  <span class="va">median_plots.param</span><span class="op">$</span><span class="va">plot_treatment_18_cortex_Rorb</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/expansion.html" class="external-link">expansion</a></span><span class="op">(</span>mult <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -956,16 +960,18 @@ coming from multiple cells or sub-bins.</p>
 <h3>
 Comparison with MCMC
 </h3>
-<p>Beyond the comparisons already made, wispack provides the function
-<span class="function">plot.MCMC.bs.comparison</span> for visualizing
-autocorrelation and normality in the resampled parameters.</p>
+<p>Beyond the comparisons already made, wispack provides <span class="function">plot</span> with <span class="code_variable">type =
+“MCMC.bs.comparison”</span> for visualizing autocorrelation and
+normality in the resampled parameters.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">bs_comp_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-MCMC-bs-comparison.html">plot.MCMC.bs.comparison</a></span><span class="op">(</span></span>
-<span>  <span class="va">model</span>, </span>
-<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<code class="sourceCode R"><span><span class="va">bs_comp_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
+<span>  <span class="va">model</span>,</span>
+<span>  type        <span class="op">=</span> <span class="st">"MCMC.bs.comparison"</span>,</span>
+<span>  print.plots <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  verbose     <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>The function <span class="function">plot.MCMC.bs.comparison</span>
-returns three plots in a list, labeled <span class="code_variable">plot_sample_correlations</span>, <span class="code_variable">plot_comparison_Shaprio</span>, and <span class="code_variable">plot_comparison_density</span>. The first plot
+<p><span class="function">plot</span> with <span class="code_variable">type = “MCMC.bs.comparison”</span> returns three
+plots in a list, labeled <span class="code_variable">plot_sample_correlations</span>, <span class="code_variable">plot_comparison_Shaprio</span>, and <span class="code_variable">plot_comparison_density</span>. The first plot
 shows next-step autocorrelation for both MCMC walks and bootstrap
 resamples. The plot shows density of autocorrelation values over the
 population of resampled model parameters. As expected from plots of the
@@ -984,7 +990,7 @@ parameter values. The plots of the age effect show this distribution
 that the bootstrap resamples are more normal than the MCMC walk
 resamples. We can get a more complete picture by looking at the
 distribution of Shapiro-Wilk normality test <span class="math inline">p</span>-values across all parameters, which is the
-second plot provided by the <span class="function">plot.MCMC.bs.comparison</span> function. As seen in the
+second plot provided by <span class="function">plot</span> with <span class="code_variable">type = “MCMC.bs.comparison”</span>. As seen in the
 plot, the two resampling methods produce mirror results: MCMC walks
 produce many parameter distributions with low <span class="math inline">p</span>-values (i.e., non-normal distributions),
 while bootstrap resamples produce many parameter distributions with high
@@ -996,7 +1002,8 @@ distributions).</p>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>hjust <span class="op">=</span> <span class="fl">0.5</span>, size <span class="op">=</span> <span class="va">model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">title_size</span><span class="op">*</span><span class="fl">0.75</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_stats_files/figure-html/plot_shapiro_wilk-1.png" class="r-plt" alt="" width="700"></p>
-<p>Finally, the third plot of the <span class="function">plot.MCMC.bs.comparison</span> function provides
+<p>Finally, the third plot of <span class="function">plot</span> with
+<span class="code_variable">type = “MCMC.bs.comparison”</span> provides
 another look at the parameter distributions produced by each method by
 plotting a few randomly chosen distributions:</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">

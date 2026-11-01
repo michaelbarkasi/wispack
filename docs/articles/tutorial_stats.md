@@ -229,29 +229,29 @@ model <- wisp(
 ## Penalized nll: 11976.4
 ## 
 ## MCMC simulation complete... 
-## MCMC run time (total), minutes: 3.786
-## MCMC run time (per retained step), seconds: 0.207
-## MCMC run time (per step), seconds: 0.207
+## MCMC run time (total), minutes: 7.767
+## MCMC run time (per retained step), seconds: 0.424
+## MCMC run time (per step), seconds: 0.424
 ## 
 ## Running bootstrap fits
 ## Performing initial fit of full data
 ## Penalized nll: 11976.4
-## Batch: 1/50, 0.728245 sec/bs
-## Batch: 5/50, 0.641289 sec/bs
-## Batch: 10/50, 0.621619 sec/bs
-## Batch: 15/50, 0.654804 sec/bs
-## Batch: 20/50, 0.696489 sec/bs
-## Batch: 25/50, 0.663757 sec/bs
-## Batch: 30/50, 0.690029 sec/bs
-## Batch: 35/50, 0.612663 sec/bs
-## Batch: 40/50, 0.606312 sec/bs
-## Batch: 45/50, 0.664101 sec/bs
+## Batch: 1/50, 1.37783 sec/bs
+## Batch: 5/50, 1.29867 sec/bs
+## Batch: 10/50, 1.24703 sec/bs
+## Batch: 15/50, 1.33617 sec/bs
+## Batch: 20/50, 1.39959 sec/bs
+## Batch: 25/50, 1.34385 sec/bs
+## Batch: 30/50, 1.3104 sec/bs
+## Batch: 35/50, 1.24457 sec/bs
+## Batch: 40/50, 1.24104 sec/bs
+## Batch: 45/50, 1.34292 sec/bs
 ## All complete!
 ## 
 ## Bootstrap simulation complete... 
-## Bootstrap run time (total), minutes: 11.277
-## Bootstrap run time (per sample), seconds: 0.677
-## Bootstrap run time (per sample, per thread), seconds: 13.532
+## Bootstrap run time (total), minutes: 22.536
+## Bootstrap run time (per sample), seconds: 1.352
+## Bootstrap run time (per sample, per thread), seconds: 27.043
 ## 
 ## Computing p-values and CI for model parameters
 ## ----------------------------------------
@@ -330,10 +330,10 @@ print(head(model$stats$parameters))
 ```
 
 To customize the computations for p-values and CIs, we can use the
-function sample.stats. This function assumes that resamples have already
+function sample_stats. This function assumes that resamples have already
 been generated, by either MCMC walk or bootstrapping. It itself does not
 run these resamples; it merely extracts p-values and CIs from them. The
-function sample.stats allows for setting a new alpha level and for
+function sample_stats allows for setting a new alpha level and for
 switching between Holm-Bonferroni and Bonferroni corrections. It returns
 a copy of model with (1) a new or (if it already existed) re-written
 entry parameters under stats holding a data frame giving, for each
@@ -345,7 +345,7 @@ count by bin.
 
 ``` r
 
-model <- sample.stats(
+model <- sample_stats(
     model,
     alpha      = 0.01,
     Bonferroni = TRUE,
@@ -383,11 +383,11 @@ model <- sample.stats(
 
 Above we switched from \alpha = 0.05 to \alpha = 0.01 and from a
 Holm-Bonferroni to a Bonferroni correction. As can be seen in the print
-out, if verbose is set to TRUE, sample.stats will print out both the
+out, if verbose is set to TRUE, sample_stats will print out both the
 head of model\$stats\$parameters and also information about the
 threshold \alpha and the number of hypothesis tests run. In this case,
 \alpha = 0.01 and 171 tests were run. In addition, the function
-sample.stats estimates the number of resamples needed for threshold
+sample_stats estimates the number of resamples needed for threshold
 \alpha and outputs both this number and the actual number of resamples
 used. In this case, it’s recommended that 17,100 resamples are used, but
 only 1,001 are given (the thousand bootstraps, plus the original fit of
@@ -460,14 +460,15 @@ values shown are the defaults.
 
 ### Plotting walks
 
-Wispack includes the function plot.MCMC.walks for visualizing MCMC
+Wispack includes plot with type = “MCMC.walks” for visualizing MCMC
 walks.
 
 ``` r
 
-MCMC_walk_plots <- plot.MCMC.walks(
- model, 
- print.plots = FALSE, 
+MCMC_walk_plots <- plot(
+ model,
+ type        = "MCMC.walks",
+ print.plots = FALSE,
  verbose     = FALSE, 
  low_samples = 10
 )
@@ -523,8 +524,8 @@ a minima without much chance of escaping. This is good if it’s the
 global minima, but bad if it’s a local minima. We can get some insight
 into whether the MCMC walk has found the global minima by looking at how
 its NLL values compare to the NLL value found by the gradient-descent
-optimization (L-BFGS) used to fit the model to the data initially. The
-function plot.MCMC.walks makes this comparison easy, as it normalizes
+optimization (L-BFGS) used to fit the model to the data initially. plot
+with type = “MCMC.walks” makes this comparison easy, as it normalizes
 the NLL values from the MCMC walk by dividing them by the NLL value from
 the initial fit. The plot shows these values hover around 1.01, meaning
 that the MCMC walk stays around 1\\ worse than the initial fit. Hence,
@@ -552,7 +553,7 @@ paste0(names(model)[grep("sample.params", names(model))], collapse = ", ")
 
 The matrices sample.params.bs and sample.params.MCMC contain the
 bootstrap and MCMC resamples, respectively. The matrix
-sample.params.\<sample.params.type\> is used by the sample.stats
+sample.params.\<sample.params.type\> is used by the sample_stats
 function. If sample.params.bs is present, then sample.params.type will
 be “bs”, otherwise it will be “MCMC”. Thus, when both MCMC walks and
 bootstrap resamples are run, sample.params ignores the MCMC walks and
@@ -564,7 +565,7 @@ that uses the MCMC walks and re-run the statistical analysis on it:
 
 model_MCMC                    <- model
 model_MCMC$sample.params.type <- "MCMC"
-model_MCMC                    <- sample.stats(model_MCMC)
+model_MCMC                    <- sample_stats(model_MCMC)
 ```
 
 ``` scroll-output
@@ -602,7 +603,7 @@ bootstrap resamples:
 
 ``` r
 
-plots.param <- plot.parameters(model, species = "Rorb", verbose = FALSE) 
+plots.param <- plot(model, type = "parameters", species = "Rorb", print.plots = FALSE, verbose = FALSE)
 print(
   plots.param$plot_treatment_18_cortex_Rorb + 
     scale_y_continuous(expand = expansion(mult = 0.1)) +
@@ -626,7 +627,7 @@ L-BFGS fit is often an outlier.
 
 ``` r
 
-plots.param_MCMC <- plot.parameters(model_MCMC, species = "Rorb", verbose = FALSE)
+plots.param_MCMC <- plot(model_MCMC, type = "parameters", species = "Rorb", print.plots = FALSE, verbose = FALSE)
 print(
   plots.param_MCMC$plot_treatment_18_cortex_Rorb + 
     scale_y_continuous(expand = expansion(mult = 0.1)) +
@@ -813,9 +814,9 @@ model_median <- wisp(
 ## Acceptance rate (aim for 0.2-0.3): 0.246085
 ## 
 ## MCMC simulation complete... 
-## MCMC run time (total), minutes: 3.679
-## MCMC run time (per retained step), seconds: 0.201
-## MCMC run time (per step), seconds: 0.201
+## MCMC run time (total), minutes: 7.5
+## MCMC run time (per retained step), seconds: 0.409
+## MCMC run time (per step), seconds: 0.409
 ## 
 ## Computing p-values and CI for model parameters
 ## ----------------------------------------
@@ -874,7 +875,7 @@ median estimate from the MCMC walk highlighted:
 
 ``` r
 
-median_plots.param <- plot.parameters(model_median, species = "Rorb", verbose = FALSE)
+median_plots.param <- plot(model_median, type = "parameters", species = "Rorb", print.plots = FALSE, verbose = FALSE)
 print(
   median_plots.param$plot_treatment_18_cortex_Rorb +
     scale_y_continuous(expand = expansion(mult = 0.1)) +
@@ -932,19 +933,21 @@ per variable combination coming from multiple cells or sub-bins.
 
 ### Comparison with MCMC
 
-Beyond the comparisons already made, wispack provides the function
-plot.MCMC.bs.comparison for visualizing autocorrelation and normality in
+Beyond the comparisons already made, wispack provides plot with type =
+“MCMC.bs.comparison” for visualizing autocorrelation and normality in
 the resampled parameters.
 
 ``` r
 
-bs_comp_plots <- plot.MCMC.bs.comparison(
-  model, 
-  verbose = FALSE
+bs_comp_plots <- plot(
+  model,
+  type        = "MCMC.bs.comparison",
+  print.plots = FALSE,
+  verbose     = FALSE
 )
 ```
 
-The function plot.MCMC.bs.comparison returns three plots in a list,
+plot with type = “MCMC.bs.comparison” returns three plots in a list,
 labeled plot_sample_correlations, plot_comparison_Shaprio, and
 plot_comparison_density. The first plot shows next-step autocorrelation
 for both MCMC walks and bootstrap resamples. The plot shows density of
@@ -969,12 +972,12 @@ parameter values. The plots of the age effect show this distribution
 that the bootstrap resamples are more normal than the MCMC walk
 resamples. We can get a more complete picture by looking at the
 distribution of Shapiro-Wilk normality test p-values across all
-parameters, which is the second plot provided by the
-plot.MCMC.bs.comparison function. As seen in the plot, the two
-resampling methods produce mirror results: MCMC walks produce many
-parameter distributions with low p-values (i.e., non-normal
-distributions), while bootstrap resamples produce many parameter
-distributions with high p-values (i.e., normal distributions).
+parameters, which is the second plot provided by plot with type =
+“MCMC.bs.comparison”. As seen in the plot, the two resampling methods
+produce mirror results: MCMC walks produce many parameter distributions
+with low p-values (i.e., non-normal distributions), while bootstrap
+resamples produce many parameter distributions with high p-values (i.e.,
+normal distributions).
 
 ``` r
 
@@ -986,9 +989,9 @@ print(
 
 ![](tutorial_stats_files/figure-html/plot_shapiro_wilk-1.png)
 
-Finally, the third plot of the plot.MCMC.bs.comparison function provides
-another look at the parameter distributions produced by each method by
-plotting a few randomly chosen distributions:
+Finally, the third plot of plot with type = “MCMC.bs.comparison”
+provides another look at the parameter distributions produced by each
+method by plotting a few randomly chosen distributions:
 
 ``` r
 

@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,8 +90,8 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">October 29, 2026
-(v2.5.1)</h4>
+            <h4 data-toc-skip class="date">November 01, 2026
+(v2.6.0)</h4>
       
 
       <div class="d-none name"><code>tutorial_wispplots.Rmd</code></div>
@@ -286,29 +286,29 @@ minutes, owing to the bootstraps):</p>
 <span><span class="co">## Penalized nll: 11976.4</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## MCMC simulation complete... </span></span>
-<span><span class="co">## MCMC run time (total), minutes: 3.779</span></span>
-<span><span class="co">## MCMC run time (per retained step), seconds: 0.206</span></span>
-<span><span class="co">## MCMC run time (per step), seconds: 0.206</span></span>
+<span><span class="co">## MCMC run time (total), minutes: 7.75</span></span>
+<span><span class="co">## MCMC run time (per retained step), seconds: 0.423</span></span>
+<span><span class="co">## MCMC run time (per step), seconds: 0.423</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Running bootstrap fits</span></span>
 <span><span class="co">## Performing initial fit of full data</span></span>
 <span><span class="co">## Penalized nll: 11976.4</span></span>
-<span><span class="co">## Batch: 1/50, 0.701648 sec/bs</span></span>
-<span><span class="co">## Batch: 5/50, 0.648595 sec/bs</span></span>
-<span><span class="co">## Batch: 10/50, 0.628511 sec/bs</span></span>
-<span><span class="co">## Batch: 15/50, 0.650552 sec/bs</span></span>
-<span><span class="co">## Batch: 20/50, 0.730031 sec/bs</span></span>
-<span><span class="co">## Batch: 25/50, 0.663684 sec/bs</span></span>
-<span><span class="co">## Batch: 30/50, 0.642421 sec/bs</span></span>
-<span><span class="co">## Batch: 35/50, 0.622834 sec/bs</span></span>
-<span><span class="co">## Batch: 40/50, 0.60915 sec/bs</span></span>
-<span><span class="co">## Batch: 45/50, 0.690686 sec/bs</span></span>
+<span><span class="co">## Batch: 1/50, 1.3771 sec/bs</span></span>
+<span><span class="co">## Batch: 5/50, 1.38154 sec/bs</span></span>
+<span><span class="co">## Batch: 10/50, 1.25118 sec/bs</span></span>
+<span><span class="co">## Batch: 15/50, 1.33929 sec/bs</span></span>
+<span><span class="co">## Batch: 20/50, 1.3941 sec/bs</span></span>
+<span><span class="co">## Batch: 25/50, 1.34529 sec/bs</span></span>
+<span><span class="co">## Batch: 30/50, 1.31748 sec/bs</span></span>
+<span><span class="co">## Batch: 35/50, 1.2562 sec/bs</span></span>
+<span><span class="co">## Batch: 40/50, 1.23773 sec/bs</span></span>
+<span><span class="co">## Batch: 45/50, 1.34562 sec/bs</span></span>
 <span><span class="co">## All complete!</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Bootstrap simulation complete... </span></span>
-<span><span class="co">## Bootstrap run time (total), minutes: 11.289</span></span>
-<span><span class="co">## Bootstrap run time (per sample), seconds: 0.677</span></span>
-<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 13.546</span></span>
+<span><span class="co">## Bootstrap run time (total), minutes: 22.666</span></span>
+<span><span class="co">## Bootstrap run time (per sample), seconds: 1.36</span></span>
+<span><span class="co">## Bootstrap run time (per sample, per thread), seconds: 27.199</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Computing p-values and CI for model parameters</span></span>
 <span><span class="co">## ----------------------------------------</span></span>
@@ -361,15 +361,15 @@ minutes, owing to the bootstraps):</p>
 <span><span class="co">## Making rate-count plots... </span></span>
 <span><span class="co">## Making time series plots... </span></span>
 <span><span class="co">## Making parameter plots...</span></span></code></pre>
-<p>Let’s use the <span class="function">plot.ratecount</span> function
-to remake the <span class="gene">RORB</span> plot that was made and
-shown in the <span class="gene">RORB</span> <a href="tutorial_corticallaminar.html">tutorial</a>, this time using the
+<p>Let’s use <span class="function">plot</span> with <span class="code_variable">type = “ratecount”</span> to remake the <span class="gene">RORB</span> plot that was made and shown in the <span class="gene">RORB</span> <a href="tutorial_corticallaminar.html">tutorial</a>, this time using the
 bootstrap resamples for the CI instead of MCMC resamples:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot-ratecount.html">plot.ratecount</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
 <span>    <span class="va">model</span>,</span>
+<span>    type           <span class="op">=</span> <span class="st">"ratecount"</span>,</span>
 <span>    dim.boundaries <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span>,</span>
 <span>    species        <span class="op">=</span> <span class="st">"Rorb"</span>,</span>
+<span>    print.plots    <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    verbose        <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_wispplots_files/figure-html/RORB_CI-1.png" class="r-plt" alt="" width="700"></p>
@@ -393,11 +393,13 @@ condition of left-12, plus three treatment conditions).</p>
 <p>By default, both kinds of rate-count plots show rate as a raw value.
 However, it’s possible to rescale the vertical axis into log form:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot-ratecount.html">plot.ratecount</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
 <span>    <span class="va">model</span>,</span>
+<span>    type           <span class="op">=</span> <span class="st">"ratecount"</span>,</span>
 <span>    dim.boundaries <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span>,</span>
 <span>    species        <span class="op">=</span> <span class="st">"Rorb"</span>,</span>
 <span>    log.scale      <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    print.plots    <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    verbose        <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_wispplots_files/figure-html/RORB_CI_log-1.png" class="r-plt" alt="" width="700"></p>
@@ -409,14 +411,17 @@ plot</em>, is a more complex plot showing predicted rate without random
 effects as a line, model fit to individual replicates (i.e., predicted
 rates with random effects) as dashed lines, and observed counts (plus
 interpolations for random-effect-free counts) as scatter points. It’s
-accessed via the <span class="code_variable">CI_style</span> argument in
-<span class="function">plot.ratecount</span>:</p>
+accessed via the <span class="code_variable">CI_style</span> argument to
+<span class="function">plot</span> with <span class="code_variable">type
+= “ratecount”</span>:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot-ratecount.html">plot.ratecount</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
 <span>    <span class="va">model</span>,</span>
+<span>    type           <span class="op">=</span> <span class="st">"ratecount"</span>,</span>
 <span>    dim.boundaries <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span>,</span>
 <span>    CI_style       <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    species        <span class="op">=</span> <span class="st">"Rorb"</span>,</span>
+<span>    print.plots    <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    verbose        <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_wispplots_files/figure-html/RORB_ran-1.png" class="r-plt" alt="" width="700"></p>
@@ -426,12 +431,17 @@ predicted rate.</p>
 <p>The main advantages of scatter rate-count plots are that they show
 how well the model fits the observed data, and also show the variability
 in individual replicates. Still, they can be visually crowded, so
-wispack provides a function to decompose them into their components.</p>
+wispack provides a way to decompose them into their components: set
+<span class="code_variable">decompose = TRUE</span> on <span class="function">plot</span> with <span class="code_variable">type =
+“ratecount”</span>.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plots.decomp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-decomposition.html">plot.decomposition</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">plots.decomp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
 <span>    <span class="va">model</span>,</span>
+<span>    type           <span class="op">=</span> <span class="st">"ratecount"</span>,</span>
 <span>    dim.boundaries <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">layer.boundary.bins</span><span class="op">)</span>,</span>
-<span>    species        <span class="op">=</span> <span class="st">"Rorb"</span></span>
+<span>    species        <span class="op">=</span> <span class="st">"Rorb"</span>,</span>
+<span>    decompose      <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    print.plots    <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p>First, let’s look at separate plots of counts (observed vs
 extrapolated without random effets) and predicted rates (fit of observed
@@ -466,17 +476,18 @@ sample.</p>
 <h2>
 Time-series plots
 </h2>
-<p>For models fit with a covariate specified as a <a href="tutorial_timeseries.html">time series</a>, wispack provides a
-function to plot predicted rates as a function of time. This is done
-with the <span class="function">plot.timeseries</span> function.
-Although there are only two ages in the cortical laminar data, we can
-still use this function to visualize how predicted rates change with
-age. Let’s look at the time-series plot for <span class="gene">RORB</span> again:</p>
+<p>For models fit with a covariate specified as a <a href="tutorial_timeseries.html">time series</a>, wispack provides a way
+to plot predicted rates as a function of time. This is done with <span class="function">plot</span> and <span class="code_variable">type =
+“timeseries”</span>. Although there are only two ages in the cortical
+laminar data, we can still use this to visualize how predicted rates
+change with age. Let’s look at the time-series plot for <span class="gene">RORB</span> again:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot-timeseries.html">plot.timeseries</a></span><span class="op">(</span></span>
-<span>    <span class="va">model</span>, </span>
-<span>    species <span class="op">=</span> <span class="st">"Rorb"</span>,</span>
-<span>    verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
+<span>    <span class="va">model</span>,</span>
+<span>    type        <span class="op">=</span> <span class="st">"timeseries"</span>,</span>
+<span>    species     <span class="op">=</span> <span class="st">"Rorb"</span>,</span>
+<span>    print.plots <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>    verbose     <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_wispplots_files/figure-html/RORB_timeseries-1.png" class="r-plt" alt="" width="700"></p>
 <p>As explained in the <a href="tutorial_timeseries.html">time series
@@ -500,15 +511,17 @@ time-series plots showing rate parameters, these plots do not directly
 show the underlying rate, transition point, and slope parameters – or
 the corresponding random-effect scalars – that define a wisp model.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plots.param</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot-parameters.html">plot.parameters</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">plots.param</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
 <span>    <span class="va">model</span>,</span>
-<span>    species <span class="op">=</span> <span class="st">"Rorb"</span>,</span>
-<span>    verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>    type        <span class="op">=</span> <span class="st">"parameters"</span>,</span>
+<span>    species     <span class="op">=</span> <span class="st">"Rorb"</span>,</span>
+<span>    print.plots <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>    verbose     <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p>The <span class="function">plot.parameters</span> function produces
-separate plots for the baseline (reference condition) parameters, the
-treatment condition parameters, and the random-effect scalars. Let’s
-look at the baseline parameters first:</p>
+<p><span class="function">plot</span> with <span class="code_variable">type = “parameters”</span> produces separate plots
+for the baseline (reference condition) parameters, the treatment
+condition parameters, and the random-effect scalars. Let’s look at the
+baseline parameters first:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plots.param</span><span class="op">$</span><span class="va">plot_baseline_cortex_Rorb</span></span></code></pre></div>
 <p><img src="tutorial_wispplots_files/figure-html/RORB_parameters_baseline-1.png" class="r-plt" alt="" width="700"></p>

@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,8 +90,8 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">October 29, 2026
-(v2.5.1)</h4>
+            <h4 data-toc-skip class="date">November 01, 2026
+(v2.6.0)</h4>
       
 
       <div class="d-none name"><code>tutorial_warping.Rmd</code></div>
@@ -299,11 +299,11 @@ z - \varphi(\Delta(z,b),\rho,b)z &amp; \text{if } \rho &lt; 0
 upper bound, i.e., <span class="math inline">b=\infty</span>, <span class="math inline">\omega(z,b)</span> is linear with respect to <span class="math inline">z</span>. A proof of this theorem is provided in
 appendix of both the original wisp <a href="https://doi.org/10.1101/2025.06.11.659209" class="external-link">preprint</a> and the
 final published <a href="https://doi.org/10.1093/nar/gkag466" class="external-link">paper</a>.</p>
-<p>Wispack provides a function <span class="function">demo.warp.plots</span> for visualizing the function
+<p>Wispack provides a function <span class="function">demo_warp_plots</span> for visualizing the function
 <span class="math inline">\omega</span> and its effect on the
 poly-sigmoid <span class="math inline">\Phi</span>.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">warp_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/demo.warp.plots.html">demo.warp.plots</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">warp_plots</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/demo_warp_plots.html">demo_warp_plots</a></span><span class="op">(</span></span>
 <span>    w            <span class="op">=</span> <span class="fl">2</span>,                      <span class="co"># warping factor for plot 1</span></span>
 <span>    point_pos    <span class="op">=</span> <span class="fl">60</span>,</span>
 <span>    point_neg    <span class="op">=</span> <span class="fl">40</span>,</span>

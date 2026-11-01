@@ -210,12 +210,12 @@ theorem is provided in appendix of both the original wisp
 [preprint](https://doi.org/10.1101/2025.06.11.659209) and the final
 published [paper](https://doi.org/10.1093/nar/gkag466).
 
-Wispack provides a function demo.warp.plots for visualizing the function
+Wispack provides a function demo_warp_plots for visualizing the function
 \omega and its effect on the poly-sigmoid \Phi.
 
 ``` r
 
-warp_plots <- demo.warp.plots(
+warp_plots <- demo_warp_plots(
     w            = 2,                      # warping factor for plot 1
     point_pos    = 60,
     point_neg    = 40,

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,7 @@
     </div>
 
     <div class="section level2">
-      <h2 id="main">Main<a class="anchor" aria-label="anchor" href="#main"></a></h2>
+      <h2 id="fitting-using-a-wisp-model">Fitting &amp; using a wisp model<a class="anchor" aria-label="anchor" href="#fitting-using-a-wisp-model"></a></h2>
 
 
 
@@ -77,8 +77,57 @@
 
         </dt>
         <dd>Fit wisp to count data</dd>
+
+        <dt>
+
+          <code><a href="print.wisp.html">print(<i>&lt;wisp&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Print a fitted wisp model</dd>
+
+        <dt>
+
+          <code><a href="summary.wisp.html">summary(<i>&lt;wisp&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Summarize a fitted wisp model</dd>
+
+        <dt>
+
+          <code><a href="print.summary.wisp.html">print(<i>&lt;summary.wisp&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Print a wisp model summary</dd>
+
+        <dt>
+
+          <code><a href="coef.wisp.html">coef(<i>&lt;wisp&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Fitted parameter estimates from a wisp model</dd>
+
+        <dt>
+
+          <code><a href="confint.wisp.html">confint(<i>&lt;wisp&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Confidence intervals for wisp model parameters</dd>
+
+        <dt>
+
+          <code><a href="residuals.wisp.html">residuals(<i>&lt;wisp&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Residuals from a fitted wisp model</dd>
+
+        <dt>
+
+          <code><a href="plot.wisp.html">plot(<i>&lt;wisp&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Plot a fitted wisp model</dd>
       </dl></div><div class="section level2">
-      <h2 id="model-functions">Model functions<a class="anchor" aria-label="anchor" href="#model-functions"></a></h2>
+      <h2 id="core-model-functions">Core model functions<a class="anchor" aria-label="anchor" href="#core-model-functions"></a></h2>
 
 
 
@@ -89,17 +138,31 @@
 
       <dl><dt>
 
-          <code><a href="wisp.sigmoid.html">wisp.sigmoid()</a></code>
+          <code><a href="wisp_warp.html">wisp_warp()</a></code>
+
+        </dt>
+        <dd>Wisp warping function, implemented in R</dd>
+
+        <dt>
+
+          <code><a href="demo_warp_plots.html">demo_warp_plots()</a></code>
+
+        </dt>
+        <dd>Make plot demonstrating how the wisp function is warped by the warping factors</dd>
+
+        <dt>
+
+          <code><a href="wisp_sigmoid.html">wisp_sigmoid()</a></code>
 
         </dt>
         <dd>Wisp sigmoid function, implemented in R</dd>
 
         <dt>
 
-          <code><a href="wisp.warp.html">wisp.warp()</a></code>
+          <code><a href="demo_sigmoid_plots.html">demo_sigmoid_plots()</a></code>
 
         </dt>
-        <dd>Wisp warping function, implemented in R</dd>
+        <dd>Make plot demonstrating how the wisp function is determined by the Rt, slope, and tpoint parameters</dd>
       </dl></div><div class="section level2">
       <h2 id="analysis-functions">Analysis functions<a class="anchor" aria-label="anchor" href="#analysis-functions"></a></h2>
 
@@ -112,96 +175,17 @@
 
       <dl><dt>
 
-          <code><a href="analyze.residuals.html">analyze.residuals()</a></code>
+          <code><a href="analyze_residuals.html">analyze_residuals()</a></code>
 
         </dt>
         <dd>Analyze residuals from wisp fit</dd>
 
         <dt>
 
-          <code><a href="sample.stats.html">sample.stats()</a></code>
+          <code><a href="sample_stats.html">sample_stats()</a></code>
 
         </dt>
         <dd>Estimate p-values and confidence intervals from resampled parameters</dd>
-      </dl></div><div class="section level2">
-      <h2 id="plotting-functions">Plotting functions<a class="anchor" aria-label="anchor" href="#plotting-functions"></a></h2>
-
-
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="plot-MCMC-bs-comparison.html">plot.MCMC.bs.comparison()</a></code>
-
-        </dt>
-        <dd>Visually compare normality and autocorrelation of bootstrap and MCMC parameter estimates</dd>
-
-        <dt>
-
-          <code><a href="plot-MCMC-walks.html">plot.MCMC.walks()</a></code>
-
-        </dt>
-        <dd>Plot sampling of random walks and negative log likelihood from MCMC simulations</dd>
-
-        <dt>
-
-          <code><a href="plot-decomposition.html">plot.decomposition()</a></code>
-
-        </dt>
-        <dd>Plot individual components of wisp fit for a single species level</dd>
-
-        <dt>
-
-          <code><a href="plot-effect-dist.html">plot.effect.dist()</a></code>
-
-        </dt>
-        <dd>Plot parameter distributions from WISP results as histograms</dd>
-
-        <dt>
-
-          <code><a href="plot-parameters.html">plot.parameters()</a></code>
-
-        </dt>
-        <dd>Plot of wisp parameters</dd>
-
-        <dt>
-
-          <code><a href="plot-ratecount.html">plot.ratecount()</a></code>
-
-        </dt>
-        <dd>Plot fitted model and data</dd>
-
-        <dt>
-
-          <code><a href="plot-species-summary.html">plot.species.summary()</a></code>
-
-        </dt>
-        <dd>Print rate-count, residual, and parameter plots for one species level together.</dd>
-
-        <dt>
-
-          <code><a href="plot-timeseries.html">plot.timeseries()</a></code>
-
-        </dt>
-        <dd>Plot timeseries effects from wisp results</dd>
-
-        <dt>
-
-          <code><a href="demo.sigmoid.plots.html">demo.sigmoid.plots()</a></code>
-
-        </dt>
-        <dd>Make plot demonstrating how the wisp function is determined by the Rt, slope, and tpoint parameters</dd>
-
-        <dt>
-
-          <code><a href="demo.warp.plots.html">demo.warp.plots()</a></code>
-
-        </dt>
-        <dd>Make plot demonstrating how the wisp function is warped by the warping factors</dd>
       </dl></div><div class="section level2">
       <h2 id="benchmarking-functions">Benchmarking functions<a class="anchor" aria-label="anchor" href="#benchmarking-functions"></a></h2>
 
@@ -279,10 +263,17 @@
 
         <dt>
 
-          <code><a href="create.count.data.WSPmm.html">create.count.data.WSPmm()</a></code>
+          <code><a href="create_count_data_WSPmm.html">create_count_data_WSPmm()</a></code>
 
         </dt>
         <dd>Function to convert to WSPmm format</dd>
+
+        <dt>
+
+          <code><a href="create_count_data_WSPmm_allen.html">create_count_data_WSPmm_allen()</a></code>
+
+        </dt>
+        <dd>Function to convert Allen-formatted MERFISH data to WSPmm format</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
