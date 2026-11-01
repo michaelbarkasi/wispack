@@ -68,13 +68,13 @@ test_that("the package's exported API surface hasn't grown or shrunk unintention
     # metadata's exposure is tied to the module generator's own export status, not to importing ggplot2/grid/
     # gridExtra.
     ".__T__[:base", ".__T__[[<-:base", ".__T__[<-:base", ".__T__$:base", ".__T__$<-:base",
-    "analyze_attractor_sim_benchmarks", "analyze.residuals",
+    "analyze_attractor_sim_benchmarks", "analyze_residuals",
     "attractor_simulation", "attractor_simulation_ground_truth",
-    "cortical_coordinate_transform", "create.count.data.WSPmm", "create.count.data.WSPmm.allen",
-    "demo.sigmoid.plots", "demo.warp.plots",
+    "cortical_coordinate_transform", "create_count_data_WSPmm", "create_count_data_WSPmm_allen",
+    "demo_sigmoid_plots", "demo_warp_plots",
     "make_count_data", "make_count_data_csv",
     "model_attractor_simulation_wisp",
-    "run_attractor_sim_benchmarks", "sample.stats",
+    "run_attractor_sim_benchmarks", "sample_stats",
     "wisp", "wisp_sigmoid", "wisp_warp"
     # coef.wisp, confint.wisp, plot.wisp, print.wisp, print.summary.wisp, residuals.wisp, and summary.wisp
     # are S3 methods: they dispatch via the S3method() entries in NAMESPACE and don't need (and no longer

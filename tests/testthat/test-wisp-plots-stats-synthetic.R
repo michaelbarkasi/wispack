@@ -1,5 +1,5 @@
 # Mechanical exercise of the plotting/stats machinery (plot(model, type = "ratecount"[, decompose = TRUE]/
-# "timeseries"/"parameters"/"MCMC.walks"/"MCMC.bs.comparison"), sample.stats(), and the print/summary/residuals/
+# "timeseries"/"parameters"/"MCMC.walks"/"MCMC.bs.comparison"), sample_stats(), and the print/summary/residuals/
 # coef/confint S3 methods for class "wisp") on a small synthetic model with more than one fitted parameter and a
 # handful of bootstrap resamples -- see tests/testthat/helper-fixtures.R's make_small_multiparam_countdata(). This
 # is decoupled from "does a specific RORB story reproduce" (that's the slow-tier real-data tests and the tutorial
@@ -91,8 +91,8 @@ test_that("species is ignored with a warning for types with no species argument"
   )
 })
 
-test_that("sample.stats runs on the synthetic fixture", {
-  ss <- sample.stats(model, verbose = FALSE)
+test_that("sample_stats runs on the synthetic fixture", {
+  ss <- sample_stats(model, verbose = FALSE)
   expect_true(is.data.frame(ss$stats$parameters))
   expect_gt(nrow(ss$stats$parameters), 1)
   expect_true(all(c("parameter", "estimate", "CI.low", "CI.high", "p.value") %in% names(ss$stats$parameters)))

@@ -16,7 +16,7 @@ per configuration throughout; variance across reps was small (see the raw CSVs).
 | 20   | 1  | 60.3  | 50.1  | 1.20x |
 
 **This round is confounded.** The mclapply prototype only does `fit()` + the bootstrap loop; the real `wisp()`
-call also does `predict_rates_batch()`, `sample.stats()`, residual analysis, and plot generation -- none of
+call also does `predict_rates_batch()`, `sample_stats()`, residual analysis, and plot generation -- none of
 which involve forking at all. At N = 1 (bs_num_max = 20), *neither* arm forks, yet the "real" arm is still 20%
 slower -- that 20% is pure non-bootstrap wisp() overhead, not a forking-mechanism effect. So round 1 overstates
 mclapply's advantage by conflating "less work done" with "faster forking."

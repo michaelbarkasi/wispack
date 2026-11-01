@@ -1276,14 +1276,14 @@ cortical_coordinate_transform <- function(
 #'   geneB      = c(1, 2, 0, 3, 2, 1),
 #'   hemisphere = rep(c("left", "right"), 3)
 #' )
-#' create.count.data.WSPmm(
+#' create_count_data_WSPmm(
 #'   toy_merfish,
 #'   bin.dim            = "x_bins",
 #'   gene.list          = c("geneA", "geneB"),
 #'   fixed.effect.names = "hemisphere"
 #' )
 #' @export
-create.count.data.WSPmm <- function(
+create_count_data_WSPmm <- function(
     df.merfish,                                    # data frame of MERFISH data, produced by cortical_coordinate_transform function
     bin.dim = c("x_bins", "y_bins"),               # dimension by which to bin; must be one of these two; will collapse along the other
     gene.list,                                     # character vector of genes to include in count data, forms the "species" level of the model
@@ -1344,10 +1344,10 @@ create.count.data.WSPmm <- function(
 
 #' Function to convert Allen-formatted MERFISH data to WSPmm format
 #'
-#' This is the \code{\link{create.count.data.WSPmm}} counterpart for MERFISH data already in Allen Brain Atlas
+#' This is the \code{\link{create_count_data_WSPmm}} counterpart for MERFISH data already in Allen Brain Atlas
 #' format, i.e. already in long form with one row per gene/cell pair (columns \code{trscrpt_gene_symb},
 #' \code{trscrpt_ct}, \code{cluster_id}, \code{mouse}), rather than the wide, one-column-per-gene form that
-#' \code{create.count.data.WSPmm} expects. Because the data is already long, no \code{gene.list} argument is
+#' \code{create_count_data_WSPmm} expects. Because the data is already long, no \code{gene.list} argument is
 #' needed here: genes are read directly from \code{trscrpt_gene_symb}. An \code{age} fixed effect, if requested
 #' via \code{fixed.effect.names}, is always set to \code{"p5x"} for every row, since this function was written
 #' for a single age cohort; include \code{"age"} in \code{fixed.effect.names} only when that is the cohort you
@@ -1368,13 +1368,13 @@ create.count.data.WSPmm <- function(
 #'   trscrpt_ct        = c(3, 1, 4, 2),
 #'   hemisphere        = c("left", "right", "left", "right")
 #' )
-#' create.count.data.WSPmm.allen(
+#' create_count_data_WSPmm_allen(
 #'   toy_allen,
 #'   bin.dim            = "y_bins",
 #'   fixed.effect.names = "hemisphere"
 #' )
 #' @export
-create.count.data.WSPmm.allen <- function(
+create_count_data_WSPmm_allen <- function(
     df.merfish,                                    # data frame of MERFISH data, produced by the above functions
     bin.dim = c("x_bins", "y_bins"),               # dimension by which to bin; must be one of these two; will collapse along the other
     fixed.effect.names,

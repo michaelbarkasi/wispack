@@ -6,7 +6,6 @@ load_libs <- function(bundle = "wispack") {
       "Rcpp",
       "RcppEigen",
       "methods",
-      "dtwclust",
       "StanHeaders",
       "BH",
       "nloptr",

@@ -14,10 +14,10 @@
 \code{parm} semantics as \code{\link[stats]{confint}}.}
 
 \item{level}{Numeric, the confidence level required. Defaults to 0.95, matching the confidence level
-\code{\link{wisp}}/\code{\link{sample.stats}} compute by default; see Details above for what happens when a
+\code{\link{wisp}}/\code{\link{sample_stats}} compute by default; see Details above for what happens when a
 different level is requested.}
 
-\item{...}{Additional arguments passed on to \code{\link{sample.stats}} when \code{level != 0.95} (e.g.
+\item{...}{Additional arguments passed on to \code{\link{sample_stats}} when \code{level != 0.95} (e.g.
 \code{Bonferroni}, \code{conv.resamples.only}, \code{verbose}).}
 }
 \value{
@@ -26,17 +26,17 @@ row-named by parameter.
 }
 \description{
 Returns confidence intervals for the fitted wisp model parameters. These were already computed once, at
-whatever significance level (\code{alpha}) was in effect when \code{\link{sample.stats}} last ran on this model
-(the default, both for \code{sample.stats()} and for the statistical analysis \code{\link{wisp}} runs
+whatever significance level (\code{alpha}) was in effect when \code{\link{sample_stats}} last ran on this model
+(the default, both for \code{sample_stats()} and for the statistical analysis \code{\link{wisp}} runs
 internally, is \code{alpha = 0.05}, i.e. a 95\\% confidence level), and are stored as the \code{CI.low}/\code{CI.high}
 columns of \code{object$stats$parameters}.
 }
 \details{
-If \code{level = 0.95} (the default, matching \code{sample.stats()}'s own default \code{alpha = 0.05}), the
+If \code{level = 0.95} (the default, matching \code{sample_stats()}'s own default \code{alpha = 0.05}), the
 already-stored \code{CI.low}/\code{CI.high} columns are returned directly -- exactly as they were computed during
 the original fit (respecting whatever \code{Bonferroni}/\code{conv.resamples.only} choices were made then, even
-if those differ from \code{sample.stats()}'s own defaults). If a different \code{level} is requested,
-\code{\link{sample.stats}} is transparently re-run (with \code{alpha = 1 - level}, and otherwise its own
+if those differ from \code{sample_stats()}'s own defaults). If a different \code{level} is requested,
+\code{\link{sample_stats}} is transparently re-run (with \code{alpha = 1 - level}, and otherwise its own
 defaults for \code{Bonferroni} and \code{conv.resamples.only}, since this model does not record which choices
 were used for its originally-stored statistics) to recompute the intervals at the requested level; this is cheap,
 since it only re-quantiles the resampled parameters already stored on the model; it does not refit anything.

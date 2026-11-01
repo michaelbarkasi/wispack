@@ -19,7 +19,7 @@ was fit with \code{fit_only = TRUE}), \code{n.context}, \code{n.species}, \code{
 }
 \description{
 Builds an object of class \code{"summary.wisp"}, primarily wrapping the parameter table computed by
-\code{\link{sample.stats}} (\code{x$stats$parameters}), plus the same model-size/fit-setting context shown by
+\code{\link{sample_stats}} (\code{x$stats$parameters}), plus the same model-size/fit-setting context shown by
 \code{\link{print.wisp}}. Use \code{\link{print.summary.wisp}} (dispatched automatically by \code{print()}) to
 display the result.
 }

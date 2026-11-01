@@ -22,7 +22,7 @@ A data frame of residual summary statistics by group (columns \code{group}, \cod
 }
 \description{
 Returns the residual summary statistics (mean, sd, variance, by group) computed by
-\code{\link{analyze.residuals}} and stored on the fitted model, either for raw residuals or log-residuals.
+\code{\link{analyze_residuals}} and stored on the fitted model, either for raw residuals or log-residuals.
 }
 \examples{
 set.seed(1)

@@ -112,7 +112,7 @@ lambda <- rep(c(2, 8), each = n_bins / 2)
 countdata <- data.frame(bin = bin, count = rpois(400, lambda[bin]))
 
 # fit_only = TRUE skips MCMC/bootstrap resampling, so this fits in well under
-# a second; see sample.stats() for estimating parameter uncertainty.
+# a second; see sample_stats() for estimating parameter uncertainty.
 model <- wisp(
   countdata,
   fit_only       = TRUE,

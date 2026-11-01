@@ -50,30 +50,34 @@ articles:
   - articles/license
 
 reference:
-- title: Main
+- title: Fitting & using a wisp model
   navbar: Main
   contents:
   - wisp
-  
-- title: Model functions
+  - print.wisp
+  - summary.wisp
+  - print.summary.wisp
+  - coef.wisp
+  - confint.wisp
+  - residuals.wisp
+  - plot.wisp
+
+- title: Core model functions
   navbar: Model functions
   contents:
-  - starts_with("wisp.")
-  
+  - wisp_warp
+  - demo_warp_plots
+  - wisp_sigmoid
+  - demo_sigmoid_plots
+
 - title: Analysis functions
   navbar: Analysis functions
   contents:
-  - analyze.residuals
-  - sample.stats
-  
-- title: Plotting functions 
-  navbar: Plotting functions
-  contents:
-  - starts_with("plot")
-  - starts_with("demo.")
+  - analyze_residuals
+  - sample_stats
 
-- title: Benchmarking functions 
-  navbar: Benchmarking functions 
+- title: Benchmarking functions
+  navbar: Benchmarking functions
   contents:
   - attractor_simulation_ground_truth
   - attractor_simulation
@@ -81,10 +85,11 @@ reference:
   - run_attractor_sim_benchmarks
   - analyze_attractor_sim_benchmarks
 
-- title: MERFISH preprocessing functions 
-  navbar: MERFISH preprocessing functions 
+- title: MERFISH preprocessing functions
+  navbar: MERFISH preprocessing functions
   contents:
   - make_count_data
   - make_count_data_csv
   - cortical_coordinate_transform
-  - create.count.data.WSPmm
+  - create_count_data_WSPmm
+  - create_count_data_WSPmm_allen

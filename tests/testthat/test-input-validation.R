@@ -1,6 +1,6 @@
 # Tests for wisp()'s argument-checking contract (the internal check_list() helper applied to `variables`,
 # `model.settings`, and `MCMC.settings`), plus the equivalent checks in attractor_simulation() and
-# create.count.data.WSPmm(). None of this is exercised by the ported vignette checks, but it's exactly the kind
+# create_count_data_WSPmm(). None of this is exercised by the ported vignette checks, but it's exactly the kind
 # of thing that silently rots: nobody notices an error message changed, or a validation path got skipped, until a
 # user hits it. All of these use tiny synthetic data and fit_only = TRUE (or error before any fitting happens), so
 # the whole file runs in well under a second.
@@ -40,14 +40,14 @@ test_that("attractor_simulation() validates its seed_data columns", {
   expect_error(attractor_simulation(bad_seed), "must contain columns")
 })
 
-test_that("create.count.data.WSPmm() validates bin.dim and required columns", {
+test_that("create_count_data_WSPmm() validates bin.dim and required columns", {
   df <- data.frame(mouse = 1, cell_num = 1, trt = "a", x_bins = 1, y_bins = 1)
   expect_error(
-    create.count.data.WSPmm(df, bin.dim = "z_bins", gene.list = "foo", fixed.effect.names = "trt"),
+    create_count_data_WSPmm(df, bin.dim = "z_bins", gene.list = "foo", fixed.effect.names = "trt"),
     "bin.dim must be one of"
   )
   expect_error(
-    create.count.data.WSPmm(df[, setdiff(names(df), "mouse")], bin.dim = "x_bins", gene.list = "foo", fixed.effect.names = "trt"),
+    create_count_data_WSPmm(df[, setdiff(names(df), "mouse")], bin.dim = "x_bins", gene.list = "foo", fixed.effect.names = "trt"),
     "missing mouse, cell_num, or fixed effect column"
   )
 })

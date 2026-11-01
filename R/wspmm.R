@@ -91,7 +91,7 @@ NULL
 #' countdata <- data.frame(bin = bin, count = rpois(400, lambda[bin]))
 #'
 #' # fit_only = TRUE skips MCMC/bootstrap resampling, so this fits in well under
-#' # a second; see sample.stats() for estimating parameter uncertainty.
+#' # a second; see sample_stats() for estimating parameter uncertainty.
 #' model <- wisp(
 #'   countdata,
 #'   fit_only       = TRUE,
@@ -557,14 +557,14 @@ wisp <- function(
       # Run statistical analysis ####
       
       # Run stats on samples
-      results <- sample.stats(
+      results <- sample_stats(
         wisp.results        = results,
         conv.resamples.only = bootstraps.num != 0 && converged.resamples.only,
         verbose             = verbose
       )
       
       # Analyze residuals 
-      residuals <- analyze.residuals(
+      residuals <- analyze_residuals(
         wisp.results = results,
         verbose      = verbose
       )
@@ -722,7 +722,7 @@ convergence_mask <- function(
 #' @examples
 #' # A small synthetic data set with a transition point, a two-level fixed
 #' # effect ("age"), and two random-effect levels ("ran"), fit with a handful
-#' # of bootstrap resamples so sample.stats() has something to work with.
+#' # of bootstrap resamples so sample_stats() has something to work with.
 #' set.seed(1)
 #' grid <- expand.grid(bin = 1:20, age = c(12, 18), ran = c("r1", "r2"), rep = 1:6)
 #' base_rate <- ifelse(grid$bin <= 10, 3, 9)
@@ -744,12 +744,12 @@ convergence_mask <- function(
 #'   verbose        = FALSE
 #' )
 #'
-#' # wisp() already ran sample.stats() internally (stats are in model$stats);
+#' # wisp() already ran sample_stats() internally (stats are in model$stats);
 #' # call it again directly to recompute at a stricter significance level.
-#' model_99 <- sample.stats(model, alpha = 0.01, verbose = FALSE)
+#' model_99 <- sample_stats(model, alpha = 0.01, verbose = FALSE)
 #' head(model_99$stats$parameters)
 #' @export
-sample.stats <- function(
+sample_stats <- function(
     wisp.results,
     alpha               = 0.05,
     Bonferroni          = FALSE,
@@ -888,7 +888,7 @@ sample.stats <- function(
 #' lambda <- rep(c(2, 8), each = n_bins / 2)
 #' countdata <- data.frame(bin = bin, count = rpois(400, lambda[bin]))
 #'
-#' # analyze.residuals() only needs predicted vs. observed counts, so it works
+#' # analyze_residuals() only needs predicted vs. observed counts, so it works
 #' # even on a fit_only = TRUE model (no resampling required).
 #' model <- wisp(
 #'   countdata,
@@ -897,10 +897,10 @@ sample.stats <- function(
 #'   plot.settings  = list(print.plots = FALSE),
 #'   verbose        = FALSE
 #' )
-#' resid_summary <- analyze.residuals(model, verbose = FALSE)
+#' resid_summary <- analyze_residuals(model, verbose = FALSE)
 #' resid_summary$stats
 #' @export
-analyze.residuals <- function(
+analyze_residuals <- function(
     wisp.results,
     verbose = TRUE
   ) {
@@ -1169,7 +1169,7 @@ print.wisp <- function(x, ...) {
     )
   }
   if (is.null(x[["stats"]][["parameters"]])) {
-    cat("Stats:         not computed (see sample.stats())\n")
+    cat("Stats:         not computed (see sample_stats())\n")
   } else {
     n_sig <- sum(x$stats$parameters$significance %in% c("*", "**", "***"))
     cat("Stats:         ", nrow(x$stats$parameters), " parameter(s) tested, ", n_sig, " significant\n", sep = "")
@@ -1183,7 +1183,7 @@ print.wisp <- function(x, ...) {
 #' Summarize a fitted wisp model
 #'
 #' Builds an object of class \code{"summary.wisp"}, primarily wrapping the parameter table computed by
-#' \code{\link{sample.stats}} (\code{x$stats$parameters}), plus the same model-size/fit-setting context shown by
+#' \code{\link{sample_stats}} (\code{x$stats$parameters}), plus the same model-size/fit-setting context shown by
 #' \code{\link{print.wisp}}. Use \code{\link{print.summary.wisp}} (dispatched automatically by \code{print()}) to
 #' display the result.
 #'
@@ -1276,8 +1276,8 @@ print.summary.wisp <- function(x, ...) {
 
   if (is.null(x$parameters)) {
     cat(
-      "No parameter statistics are available: this model was likely fit with fit_only = TRUE (or sample.stats() ",
-      "was otherwise never run). Call sample.stats() on the fitted model to compute parameter estimates, ",
+      "No parameter statistics are available: this model was likely fit with fit_only = TRUE (or sample_stats() ",
+      "was otherwise never run). Call sample_stats() on the fitted model to compute parameter estimates, ",
       "confidence intervals, and p-values.\n"
     )
   } else {
@@ -1291,7 +1291,7 @@ print.summary.wisp <- function(x, ...) {
 #' Residuals from a fitted wisp model
 #'
 #' Returns the residual summary statistics (mean, sd, variance, by group) computed by
-#' \code{\link{analyze.residuals}} and stored on the fitted model, either for raw residuals or log-residuals.
+#' \code{\link{analyze_residuals}} and stored on the fitted model, either for raw residuals or log-residuals.
 #'
 #' @param object List, output of the \code{\link{wisp}} function (an object of class \code{"wisp"}).
 #' @param type Character string, one of \code{"raw"} (default) or \code{"log"}, specifying whether to return the
@@ -1333,7 +1333,7 @@ residuals.wisp <- function(object, type = c("raw", "log"), ...) {
     stop(
       "No residual statistics are available on this model: it was likely fit with fit_only = TRUE (residual ",
       "analysis runs only when resampling -- bootstraps or MCMC -- is performed). Re-fit with fit_only = FALSE, ",
-      "or call analyze.residuals() directly on the fitted model."
+      "or call analyze_residuals() directly on the fitted model."
     )
   }
 
@@ -1377,16 +1377,16 @@ coef.wisp <- function(object, ...) {
 #' Confidence intervals for wisp model parameters
 #'
 #' Returns confidence intervals for the fitted wisp model parameters. These were already computed once, at
-#' whatever significance level (\code{alpha}) was in effect when \code{\link{sample.stats}} last ran on this model
-#' (the default, both for \code{sample.stats()} and for the statistical analysis \code{\link{wisp}} runs
+#' whatever significance level (\code{alpha}) was in effect when \code{\link{sample_stats}} last ran on this model
+#' (the default, both for \code{sample_stats()} and for the statistical analysis \code{\link{wisp}} runs
 #' internally, is \code{alpha = 0.05}, i.e. a 95\% confidence level), and are stored as the \code{CI.low}/\code{CI.high}
 #' columns of \code{object$stats$parameters}.
 #'
-#' If \code{level = 0.95} (the default, matching \code{sample.stats()}'s own default \code{alpha = 0.05}), the
+#' If \code{level = 0.95} (the default, matching \code{sample_stats()}'s own default \code{alpha = 0.05}), the
 #' already-stored \code{CI.low}/\code{CI.high} columns are returned directly -- exactly as they were computed during
 #' the original fit (respecting whatever \code{Bonferroni}/\code{conv.resamples.only} choices were made then, even
-#' if those differ from \code{sample.stats()}'s own defaults). If a different \code{level} is requested,
-#' \code{\link{sample.stats}} is transparently re-run (with \code{alpha = 1 - level}, and otherwise its own
+#' if those differ from \code{sample_stats()}'s own defaults). If a different \code{level} is requested,
+#' \code{\link{sample_stats}} is transparently re-run (with \code{alpha = 1 - level}, and otherwise its own
 #' defaults for \code{Bonferroni} and \code{conv.resamples.only}, since this model does not record which choices
 #' were used for its originally-stored statistics) to recompute the intervals at the requested level; this is cheap,
 #' since it only re-quantiles the resampled parameters already stored on the model; it does not refit anything.
@@ -1396,9 +1396,9 @@ coef.wisp <- function(object, ...) {
 #'   \code{object$param.names}); if NULL, confidence intervals for all parameters are returned. Follows the same
 #'   \code{parm} semantics as \code{\link[stats]{confint}}.
 #' @param level Numeric, the confidence level required. Defaults to 0.95, matching the confidence level
-#'   \code{\link{wisp}}/\code{\link{sample.stats}} compute by default; see Details above for what happens when a
+#'   \code{\link{wisp}}/\code{\link{sample_stats}} compute by default; see Details above for what happens when a
 #'   different level is requested.
-#' @param ... Additional arguments passed on to \code{\link{sample.stats}} when \code{level != 0.95} (e.g.
+#' @param ... Additional arguments passed on to \code{\link{sample_stats}} when \code{level != 0.95} (e.g.
 #'   \code{Bonferroni}, \code{conv.resamples.only}, \code{verbose}).
 #' @return A matrix with one row per (selected) parameter and two columns, \code{CI.low} and \code{CI.high},
 #'   row-named by parameter.
@@ -1431,7 +1431,7 @@ confint.wisp <- function(object, parm = NULL, level = 0.95, ...) {
   if (is.null(object[["stats"]][["parameters"]])) {
     stop(
       "No parameter statistics are available on this model: it was likely fit with fit_only = TRUE. Call ",
-      "sample.stats() on the fitted model first to compute confidence intervals."
+      "sample_stats() on the fitted model first to compute confidence intervals."
     )
   }
 
@@ -1439,7 +1439,7 @@ confint.wisp <- function(object, parm = NULL, level = 0.95, ...) {
     params_tab <- object$stats$parameters
   } else {
     alpha       <- 1 - level
-    object      <- sample.stats(object, alpha = alpha, verbose = FALSE, ...)
+    object      <- sample_stats(object, alpha = alpha, verbose = FALSE, ...)
     params_tab  <- object$stats$parameters
   }
 
@@ -3410,7 +3410,7 @@ plot.wisp <- function(x, type, print.plots = TRUE, verbose = TRUE, species = "al
 #' @param species Character vector, optional, specifies which species levels to summarize. Defaults to all.
 #' @param verbose Logical, if TRUE, prints information during plotting.
 #' @return Nothing, plots are printed to the current graphics device.
-#' @note \code{wisp()} does not store built plot objects on its return value, so this function always rebuilds the rate-count, residual, and parameter plots it needs fresh from \code{wisp.results} (via \code{.plot_ratecount()}, \code{analyze.residuals()}, and \code{.plot_parameters()}) rather than reading them back from a stored \code{$plots} field.
+#' @note \code{wisp()} does not store built plot objects on its return value, so this function always rebuilds the rate-count, residual, and parameter plots it needs fresh from \code{wisp.results} (via \code{.plot_ratecount()}, \code{analyze_residuals()}, and \code{.plot_parameters()}) rather than reading them back from a stored \code{$plots} field.
 #' @noRd
 .plot_species_summary <- function(
     wisp.results,
@@ -3434,7 +3434,7 @@ plot.wisp <- function(x, type, print.plots = TRUE, verbose = TRUE, species = "al
       pred.alpha.ran   = wisp.results$plot.settings$pred.alpha.ran,
       verbose          = FALSE
     )
-    p3 <- analyze.residuals(
+    p3 <- analyze_residuals(
       wisp.results = wisp.results,
       verbose      = FALSE
     )$plots
@@ -4204,7 +4204,7 @@ wisp_sigmoid <- function(
 #' @param return_plots Logical, if TRUE, returns two separate plots; otherwise, returns nothing and prints combined plot.
 #' @return Nothing. A ggplot object is printed to console.
 #' @examples
-#' warp_plots <- demo.warp.plots(
+#' warp_plots <- demo_warp_plots(
 #'   w            = 2,
 #'   point_pos    = 60,
 #'   point_neg    = 40,
@@ -4216,7 +4216,7 @@ wisp_sigmoid <- function(
 #' )
 #' names(warp_plots)
 #' @export
-demo.warp.plots <- function(
+demo_warp_plots <- function(
     w            = 2,  
     point_pos    = 60,
     point_neg    = 40,
@@ -4471,10 +4471,10 @@ demo.warp.plots <- function(
 #' @param return_plots Logical, if true, returns two separate plots; otherwise, returns nothing and prints combined plot
 #' @return Nothing. A ggplot object is printed to console.
 #' @examples
-#' sigmoid_plots <- demo.sigmoid.plots(return_plots = TRUE)
+#' sigmoid_plots <- demo_sigmoid_plots(return_plots = TRUE)
 #' names(sigmoid_plots)
 #' @export
-demo.sigmoid.plots <- function(
+demo_sigmoid_plots <- function(
     r            = 4,  
     s            = 1,   
     Rt           = c(6, 3, 0.2, 6) * 4.65,  

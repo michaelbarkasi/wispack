@@ -1,4 +1,4 @@
-# Port of tutorial_warping.Rmd's silent checks. No wisp() model fit is involved (demo.warp.plots just evaluates
+# Port of tutorial_warping.Rmd's silent checks. No wisp() model fit is involved (demo_warp_plots just evaluates
 # the warp/sigmoid primitives and builds ggplot objects), so this runs in the fast tier.
 
 g <- .wisp_golden$warping
@@ -32,9 +32,9 @@ test_that("the warp-ratio demo function matches the vignette narrative", {
   expect_between(demo_data[214, 4], bounds = g$warp_ratio_demo)
 })
 
-test_that("demo.warp.plots matches the vignette narrative", {
+test_that("demo_warp_plots matches the vignette narrative", {
   set.seed(123)
-  warp_plots <- demo.warp.plots(
+  warp_plots <- demo_warp_plots(
     w            = 2,
     point_pos    = 60,
     point_neg    = 40,

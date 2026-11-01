@@ -7,7 +7,7 @@
 # belongs in the slow tier.
 #
 # Fit once and reuse across both sets of checks (mirrors the vignettes' own call order, including the
-# sample.stats()/plot(model, type = "MCMC.walks")/plot(model, type = "parameters") mutation sequence
+# sample_stats()/plot(model, type = "MCMC.walks")/plot(model, type = "parameters") mutation sequence
 # tutorial_stats.Rmd uses, and its median-model refit) rather than fitting twice, since a single real fit here
 # is already the most expensive thing in this file. check5 (median_fit_param1) gets re-verified here as a side
 # effect of replaying that sequence -- it's also covered independently by test-slow-stats-median.R, which only
@@ -51,8 +51,8 @@ test_that("the real cortical-laminar bootstrap fit matches both tutorial_stats.R
   # stats check1: default stats on the freshly fit model
   expect_between(model$stats$parameters[4, 2], bounds = g$default_param4)
 
-  # stats check2: re-run sample.stats with alpha = 0.01, Bonferroni correction
-  model <- sample.stats(model, alpha = 0.01, Bonferroni = TRUE, verbose = FALSE)
+  # stats check2: re-run sample_stats with alpha = 0.01, Bonferroni correction
+  model <- sample_stats(model, alpha = 0.01, Bonferroni = TRUE, verbose = FALSE)
   expect_between(model$stats$parameters[4, 3], bounds = g$bonferroni_param4)
 
   # stats check3: MCMC walk plot for a low-expression parameter
@@ -63,7 +63,7 @@ test_that("the real cortical-laminar bootstrap fit matches both tutorial_stats.R
   # stats check4: re-derive stats from the MCMC resamples instead of bootstraps
   model_MCMC <- model
   model_MCMC$sample.params.type <- "MCMC"
-  model_MCMC <- sample.stats(model_MCMC, verbose = FALSE)
+  model_MCMC <- sample_stats(model_MCMC, verbose = FALSE)
   expect_between(model_MCMC$stats$parameters[4, 4], bounds = g$mcmc_resample_param4)
 
   # Not independently checked, but the vignette calls these between check4 and check5/6/7 -- replaying them

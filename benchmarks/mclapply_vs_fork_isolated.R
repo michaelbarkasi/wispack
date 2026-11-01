@@ -1,6 +1,6 @@
 # Follow-up to mclapply_vs_fork_bs_batch.R: that script timed the *whole* wisp() call against the mclapply
 # prototype, which confounds the fork-mechanism comparison with wisp()'s own non-bootstrap overhead (LRO grid
-# search, predict_rates_batch, sample.stats, residual analysis, plot generation -- none of which the mclapply
+# search, predict_rates_batch, sample_stats, residual analysis, plot generation -- none of which the mclapply
 # prototype does). Confirmed this confound is real and non-trivial: even at N = 1 (neither method forks) the
 # two arms differed by ~20%, which can only be that extra overhead, not a forking-mechanism effect.
 #

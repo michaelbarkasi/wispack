@@ -141,10 +141,10 @@ z - \varphi(\Delta(z,b),\rho,b)z & \text{if } \rho < 0
 \]
 A positive benefit of this approach is that when there is no upper bound, i.e., $b=\infty$, $\omega(z,b)$ is linear with respect to $z$. A proof of this theorem is provided in appendix of both the original wisp [preprint](https://doi.org/10.1101/2025.06.11.659209) and the final published [paper](https://doi.org/10.1093/nar/gkag466).
 
-Wispack provides a function <span class = "function">demo.warp.plots</span> for visualizing the function $\omega$ and its effect on the poly-sigmoid $\Phi$. 
+Wispack provides a function <span class = "function">demo_warp_plots</span> for visualizing the function $\omega$ and its effect on the poly-sigmoid $\Phi$. 
 
 ```{r warp_demo_functions}
-warp_plots <- demo.warp.plots(
+warp_plots <- demo_warp_plots(
     w            = 2,                      # warping factor for plot 1
     point_pos    = 60,
     point_neg    = 40,
