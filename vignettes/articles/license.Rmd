@@ -73,11 +73,21 @@ DEALINGS IN THE SOFTWARE."
 
 The Eigen project was started by Benoît Jacob (founder) and Gaël Guennebaud (guru). Many other people have since contributed their talents to help make Eigen successful.
 
-https://eigen.tuxfamily.org/  
+https://eigen.tuxfamily.org/
 https://gitlab.com/libeigen/eigen
 
-MPL2 (Mozilla Public License)  
+MPL2 (Mozilla Public License)
 https://www.mozilla.org/en-US/MPL/2.0/FAQ/
+
+<h1> RcppEigen </h1>
+
+Douglas Bates, Dirk Eddelbuettel, Romain Francois, and Yixuan Qiu
+
+https://github.com/RcppCore/RcppEigen
+https://cran.r-project.org/web/packages/RcppEigen/index.html
+
+GPL (>= 2) -- note this is the license the RcppEigen integration into R (the glue code) is distributed under; it bundles the MPL2-licensed Eigen library described above, which retains its own license for that bundled code -- the same split RcppParallel/oneTBB has below. See RcppEigen's own `LICENSE` file:
+https://github.com/RcppCore/RcppEigen/blob/master/LICENSE
 
 <h1> SUNDIALS </h1>
 
@@ -143,27 +153,41 @@ https://pubs.opengroup.org/onlinepubs/7908799/xsh/unistd.h.html
 
 Available and licensed on your local system
 
-<h1> dtw </h1>
-
-Toni Giorgino
-Giorgino T (2009). “Computing and Visualizing Dynamic Time Warping Alignments in R: The dtw Package.” Journal of Statistical Software, 31(7), 1-24. doi:10.18637/jss.v031.i07
-
-For partial matching and normalization strategies, also:
-Tormene P, Giorgino T, Quaglini S, Stefanelli M (2008). “Matching Incomplete Time Series with Dynamic Time Warping: An Algorithm and an Application to Post-Stroke Rehabilitation.” Artificial Intelligence in Medicine, 45(1), 11-34. doi:10.1016/j.artmed.2008.11.007
-
-https://cran.r-project.org/package=dtw
-https://dynamictimewarping.github.io/
-
-GPL (>= 2)
-
 <h1> ggplot2 </h1>
 
 by: ggplot2 core developer team
 
 https://ggplot2.tidyverse.org/
 
-The MIT license  
+The MIT license
 https://github.com/tidyverse/ggplot2
+
+<h1> gridExtra </h1>
+
+Baptiste Auguie and Anton Antonov
+
+https://cran.r-project.org/web/packages/gridExtra/index.html
+https://github.com/baptiste/gridextra
+
+GPL (>= 2), per gridExtra's own DESCRIPTION file
+
+<h1> colorspace </h1>
+
+Ross Ihaka, Paul Murrell, Kurt Hornik, Jason C. Fisher, Reto Stauffer, Claus O. Wilke, Claire D. McWhite, and Achim Zeileis
+
+https://cran.r-project.org/web/packages/colorspace/index.html
+https://colorspace.R-Forge.R-project.org/
+
+BSD 3-Clause License
+https://cran.r-project.org/web/packages/colorspace/LICENSE
+
+<h1> RColorBrewer </h1>
+
+Erich Neuwirth
+
+https://cran.r-project.org/web/packages/RColorBrewer/index.html
+
+Apache License 2.0, per RColorBrewer's own DESCRIPTION file
 
 <h1> Liver lobule data </h1>
 

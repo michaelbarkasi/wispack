@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -309,6 +309,13 @@ why:</p>
 <td>1.10x</td>
 </tr>
 <tr class="odd">
+<td>20</td>
+<td>20</td>
+<td>46.7 GB*</td>
+<td>43.5 GB</td>
+<td>0.93x*</td>
+</tr>
+<tr class="even">
 <td>40</td>
 <td>20</td>
 <td>57.7 GB</td>
@@ -317,25 +324,45 @@ why:</p>
 </tr>
 </tbody>
 </table>
+<p>*<code>bs_batch()</code>’s peak RSS at 20 bootstraps/20 workers
+varied substantially between its two repetitions (46.7 GB and 93.3 GB);
+the less noisy rep is shown. This is also the one grid point where
+<em>neither</em> arm has any repeated sequential fits per worker to
+accumulate memory from (a single batch of 20 forks vs. 20 single-task
+<code>mclapply</code> workers), so it’s the one row not expected to
+follow the pattern below. See
+<code>benchmarks/RESULTS_large_model.md</code> for both raw values.</p>
 <p>The clearest pattern: holding the number of workers fixed at 20 and
 doubling the bootstrap count from 20 to 40 (so each
 <code>mclapply</code> worker now does 2 sequential fits instead of 1
 before exiting) makes <code>mclapply</code>’s peak RSS almost exactly
-double. <code>bs_batch()</code>’s peak RSS barely moves under the same
-change, because <code>fork_utils.h</code> forks an entirely fresh batch
-of children every batch regardless of how many total batches run.</p>
+double (43.5 GB → 89.4 GB). <code>bs_batch()</code>’s peak RSS barely
+moves under the same change (46.7 GB → 57.7 GB), because
+<code>fork_utils.h</code> forks an entirely fresh batch of children
+every batch regardless of how many total batches run.</p>
 </div>
 <div class="section level2">
 <h2 id="why-this-is-heap-allocator-behavior-not-a-stan-memory-leak">Why: this is heap-allocator behavior, not a Stan memory leak<a class="anchor" aria-label="anchor" href="#why-this-is-heap-allocator-behavior-not-a-stan-memory-leak"></a>
 </h2>
-<p>Both code paths correctly call <code>clear_stan_mem()</code>
+<p>This is not a case of Stan’s autodiff arena silently growing across
+calls within a worker, in either arm, though the two arms rule that out
+differently. The benchmark’s <code>mclapply</code> arm explicitly calls
+<code>clear_stan_mem()</code>
 (<code>stan::math::recover_memory()</code>) after every individual
-bootstrap fit – <code>bs_batch()</code>’s serial path does this
-explicitly (<code>src/wspc.cpp</code>, <code>bs_fit(b, true)</code>),
-and the benchmark’s <code>mclapply</code> arm calls the identical
-exposed <code>bs_fit()</code> method. So this is not a case of Stan’s
-autodiff arena silently growing across calls within a worker; that is
-actively guarded against in both arms, on every call.</p>
+bootstrap fit (<code>bs_fit(i, TRUE)</code>), so Stan’s own memory is
+actively recovered on every call its persistent workers make. The forked
+<code>bs_batch()</code> path being measured here doesn’t do this – every
+grid point above uses more than one worker, so it’s always the
+<em>forked</em> branch (<code>src/wspc.cpp</code>,
+<code>bs_fit(..., false)</code>) rather than the serial one, and that
+branch skips the explicit Stan-memory recovery. It doesn’t need it: each
+forked child does exactly one bootstrap fit and then calls
+<code>_exit()</code> immediately (<code>src/fork_utils.h</code>), so the
+OS reclaims that child’s <em>entire</em> address space in one shot,
+Stan’s autodiff arena included – a strictly more complete cleanup than
+an explicit <code>recover_memory()</code> call would have been, since
+there’s no second fit in that process for an uncleared arena to ever
+accumulate against.</p>
 <p>The accumulation is instead ordinary process-memory behavior: a
 long-lived process’s <code>malloc</code> implementation generally
 retains freed pages, mapped for reuse, rather than returning them to the

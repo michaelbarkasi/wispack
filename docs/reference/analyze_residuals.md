@@ -1,9 +1,15 @@
 # Analyze residuals from wisp fit
 
-This function takes a vector `mu.B` of sampled values of a variable X,
-and a single observation `mu.obs` of the same variable, and computes the
-p-value of `mu.obs` using the empirical cumulative distribution function
-(ecdf) of `mu.B`.
+Computes raw and log-scale residuals (predicted minus observed count,
+per row of `wisp.results$count.data.summed`) for a fitted
+[`wisp`](https://michaelbarkasi.github.io/wispack/reference/wisp.md)
+model, then summarizes and visualizes them by group – overall, by
+random-effect level, by treatment level, and by context/species
+combination. For each group, builds a histogram of the log-residuals and
+a Q-Q plot comparing their ordered values against both a standard-normal
+and a gamma-convolved-normal theoretical quantile (using the model's
+fitted gamma dispersion), plus the mean, standard deviation, and
+variance of the residuals.
 
 ## Usage
 
@@ -23,9 +29,11 @@ analyze_residuals(wisp.results, verbose = TRUE)
 
 ## Value
 
-A list containing data frames `stats` and `stats.log` holding summary
-stats for residuals and log-residuals, respectively, plus a list of
-plots visualizing these stats.
+A list with three elements: `stats` and `stats.log`, data frames (one
+row per group) giving the `group` name plus `mean`, `sd`, and `variance`
+of the raw and log residuals, respectively; and `plots`, a flat list of
+the histogram, Q-Q, and side-by-side combined plots for each group,
+named `"<group>_hist"`, `"<group>_qq"`, and `"<group>_resid"`.
 
 ## Examples
 

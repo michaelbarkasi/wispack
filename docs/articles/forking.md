@@ -99,29 +99,47 @@ simplifying collapse to 2 – no fabricated data; see
 Peak combined memory (RSS, summed across all worker processes) shows
 why:
 
-| bootstraps | workers | `bs_batch()` peak RSS | `mclapply()` peak RSS | ratio |
-|------------|---------|-----------------------|-----------------------|-------|
-| 20         | 4       | 15.5 GB               | 23.8 GB               | 1.54x |
-| 20         | 10      | 37.3 GB               | 41.0 GB               | 1.10x |
-| 40         | 20      | 57.7 GB               | 89.4 GB               | 1.55x |
+| bootstraps | workers | `bs_batch()` peak RSS | `mclapply()` peak RSS | ratio   |
+|------------|---------|-----------------------|-----------------------|---------|
+| 20         | 4       | 15.5 GB               | 23.8 GB               | 1.54x   |
+| 20         | 10      | 37.3 GB               | 41.0 GB               | 1.10x   |
+| 20         | 20      | 46.7 GB\*             | 43.5 GB               | 0.93x\* |
+| 40         | 20      | 57.7 GB               | 89.4 GB               | 1.55x   |
+
+\*`bs_batch()`’s peak RSS at 20 bootstraps/20 workers varied
+substantially between its two repetitions (46.7 GB and 93.3 GB); the
+less noisy rep is shown. This is also the one grid point where *neither*
+arm has any repeated sequential fits per worker to accumulate memory
+from (a single batch of 20 forks vs. 20 single-task `mclapply` workers),
+so it’s the one row not expected to follow the pattern below. See
+`benchmarks/RESULTS_large_model.md` for both raw values.
 
 The clearest pattern: holding the number of workers fixed at 20 and
 doubling the bootstrap count from 20 to 40 (so each `mclapply` worker
 now does 2 sequential fits instead of 1 before exiting) makes
-`mclapply`’s peak RSS almost exactly double. `bs_batch()`’s peak RSS
-barely moves under the same change, because `fork_utils.h` forks an
-entirely fresh batch of children every batch regardless of how many
-total batches run.
+`mclapply`’s peak RSS almost exactly double (43.5 GB → 89.4 GB).
+`bs_batch()`’s peak RSS barely moves under the same change (46.7 GB →
+57.7 GB), because `fork_utils.h` forks an entirely fresh batch of
+children every batch regardless of how many total batches run.
 
 ## Why: this is heap-allocator behavior, not a Stan memory leak
 
-Both code paths correctly call `clear_stan_mem()`
-(`stan::math::recover_memory()`) after every individual bootstrap fit –
-`bs_batch()`’s serial path does this explicitly (`src/wspc.cpp`,
-`bs_fit(b, true)`), and the benchmark’s `mclapply` arm calls the
-identical exposed `bs_fit()` method. So this is not a case of Stan’s
-autodiff arena silently growing across calls within a worker; that is
-actively guarded against in both arms, on every call.
+This is not a case of Stan’s autodiff arena silently growing across
+calls within a worker, in either arm, though the two arms rule that out
+differently. The benchmark’s `mclapply` arm explicitly calls
+`clear_stan_mem()` (`stan::math::recover_memory()`) after every
+individual bootstrap fit (`bs_fit(i, TRUE)`), so Stan’s own memory is
+actively recovered on every call its persistent workers make. The forked
+`bs_batch()` path being measured here doesn’t do this – every grid point
+above uses more than one worker, so it’s always the *forked* branch
+(`src/wspc.cpp`, `bs_fit(..., false)`) rather than the serial one, and
+that branch skips the explicit Stan-memory recovery. It doesn’t need it:
+each forked child does exactly one bootstrap fit and then calls
+`_exit()` immediately (`src/fork_utils.h`), so the OS reclaims that
+child’s *entire* address space in one shot, Stan’s autodiff arena
+included – a strictly more complete cleanup than an explicit
+`recover_memory()` call would have been, since there’s no second fit in
+that process for an uncleared arena to ever accumulate against.
 
 The accumulation is instead ordinary process-memory behavior: a
 long-lived process’s `malloc` implementation generally retains freed

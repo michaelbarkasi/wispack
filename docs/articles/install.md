@@ -53,7 +53,8 @@ Need to install the following system dependencies: - `libxml2` for
 roxygen2 - `r-base-dev` for Rcpp, RcppEigen, and StanHeaders - `cmake`,
 only needed the first time the CRAN package `nloptr` itself installs,
 and only if no suitable system NLopt (\>= 2.7.0) is already present for
-it to use instead
+it to use instead - `libhdf5-dev` for hdf5 functionality (backs the
+`hdf5r` dependency)
 
 For PDF documentation generation, `pdflatex` should also be installed
 
@@ -62,6 +63,7 @@ sudo apt install \
     libxml2 \
     r-base-dev \
     cmake \
+    libhdf5-dev \
     texlive-latex-base \
     texlive-fonts-recommended \
     texlive-fonts-extra \
@@ -75,9 +77,15 @@ In R, run:
 ``` r
 
 devtools::document()
+devtools::build_readme()
 pkgdown::build_site()
 pkgdown::build_article("<article name>")
 ```
+
+`build_readme()` knits `README.Rmd` into `README.md` (via
+[`devtools::build_readme()`](https://devtools.r-lib.org/reference/build_readme.html));
+edit `README.Rmd`, not `README.md` directly – the latter is generated
+and gets overwritten.
 
 ## Running the test suite
 

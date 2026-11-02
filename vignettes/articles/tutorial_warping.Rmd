@@ -156,7 +156,7 @@ warp_plots <- demo_warp_plots(
   )
 ```
 
-The function <span class = "function">demo.warp.plot</span> creates two plots. The first shows $\omega$ itself for specified warping factors $\rho=\langle-w,0,w\rangle$.
+The function <span class = "function">demo_warp_plots</span> creates two plots. The first shows $\omega$ itself for specified warping factors $\rho=\langle-w,0,w\rangle$.
 
 ```{r warp_demo_plot1, fig.width=9, fig.height=7}
 print(warp_plots$demo_plot_warpfunction)
@@ -164,7 +164,7 @@ print(warp_plots$demo_plot_warpfunction)
 
 As can be seen clearly in this plot, $\omega$ is referred to as a "warping function" because it warps the input $z$ towards the upper and lower bounds. Indeed; the "w" in "wisp" refers to this behavior: _warped_ sigmoidal Poisson-process mixed-effects models.
 
-The second plot created by <span class = "function">demo.warp.plot</span> shows the effect of $\omega$ on $\Phi$. In this plot, model parameters are represented by colored dashed lines: gray for rates, red for transition-point locations, and blue for transition-point slopes. Darker shades represent the original, unwarped parameters, while lighter shades represent the warped parameters. 
+The second plot created by <span class = "function">demo_warp_plots</span> shows the effect of $\omega$ on $\Phi$. In this plot, model parameters are represented by colored dashed lines: gray for rates, red for transition-point locations, and blue for transition-point slopes. Darker shades represent the original, unwarped parameters, while lighter shades represent the warped parameters. 
 
 ```{r warp_demo_plot2, fig.width=12, fig.height=6}
 print(warp_plots$demo_plot_warpedsigmoid)

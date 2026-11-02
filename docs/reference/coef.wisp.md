@@ -39,6 +39,27 @@ numeric vector (no extra reshaping needed to meet the
 model fit with `fit_only = TRUE` where no statistical analysis was ever
 run. The two are otherwise identical.
 
+The returned vector mixes several different kinds of quantities,
+distinguishable by name (matching `object$param.names`; see
+`model.component.list` in the
+[`wisp`](https://michaelbarkasi.github.io/wispack/reference/wisp.md)
+return value for the three base component names). `"Rt"` entries are the
+fitted rate on the log(sum + 1) scale of the summed count within a bin,
+not the original per-instance rate – to recover the latter, exponentiate
+the value, subtract one, and divide by the mean number of data rows per
+bin (see the
+[`wisp`](https://michaelbarkasi.github.io/wispack/reference/wisp.md)
+examples, or the "Poisson processes and sigmoids" tutorial, for the full
+back-transformation). `"tslope"` and `"tpoint"` entries are already on
+their natural, directly interpretable scales and need no such
+transformation. Whenever the random-effect grouping variable (`ran`) has
+more than one level, the vector additionally contains `"wfactor_rate"`,
+`"wfactor_slope"`, and `"wfactor_point"` entries (one per random-effect
+level) – these are warping factors feeding into the warp function
+described in the "Random effects and warping" tutorial, a different kind
+of quantity altogether from the like-named base parameters; neither the
+`"Rt"` back-transformation above nor "use as-is" applies to them.
+
 ## Examples
 
 ``` r

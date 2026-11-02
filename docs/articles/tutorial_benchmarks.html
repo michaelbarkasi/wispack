@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,8 +90,8 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">November 01, 2026
-(v2.6.0)</h4>
+            <h4 data-toc-skip class="date">November 02, 2026
+(v2.6.1)</h4>
       
 
       <div class="d-none name"><code>tutorial_benchmarks.Rmd</code></div>
@@ -422,11 +422,13 @@ Wispack
 </h3>
 <p>For wisp modelling, wispack comes with a ready-made function for
 benchmarking attractor-based simulations, called <span class="code_variable">model_attractor_simulation_wisp</span>. The
-function takes four arguments: <span class="code_variable">sim</span>,
-<span class="code_variable">sim_num</span>, <span class="code_variable">bs_num</span>, and <span class="code_variable">max_fork</span>. The <span class="code_variable">sim</span> argument takes the output of the <span class="function">attractor_simulation</span> function. The <span class="code_variable">sim_num</span> is an integer value used to label
+function takes five arguments: <span class="code_variable">sim</span>,
+<span class="code_variable">sim_num</span>, <span class="code_variable">LRO_cost</span>, <span class="code_variable">bs_num</span>, and <span class="code_variable">max_fork</span>. The <span class="code_variable">sim</span> argument takes the output of the <span class="function">attractor_simulation</span> function. The <span class="code_variable">sim_num</span> is an integer value used to label
 the results of this particular simulation run for later aggregation with
 other simulation runs. Wispack also uses this number to set the seed for
-the random-number generator. The <span class="code_variable">bs_num</span> argument is the number of bootstrap
+the random-number generator. The <span class="code_variable">LRO_cost</span> argument is passed through to
+<span class="function">wisp</span>’s own <span class="code_variable">model.settings</span> (see the cost function used
+for the LRO change-point-detection grid search); the default, <span class="code_variable">“none”</span>, skips that grid search. The <span class="code_variable">bs_num</span> argument is the number of bootstrap
 resamples to use for estimating p-values. (The <span class="code_variable">model_attractor_simulation_wisp</span> function
 will only use bootstrapping; MCMC estimation is not an option.) Finally,
 the <span class="code_variable">max_fork</span> argument sets the
@@ -578,8 +580,9 @@ function.</li>
 structure. For reference, here is the code:</p>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model_attractor_simulation_wisp</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span></span>
-<span>    <span class="va">sim</span>, </span>
+<span>    <span class="va">sim</span>,</span>
 <span>    <span class="va">sim_num</span>,</span>
+<span>    <span class="va">LRO_cost</span> <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>    <span class="va">bs_num</span>   <span class="op">=</span> <span class="fl">1e3</span>,</span>
 <span>    <span class="va">max_fork</span> <span class="op">=</span> <span class="fl">1</span></span>
 <span>  <span class="op">)</span> <span class="op">{</span></span>
@@ -587,13 +590,14 @@ structure. For reference, here is the code:</p>
 <span>    <span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/wisp.html">wisp</a></span><span class="op">(</span></span>
 <span>      count.data     <span class="op">=</span> <span class="va">sim</span><span class="op">$</span><span class="va">data</span>,</span>
 <span>      variables      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>        bin          <span class="op">=</span> <span class="st">"bin_x"</span>, </span>
+<span>        bin          <span class="op">=</span> <span class="st">"bin_x"</span>,</span>
 <span>        count        <span class="op">=</span> <span class="st">"count"</span>,</span>
 <span>        species      <span class="op">=</span> <span class="st">"gene"</span>,</span>
 <span>        ran          <span class="op">=</span> <span class="st">"replicate"</span>,</span>
 <span>        fixedeffects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"fixedeffect"</span><span class="op">)</span></span>
 <span>      <span class="op">)</span>,</span>
 <span>      fit_only       <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>      model.settings <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>LRO_cost <span class="op">=</span> <span class="va">LRO_cost</span><span class="op">)</span>,</span>
 <span>      MCMC.settings  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>MCMC.steps <span class="op">=</span> <span class="fl">0</span>, MCMC.burnin <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
 <span>      bootstraps.num <span class="op">=</span> <span class="va">bs_num</span>,</span>
 <span>      max.fork       <span class="op">=</span> <span class="va">max_fork</span>,</span>

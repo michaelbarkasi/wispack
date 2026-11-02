@@ -15,7 +15,7 @@ columns of object$stats$parameters."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -125,6 +125,20 @@ if those differ from <code><a href="sample_stats.html">sample_stats()</a></code>
 defaults for <code>Bonferroni</code> and <code>conv.resamples.only</code>, since this model does not record which choices
 were used for its originally-stored statistics) to recompute the intervals at the requested level; this is cheap,
 since it only re-quantiles the resampled parameters already stored on the model; it does not refit anything.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="note">Note<a class="anchor" aria-label="anchor" href="#note"></a></h2>
+    <p>As with <code><a href="coef.wisp.html">coef.wisp</a></code>, the row names mix several different kinds of quantities. <code>"Rt"</code>
+rows are confidence bounds on the fitted rate on the log(sum + 1) scale of the summed count within a bin, not
+the original per-instance rate – to recover the latter, exponentiate each bound, subtract one, and divide by
+the mean number of data rows per bin (see <code><a href="coef.wisp.html">coef.wisp</a></code>, the <code><a href="wisp.html">wisp</a></code> examples, or the
+"Poisson processes and sigmoids" tutorial, for the full back-transformation). <code>"tslope"</code> and
+<code>"tpoint"</code> rows are already on their natural, directly interpretable scales and need no such
+transformation. Whenever the random-effect grouping variable (<code>ran</code>) has more than one level, the matrix
+additionally contains <code>"wfactor_rate"</code>, <code>"wfactor_slope"</code>, and <code>"wfactor_point"</code> rows (one per
+random-effect level) – these are warping factors feeding into the warp function described in the "Random
+effects and warping" tutorial, a different kind of quantity altogether from the like-named base parameters;
+neither the <code>"Rt"</code> back-transformation above nor "use as-is" applies to them.</p>
     </div>
 
     <div class="section level2">

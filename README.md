@@ -82,10 +82,12 @@ library(wispack)
 # Load demo data
 countdata <- read.csv(system.file(
       "extdata",
-      "S1_laminar_countdata_demo_default_col_names.csv",
+      "S1_laminar_countdata_demo.csv.gz",
       package = "wispack"
     )
   )
+rename.map <- c(gene = "species", mouse = "ran")
+names(countdata)[match(names(rename.map), names(countdata))] <- rename.map
 
 # Fit model
 laminar.model <- wisp(countdata)

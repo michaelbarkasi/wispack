@@ -227,7 +227,7 @@ warp_plots <- demo_warp_plots(
   )
 ```
 
-The function demo.warp.plot creates two plots. The first shows \omega
+The function demo_warp_plots creates two plots. The first shows \omega
 itself for specified warping factors \rho=\langle-w,0,w\rangle.
 
 ``` r
@@ -242,7 +242,7 @@ function” because it warps the input z towards the upper and lower
 bounds. Indeed; the “w” in “wisp” refers to this behavior: *warped*
 sigmoidal Poisson-process mixed-effects models.
 
-The second plot created by demo.warp.plot shows the effect of \omega on
+The second plot created by demo_warp_plots shows the effect of \omega on
 \Phi. In this plot, model parameters are represented by colored dashed
 lines: gray for rates, red for transition-point locations, and blue for
 transition-point slopes. Darker shades represent the original, unwarped

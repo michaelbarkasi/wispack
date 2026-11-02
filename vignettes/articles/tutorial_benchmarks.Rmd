@@ -264,7 +264,7 @@ Functions are needed to apply software packages to the simulations made with <sp
 
 <h3>Wispack</h3>
 
-For wisp modelling, wispack comes with a ready-made function for benchmarking attractor-based simulations, called <span class = "code_variable">model_attractor_simulation_wisp</span>. The function takes four arguments: <span class = "code_variable">sim</span>, <span class = "code_variable">sim_num</span>, <span class = "code_variable">bs_num</span>, and <span class = "code_variable">max_fork</span>.  The <span class = "code_variable">sim</span> argument takes the output of the <span class = "function">attractor_simulation</span> function. The <span class = "code_variable">sim_num</span> is an integer value used to label the results of this particular simulation run for later aggregation with other simulation runs. Wispack also uses this number to set the seed for the random-number generator. The <span class = "code_variable">bs_num</span> argument is the number of bootstrap resamples to use for estimating p-values. (The <span class = "code_variable">model_attractor_simulation_wisp</span> function will only use bootstrapping; MCMC estimation is not an option.) Finally, the <span class = "code_variable">max_fork</span> argument sets the maximum number of parallel processes to use during bootstrapping. The function <span class = "code_variable">model_attractor_simulation_wisp</span> outputs a data frame with results that can be aggregated with other simulation runs for benchmark metrics, including false-positive rate, false-discovery rate, power, and correlation between estimated and true effect sizes.
+For wisp modelling, wispack comes with a ready-made function for benchmarking attractor-based simulations, called <span class = "code_variable">model_attractor_simulation_wisp</span>. The function takes five arguments: <span class = "code_variable">sim</span>, <span class = "code_variable">sim_num</span>, <span class = "code_variable">LRO_cost</span>, <span class = "code_variable">bs_num</span>, and <span class = "code_variable">max_fork</span>.  The <span class = "code_variable">sim</span> argument takes the output of the <span class = "function">attractor_simulation</span> function. The <span class = "code_variable">sim_num</span> is an integer value used to label the results of this particular simulation run for later aggregation with other simulation runs. Wispack also uses this number to set the seed for the random-number generator. The <span class = "code_variable">LRO_cost</span> argument is passed through to <span class = "function">wisp</span>'s own <span class = "code_variable">model.settings</span> (see the cost function used for the LRO change-point-detection grid search); the default, <span class = "code_variable">"none"</span>, skips that grid search. The <span class = "code_variable">bs_num</span> argument is the number of bootstrap resamples to use for estimating p-values. (The <span class = "code_variable">model_attractor_simulation_wisp</span> function will only use bootstrapping; MCMC estimation is not an option.) Finally, the <span class = "code_variable">max_fork</span> argument sets the maximum number of parallel processes to use during bootstrapping. The function <span class = "code_variable">model_attractor_simulation_wisp</span> outputs a data frame with results that can be aggregated with other simulation runs for benchmark metrics, including false-positive rate, false-discovery rate, power, and correlation between estimated and true effect sizes.
 
 Let's do a demo run of the function with only $100$ bootstraps, so we can see the output of the function.[^2]
 
@@ -326,8 +326,9 @@ The modeling functions given in <span class = "code_variable">modeling_functions
 
 ```{r model_attractor_simulation, eval = FALSE}
 model_attractor_simulation_wisp <- function(
-    sim, 
+    sim,
     sim_num,
+    LRO_cost = "none",
     bs_num   = 1e3,
     max_fork = 1
   ) {
@@ -335,13 +336,14 @@ model_attractor_simulation_wisp <- function(
     model <- wisp(
       count.data     = sim$data,
       variables      = list(
-        bin          = "bin_x", 
+        bin          = "bin_x",
         count        = "count",
         species      = "gene",
         ran          = "replicate",
         fixedeffects = c("fixedeffect")
       ),
       fit_only       = FALSE,
+      model.settings = list(LRO_cost = LRO_cost),
       MCMC.settings  = list(MCMC.steps = 0, MCMC.burnin = 0),
       bootstraps.num = bs_num,
       max.fork       = max_fork,

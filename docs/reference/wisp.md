@@ -148,7 +148,12 @@ wisp(
 
 - plot.settings:
 
-  List, settings for plots to make, including:
+  List, settings for plots to make. Besides controlling the live preview
+  plots printed during this fit, most of these (all but `print.plots`)
+  are also stored on the returned model and used as the defaults for
+  [`plot.wisp`](https://michaelbarkasi.github.io/wispack/reference/plot.wisp.md)
+  (e.g. `plot(model, type = "ratecount")`) when re-plotting it later,
+  unless overridden there. Settings, including:
 
   - `print.plots` = TRUE: Logical indicating whether to print plots as
     they are produced during the model fit.
@@ -316,4 +321,22 @@ model$fitted.parameters
 #>                                 7.494465 
 #> baseline_context_tpoint_species_Tns/Blk1 
 #>                                10.699851 
+
+# The two rate ("Rt") parameters above (about 3.89 and 5.06) don't look like the
+# true rates of 2 and 8 used to simulate the data. That's because wisp fits the
+# log transform (plus one) of the *summed* count within each bin, not the
+# per-row rate itself. To recover the original rates, exponentiate the fitted
+# rate, subtract one, and divide by the mean number of data rows per bin within
+# that block (see the "Poisson processes and sigmoids" tutorial for the full
+# explanation):
+tokens_per_bin <- tabulate(countdata$bin, nbins = n_bins)
+for (block in 1:2) {
+  bins           <- (block - 1) * 10 + seq_len(10)
+  mean_tokens    <- mean(tokens_per_bin[bins])
+  rate_param     <- model$fitted.parameters[block]
+  recovered_rate <- (exp(rate_param) - 1) / mean_tokens
+  cat("Block", block, "recovered rate:", round(recovered_rate, 3), "\n")
+}
+#> Block 1 recovered rate: 2.294 
+#> Block 2 recovered rate: 8.214 
 ```

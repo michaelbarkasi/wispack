@@ -15,7 +15,7 @@ vignette(&quot;release_notes&quot;, package = &quot;wispack&quot;) for the old-n
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -84,7 +84,7 @@ that looked like an S3 method but never was, since <code><a href="wisp.html">wis
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for class 'wisp'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
 <span>  <span class="va">x</span>,</span>
-<span>  <span class="va">type</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"ratecount"</span>,</span>
 <span>  print.plots <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  species <span class="op">=</span> <span class="st">"all"</span>,</span>
@@ -102,7 +102,7 @@ that looked like an S3 method but never was, since <code><a href="wisp.html">wis
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>Character string, which plot to make. One of:</p><ul><li><p><code>"ratecount"</code>: plot the fitted model and observed data (counts) together for visual comparison, optionally with independent block boundaries. Set <code>decompose = TRUE</code> to instead plot the individual pieces of this plot, for a single species, separately. See the "ratecount" section below for its extra arguments.</p></li>
+<dd><p>Character string, which plot to make. Defaults to <code>"ratecount"</code>. One of:</p><ul><li><p><code>"ratecount"</code>: plot the fitted model and observed data (counts) together for visual comparison, optionally with independent block boundaries. Set <code>decompose = TRUE</code> to instead plot the individual pieces of this plot, for a single species, separately. See the "ratecount" section below for its extra arguments.</p></li>
 <li><p><code>"timeseries"</code>: plot timeseries effects, separated by a splitting factor (e.g., hemisphere). See the "timeseries" section below.</p></li>
 <li><p><code>"parameters"</code>: violin (or bar) plots of the fitted wisp parameters, including confidence intervals if available. See the "parameters" section below.</p></li>
 <li><p><code>"effect.dist"</code>: histograms of the fitted parameters. See the "effect.dist" section below.</p></li>
@@ -137,17 +137,30 @@ that looked like an S3 method but never was, since <code><a href="wisp.html">wis
     <p>The return value depends on <code>type</code>; see the sections below. Most types return a list of ggplot objects, except <code>type = "species.summary"</code>, which returns nothing (plots are printed to the current graphics device) and <code>type = "MCMC.walks"</code>, which returns <code>NULL</code> early if the model has no MCMC sampling.</p>
     </div>
     <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>For <code>type %in% c("ratecount", "timeseries")</code>, several of that type's own arguments (see the sections
+below) default to the <code>plot.settings</code> the model was originally fit with (<code>object$plot.settings</code>; see
+the <code>plot.settings</code> argument of <code><a href="wisp.html">wisp</a></code>) rather than to a fixed value, so re-plotting a model
+reuses its own settings unless overridden here via <code>...</code>. This matches how <code>type = "species.summary"</code>
+already rebuilds its rate-count plot, and how every plot's cosmetic sizing/color settings (<code>label_size</code>,
+<code>title_size</code>, <code>axis_size</code>, <code>legend_size</code>, <code>count_size</code>, <code>count_jitter</code>, and
+<code>splitting_factor_colors</code>) are always read live from <code>object$plot.settings</code>, for every <code>type</code>.
+<code>plot.settings$print.plots</code> is the one exception: per its own documentation, it only controls the live
+preview plots printed during the original <code><a href="wisp.html">wisp()</a></code> fit, not this function's own <code>print.plots</code>
+argument (below), which defaults to <code>TRUE</code> regardless.</p>
+    </div>
+    <div class="section level2">
     <h2 id="ratecount">ratecount<a class="anchor" aria-label="anchor" href="#ratecount"></a></h2>
 
 
-<p>Takes wisp model results (a fitted line) and observed data (counts) and plots them together for visual comparison. Can also include independent block boundaries for comparison if provided. With <code>decompose = TRUE</code>, instead returns the individual pieces of this plot (data points only, fit lines only, and data points plus fit lines for individual random levels) for a single species, plotted separately; <code>species</code> must then resolve to exactly one species level, or a clear error is raised.</p><ul><li><p><code>log.scale</code> Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.</p></li>
-<li><p><code>CI_style</code> Logical, if TRUE, plots predicted lines with confidence interval style shading; if FALSE, plots predicted lines as solid lines with random levels and data points. Ignored when <code>decompose = TRUE</code>.</p></li>
-<li><p><code>dim.boundaries</code> Numeric vector, independent block boundaries to plot for comparison. If empty, the argument is ignored.</p></li>
+<p>Takes wisp model results (a fitted line) and observed data (counts) and plots them together for visual comparison. Can also include independent block boundaries for comparison if provided. With <code>decompose = TRUE</code>, instead returns the individual pieces of this plot (data points only, fit lines only, and data points plus fit lines for individual random levels) for a single species, plotted separately; <code>species</code> must then resolve to exactly one species level, or a clear error is raised.</p><ul><li><p><code>log.scale</code> Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts. Defaults to the model's <code>plot.settings$log.scale</code> (see <code><a href="wisp.html">wisp</a></code>).</p></li>
+<li><p><code>CI_style</code> Logical, if TRUE, plots predicted lines with confidence interval style shading; if FALSE, plots predicted lines as solid lines with random levels and data points. Defaults to the model's <code>plot.settings$CI_style</code>. Ignored when <code>decompose = TRUE</code>.</p></li>
+<li><p><code>dim.boundaries</code> Numeric vector, independent block boundaries to plot for comparison. Defaults to the model's <code>plot.settings$dim.bounds</code>. If empty, the argument is ignored.</p></li>
 <li><p><code>y.lim</code> Numeric vector of length 2, limits for the y-axis of the plots. If NA (plain ratecount) or NULL (<code>decompose = TRUE</code>), defaults to automatic limits.</p></li>
-<li><p><code>count.alpha.none</code> Numeric, transparency for count points when random level is "none". If left NA, defaults to 0.25. Ignored when <code>decompose = TRUE</code>.</p></li>
-<li><p><code>count.alpha.ran</code> Numeric, transparency for count points when random level is not "none". If left NA, defaults to 0.25. Ignored when <code>decompose = TRUE</code>.</p></li>
-<li><p><code>pred.alpha.none</code> Numeric, transparency for predicted lines when random level is "none". If left NA, defaults to 1.0. Ignored when <code>decompose = TRUE</code>.</p></li>
-<li><p><code>pred.alpha.ran</code> Numeric, transparency for predicted lines when random level is not "none". If left NA, defaults to 0.9. Ignored when <code>decompose = TRUE</code>.</p></li>
+<li><p><code>count.alpha.none</code> Numeric, transparency for count points when random level is "none". Defaults to the model's <code>plot.settings$count.alpha.none</code>; if that is NA, falls back to 0.25. Ignored when <code>decompose = TRUE</code>.</p></li>
+<li><p><code>count.alpha.ran</code> Numeric, transparency for count points when random level is not "none". Defaults to the model's <code>plot.settings$count.alpha.ran</code>; if that is NA, falls back to 0.25. Ignored when <code>decompose = TRUE</code>.</p></li>
+<li><p><code>pred.alpha.none</code> Numeric, transparency for predicted lines when random level is "none". Defaults to the model's <code>plot.settings$pred.alpha.none</code>; if that is NA, falls back to 1.0. Ignored when <code>decompose = TRUE</code>.</p></li>
+<li><p><code>pred.alpha.ran</code> Numeric, transparency for predicted lines when random level is not "none". Defaults to the model's <code>plot.settings$pred.alpha.ran</code>; if that is NA, falls back to 0.9. Ignored when <code>decompose = TRUE</code>.</p></li>
 <li><p><code>rans.to.print</code> Character vector, list of random levels to include on each species plot. If c(), all random levels are included. Ignored when <code>decompose = TRUE</code>.</p></li>
 </ul><p>Returns a list of ggplot objects for rate-count plots (or, with <code>decompose = TRUE</code>, for the decomposed rate-count plots).</p>
     </div>
@@ -155,9 +168,9 @@ that looked like an S3 method but never was, since <code><a href="wisp.html">wis
     <h2 id="timeseries">timeseries<a class="anchor" aria-label="anchor" href="#timeseries"></a></h2>
 
 
-<p>Plots timeseries effects from wisp results, separated by a splitting factor (e.g., hemisphere).</p><ul><li><p><code>splitting_factor</code> Character string, the name of the fixed effect by which to split the timeseries. If empty, c(), the first non-timeseries fixed effect is used. If "none", will not split.</p></li>
+<p>Plots timeseries effects from wisp results, separated by a splitting factor (e.g., hemisphere).</p><ul><li><p><code>splitting_factor</code> Character string, the name of the fixed effect by which to split the timeseries. Defaults to the model's <code>plot.settings$splitting_factor</code>. If empty, c(), the first non-timeseries fixed effect is used. If "none", will not split.</p></li>
 <li><p><code>tertiary_effects</code> Character vector, or NULL (default). Any fixed effects besides <code>timeseries</code> and the splitting factor are pruned down to a single level before rates are reconstructed (otherwise treatments belonging to different levels of those extra fixed effects would be mixed together). If NULL, each such fixed effect is pruned down to its reference level. Otherwise, for each additional fixed effect, if one of the levels named in <code>tertiary_effects</code> matches one of its levels, that level is used instead of the reference level.</p></li>
-<li><p><code>log.scale</code> Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.</p></li>
+<li><p><code>log.scale</code> Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts. Defaults to the model's <code>plot.settings$log.scale</code>.</p></li>
 </ul><p>Returns a list of ggplot objects for timeseries plots.</p>
     </div>
     <div class="section level2">

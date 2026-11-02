@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,8 +90,8 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">November 01, 2026
-(v2.6.0)</h4>
+            <h4 data-toc-skip class="date">November 02, 2026
+(v2.6.1)</h4>
       
 
       <div class="d-none name"><code>tutorial_warping.Rmd</code></div>
@@ -313,9 +313,9 @@ poly-sigmoid <span class="math inline">\Phi</span>.</p>
 <span>    w_factors    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.6</span>, <span class="op">-</span><span class="fl">0.9</span>, <span class="fl">0.5</span><span class="op">)</span>,      <span class="co"># warping factors for poly sigmoid (plot 2)</span></span>
 <span>    return_plots <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p>The function <span class="function">demo.warp.plot</span> creates two
-plots. The first shows <span class="math inline">\omega</span> itself
-for specified warping factors <span class="math inline">\rho=\langle-w,0,w\rangle</span>.</p>
+<p>The function <span class="function">demo_warp_plots</span> creates
+two plots. The first shows <span class="math inline">\omega</span>
+itself for specified warping factors <span class="math inline">\rho=\langle-w,0,w\rangle</span>.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">warp_plots</span><span class="op">$</span><span class="va">demo_plot_warpfunction</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_warping_files/figure-html/warp_demo_plot1-1.png" class="r-plt" alt="" width="864"></p>
@@ -324,7 +324,7 @@ because it warps the input <span class="math inline">z</span> towards
 the upper and lower bounds. Indeed; the “w” in “wisp” refers to this
 behavior: <em>warped</em> sigmoidal Poisson-process mixed-effects
 models.</p>
-<p>The second plot created by <span class="function">demo.warp.plot</span> shows the effect of <span class="math inline">\omega</span> on <span class="math inline">\Phi</span>. In this plot, model parameters are
+<p>The second plot created by <span class="function">demo_warp_plots</span> shows the effect of <span class="math inline">\omega</span> on <span class="math inline">\Phi</span>. In this plot, model parameters are
 represented by colored dashed lines: gray for rates, red for
 transition-point locations, and blue for transition-point slopes. Darker
 shades represent the original, unwarped parameters, while lighter shades

@@ -26,6 +26,47 @@
   distribution, and so any attempt to model them with wisp needs to
   account for this.
 
+## Version 2.6.1 (November 2, 2026)
+
+- plot.wisp’s type argument now defaults to “ratecount”, so plot(model)
+  no longer requires naming a type.
+- Fixed plot.wisp silently ignoring the plot.settings a model was
+  originally fit with when later re-plotting it: type = “ratecount” and
+  type = “timeseries” now default their own log.scale, CI_style,
+  dim.boundaries, count.alpha.ran/count.alpha.none,
+  pred.alpha.ran/pred.alpha.none, and splitting_factor arguments to the
+  model’s own plot.settings (as configured in the original wisp() call),
+  rather than to a fixed value – matching how type = “species.summary”
+  already behaved, and how every type’s cosmetic sizing/color settings
+  already worked. These arguments can still be overridden on the plot()
+  call itself. **Note:** a call that relied on the old behavior (a
+  non-default plot.settings being ignored on manual re-plotting) will
+  now see that setting applied by default; pass the argument explicitly
+  to plot() to keep the old output.
+- Fixed analyze_residuals’s description, which had been copy-pasted from
+  an unrelated internal helper (pvalues.samples) and incorrectly claimed
+  the function computes p-values from an empirical CDF; it does not – it
+  computes and summarizes raw/log residuals by group. Also expanded its
+  documented return value with the group and plot-naming structure.
+- Expanded the wisp example, and the coef.wisp/confint.wisp
+  documentation, to explain and demonstrate how to recover the original
+  per-instance rate from a fitted Rt parameter (exponentiate, subtract
+  one, divide by the mean number of data rows per bin – see the “Poisson
+  processes and sigmoids” tutorial), and to distinguish it from the
+  tslope/tpoint parameters (already on their natural scale) and the
+  wfactor_rate/wfactor_slope/wfactor_point random-effect warping-factor
+  parameters (present only when the random-effect factor has more than
+  one level; a different kind of quantity from the like-named base
+  parameters, not a rescaled version of one).
+- README.md is now generated from a new README.Rmd (via
+  devtools::build_readme()), carrying the same self-updating “date
+  (vX.Y)” build stamp as the other articles, instead of a hand-typed
+  string that had already drifted out of date.
+- Fixed the peak-memory table under “Result 2” of the forking article,
+  which was missing its 20-bootstraps/20-workers row – the data point
+  the following paragraph’s “holding workers fixed at 20, doubling
+  bootstraps from 20 to 40” comparison actually depends on.
+
 ## Version 2.6.0 (October 29, 2026)
 
 - **Breaking API change**: the eight dotted plotting functions

@@ -18,7 +18,7 @@ results used to be plain, unclassed lists; see
 # S3 method for class 'wisp'
 plot(
   x,
-  type,
+  type = "ratecount",
   print.plots = TRUE,
   verbose = TRUE,
   species = "all",
@@ -37,7 +37,8 @@ plot(
 
 - type:
 
-  Character string, which plot to make. One of:
+  Character string, which plot to make. Defaults to `"ratecount"`. One
+  of:
 
   - `"ratecount"`: plot the fitted model and observed data (counts)
     together for visual comparison, optionally with independent block
@@ -116,6 +117,26 @@ which returns nothing (plots are printed to the current graphics device)
 and `type = "MCMC.walks"`, which returns `NULL` early if the model has
 no MCMC sampling.
 
+## Details
+
+For `type %in% c("ratecount", "timeseries")`, several of that type's own
+arguments (see the sections below) default to the `plot.settings` the
+model was originally fit with (`object$plot.settings`; see the
+`plot.settings` argument of
+[`wisp`](https://michaelbarkasi.github.io/wispack/reference/wisp.md))
+rather than to a fixed value, so re-plotting a model reuses its own
+settings unless overridden here via `...`. This matches how
+`type = "species.summary"` already rebuilds its rate-count plot, and how
+every plot's cosmetic sizing/color settings (`label_size`, `title_size`,
+`axis_size`, `legend_size`, `count_size`, `count_jitter`, and
+`splitting_factor_colors`) are always read live from
+`object$plot.settings`, for every `type`. `plot.settings$print.plots` is
+the one exception: per its own documentation, it only controls the live
+preview plots printed during the original
+[`wisp()`](https://michaelbarkasi.github.io/wispack/reference/wisp.md)
+fit, not this function's own `print.plots` argument (below), which
+defaults to `TRUE` regardless.
+
 ## ratecount
 
 Takes wisp model results (a fitted line) and observed data (counts) and
@@ -127,34 +148,42 @@ levels) for a single species, plotted separately; `species` must then
 resolve to exactly one species level, or a clear error is raised.
 
 - `log.scale` Logical, if TRUE, plots rates and counts on a log scale;
-  if FALSE, plots raw rates and counts.
+  if FALSE, plots raw rates and counts. Defaults to the model's
+  `plot.settings$log.scale` (see
+  [`wisp`](https://michaelbarkasi.github.io/wispack/reference/wisp.md)).
 
 - `CI_style` Logical, if TRUE, plots predicted lines with confidence
   interval style shading; if FALSE, plots predicted lines as solid lines
-  with random levels and data points. Ignored when `decompose = TRUE`.
+  with random levels and data points. Defaults to the model's
+  `plot.settings$CI_style`. Ignored when `decompose = TRUE`.
 
 - `dim.boundaries` Numeric vector, independent block boundaries to plot
-  for comparison. If empty, the argument is ignored.
+  for comparison. Defaults to the model's `plot.settings$dim.bounds`. If
+  empty, the argument is ignored.
 
 - `y.lim` Numeric vector of length 2, limits for the y-axis of the
   plots. If NA (plain ratecount) or NULL (`decompose = TRUE`), defaults
   to automatic limits.
 
 - `count.alpha.none` Numeric, transparency for count points when random
-  level is "none". If left NA, defaults to 0.25. Ignored when
-  `decompose = TRUE`.
+  level is "none". Defaults to the model's
+  `plot.settings$count.alpha.none`; if that is NA, falls back to 0.25.
+  Ignored when `decompose = TRUE`.
 
 - `count.alpha.ran` Numeric, transparency for count points when random
-  level is not "none". If left NA, defaults to 0.25. Ignored when
-  `decompose = TRUE`.
+  level is not "none". Defaults to the model's
+  `plot.settings$count.alpha.ran`; if that is NA, falls back to 0.25.
+  Ignored when `decompose = TRUE`.
 
 - `pred.alpha.none` Numeric, transparency for predicted lines when
-  random level is "none". If left NA, defaults to 1.0. Ignored when
-  `decompose = TRUE`.
+  random level is "none". Defaults to the model's
+  `plot.settings$pred.alpha.none`; if that is NA, falls back to 1.0.
+  Ignored when `decompose = TRUE`.
 
 - `pred.alpha.ran` Numeric, transparency for predicted lines when random
-  level is not "none". If left NA, defaults to 0.9. Ignored when
-  `decompose = TRUE`.
+  level is not "none". Defaults to the model's
+  `plot.settings$pred.alpha.ran`; if that is NA, falls back to 0.9.
+  Ignored when `decompose = TRUE`.
 
 - `rans.to.print` Character vector, list of random levels to include on
   each species plot. If c(), all random levels are included. Ignored
@@ -169,8 +198,9 @@ Plots timeseries effects from wisp results, separated by a splitting
 factor (e.g., hemisphere).
 
 - `splitting_factor` Character string, the name of the fixed effect by
-  which to split the timeseries. If empty, c(), the first non-timeseries
-  fixed effect is used. If "none", will not split.
+  which to split the timeseries. Defaults to the model's
+  `plot.settings$splitting_factor`. If empty, c(), the first
+  non-timeseries fixed effect is used. If "none", will not split.
 
 - `tertiary_effects` Character vector, or NULL (default). Any fixed
   effects besides `timeseries` and the splitting factor are pruned down
@@ -182,7 +212,8 @@ factor (e.g., hemisphere).
   that level is used instead of the reference level.
 
 - `log.scale` Logical, if TRUE, plots rates and counts on a log scale;
-  if FALSE, plots raw rates and counts.
+  if FALSE, plots raw rates and counts. Defaults to the model's
+  `plot.settings$log.scale`.
 
 Returns a list of ggplot objects for timeseries plots.
 

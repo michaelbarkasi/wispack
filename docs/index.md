@@ -2,7 +2,7 @@
 
 Michael Barkasi
 
-October 3, 2026 (v2.5.1)
+November 02, 2026 (v2.6.1)
 
 ## Introduction
 
@@ -104,16 +104,18 @@ library(wispack)
 
 # Load demo data
 countdata <- read.csv(system.file(
-      "extdata", 
-      "S1_laminar_countdata_demo_default_col_names.csv", 
+      "extdata",
+      "S1_laminar_countdata_demo.csv.gz",
       package = "wispack"
     )
   )
+rename.map <- c(gene = "species", mouse = "ran")
+names(countdata)[match(names(rename.map), names(countdata))] <- rename.map
 
 # Fit model
 laminar.model <- wisp(countdata)
 
-# View model 
+# View model
 View(laminar.model)
 ```
 
@@ -129,19 +131,19 @@ argument. For example:
 # Define variables in the dataframe for the model
 data.variables <- list(
     count        = "count",
-    bin          = "bin", 
-    context      = "cortex", 
+    bin          = "bin",
+    context      = "cortex",
     species      = "gene",
     ran          = "mouse",
     timeseries   = "age",
     fixedeffects = c("hemisphere", "age")
   )
-  
+
 # Remove the hemisphere x age interaction from the model
 model.settings <- list(
     trtKO = c("right18")
   )
-  
+
 # Fit model
 laminar.model <- wisp(
     count.data     = countdata,
@@ -155,7 +157,7 @@ be run using the demo() command:
 
 ``` r
 
-demo("quick_start",  package = "wispack")  
+demo("quick_start",  package = "wispack")
 demo("full_options", package = "wispack")
 ```
 

@@ -106,11 +106,18 @@ an entirely fresh batch of children every batch regardless of how many total bat
 
 ## Why: this is heap-allocator behavior, not a Stan memory leak
 
-Both code paths correctly call `clear_stan_mem()` (`stan::math::recover_memory()`) after every
-individual bootstrap fit -- `bs_batch()`'s serial path does this explicitly
-(`src/wspc.cpp`, `bs_fit(b, true)`), and the benchmark's `mclapply` arm calls the identical
-exposed `bs_fit()` method. So this is not a case of Stan's autodiff arena silently growing
-across calls within a worker; that is actively guarded against in both arms, on every call.
+This is not a case of Stan's autodiff arena silently growing across calls within a worker, in
+either arm, though the two arms rule that out differently. The benchmark's `mclapply` arm
+explicitly calls `clear_stan_mem()` (`stan::math::recover_memory()`) after every individual
+bootstrap fit (`bs_fit(i, TRUE)`), so Stan's own memory is actively recovered on every call its
+persistent workers make. The forked `bs_batch()` path being measured here doesn't do this --
+every grid point above uses more than one worker, so it's always the *forked* branch
+(`src/wspc.cpp`, `bs_fit(..., false)`) rather than the serial one, and that branch skips the
+explicit Stan-memory recovery. It doesn't need it: each forked child does exactly one bootstrap
+fit and then calls `_exit()` immediately (`src/fork_utils.h`), so the OS reclaims that child's
+*entire* address space in one shot, Stan's autodiff arena included -- a strictly more complete
+cleanup than an explicit `recover_memory()` call would have been, since there's no second fit in
+that process for an uncleared arena to ever accumulate against.
 
 The accumulation is instead ordinary process-memory behavior: a long-lived process's `malloc`
 implementation generally retains freed pages, mapped for reuse, rather than returning them to

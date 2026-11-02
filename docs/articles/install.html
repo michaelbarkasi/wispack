@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,8 +90,8 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi, Cody Nhan Pham</h4>
             
-            <h4 data-toc-skip class="date">November 01, 2026
-(v2.6.0)</h4>
+            <h4 data-toc-skip class="date">November 02, 2026
+(v2.6.1)</h4>
       
 
       <div class="d-none name"><code>install.Rmd</code></div>
@@ -151,17 +151,19 @@ needed the first time <code>nloptr</code> itself installs.)</p>
 RcppEigen, and StanHeaders - <code>cmake</code>, only needed the first
 time the CRAN package <code>nloptr</code> itself installs, and only if
 no suitable system NLopt (&gt;= 2.7.0) is already present for it to use
-instead</p>
+instead - <code>libhdf5-dev</code> for hdf5 functionality (backs the
+<code>hdf5r</code> dependency)</p>
 <p>For PDF documentation generation, <code>pdflatex</code> should also
 be installed</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">sudo</span> apt install <span class="dt">\</span></span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>    libxml2 <span class="dt">\</span></span>
 <span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>    r-base-dev <span class="dt">\</span></span>
 <span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>    cmake <span class="dt">\</span></span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>    texlive-latex-base <span class="dt">\</span></span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>    texlive-fonts-recommended <span class="dt">\</span></span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>    texlive-fonts-extra <span class="dt">\</span></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>    texlive-latex-extra</span></code></pre></div>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>    libhdf5-dev <span class="dt">\</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>    texlive-latex-base <span class="dt">\</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>    texlive-fonts-recommended <span class="dt">\</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>    texlive-fonts-extra <span class="dt">\</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>    texlive-latex-extra</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="build-documentation">Build documentation<a class="anchor" aria-label="anchor" href="#build-documentation"></a>
@@ -169,8 +171,13 @@ be installed</p>
 <p>In R, run:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/build_readme.html" class="external-link">build_readme</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_articles.html" class="external-link">build_article</a></span><span class="op">(</span><span class="st">"&lt;article name&gt;"</span><span class="op">)</span></span></code></pre></div>
+<p><code>build_readme()</code> knits <code>README.Rmd</code> into
+<code>README.md</code> (via <code><a href="https://devtools.r-lib.org/reference/build_readme.html" class="external-link">devtools::build_readme()</a></code>); edit
+<code>README.Rmd</code>, not <code>README.md</code> directly – the
+latter is generated and gets overwritten.</p>
 </div>
 <div class="section level2">
 <h2 id="running-the-test-suite">Running the test suite<a class="anchor" aria-label="anchor" href="#running-the-test-suite"></a>

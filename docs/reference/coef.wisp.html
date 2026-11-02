@@ -9,7 +9,7 @@ convention for coef() methods."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -99,6 +99,18 @@ convention for <code><a href="https://rdrr.io/r/stats/coef.html" class="external
 as the source: it's already a named numeric vector (no extra reshaping needed to meet the <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code>
 convention), and – unlike <code>object$stats$parameters$estimate</code> – it's always present, even for a model
 fit with <code>fit_only = TRUE</code> where no statistical analysis was ever run. The two are otherwise identical.</p>
+<p>The returned vector mixes several different kinds of quantities, distinguishable by name (matching
+<code>object$param.names</code>; see <code>model.component.list</code> in the <code><a href="wisp.html">wisp</a></code> return value for the
+three base component names). <code>"Rt"</code> entries are the fitted rate on the log(sum + 1) scale of the summed
+count within a bin, not the original per-instance rate – to recover the latter, exponentiate the value,
+subtract one, and divide by the mean number of data rows per bin (see the <code><a href="wisp.html">wisp</a></code> examples, or the
+"Poisson processes and sigmoids" tutorial, for the full back-transformation). <code>"tslope"</code> and
+<code>"tpoint"</code> entries are already on their natural, directly interpretable scales and need no such
+transformation. Whenever the random-effect grouping variable (<code>ran</code>) has more than one level, the
+vector additionally contains <code>"wfactor_rate"</code>, <code>"wfactor_slope"</code>, and <code>"wfactor_point"</code> entries
+(one per random-effect level) – these are warping factors feeding into the warp function described in the
+"Random effects and warping" tutorial, a different kind of quantity altogether from the like-named base
+parameters; neither the <code>"Rt"</code> back-transformation above nor "use as-is" applies to them.</p>
     </div>
 
     <div class="section level2">

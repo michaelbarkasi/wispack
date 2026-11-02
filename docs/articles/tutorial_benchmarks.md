@@ -402,12 +402,15 @@ with attractor_simulation.
 
 For wisp modelling, wispack comes with a ready-made function for
 benchmarking attractor-based simulations, called
-model_attractor_simulation_wisp. The function takes four arguments: sim,
-sim_num, bs_num, and max_fork. The sim argument takes the output of the
-attractor_simulation function. The sim_num is an integer value used to
-label the results of this particular simulation run for later
-aggregation with other simulation runs. Wispack also uses this number to
-set the seed for the random-number generator. The bs_num argument is the
+model_attractor_simulation_wisp. The function takes five arguments: sim,
+sim_num, LRO_cost, bs_num, and max_fork. The sim argument takes the
+output of the attractor_simulation function. The sim_num is an integer
+value used to label the results of this particular simulation run for
+later aggregation with other simulation runs. Wispack also uses this
+number to set the seed for the random-number generator. The LRO_cost
+argument is passed through to wisp’s own model.settings (see the cost
+function used for the LRO change-point-detection grid search); the
+default, “none”, skips that grid search. The bs_num argument is the
 number of bootstrap resamples to use for estimating p-values. (The
 model_attractor_simulation_wisp function will only use bootstrapping;
 MCMC estimation is not an option.) Finally, the max_fork argument sets
@@ -554,8 +557,9 @@ code:
 ``` r
 
 model_attractor_simulation_wisp <- function(
-    sim, 
+    sim,
     sim_num,
+    LRO_cost = "none",
     bs_num   = 1e3,
     max_fork = 1
   ) {
@@ -563,13 +567,14 @@ model_attractor_simulation_wisp <- function(
     model <- wisp(
       count.data     = sim$data,
       variables      = list(
-        bin          = "bin_x", 
+        bin          = "bin_x",
         count        = "count",
         species      = "gene",
         ran          = "replicate",
         fixedeffects = c("fixedeffect")
       ),
       fit_only       = FALSE,
+      model.settings = list(LRO_cost = LRO_cost),
       MCMC.settings  = list(MCMC.steps = 0, MCMC.burnin = 0),
       bootstraps.num = bs_num,
       max.fork       = max_fork,
