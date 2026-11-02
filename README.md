@@ -45,7 +45,7 @@ Demo plots of the functions involved in wisp. (A) The logistic function, used to
 
 </div>
 
-Wispack provides a user-facing function, <span class="function">wisp</span>, which takes a data frame in the familiar format expected by standard R functions for linear models (e.g., [<span class="function">lme4::lmer</span>](https://cran.r-project.org/web/packages/lme4/index.html) or [<span class="function">stats::lm</span>](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html)) and runs the complete test for FSEs. Preprocessing of the data is generally required before passing it to <span class="function">wisp</span>, after which <span class="function">wisp</span> executes a pipeline involving parameter estimates, prediction, model fitting, and hypothesis testing. Note that as of version 2.2, <span class="function">wisp</span> includes the option (<span class="code_variable">LRO_cost</span>, under <span class="code_variable">model.settings</span>) to perform a grid search for the best settings for the change-point detection (LRO) search, where "best" is defined as either lowest AIC, BIC, or negative log-likelihood.
+Wispack provides a user-facing function, <span class="function">wisp</span>, which takes a data frame in the familiar format expected by standard R functions for linear models (e.g., [<span class="function">lme4::lmer</span>](https://CRAN.R-project.org/package=lme4) or [<span class="function">stats::lm</span>](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/lm.html)) and runs the complete test for FSEs. Preprocessing of the data is generally required before passing it to <span class="function">wisp</span>, after which <span class="function">wisp</span> executes a pipeline involving parameter estimates, prediction, model fitting, and hypothesis testing. Note that as of version 2.2, <span class="function">wisp</span> includes the option (<span class="code_variable">LRO_cost</span>, under <span class="code_variable">model.settings</span>) to perform a grid search for the best settings for the change-point detection (LRO) search, where "best" is defined as either lowest AIC, BIC, or negative log-likelihood.
 
 <div class="figure">
 
@@ -132,22 +132,22 @@ demo("full_options", package = "wispack")
 
 The tutorials provide more detailed walkthroughs of the package and its options:
 
-1.  [*Poisson processes and sigmoids:*](articles/tutorial_Poisson.html) Introduction to how wisps parameterize and model the spatial distribution of count data from a Poisson process such as gene transcription.
-2.  [*Random effects and warping:*](articles/tutorial_warping.html) Explanation of random-effect modeling and how it's implemented in a wisp.
-3.  [*RORB along the cortical laminar axis:*](articles/tutorial_corticallaminar.html) A detailed walkthrough of modeling a real biological dataset with wisp.
-4.  [*Time-series data:*](articles/tutorial_timeseries.html) Explanation of how wisp models times-series data.
-5.  [*Radial zonation in liver lobules:*](articles/tutorial_liverradial.html) A second example application from a different biological dataset, with an emphasis on time series and temporal-spatial interactions.
-6.  [*Modeling cell types:*](articles/tutorial_multicontext.html) An extension of the <span class="gene">RORB</span> example showing how to model not only Poisson-process species (e.g., genes), but also the broader biological context (e.g., cell type).
-7.  [*Plotting wisp models:*](articles/tutorial_wispplots.html) An explanation of the various kinds of plots available through wispack.
-8.  [*Customizing statistical analyses:*](articles/tutorial_stats.html) A walkthrough of the various options for customizing the statistical analyses performed by wisp, bootstrapping and MCMC resampling.
-9.  [*Benchmarks and comparisons:*](articles/tutorial_benchmarks.html) Development of a simulation framework (attractor simulations) for benchmarking wispack and two other packages for analyzing transcriptomics data.
+1.  [*Poisson processes and sigmoids:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_Poisson.html) Introduction to how wisps parameterize and model the spatial distribution of count data from a Poisson process such as gene transcription.
+2.  [*Random effects and warping:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_warping.html) Explanation of random-effect modeling and how it's implemented in a wisp.
+3.  [*RORB along the cortical laminar axis:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_corticallaminar.html) A detailed walkthrough of modeling a real biological dataset with wisp.
+4.  [*Time-series data:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_timeseries.html) Explanation of how wisp models times-series data.
+5.  [*Radial zonation in liver lobules:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_liverradial.html) A second example application from a different biological dataset, with an emphasis on time series and temporal-spatial interactions.
+6.  [*Modeling cell types:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_multicontext.html) An extension of the <span class="gene">RORB</span> example showing how to model not only Poisson-process species (e.g., genes), but also the broader biological context (e.g., cell type).
+7.  [*Plotting wisp models:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_wispplots.html) An explanation of the various kinds of plots available through wispack.
+8.  [*Customizing statistical analyses:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_stats.html) A walkthrough of the various options for customizing the statistical analyses performed by wisp, bootstrapping and MCMC resampling.
+9.  [*Benchmarks and comparisons:*](https://michaelbarkasi.github.io/wispack/articles/tutorial_benchmarks.html) Development of a simulation framework (attractor simulations) for benchmarking wispack and two other packages for analyzing transcriptomics data.
 
 <div class="figure">
 
 <img src="man/figures/wisp_art.png" alt="Artistic rendering of wisp model" width="90%">
 <p class="caption">
 
-Artistic rendering of a wisp model. See [this tutorial](articles/tutorial_wispplots.html) for an explanation.
+Artistic rendering of a wisp model. See [this tutorial](https://michaelbarkasi.github.io/wispack/articles/tutorial_wispplots.html) for an explanation.
 </p>
 
 </div>
