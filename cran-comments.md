@@ -67,12 +67,14 @@ This is a new release (first submission to CRAN).
    to run validation, and the `V8` package isn't installed, so math-rendering checks were
    skipped locally. Also a local-tooling gap, not a known package defect.
 
-## Known open risk not caught by this check
+## Windows NLopt linkage
 
-This package links against system NLopt via `pkg-config` on Unix (`src/Makevars`) and a
-hardcoded `C:/local/nlopt` path on Windows (`src/Makevars.win`), with no `configure.win` to
-fetch/stage that library. The Windows path has not been exercised on win-builder, R-hub, or any
-CI, so it is **unverified** whether this builds on CRAN's actual Windows check machine. Recommend
-running a win-builder (<https://win-builder.r-project.org/>) and/or R-hub check before submitting,
-and fixing the Windows NLopt linkage (e.g. a `configure.win` that fetches a static NLopt build,
-following the `rwinlib`-style pattern other CRAN packages use) if that check fails.
+An earlier version of this package linked against system NLopt via `pkg-config` on Unix
+(`src/Makevars`) and a hardcoded `C:/local/nlopt` path on Windows (`src/Makevars.win`), with no
+`configure.win` to fetch/stage that library -- a real risk on CRAN's Windows check machine. This
+has since been replaced: NLopt is now obtained through the CRAN package `nloptr` (`LinkingTo`),
+which bundles/builds its own copy of NLopt and exposes its C API via registered
+`R_GetCCallable` routines (`src/wisp_nlopt.h`), so neither `Makevars` file links against
+`-lnlopt` or any hardcoded path on either platform anymore -- see the comments in both files.
+Submitted to win-builder (R-release and R-devel) on 2026-11-02 to confirm this builds cleanly on
+Windows ahead of this submission.
