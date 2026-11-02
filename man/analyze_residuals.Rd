@@ -12,10 +12,18 @@ analyze_residuals(wisp.results, verbose = TRUE)
 \item{verbose}{Logical, if TRUE, prints information during the statistical analysis.}
 }
 \value{
-A list containing data frames \code{stats} and \code{stats.log} holding summary stats for residuals and log-residuals, respectively, plus a list of plots visualizing these stats.
+A list with three elements: \code{stats} and \code{stats.log}, data frames (one row per group) giving
+the \code{group} name plus \code{mean}, \code{sd}, and \code{variance} of the raw and log residuals,
+respectively; and \code{plots}, a flat list of the histogram, Q-Q, and side-by-side combined plots for each
+group, named \code{"<group>_hist"}, \code{"<group>_qq"}, and \code{"<group>_resid"}.
 }
 \description{
-This function takes a vector \code{mu.B} of sampled values of a variable X, and a single observation \code{mu.obs} of the same variable, and computes the p-value of \code{mu.obs} using the empirical cumulative distribution function (ecdf) of \code{mu.B}.
+Computes raw and log-scale residuals (predicted minus observed count, per row of
+\code{wisp.results$count.data.summed}) for a fitted \code{\link{wisp}} model, then summarizes and visualizes
+them by group -- overall, by random-effect level, by treatment level, and by context/species combination. For
+each group, builds a histogram of the log-residuals and a Q-Q plot comparing their ordered values against both
+a standard-normal and a gamma-convolved-normal theoretical quantile (using the model's fitted gamma dispersion),
+plus the mean, standard deviation, and variance of the residuals.
 }
 \examples{
 set.seed(1)

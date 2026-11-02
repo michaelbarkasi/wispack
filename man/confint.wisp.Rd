@@ -41,6 +41,19 @@ defaults for \code{Bonferroni} and \code{conv.resamples.only}, since this model 
 were used for its originally-stored statistics) to recompute the intervals at the requested level; this is cheap,
 since it only re-quantiles the resampled parameters already stored on the model; it does not refit anything.
 }
+\note{
+As with \code{\link{coef.wisp}}, the row names mix several different kinds of quantities. \code{"Rt"}
+rows are confidence bounds on the fitted rate on the log(sum + 1) scale of the summed count within a bin, not
+the original per-instance rate -- to recover the latter, exponentiate each bound, subtract one, and divide by
+the mean number of data rows per bin (see \code{\link{coef.wisp}}, the \code{\link{wisp}} examples, or the
+"Poisson processes and sigmoids" tutorial, for the full back-transformation). \code{"tslope"} and
+\code{"tpoint"} rows are already on their natural, directly interpretable scales and need no such
+transformation. Whenever the random-effect grouping variable (\code{ran}) has more than one level, the matrix
+additionally contains \code{"wfactor_rate"}, \code{"wfactor_slope"}, and \code{"wfactor_point"} rows (one per
+random-effect level) -- these are warping factors feeding into the warp function described in the "Random
+effects and warping" tutorial, a different kind of quantity altogether from the like-named base parameters;
+neither the \code{"Rt"} back-transformation above nor "use as-is" applies to them.
+}
 \examples{
 set.seed(1)
 grid <- expand.grid(bin = 1:20, age = c(12, 18), ran = c("r1", "r2"), rep = 1:6)

@@ -14,6 +14,9 @@ wispack.Rcheck/*
 Rplots.pdf
 *.tar.gz
 vignettes/**/*_cache/*
+README_cache/*
+README_files/*
+README.html
 docs/deps/font-awesome-6.5.2/webfonts/*
 .positai
 .RDataTmp

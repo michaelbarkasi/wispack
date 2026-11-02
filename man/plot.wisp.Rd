@@ -6,7 +6,7 @@
 \usage{
 \method{plot}{wisp}(
   x,
-  type,
+  type = "ratecount",
   print.plots = TRUE,
   verbose = TRUE,
   species = "all",
@@ -17,7 +17,7 @@
 \arguments{
 \item{x}{List, output of the \code{\link{wisp}} function (an object of class \code{"wisp"}).}
 
-\item{type}{Character string, which plot to make. One of: \itemize{
+\item{type}{Character string, which plot to make. Defaults to \code{"ratecount"}. One of: \itemize{
 \item \code{"ratecount"}: plot the fitted model and observed data (counts) together for visual comparison, optionally with independent block boundaries. Set \code{decompose = TRUE} to instead plot the individual pieces of this plot, for a single species, separately. See the "ratecount" section below for its extra arguments.
 \item \code{"timeseries"}: plot timeseries effects, separated by a splitting factor (e.g., hemisphere). See the "timeseries" section below.
 \item \code{"parameters"}: violin (or bar) plots of the fitted wisp parameters, including confidence intervals if available. See the "parameters" section below.
@@ -47,18 +47,30 @@ wisp plotting: pick which plot to make with \code{type}, and pass that plot's ow
 that looked like an S3 method but never was, since \code{wisp()} results used to be plain, unclassed lists; see
 \code{vignette("release_notes", package = "wispack")} for the old-name to \code{type} mapping.)
 }
+\details{
+For \code{type \%in\% c("ratecount", "timeseries")}, several of that type's own arguments (see the sections
+below) default to the \code{plot.settings} the model was originally fit with (\code{object$plot.settings}; see
+the \code{plot.settings} argument of \code{\link{wisp}}) rather than to a fixed value, so re-plotting a model
+reuses its own settings unless overridden here via \code{...}. This matches how \code{type = "species.summary"}
+already rebuilds its rate-count plot, and how every plot's cosmetic sizing/color settings (\code{label_size},
+\code{title_size}, \code{axis_size}, \code{legend_size}, \code{count_size}, \code{count_jitter}, and
+\code{splitting_factor_colors}) are always read live from \code{object$plot.settings}, for every \code{type}.
+\code{plot.settings$print.plots} is the one exception: per its own documentation, it only controls the live
+preview plots printed during the original \code{wisp()} fit, not this function's own \code{print.plots}
+argument (below), which defaults to \code{TRUE} regardless.
+}
 \section{ratecount}{
 
 Takes wisp model results (a fitted line) and observed data (counts) and plots them together for visual comparison. Can also include independent block boundaries for comparison if provided. With \code{decompose = TRUE}, instead returns the individual pieces of this plot (data points only, fit lines only, and data points plus fit lines for individual random levels) for a single species, plotted separately; \code{species} must then resolve to exactly one species level, or a clear error is raised.
 \itemize{
-\item \code{log.scale} Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.
-\item \code{CI_style} Logical, if TRUE, plots predicted lines with confidence interval style shading; if FALSE, plots predicted lines as solid lines with random levels and data points. Ignored when \code{decompose = TRUE}.
-\item \code{dim.boundaries} Numeric vector, independent block boundaries to plot for comparison. If empty, the argument is ignored.
+\item \code{log.scale} Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts. Defaults to the model's \code{plot.settings$log.scale} (see \code{\link{wisp}}).
+\item \code{CI_style} Logical, if TRUE, plots predicted lines with confidence interval style shading; if FALSE, plots predicted lines as solid lines with random levels and data points. Defaults to the model's \code{plot.settings$CI_style}. Ignored when \code{decompose = TRUE}.
+\item \code{dim.boundaries} Numeric vector, independent block boundaries to plot for comparison. Defaults to the model's \code{plot.settings$dim.bounds}. If empty, the argument is ignored.
 \item \code{y.lim} Numeric vector of length 2, limits for the y-axis of the plots. If NA (plain ratecount) or NULL (\code{decompose = TRUE}), defaults to automatic limits.
-\item \code{count.alpha.none} Numeric, transparency for count points when random level is "none". If left NA, defaults to 0.25. Ignored when \code{decompose = TRUE}.
-\item \code{count.alpha.ran} Numeric, transparency for count points when random level is not "none". If left NA, defaults to 0.25. Ignored when \code{decompose = TRUE}.
-\item \code{pred.alpha.none} Numeric, transparency for predicted lines when random level is "none". If left NA, defaults to 1.0. Ignored when \code{decompose = TRUE}.
-\item \code{pred.alpha.ran} Numeric, transparency for predicted lines when random level is not "none". If left NA, defaults to 0.9. Ignored when \code{decompose = TRUE}.
+\item \code{count.alpha.none} Numeric, transparency for count points when random level is "none". Defaults to the model's \code{plot.settings$count.alpha.none}; if that is NA, falls back to 0.25. Ignored when \code{decompose = TRUE}.
+\item \code{count.alpha.ran} Numeric, transparency for count points when random level is not "none". Defaults to the model's \code{plot.settings$count.alpha.ran}; if that is NA, falls back to 0.25. Ignored when \code{decompose = TRUE}.
+\item \code{pred.alpha.none} Numeric, transparency for predicted lines when random level is "none". Defaults to the model's \code{plot.settings$pred.alpha.none}; if that is NA, falls back to 1.0. Ignored when \code{decompose = TRUE}.
+\item \code{pred.alpha.ran} Numeric, transparency for predicted lines when random level is not "none". Defaults to the model's \code{plot.settings$pred.alpha.ran}; if that is NA, falls back to 0.9. Ignored when \code{decompose = TRUE}.
 \item \code{rans.to.print} Character vector, list of random levels to include on each species plot. If c(), all random levels are included. Ignored when \code{decompose = TRUE}.
 }
 Returns a list of ggplot objects for rate-count plots (or, with \code{decompose = TRUE}, for the decomposed rate-count plots).
@@ -68,9 +80,9 @@ Returns a list of ggplot objects for rate-count plots (or, with \code{decompose 
 
 Plots timeseries effects from wisp results, separated by a splitting factor (e.g., hemisphere).
 \itemize{
-\item \code{splitting_factor} Character string, the name of the fixed effect by which to split the timeseries. If empty, c(), the first non-timeseries fixed effect is used. If "none", will not split.
+\item \code{splitting_factor} Character string, the name of the fixed effect by which to split the timeseries. Defaults to the model's \code{plot.settings$splitting_factor}. If empty, c(), the first non-timeseries fixed effect is used. If "none", will not split.
 \item \code{tertiary_effects} Character vector, or NULL (default). Any fixed effects besides \code{timeseries} and the splitting factor are pruned down to a single level before rates are reconstructed (otherwise treatments belonging to different levels of those extra fixed effects would be mixed together). If NULL, each such fixed effect is pruned down to its reference level. Otherwise, for each additional fixed effect, if one of the levels named in \code{tertiary_effects} matches one of its levels, that level is used instead of the reference level.
-\item \code{log.scale} Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.
+\item \code{log.scale} Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts. Defaults to the model's \code{plot.settings$log.scale}.
 }
 Returns a list of ggplot objects for timeseries plots.
 }

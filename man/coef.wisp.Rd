@@ -24,6 +24,19 @@ convention for \code{coef()} methods.
 as the source: it's already a named numeric vector (no extra reshaping needed to meet the \code{coef()}
 convention), and -- unlike \code{object$stats$parameters$estimate} -- it's always present, even for a model
 fit with \code{fit_only = TRUE} where no statistical analysis was ever run. The two are otherwise identical.
+
+The returned vector mixes several different kinds of quantities, distinguishable by name (matching
+\code{object$param.names}; see \code{model.component.list} in the \code{\link{wisp}} return value for the
+three base component names). \code{"Rt"} entries are the fitted rate on the log(sum + 1) scale of the summed
+count within a bin, not the original per-instance rate -- to recover the latter, exponentiate the value,
+subtract one, and divide by the mean number of data rows per bin (see the \code{\link{wisp}} examples, or the
+"Poisson processes and sigmoids" tutorial, for the full back-transformation). \code{"tslope"} and
+\code{"tpoint"} entries are already on their natural, directly interpretable scales and need no such
+transformation. Whenever the random-effect grouping variable (\code{ran}) has more than one level, the
+vector additionally contains \code{"wfactor_rate"}, \code{"wfactor_slope"}, and \code{"wfactor_point"} entries
+(one per random-effect level) -- these are warping factors feeding into the warp function described in the
+"Random effects and warping" tutorial, a different kind of quantity altogether from the like-named base
+parameters; neither the \code{"Rt"} back-transformation above nor "use as-is" applies to them.
 }
 \examples{
 set.seed(1)

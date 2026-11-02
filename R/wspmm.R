@@ -46,7 +46,10 @@ NULL
 #'    \item \code{MCMC.prior} = 1.0: Prior to compute the Bayesian update controlling step acceptance. 
 #'    \item \code{MCMC.neighbor.filter} = 1: Will only save every this-many steps as a resample. 
 #'    }
-#' @param plot.settings List, settings for plots to make, including: \itemize{
+#' @param plot.settings List, settings for plots to make. Besides controlling the live preview plots printed
+#'   during this fit, most of these (all but \code{print.plots}) are also stored on the returned model and used
+#'   as the defaults for \code{\link{plot.wisp}} (e.g. \code{plot(model, type = "ratecount")}) when re-plotting it
+#'   later, unless overridden there. Settings, including: \itemize{
 #'    \item \code{print.plots} = TRUE: Logical indicating whether to print plots as they are produced during the model fit. 
 #'    \item \code{dim.bounds} = Vector of bins; if non-empty, rate-count plots will plot vertical dot-dashed lines as these coordinates to indicate a prior-known boundary along the spatial dimension. Note that these values are not used in any way during the model fit itself. 
 #'    \item \code{log.scale} = False: Logical indicating whether plots should show the log of expression-rate values (plus 1). 
@@ -100,6 +103,22 @@ NULL
 #'   verbose        = FALSE
 #' )
 #' model$fitted.parameters
+#'
+#' # The two rate ("Rt") parameters above (about 3.89 and 5.06) don't look like the
+#' # true rates of 2 and 8 used to simulate the data. That's because wisp fits the
+#' # log transform (plus one) of the *summed* count within each bin, not the
+#' # per-row rate itself. To recover the original rates, exponentiate the fitted
+#' # rate, subtract one, and divide by the mean number of data rows per bin within
+#' # that block (see the "Poisson processes and sigmoids" tutorial for the full
+#' # explanation):
+#' tokens_per_bin <- tabulate(countdata$bin, nbins = n_bins)
+#' for (block in 1:2) {
+#'   bins           <- (block - 1) * 10 + seq_len(10)
+#'   mean_tokens    <- mean(tokens_per_bin[bins])
+#'   rate_param     <- model$fitted.parameters[block]
+#'   recovered_rate <- (exp(rate_param) - 1) / mean_tokens
+#'   cat("Block", block, "recovered rate:", round(recovered_rate, 3), "\n")
+#' }
 #' @export
 wisp <- function(
     count.data, 
@@ -876,11 +895,19 @@ sample_stats <- function(
 
 #' Analyze residuals from wisp fit
 #'
-#' This function takes a vector \code{mu.B} of sampled values of a variable X, and a single observation \code{mu.obs} of the same variable, and computes the p-value of \code{mu.obs} using the empirical cumulative distribution function (ecdf) of \code{mu.B}.
+#' Computes raw and log-scale residuals (predicted minus observed count, per row of
+#' \code{wisp.results$count.data.summed}) for a fitted \code{\link{wisp}} model, then summarizes and visualizes
+#' them by group -- overall, by random-effect level, by treatment level, and by context/species combination. For
+#' each group, builds a histogram of the log-residuals and a Q-Q plot comparing their ordered values against both
+#' a standard-normal and a gamma-convolved-normal theoretical quantile (using the model's fitted gamma dispersion),
+#' plus the mean, standard deviation, and variance of the residuals.
 #'
 #' @param wisp.results List, output of the wisp function.
 #' @param verbose Logical, if TRUE, prints information during the statistical analysis.
-#' @return A list containing data frames \code{stats} and \code{stats.log} holding summary stats for residuals and log-residuals, respectively, plus a list of plots visualizing these stats.
+#' @return A list with three elements: \code{stats} and \code{stats.log}, data frames (one row per group) giving
+#'   the \code{group} name plus \code{mean}, \code{sd}, and \code{variance} of the raw and log residuals,
+#'   respectively; and \code{plots}, a flat list of the histogram, Q-Q, and side-by-side combined plots for each
+#'   group, named \code{"<group>_hist"}, \code{"<group>_qq"}, and \code{"<group>_resid"}.
 #' @examples
 #' set.seed(1)
 #' n_bins <- 20
@@ -1354,6 +1381,19 @@ residuals.wisp <- function(object, type = c("raw", "log"), ...) {
 #'   as the source: it's already a named numeric vector (no extra reshaping needed to meet the \code{coef()}
 #'   convention), and -- unlike \code{object$stats$parameters$estimate} -- it's always present, even for a model
 #'   fit with \code{fit_only = TRUE} where no statistical analysis was ever run. The two are otherwise identical.
+#'
+#'   The returned vector mixes several different kinds of quantities, distinguishable by name (matching
+#'   \code{object$param.names}; see \code{model.component.list} in the \code{\link{wisp}} return value for the
+#'   three base component names). \code{"Rt"} entries are the fitted rate on the log(sum + 1) scale of the summed
+#'   count within a bin, not the original per-instance rate -- to recover the latter, exponentiate the value,
+#'   subtract one, and divide by the mean number of data rows per bin (see the \code{\link{wisp}} examples, or the
+#'   "Poisson processes and sigmoids" tutorial, for the full back-transformation). \code{"tslope"} and
+#'   \code{"tpoint"} entries are already on their natural, directly interpretable scales and need no such
+#'   transformation. Whenever the random-effect grouping variable (\code{ran}) has more than one level, the
+#'   vector additionally contains \code{"wfactor_rate"}, \code{"wfactor_slope"}, and \code{"wfactor_point"} entries
+#'   (one per random-effect level) -- these are warping factors feeding into the warp function described in the
+#'   "Random effects and warping" tutorial, a different kind of quantity altogether from the like-named base
+#'   parameters; neither the \code{"Rt"} back-transformation above nor "use as-is" applies to them.
 #' @examples
 #' set.seed(1)
 #' n_bins <- 20
@@ -1402,6 +1442,17 @@ coef.wisp <- function(object, ...) {
 #'   \code{Bonferroni}, \code{conv.resamples.only}, \code{verbose}).
 #' @return A matrix with one row per (selected) parameter and two columns, \code{CI.low} and \code{CI.high},
 #'   row-named by parameter.
+#' @note As with \code{\link{coef.wisp}}, the row names mix several different kinds of quantities. \code{"Rt"}
+#'   rows are confidence bounds on the fitted rate on the log(sum + 1) scale of the summed count within a bin, not
+#'   the original per-instance rate -- to recover the latter, exponentiate each bound, subtract one, and divide by
+#'   the mean number of data rows per bin (see \code{\link{coef.wisp}}, the \code{\link{wisp}} examples, or the
+#'   "Poisson processes and sigmoids" tutorial, for the full back-transformation). \code{"tslope"} and
+#'   \code{"tpoint"} rows are already on their natural, directly interpretable scales and need no such
+#'   transformation. Whenever the random-effect grouping variable (\code{ran}) has more than one level, the matrix
+#'   additionally contains \code{"wfactor_rate"}, \code{"wfactor_slope"}, and \code{"wfactor_point"} rows (one per
+#'   random-effect level) -- these are warping factors feeding into the warp function described in the "Random
+#'   effects and warping" tutorial, a different kind of quantity altogether from the like-named base parameters;
+#'   neither the \code{"Rt"} back-transformation above nor "use as-is" applies to them.
 #' @examples
 #' set.seed(1)
 #' grid <- expand.grid(bin = 1:20, age = c(12, 18), ran = c("r1", "r2"), rep = 1:6)
@@ -1469,8 +1520,19 @@ confint.wisp <- function(object, parm = NULL, level = 0.95, ...) {
 #' that looked like an S3 method but never was, since \code{wisp()} results used to be plain, unclassed lists; see
 #' \code{vignette("release_notes", package = "wispack")} for the old-name to \code{type} mapping.)
 #'
+#' For \code{type \%in\% c("ratecount", "timeseries")}, several of that type's own arguments (see the sections
+#' below) default to the \code{plot.settings} the model was originally fit with (\code{object$plot.settings}; see
+#' the \code{plot.settings} argument of \code{\link{wisp}}) rather than to a fixed value, so re-plotting a model
+#' reuses its own settings unless overridden here via \code{...}. This matches how \code{type = "species.summary"}
+#' already rebuilds its rate-count plot, and how every plot's cosmetic sizing/color settings (\code{label_size},
+#' \code{title_size}, \code{axis_size}, \code{legend_size}, \code{count_size}, \code{count_jitter}, and
+#' \code{splitting_factor_colors}) are always read live from \code{object$plot.settings}, for every \code{type}.
+#' \code{plot.settings$print.plots} is the one exception: per its own documentation, it only controls the live
+#' preview plots printed during the original \code{wisp()} fit, not this function's own \code{print.plots}
+#' argument (below), which defaults to \code{TRUE} regardless.
+#'
 #' @param x List, output of the \code{\link{wisp}} function (an object of class \code{"wisp"}).
-#' @param type Character string, which plot to make. One of: \itemize{
+#' @param type Character string, which plot to make. Defaults to \code{"ratecount"}. One of: \itemize{
 #'    \item \code{"ratecount"}: plot the fitted model and observed data (counts) together for visual comparison, optionally with independent block boundaries. Set \code{decompose = TRUE} to instead plot the individual pieces of this plot, for a single species, separately. See the "ratecount" section below for its extra arguments.
 #'    \item \code{"timeseries"}: plot timeseries effects, separated by a splitting factor (e.g., hemisphere). See the "timeseries" section below.
 #'    \item \code{"parameters"}: violin (or bar) plots of the fitted wisp parameters, including confidence intervals if available. See the "parameters" section below.
@@ -1489,14 +1551,14 @@ confint.wisp <- function(object, parm = NULL, level = 0.95, ...) {
 #' @section ratecount:
 #' Takes wisp model results (a fitted line) and observed data (counts) and plots them together for visual comparison. Can also include independent block boundaries for comparison if provided. With \code{decompose = TRUE}, instead returns the individual pieces of this plot (data points only, fit lines only, and data points plus fit lines for individual random levels) for a single species, plotted separately; \code{species} must then resolve to exactly one species level, or a clear error is raised.
 #' \itemize{
-#'    \item \code{log.scale} Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.
-#'    \item \code{CI_style} Logical, if TRUE, plots predicted lines with confidence interval style shading; if FALSE, plots predicted lines as solid lines with random levels and data points. Ignored when \code{decompose = TRUE}.
-#'    \item \code{dim.boundaries} Numeric vector, independent block boundaries to plot for comparison. If empty, the argument is ignored.
+#'    \item \code{log.scale} Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts. Defaults to the model's \code{plot.settings$log.scale} (see \code{\link{wisp}}).
+#'    \item \code{CI_style} Logical, if TRUE, plots predicted lines with confidence interval style shading; if FALSE, plots predicted lines as solid lines with random levels and data points. Defaults to the model's \code{plot.settings$CI_style}. Ignored when \code{decompose = TRUE}.
+#'    \item \code{dim.boundaries} Numeric vector, independent block boundaries to plot for comparison. Defaults to the model's \code{plot.settings$dim.bounds}. If empty, the argument is ignored.
 #'    \item \code{y.lim} Numeric vector of length 2, limits for the y-axis of the plots. If NA (plain ratecount) or NULL (\code{decompose = TRUE}), defaults to automatic limits.
-#'    \item \code{count.alpha.none} Numeric, transparency for count points when random level is "none". If left NA, defaults to 0.25. Ignored when \code{decompose = TRUE}.
-#'    \item \code{count.alpha.ran} Numeric, transparency for count points when random level is not "none". If left NA, defaults to 0.25. Ignored when \code{decompose = TRUE}.
-#'    \item \code{pred.alpha.none} Numeric, transparency for predicted lines when random level is "none". If left NA, defaults to 1.0. Ignored when \code{decompose = TRUE}.
-#'    \item \code{pred.alpha.ran} Numeric, transparency for predicted lines when random level is not "none". If left NA, defaults to 0.9. Ignored when \code{decompose = TRUE}.
+#'    \item \code{count.alpha.none} Numeric, transparency for count points when random level is "none". Defaults to the model's \code{plot.settings$count.alpha.none}; if that is NA, falls back to 0.25. Ignored when \code{decompose = TRUE}.
+#'    \item \code{count.alpha.ran} Numeric, transparency for count points when random level is not "none". Defaults to the model's \code{plot.settings$count.alpha.ran}; if that is NA, falls back to 0.25. Ignored when \code{decompose = TRUE}.
+#'    \item \code{pred.alpha.none} Numeric, transparency for predicted lines when random level is "none". Defaults to the model's \code{plot.settings$pred.alpha.none}; if that is NA, falls back to 1.0. Ignored when \code{decompose = TRUE}.
+#'    \item \code{pred.alpha.ran} Numeric, transparency for predicted lines when random level is not "none". Defaults to the model's \code{plot.settings$pred.alpha.ran}; if that is NA, falls back to 0.9. Ignored when \code{decompose = TRUE}.
 #'    \item \code{rans.to.print} Character vector, list of random levels to include on each species plot. If c(), all random levels are included. Ignored when \code{decompose = TRUE}.
 #' }
 #' Returns a list of ggplot objects for rate-count plots (or, with \code{decompose = TRUE}, for the decomposed rate-count plots).
@@ -1504,9 +1566,9 @@ confint.wisp <- function(object, parm = NULL, level = 0.95, ...) {
 #' @section timeseries:
 #' Plots timeseries effects from wisp results, separated by a splitting factor (e.g., hemisphere).
 #' \itemize{
-#'    \item \code{splitting_factor} Character string, the name of the fixed effect by which to split the timeseries. If empty, c(), the first non-timeseries fixed effect is used. If "none", will not split.
+#'    \item \code{splitting_factor} Character string, the name of the fixed effect by which to split the timeseries. Defaults to the model's \code{plot.settings$splitting_factor}. If empty, c(), the first non-timeseries fixed effect is used. If "none", will not split.
 #'    \item \code{tertiary_effects} Character vector, or NULL (default). Any fixed effects besides \code{timeseries} and the splitting factor are pruned down to a single level before rates are reconstructed (otherwise treatments belonging to different levels of those extra fixed effects would be mixed together). If NULL, each such fixed effect is pruned down to its reference level. Otherwise, for each additional fixed effect, if one of the levels named in \code{tertiary_effects} matches one of its levels, that level is used instead of the reference level.
-#'    \item \code{log.scale} Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts.
+#'    \item \code{log.scale} Logical, if TRUE, plots rates and counts on a log scale; if FALSE, plots raw rates and counts. Defaults to the model's \code{plot.settings$log.scale}.
 #' }
 #' Returns a list of ggplot objects for timeseries plots.
 #'
@@ -1561,7 +1623,7 @@ confint.wisp <- function(object, parm = NULL, level = 0.95, ...) {
 #' names(rc)
 #' @method plot wisp
 #' @export
-plot.wisp <- function(x, type, print.plots = TRUE, verbose = TRUE, species = "all", decompose = FALSE, ...) {
+plot.wisp <- function(x, type = "ratecount", print.plots = TRUE, verbose = TRUE, species = "all", decompose = FALSE, ...) {
 
   type <- match.arg(
     type,
@@ -1600,25 +1662,46 @@ plot.wisp <- function(x, type, print.plots = TRUE, verbose = TRUE, species = "al
           "not a multi-element vector."
         )
       }
-      .plot_ratecount_decomposed(
-        wisp.results = x,
-        species      = species.resolved,
-        print.plots  = print.plots,
-        verbose      = verbose,
-        ...
+      # Default log.scale/dim.boundaries to the plot.settings recorded on the model at fit time (see the
+      # wisp() plot.settings argument), overridable here via ...; matches what .plot_species_summary already
+      # does when it rebuilds a (non-decomposed) rate-count plot.
+      args <- utils::modifyList(
+        list(log.scale = x$plot.settings$log.scale, dim.boundaries = x$plot.settings$dim.bounds),
+        list(...)
+      )
+      do.call(
+        .plot_ratecount_decomposed,
+        c(list(wisp.results = x, species = species.resolved, print.plots = print.plots, verbose = verbose), args)
       )
     } else {
-      .plot_ratecount(
-        wisp.results = x,
-        species      = species.resolved,
-        print.plots  = print.plots,
-        verbose      = verbose,
-        ...
+      args <- utils::modifyList(
+        list(
+          log.scale        = x$plot.settings$log.scale,
+          CI_style         = x$plot.settings$CI_style,
+          dim.boundaries   = x$plot.settings$dim.bounds,
+          count.alpha.none = x$plot.settings$count.alpha.none,
+          count.alpha.ran  = x$plot.settings$count.alpha.ran,
+          pred.alpha.none  = x$plot.settings$pred.alpha.none,
+          pred.alpha.ran   = x$plot.settings$pred.alpha.ran
+        ),
+        list(...)
+      )
+      do.call(
+        .plot_ratecount,
+        c(list(wisp.results = x, species = species.resolved, print.plots = print.plots, verbose = verbose), args)
       )
     },
-    timeseries = .plot_timeseries(
-      wisp.results = x, species = species.resolved, print.plots = print.plots, verbose = verbose, ...
-    ),
+    timeseries = {
+      # Default splitting_factor/log.scale to the model's own plot.settings, overridable via ...
+      args <- utils::modifyList(
+        list(splitting_factor = x$plot.settings$splitting_factor, log.scale = x$plot.settings$log.scale),
+        list(...)
+      )
+      do.call(
+        .plot_timeseries,
+        c(list(wisp.results = x, species = species.resolved, print.plots = print.plots, verbose = verbose), args)
+      )
+    },
     parameters = .plot_parameters(
       wisp.results = x, species = species.resolved, print.plots = print.plots, verbose = verbose, ...
     ),
