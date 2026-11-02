@@ -76,5 +76,6 @@ has since been replaced: NLopt is now obtained through the CRAN package `nloptr`
 which bundles/builds its own copy of NLopt and exposes its C API via registered
 `R_GetCCallable` routines (`src/wisp_nlopt.h`), so neither `Makevars` file links against
 `-lnlopt` or any hardcoded path on either platform anymore -- see the comments in both files.
-Submitted to win-builder (R-release and R-devel) on 2026-11-02 to confirm this builds cleanly on
-Windows ahead of this submission.
+Checked on win-builder (R-release and R-devel) on 2026-11-02: both platforms came back with only
+the standard "New submission" NOTE -- no errors, warnings, or Windows-specific notes -- confirming
+this links and builds cleanly on Windows.
