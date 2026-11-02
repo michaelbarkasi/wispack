@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,8 +90,8 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">November 01, 2026
-(v2.6.0)</h4>
+            <h4 data-toc-skip class="date">November 02, 2026
+(v2.6.2)</h4>
       
 
       <div class="d-none name"><code>tutorial_stats.Rmd</code></div>
@@ -572,7 +572,7 @@ generally include only the baseline values for transition points):</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">MCMC_walk_plots</span><span class="op">$</span><span class="va">plot.walks.parameters_high</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_stats_files/figure-html/plot_MCMC_walks_high-1.png" class="r-plt" alt="" width="700"></p>
 <p>Here again we see high amounts of autocorrelation.</p>
-<p>Finally, we can inspect the neglative log-likelihood (NLL) across the
+<p>Finally, we can inspect the negative log-likelihood (NLL) across the
 MCMC steps:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">MCMC_walk_plots</span><span class="op">$</span><span class="va">plot.walks.nll</span><span class="op">)</span></span></code></pre></div>
@@ -947,7 +947,7 @@ in parallel. Forking is only available on Unix-based systems such as Mac
 and Linux. It’s not possible on Windows. A value for <span class="code_variable">max.fork</span> greater than one on Windows will
 trigger a warning and the value will be automatically reset to one.</p>
 <p>The second limitation is that the data supplied to <span class="function">wisp</span> via the <span class="code_variable">count.data</span> must be resamplable. For any row
-in the count data, a resampled value for <span class="code_variable">count</span> is choosen from the set of rows with
+in the count data, a resampled value for <span class="code_variable">count</span> is chosen from the set of rows with
 matching values for the variables <span class="code_variable">bin</span>, <span class="code_variable">context</span>, <span class="code_variable">species</span>, <span class="code_variable">ran</span>, as well as any other variables
 specified in the <span class="code_variable">fixedeffects</span>
 argument of <span class="code_variable">variables</span> input. Hence,
@@ -971,7 +971,7 @@ normality in the resampled parameters.</p>
 <span>  verbose     <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><span class="function">plot</span> with <span class="code_variable">type = “MCMC.bs.comparison”</span> returns three
-plots in a list, labeled <span class="code_variable">plot_sample_correlations</span>, <span class="code_variable">plot_comparison_Shaprio</span>, and <span class="code_variable">plot_comparison_density</span>. The first plot
+plots in a list, labeled <span class="code_variable">plot_sample_correlations</span>, <span class="code_variable">plot_comparison_Shapiro</span>, and <span class="code_variable">plot_comparison_density</span>. The first plot
 shows next-step autocorrelation for both MCMC walks and bootstrap
 resamples. The plot shows density of autocorrelation values over the
 population of resampled model parameters. As expected from plots of the
@@ -998,7 +998,7 @@ while bootstrap resamples produce many parameter distributions with high
 distributions).</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span></span>
-<span>  <span class="va">bs_comp_plots</span><span class="op">$</span><span class="va">plot_comparison_Shaprio</span> <span class="op">+</span></span>
+<span>  <span class="va">bs_comp_plots</span><span class="op">$</span><span class="va">plot_comparison_Shapiro</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>plot.title <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>hjust <span class="op">=</span> <span class="fl">0.5</span>, size <span class="op">=</span> <span class="va">model</span><span class="op">$</span><span class="va">plot.settings</span><span class="op">$</span><span class="va">title_size</span><span class="op">*</span><span class="fl">0.75</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_stats_files/figure-html/plot_shapiro_wilk-1.png" class="r-plt" alt="" width="700"></p>

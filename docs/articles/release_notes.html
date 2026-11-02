@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -126,6 +126,29 @@ update the tutorial on customizing statistical analyses.</li>
 <li>Extracellular (out-of-soma) transcripts do not follow a Poisson
 distribution, and so any attempt to model them with wisp needs to
 account for this.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="version-2-6-2-november-2-2026">Version 2.6.2 (November 2, 2026)<a class="anchor" aria-label="anchor" href="#version-2-6-2-november-2-2026"></a>
+</h2>
+<ul>
+<li>
+<strong>Breaking change</strong>: fixed a misspelled name in <span class="function">plot.wisp</span>’s <span class="code_variable">type =
+“MCMC.bs.comparison”</span> return value – the list element <span class="code_variable">plot_comparison_Shaprio</span> is now <span class="code_variable">plot_comparison_Shapiro</span> (as in the
+Shapiro-Wilk normality test it plots). The typo was baked into the
+package itself, not just documentation: it was also the plot’s own title
+(“Shaprio-Wilk Normality Test…”) and x-axis label, both now corrected to
+“Shapiro-Wilk”. Any code accessing the old <span class="code_variable">plot_comparison_Shaprio</span> name needs to be
+updated to <span class="code_variable">plot_comparison_Shapiro</span>.</li>
+<li>Fixed several typos in the tutorials: “choosen” → “chosen” (<span class="function">model_attractor_simulation_wisp</span>/benchmarks and
+statistics tutorials), “neglative” → “negative” (statistics tutorial),
+“psuedo”/“exibhiting” → “pseudo”/“exhibiting” (benchmarks tutorial),
+“predications” → “predictions” and “effets” → “effects” (plotting
+tutorial), and “synthethase” → “synthetase” (liver radial zonation
+tutorial, <span class="gene">GLUL</span>’s real name).</li>
+<li>Fixed a corrupted HTML tag in the multi-context tutorial (a dropped
+opening <span class="code_variable">&lt;</span> left a <span class="code_variable">context</span> reference rendering as literal
+markup instead of styled text).</li>
 </ul>
 </div>
 <div class="section level2">

@@ -80,7 +80,7 @@ test_that("plot(model, type = \"MCMC.walks\") runs on the synthetic fixture", {
 test_that("plot(model, type = \"MCMC.bs.comparison\") runs on the synthetic fixture (needs >1 parameter to not crash)", {
   bc <- plot(model, type = "MCMC.bs.comparison", print.plots = FALSE, verbose = FALSE)
   expect_true(is.list(bc))
-  expect_true(all(c("plot_sample_correlations", "plot_comparison_Shaprio", "plot_comparison_density") %in% names(bc)))
+  expect_true(all(c("plot_sample_correlations", "plot_comparison_Shapiro", "plot_comparison_density") %in% names(bc)))
   expect_s3_class(bc$plot_comparison_density, "ggplot")
 })
 

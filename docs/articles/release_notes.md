@@ -26,6 +26,28 @@
   distribution, and so any attempt to model them with wisp needs to
   account for this.
 
+## Version 2.6.2 (November 2, 2026)
+
+- **Breaking change**: fixed a misspelled name in plot.wisp’s type =
+  “MCMC.bs.comparison” return value – the list element
+  plot_comparison_Shaprio is now plot_comparison_Shapiro (as in the
+  Shapiro-Wilk normality test it plots). The typo was baked into the
+  package itself, not just documentation: it was also the plot’s own
+  title (“Shaprio-Wilk Normality Test…”) and x-axis label, both now
+  corrected to “Shapiro-Wilk”. Any code accessing the old
+  plot_comparison_Shaprio name needs to be updated to
+  plot_comparison_Shapiro.
+- Fixed several typos in the tutorials: “choosen” → “chosen”
+  (model_attractor_simulation_wisp/benchmarks and statistics tutorials),
+  “neglative” → “negative” (statistics tutorial), “psuedo”/“exibhiting”
+  → “pseudo”/“exhibiting” (benchmarks tutorial), “predications” →
+  “predictions” and “effets” → “effects” (plotting tutorial), and
+  “synthethase” → “synthetase” (liver radial zonation tutorial, GLUL’s
+  real name).
+- Fixed a corrupted HTML tag in the multi-context tutorial (a dropped
+  opening \< left a context reference rendering as literal markup
+  instead of styled text).
+
 ## Version 2.6.1 (November 2, 2026)
 
 - plot.wisp’s type argument now defaults to “ratecount”, so plot(model)

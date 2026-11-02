@@ -314,7 +314,7 @@ are due to using bootstraps instead of MCMC samples.
 Both kinds of rate-count plots separate treatment conditions. In this
 data, we have two covariates, hemisphere and age, each with two levels
 (left vs right for hemisphere, P12 vs P18 for age). Thus, the plot shows
-the predications for the four possible combinations of covariates (i.e.,
+the predictions for the four possible combinations of covariates (i.e.,
 the reference condition of left-12, plus three treatment conditions).
 
 By default, both kinds of rate-count plots show rate as a raw value.
@@ -382,7 +382,7 @@ plots.decomp <- plot(
 ```
 
 First, let’s look at separate plots of counts (observed vs extrapolated
-without random effets) and predicted rates (fit of observed counts vs
+without random effects) and predicted rates (fit of observed counts vs
 predicted rates without random effects):
 
 ``` r

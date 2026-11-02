@@ -83,7 +83,7 @@ wispack:::.check_between(test_val, g$ratecount_Rorb, "check 1")
 
 CI rate-count plots are straightforward to interpret: The horizontal ($x$) axis shows spatial position along the modeled spatial dimension, the vertical ($y$) axis shows predicated rate. The solid line represents predicated rate, after random effects have been filtered out. The shaded ribbons show the 95\% confidence interval around the predicated rate. As explained in the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html), this confidence interval is computed without any multiple comparison correction (unlike $p$-values, which are corrected for multiple comparisons). As noted above, the different ribbon sizes in this plot compared to the plot from the <span class = "gene">RORB</span> [tutorial](tutorial_corticallaminar.html) are due to using bootstraps instead of MCMC samples.
 
-Both kinds of rate-count plots separate treatment conditions. In this data, we have two covariates, <span class = "code_variable">hemisphere</span> and <span class = "code_variable">age</span>, each with two levels (left vs right for <span class = "code_variable">hemisphere</span>, P12 vs P18 for <span class = "code_variable">age</span>). Thus, the plot shows the predications for the four possible combinations of covariates (i.e., the reference condition of left-12, plus three treatment conditions). 
+Both kinds of rate-count plots separate treatment conditions. In this data, we have two covariates, <span class = "code_variable">hemisphere</span> and <span class = "code_variable">age</span>, each with two levels (left vs right for <span class = "code_variable">hemisphere</span>, P12 vs P18 for <span class = "code_variable">age</span>). Thus, the plot shows the predictions for the four possible combinations of covariates (i.e., the reference condition of left-12, plus three treatment conditions). 
 
 By default, both kinds of rate-count plots show rate as a raw value. However, it's possible to rescale the vertical axis into log form:
 
@@ -135,7 +135,7 @@ test_val   <- layer_data[, c("x", "y")][43,2]
 wispack:::.check_between(test_val, g$decomposition_panel3, "check 2")
 ```
 
-First, let's look at separate plots of counts (observed vs extrapolated without random effets) and predicted rates (fit of observed counts vs predicted rates without random effects):
+First, let's look at separate plots of counts (observed vs extrapolated without random effects) and predicted rates (fit of observed counts vs predicted rates without random effects):
 
 ```{r RORB_ran_decomposed_print1, fig.width = 10, fig.height = 8, out.width = "100%"}
 grid.arrange(grobs = plots.decomp[2:5], ncol = 2)

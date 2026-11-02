@@ -138,7 +138,7 @@ we will model just a few with known zonation and temporal rhythm:
 
 | Abbreviation | Name | Zonation | Rhythm |
 |----|----|----|----|
-| GLUL | Glutamine synthethase | Central |  |
+| GLUL | Glutamine synthetase | Central |  |
 | ASS1 | Urea cycle gene argininosuccinate synthetase | Portal |  |
 | ARNTL, BMAL1 | Basic helix-loop-helix ARNT like 1 |  | Circadian |
 | DBP | PAR bZip transcription factor |  | Circadian |

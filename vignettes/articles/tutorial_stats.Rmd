@@ -186,7 +186,7 @@ print(MCMC_walk_plots$plot.walks.parameters_high)
 
 Here again we see high amounts of autocorrelation. 
 
-Finally, we can inspect the neglative log-likelihood (NLL) across the MCMC steps:
+Finally, we can inspect the negative log-likelihood (NLL) across the MCMC steps:
 
 ```{r plot_MCMC_walks_nll}
 print(MCMC_walk_plots$plot.walks.nll)
@@ -311,7 +311,7 @@ Unlike MCMC walks, there aren't any technical settings for bootstrapping. The on
 
 There are two important limitations to note about the bootstrapping implemented by wispack. The first concerns parallelization. Wispack uses process forking (via custom Rcpp code) to run fits of bootstrapped data in parallel. Forking is only available on Unix-based systems such as Mac and Linux. It's not possible on Windows. A value for <span class = "code_variable">max.fork</span> greater than one on Windows will trigger a warning and the value will be automatically reset to one. 
 
-The second limitation is that the data supplied to <span class = "function">wisp</span> via the <span class = "code_variable">count.data</span> must be resamplable. For any row in the count data, a resampled value for <span class = "code_variable">count</span> is choosen from the set of rows with matching values for the variables <span class = "code_variable">bin</span>, <span class = "code_variable">context</span>, <span class = "code_variable">species</span>, <span class = "code_variable">ran</span>, as well as any other variables specified in the <span class = "code_variable">fixedeffects</span> argument of <span class = "code_variable">variables</span> input. Hence, if there is only one observation for a given combination of modeling variables, bootstrapping will not be possible. From a mathematical point of view, the nature of these observations is irrelevant; however, a typical application would be for each row to represent a cell or sub-bin spatial region, with multiple observations per variable combination coming from multiple cells or sub-bins.
+The second limitation is that the data supplied to <span class = "function">wisp</span> via the <span class = "code_variable">count.data</span> must be resamplable. For any row in the count data, a resampled value for <span class = "code_variable">count</span> is chosen from the set of rows with matching values for the variables <span class = "code_variable">bin</span>, <span class = "code_variable">context</span>, <span class = "code_variable">species</span>, <span class = "code_variable">ran</span>, as well as any other variables specified in the <span class = "code_variable">fixedeffects</span> argument of <span class = "code_variable">variables</span> input. Hence, if there is only one observation for a given combination of modeling variables, bootstrapping will not be possible. From a mathematical point of view, the nature of these observations is irrelevant; however, a typical application would be for each row to represent a cell or sub-bin spatial region, with multiple observations per variable combination coming from multiple cells or sub-bins.
 
 <h3>Comparison with MCMC</h3>
 
@@ -326,7 +326,7 @@ bs_comp_plots <- plot(
 )
 ```
 
-<span class = "function">plot</span> with <span class = "code_variable">type = "MCMC.bs.comparison"</span> returns three plots in a list, labeled <span class = "code_variable">plot_sample_correlations</span>, <span class = "code_variable">plot_comparison_Shaprio</span>, and <span class = "code_variable">plot_comparison_density</span>. The first plot shows next-step autocorrelation for both MCMC walks and bootstrap resamples. The plot shows density of autocorrelation values over the population of resampled model parameters. As expected from plots of the MCMC walks, there are a high number of parameters with autocorrelation $>0.5$. In contrast, the bootstrap resamples show essentially zero autocorrelation. 
+<span class = "function">plot</span> with <span class = "code_variable">type = "MCMC.bs.comparison"</span> returns three plots in a list, labeled <span class = "code_variable">plot_sample_correlations</span>, <span class = "code_variable">plot_comparison_Shapiro</span>, and <span class = "code_variable">plot_comparison_density</span>. The first plot shows next-step autocorrelation for both MCMC walks and bootstrap resamples. The plot shows density of autocorrelation values over the population of resampled model parameters. As expected from plots of the MCMC walks, there are a high number of parameters with autocorrelation $>0.5$. In contrast, the bootstrap resamples show essentially zero autocorrelation. 
 
 ```{r plot_autocorrelation}
 print(
@@ -343,12 +343,12 @@ Another important consideration is the distribution of the resampled parameter v
 
 ```{r plot_shapiro_wilk}
 print(
-  bs_comp_plots$plot_comparison_Shaprio +
+  bs_comp_plots$plot_comparison_Shapiro +
     theme(plot.title = element_text(hjust = 0.5, size = model$plot.settings$title_size*0.75))
 )
 ```
 ```{r check7, echo = FALSE}
-test_val <- ggplot_build(bs_comp_plots$plot_comparison_Shaprio)$data[[1]][4,2]
+test_val <- ggplot_build(bs_comp_plots$plot_comparison_Shapiro)$data[[1]][4,2]
 wispack:::.check_between(test_val, g$bs_comparison_shapiro, "check 7")
 ```
 

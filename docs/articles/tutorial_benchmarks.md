@@ -341,7 +341,7 @@ The above procedure generates a single data set, from the seed patch,
 consisting of counts y (possibly \> 1) for each gene at some number of
 spatial coordinates, for both the ref and trt conditions. This single
 data set is itself used as a seed (with counts y becoming rates \lambda)
-to make psuedo-replicates exibhiting some amount of variation, both in
+to make pseudo-replicates exhibiting some amount of variation, both in
 spatial distribution and in counts. Variation in spatial distribution is
 simulated by a scaled application of a random affine transformation A of
 shears and scalings to the spatial coordinates: \begin{pmatrix} x^\prime
@@ -459,7 +459,7 @@ parameter, the stipulated value used in the simulation is given under
 the true column, while the estimate from wisp is given under the est
 column. Note that for rate_effect and random_effect, the parameter is a
 continuous value. The true, stipulated value will always be between -0.5
-and 0.5. (As explained above, these values are randomly choosen from
+and 0.5. (As explained above, these values are randomly chosen from
 between zero and one, and reported after subtracting 0.5 so that
 down-regulation is negative and up-regulation is positive). For FSE, the
 parameter is binary, with a true value of 1 indicating that the gene

@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,8 +90,8 @@
                         <h4 data-toc-skip class="author">Michael
 Barkasi</h4>
             
-            <h4 data-toc-skip class="date">November 01, 2026
-(v2.6.0)</h4>
+            <h4 data-toc-skip class="date">November 02, 2026
+(v2.6.2)</h4>
       
 
       <div class="d-none name"><code>tutorial_wispplots.Rmd</code></div>
@@ -387,7 +387,7 @@ this plot compared to the plot from the <span class="gene">RORB</span>
 bootstraps instead of MCMC samples.</p>
 <p>Both kinds of rate-count plots separate treatment conditions. In this
 data, we have two covariates, <span class="code_variable">hemisphere</span> and <span class="code_variable">age</span>, each with two levels (left vs right
-for <span class="code_variable">hemisphere</span>, P12 vs P18 for <span class="code_variable">age</span>). Thus, the plot shows the predications
+for <span class="code_variable">hemisphere</span>, P12 vs P18 for <span class="code_variable">age</span>). Thus, the plot shows the predictions
 for the four possible combinations of covariates (i.e., the reference
 condition of left-12, plus three treatment conditions).</p>
 <p>By default, both kinds of rate-count plots show rate as a raw value.
@@ -444,8 +444,8 @@ wispack provides a way to decompose them into their components: set
 <span>    print.plots    <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <p>First, let’s look at separate plots of counts (observed vs
-extrapolated without random effets) and predicted rates (fit of observed
-counts vs predicted rates without random effects):</p>
+extrapolated without random effects) and predicted rates (fit of
+observed counts vs predicted rates without random effects):</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/gridExtra/man/arrangeGrob.html" class="external-link">grid.arrange</a></span><span class="op">(</span>grobs <span class="op">=</span> <span class="va">plots.decomp</span><span class="op">[</span><span class="fl">2</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tutorial_wispplots_files/figure-html/RORB_ran_decomposed_print1-1.png" class="r-plt" alt="" width="100%"></p>

@@ -78,7 +78,7 @@ Droin et al. bulk-sequenced thousands of genes. For this demonstration, we will 
     <tr><th>Abbreviation</th><th>Name</th><th>Zonation</th><th>Rhythm</th></tr>
   </thead>
   <tbody>
-    <tr><td><span class="gene">GLUL</span></td><td>Glutamine synthethase</td><td>Central</td><td></td></tr>
+    <tr><td><span class="gene">GLUL</span></td><td>Glutamine synthetase</td><td>Central</td><td></td></tr>
     <tr><td><span class="gene">ASS1</span></td><td>Urea cycle gene argininosuccinate synthetase</td><td>Portal</td><td></td></tr>
     <tr><td><span class="gene">ARNTL</span>, <span class="gene">BMAL1</span></td><td>Basic helix-loop-helix ARNT like 1</td><td></td><td>Circadian</td></tr>
     <tr><td><span class="gene">DBP</span></td><td>PAR bZip transcription factor</td><td></td><td>Circadian</td></tr>

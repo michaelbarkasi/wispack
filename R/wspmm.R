@@ -3945,7 +3945,7 @@ plot.wisp <- function(x, type = "ratecount", print.plots = TRUE, verbose = TRUE,
     # one p-value per parameter. We can then compare the distributions of p-values for bs and MCMC by 
     # looking at their density plots to see if one systematically produces more normal distributions than the other.
     
-    # Ensure reproducibility (sampling via Shaprio test not very stable)
+    # Ensure reproducibility (sampling via Shapiro test not very stable)
     if (!is.null(ran.seed)) set.seed(ran.seed)
     
     # Grab data
@@ -4005,12 +4005,12 @@ plot.wisp <- function(x, type = "ratecount", print.plots = TRUE, verbose = TRUE,
     df_dens <- do.call(rbind, dens_list)
     
     # Plot
-    plot_comparison_Shaprio <- ggplot(df_dens, aes(x = sw_stat, color = method)) +
+    plot_comparison_Shapiro <- ggplot(df_dens, aes(x = sw_stat, color = method)) +
       geom_density(linewidth = 1.2) +
       theme_minimal() +
       labs(
-        title = "Shaprio-Wilk Normality Test on Resampled Parameters", 
-        x     = "Shaprio-Wilk Normality Test p-value", 
+        title = "Shapiro-Wilk Normality Test on Resampled Parameters", 
+        x     = "Shapiro-Wilk Normality Test p-value", 
         y     = "Density"
       ) +
       theme(
@@ -4159,7 +4159,7 @@ plot.wisp <- function(x, type = "ratecount", print.plots = TRUE, verbose = TRUE,
     if (print.plots) {
       grid.arrange(
         plot_comparison_density,
-        plot_comparison_Shaprio,
+        plot_comparison_Shapiro,
         plot_sample_correlations,
         ncol = 1
       )
@@ -4168,7 +4168,7 @@ plot.wisp <- function(x, type = "ratecount", print.plots = TRUE, verbose = TRUE,
     return(
       list(
         plot_sample_correlations = plot_sample_correlations,
-        plot_comparison_Shaprio  = plot_comparison_Shaprio,
+        plot_comparison_Shapiro  = plot_comparison_Shapiro,
         plot_comparison_density  = plot_comparison_density
       )
     )

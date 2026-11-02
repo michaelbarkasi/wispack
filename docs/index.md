@@ -2,7 +2,7 @@
 
 Michael Barkasi
 
-November 02, 2026 (v2.6.1)
+November 02, 2026 (v2.6.2)
 
 ## Introduction
 

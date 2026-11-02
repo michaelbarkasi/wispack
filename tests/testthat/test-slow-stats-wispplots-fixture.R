@@ -90,7 +90,7 @@ test_that("the real cortical-laminar bootstrap fit matches both tutorial_stats.R
   test_val <- ggplot2::ggplot_build(bs_comp_plots$plot_sample_correlations)$data[[1]][4, 2]
   expect_between(test_val, bounds = g$bs_comparison_correlation)
 
-  test_val <- ggplot2::ggplot_build(bs_comp_plots$plot_comparison_Shaprio)$data[[1]][4, 2]
+  test_val <- ggplot2::ggplot_build(bs_comp_plots$plot_comparison_Shapiro)$data[[1]][4, 2]
   expect_between(test_val, bounds = g$bs_comparison_shapiro)
 
   d <- ggplot2::ggplot_build(bs_comp_plots$plot_comparison_density)$data[[1]]

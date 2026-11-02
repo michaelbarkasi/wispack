@@ -86,7 +86,7 @@ layer.boundary.bins <- read.csv(boundary_path)
 
 <h2>Fitting a wisp with cell types</h2>
 
-The data frame <span class = "code_variable">countdata</span> has no column named "context", so the span class = "code_variable">context</span> column needs to be specified along with the names for the <span class = "code_variable">species</span>, <span class = "code_variable">ran</span>, and <span class = "code_variable">timeseries</span> variables.
+The data frame <span class = "code_variable">countdata</span> has no column named "context", so the <span class = "code_variable">context</span> column needs to be specified along with the names for the <span class = "code_variable">species</span>, <span class = "code_variable">ran</span>, and <span class = "code_variable">timeseries</span> variables.
 
 ```{r define_variables}
 # Define variables in the dataframe for the model

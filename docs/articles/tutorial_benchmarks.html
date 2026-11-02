@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">wispack</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.6.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -91,7 +91,7 @@
 Barkasi</h4>
             
             <h4 data-toc-skip class="date">November 02, 2026
-(v2.6.1)</h4>
+(v2.6.2)</h4>
       
 
       <div class="d-none name"><code>tutorial_benchmarks.Rmd</code></div>
@@ -353,7 +353,7 @@ Simulating replicates
 consisting of counts <span class="math inline">y</span> (possibly <span class="math inline">&gt; 1</span>) for each gene at some number of
 spatial coordinates, for both the <span class="code_variable">ref</span>
 and <span class="code_variable">trt</span> conditions. This single data
-set is itself used as a seed (with counts <span class="math inline">y</span> becoming rates <span class="math inline">\lambda</span>) to make psuedo-replicates exibhiting
+set is itself used as a seed (with counts <span class="math inline">y</span> becoming rates <span class="math inline">\lambda</span>) to make pseudo-replicates exhibiting
 some amount of variation, both in spatial distribution and in counts.
 Variation in spatial distribution is simulated by a scaled application
 of a random affine transformation <span class="math inline">A</span> of
@@ -474,7 +474,7 @@ is given under the <span class="code_variable">est</span> column. Note
 that for <span class="code_variable">rate_effect</span> and <span class="code_variable">random_effect</span>, the parameter is a
 continuous value. The true, stipulated value will always be between
 <span class="math inline">-0.5</span> and <span class="math inline">0.5</span>. (As explained above, these values are
-randomly choosen from between zero and one, and reported after
+randomly chosen from between zero and one, and reported after
 subtracting <span class="math inline">0.5</span> so that down-regulation
 is negative and up-regulation is positive). For <span class="code_variable">FSE</span>, the parameter is binary, with a <span class="code_variable">true</span> value of <span class="math inline">1</span> indicating that the gene exhibits a FSE in
 the treatment condition, and a <span class="code_variable">true</span>

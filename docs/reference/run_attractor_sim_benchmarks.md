@@ -117,7 +117,7 @@ bm <- run_attractor_sim_benchmarks(
 #>  data sim time: 0.002 s
 #> 
 #> Modeling with  wisp ...
-#>   wisp time: 4.265 s
+#>   wisp time: 4.274 s
 bm$results
 #>            est       true         param         id method sim
 #> 1 -0.098954514  0.0000000   rate_effect      geneA   wisp   1

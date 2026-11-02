@@ -508,7 +508,7 @@ print(MCMC_walk_plots$plot.walks.parameters_high)
 
 Here again we see high amounts of autocorrelation.
 
-Finally, we can inspect the neglative log-likelihood (NLL) across the
+Finally, we can inspect the negative log-likelihood (NLL) across the
 MCMC steps:
 
 ``` r
@@ -921,7 +921,7 @@ automatically reset to one.
 
 The second limitation is that the data supplied to wisp via the
 count.data must be resamplable. For any row in the count data, a
-resampled value for count is choosen from the set of rows with matching
+resampled value for count is chosen from the set of rows with matching
 values for the variables bin, context, species, ran, as well as any
 other variables specified in the fixedeffects argument of variables
 input. Hence, if there is only one observation for a given combination
@@ -948,7 +948,7 @@ bs_comp_plots <- plot(
 ```
 
 plot with type = “MCMC.bs.comparison” returns three plots in a list,
-labeled plot_sample_correlations, plot_comparison_Shaprio, and
+labeled plot_sample_correlations, plot_comparison_Shapiro, and
 plot_comparison_density. The first plot shows next-step autocorrelation
 for both MCMC walks and bootstrap resamples. The plot shows density of
 autocorrelation values over the population of resampled model
@@ -982,7 +982,7 @@ normal distributions).
 ``` r
 
 print(
-  bs_comp_plots$plot_comparison_Shaprio +
+  bs_comp_plots$plot_comparison_Shapiro +
     theme(plot.title = element_text(hjust = 0.5, size = model$plot.settings$title_size*0.75))
 )
 ```

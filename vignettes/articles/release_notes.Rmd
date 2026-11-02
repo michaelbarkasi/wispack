@@ -15,6 +15,12 @@ date: "`r wispack:::.wisp_build_stamp('release_notes')`"
 - Ensure nested loops for matrix operations have the major axis (column) on outside. 
 - Extracellular (out-of-soma) transcripts do not follow a Poisson distribution, and so any attempt to model them with wisp needs to account for this. 
 
+## Version 2.6.2 (November 2, 2026)
+
+- **Breaking change**: fixed a misspelled name in <span class = "function">plot.wisp</span>'s <span class = "code_variable">type = "MCMC.bs.comparison"</span> return value -- the list element <span class = "code_variable">plot_comparison_Shaprio</span> is now <span class = "code_variable">plot_comparison_Shapiro</span> (as in the Shapiro-Wilk normality test it plots). The typo was baked into the package itself, not just documentation: it was also the plot's own title ("Shaprio-Wilk Normality Test...") and x-axis label, both now corrected to "Shapiro-Wilk". Any code accessing the old <span class = "code_variable">plot_comparison_Shaprio</span> name needs to be updated to <span class = "code_variable">plot_comparison_Shapiro</span>.
+- Fixed several typos in the tutorials: "choosen" &rarr; "chosen" (<span class = "function">model_attractor_simulation_wisp</span>/benchmarks and statistics tutorials), "neglative" &rarr; "negative" (statistics tutorial), "psuedo"/"exibhiting" &rarr; "pseudo"/"exhibiting" (benchmarks tutorial), "predications" &rarr; "predictions" and "effets" &rarr; "effects" (plotting tutorial), and "synthethase" &rarr; "synthetase" (liver radial zonation tutorial, <span class = "gene">GLUL</span>'s real name).
+- Fixed a corrupted HTML tag in the multi-context tutorial (a dropped opening <span class = "code_variable">&lt;</span> left a <span class = "code_variable">context</span> reference rendering as literal markup instead of styled text).
+
 ## Version 2.6.1 (November 2, 2026)
 
 - <span class = "function">plot.wisp</span>'s <span class = "code_variable">type</span> argument now defaults to <span class = "code_variable">"ratecount"</span>, so <span class = "function">plot(model)</span> no longer requires naming a type.
