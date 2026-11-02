@@ -13,9 +13,16 @@
 # was purely an internal implementation detail. That DTW alignment is now implemented natively in C++
 # (src/model_fit.cpp's dtw_symmetricP05_align()), so neither the R callback, project_cp's export, nor
 # the dtw package dependency are needed any more.
+#
+# importFrom(RcppParallel, RcppParallelLibs) below is never actually called from R code -- its only
+# purpose is the side effect of the import: R loads RcppParallel's namespace (and the TBB DLLs it
+# bundles) before useDynLib() below loads wispack's own compiled code, which is linked against
+# -ltbb/-ltbbmalloc (src/Makevars.win). Without this, Windows's LoadLibrary can fail to resolve that
+# dependency at package-load time ("module not found"), since LinkingTo alone has no runtime effect.
 useDynLib(wispack, .registration = TRUE)
 importFrom(Rcpp, evalCpp)
 importFrom(RColorBrewer, brewer.pal)
+importFrom(RcppParallel, RcppParallelLibs)
 importFrom(nloptr, nloptr)
 importFrom(utils, globalVariables)
 import(ggplot2)
