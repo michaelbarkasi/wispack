@@ -493,7 +493,9 @@ model_attractor_simulation_wisp <- function(
 #' )
 #'
 #' # n_sims = 1 and a small bs_num keep this fast; a real benchmark would use
-#' # many more simulations and bootstrap resamples.
+#' # many more simulations and bootstrap resamples. Wrapped in \donttest{} since
+#' # it still runs over CRAN's 10s-per-example check threshold on some platforms.
+#' \donttest{
 #' bm <- run_attractor_sim_benchmarks(
 #'   toy_seed,
 #'   n_sims                 = 1,
@@ -502,6 +504,7 @@ model_attractor_simulation_wisp <- function(
 #'   modeling_function_args = list(wisp = list(bs_num = 8, max_fork = 1))
 #' )
 #' bm$results
+#' }
 #' @export
 run_attractor_sim_benchmarks <- function(
     seed_data, 
